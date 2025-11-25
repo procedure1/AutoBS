@@ -1,0 +1,17 @@
+﻿{
+  "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
+  "id": "AutoBS",
+  "name": "AutoBS",
+  "author": "BradWallace",
+  "version": "1.0.0",
+  "description": "A Beat Saber mod for auto rotations, arcs, chains, lighting, walls and more.",
+  "gameVersion": "1.40.0",
+  "dependsOn": {
+    "BSIPA": "^4.3.6",
+    "SongCore": "^3.15.3",
+    "BS Utils": "^1.14.2",
+    "SiraUtil": "^3.2.1",
+    "BeatSaberMarkupLanguage": "^1.12.5",
+    "CustomJSONData": "^2.6.8"
+  }
+}

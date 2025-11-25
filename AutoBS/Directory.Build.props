@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- This file contains project properties used by the build. -->
+<Project>
+  <PropertyGroup>
+    <BSMTProjectType>BSIPA</BSMTProjectType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <BeatSaberDir>D:\BSManager\BSInstances\1.40.8</BeatSaberDir>
+  </PropertyGroup>
+</Project>
