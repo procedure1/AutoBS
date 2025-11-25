@@ -1,4 +1,6 @@
-# Beat Saber 360fyer Plugin
+# Beat Saber AutoBS Plugin
+The following content will be completely re-written...!
+---
 A Beat Saber mod to play most beatmaps in 360 or 90 degree mode. 360fyer will take a standard map and create a new map with rotation events.
 
 This mod was created by the genius CodeStix. https://github.com/CodeStix/
