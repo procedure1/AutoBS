@@ -11,7 +11,7 @@ using UnityEngine;
 namespace AutoBS
 {
     // This is a logger for built-in maps. I was able to find the JSON for beatmap and lightshow. I was NOT able to find BPM/NJO/NJS
-    public static class BuiltInBeatmapInspector
+    public static class UNUSED_BuiltInBeatmapLogger
     {
         public static void LogBeatmapLevelsDataContentsDetailed()
         {

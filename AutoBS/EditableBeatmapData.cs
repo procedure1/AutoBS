@@ -1398,6 +1398,61 @@ namespace AutoBS
     {
         public static CustomBeatmapData Convert(EditableCBD eData)
         {
+
+            // --------------------------------------------------------------------
+            // Optional: emit v2/3-style rotation basic events (14 / 15) for debug - v3 still has legacy 14/15 rotation events inside of basic data
+            // --------------------------------------------------------------------
+            if ((Config.Instance.OutputV2JsonDatFileToDDriveRoot  || 
+                 Config.Instance.OutputV3JsonDatFileToDDriveRoot) &&
+                eData.RotationEvents != null &&
+                eData.RotationEvents.Count > 0)
+            {
+                int v2orv3 = 0;
+                if (Config.Instance.OutputV2JsonDatFileToDDriveRoot)
+                    v2orv3 = 2;
+                if (Config.Instance.OutputV3JsonDatFileToDDriveRoot)
+                    v2orv3 = 3;
+                //Plugin.Log.Info($"[ConvertEditableCBD] Injecting rotation events for JSON File Output v{v2orv3} ...");
+
+                int GetValue(int delta)
+                {
+                    if (v2orv3 == 2)
+                        return Generator.SpawnRotationDegreesToValue(delta);
+                    else // v3
+                        return delta;
+                }
+
+                // Choose early vs late event type based on your RotationModeLate flag
+                var rotEventType = Config.Instance.RotationModeLate
+                    ? BasicBeatmapEventType.Event15  // late
+                    : BasicBeatmapEventType.Event14; // early
+
+                eData.RotationEvents = ERotationEventData.RecalculateAccumulatedRotations(eData.RotationEvents);
+
+                foreach (var rot in eData.RotationEvents) //delta is not setup on this at this point
+                {
+                    int delta = rot.rotation;
+                    if (delta == 0)
+                        continue; // skip zero-rotation events
+                    // Map your ERotationEventData -> EBasicEventData
+                    // You can decide whether you want delta or accumulated in value.
+                    // For debugging it's usually nice to see the *accumulated* lane:
+                    //int value = GetValue(delta);
+
+                    // Adjust to whatever constructor / factory you actually use:
+                    var ev = EBasicEventData.Create(
+                        time: rot.time,
+                        basicBeatmapEventType: rotEventType,
+                        value: Generator.SpawnRotationDegreesToValue(delta)
+                    );
+
+                    eData.BasicEvents.Add(ev);
+                    //Plugin.Log.Debug($"[ConvertEditableCBD] Injected rotation event @{ev.time:F2}s type:{ev.basicBeatmapEventType} value:{ev.value} -- FROM: rot.Rotation: {delta} rot.accum: {rot.accumRotation}");
+                }
+
+                //Plugin.Log.Info($"[ConvertEditableCBD] Injected for JSON File Output - {eData.RotationEvents.Count} rotation events as {(Config.Instance.RotationModeLate ? "late (15)" : "early (14)")} basic events.");
+            }
+
             var newData = new CustomBeatmapData(
                 numberOfLines: 4, // Standard; parameterize if you support others
                 beatmapCustomData: eData.BeatmapCustomData ?? new CustomData(),

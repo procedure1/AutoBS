@@ -47,9 +47,9 @@
     <Compile Include="Arcitect.cs" />
     <Compile Include="AutoNjsFixer.cs" />
     <Compile Include="BeatSageCleanUp.cs" />
-    <Compile Include="BuiltInBeatmapInspector.cs" />
+    <Compile Include="UNUSED_BuiltInBeatmapLogger.cs" />
     <Compile Include="BuiltInMapJsonLoader.cs" />
-    <Compile Include="UNUSED_CustomBeatmapDataConverter.cs" />
+    <Compile Include="CustomBeatmapDataConverter.cs" />
     <Compile Include="DataRegistry.cs" />
     <Compile Include="EditableBeatmapData.cs" />
     <Compile Include="ForceRequiredModActivation.cs" />
@@ -58,7 +58,6 @@
     <Compile Include="Patches\SetContent.cs" />
     <Compile Include="Patches\TransitionPatcher.cs" />
     <Compile Include="Patches\VariableMovementDataProvider.cs" />
-    <Compile Include="UNUSED_RotationBooster.cs" />
     <Compile Include="UNUSED_Environment360fyer.cs" />
     <Compile Include="FieldHelper.cs" />
     <Compile Include="GameModeHelper.cs" />

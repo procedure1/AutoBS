@@ -307,8 +307,23 @@ namespace AutoBS.Patches
                          $"{__result.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Count()} Basic Events, " +
                          $"{__result.allBeatmapDataItems.OfType<CustomEventData>().Count()} Events, " +
                          $"{__result.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()} Color Boosts, " +
-                         $"{__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()} Bpm Change Events"); 
-                         // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
+                         $"{__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()} Bpm Change Events");
+                    // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
+
+                    int v2orv3 = 0;
+                    if (Config.Instance.OutputV2JsonDatFileToDDriveRoot)
+                        v2orv3 = 2;
+                    if (Config.Instance.OutputV3JsonDatFileToDDriveRoot)
+                        v2orv3 = 3;
+
+                    if (v2orv3 != 0)
+                    {
+                        Plugin.Log.Info($"[CreateTransformedBeatmapData] Outputting CustomBeatmapData to D:\\ root folder as JSON .dat file. Only 1 file per beat saber session.");
+
+                        CustomBeatmapDataConverter.ToJsonStringFile(__result as CustomBeatmapData, v2orv3, true, eData);
+                        Config.Instance.OutputV2JsonDatFileToDDriveRoot = false; // reset after one use
+                        Config.Instance.OutputV3JsonDatFileToDDriveRoot = false;
+                    }
                 }
                 else
                 {

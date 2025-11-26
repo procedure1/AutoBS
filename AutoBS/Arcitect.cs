@@ -1854,7 +1854,12 @@ namespace AutoBS
         }
         */
 
-
+        /// <summary>
+        /// Adjusts rotation events to ensure proper arc behavior.
+        /// </summary>
+        /// <param name="rotations"></param>
+        /// <param name="eData"></param>
+        /// <returns></returns>
         public static List<ERotationEventData> ArcFix(
             List<ERotationEventData> rotations,
             EditableCBD eData)
@@ -2363,7 +2368,7 @@ namespace AutoBS
                             $"ArcRotationMode={Config.Instance.ArcRotationMode}, allowedCumul={allowedCumulativeRots}, mode={(rotationModeLate ? "Late" : "Early")}");
 
             // Engine-accurate sanity check: show only assumed accumRotation at arc HEAD and TAIL.
-            SanityCheckHeadsTails_EngineView(result, arcs, TOL, rotationModeLate);
+            //SanityCheckHeadsTails_EngineView(result, arcs, TOL, rotationModeLate);
 
             return result;
         }
@@ -2404,7 +2409,7 @@ namespace AutoBS
                     tail = AccumInclusive(a.tailTime);
                     mismatch = (head != tail) ? "<<< MISMATCH!" : "";
 
-                    //Plugin.Log.Info($"[ArcFix][Check] EARLY head={head} tail={tail} @ {a.time:F3}->{a.tailTime:F3} {mismatch}");
+                    Plugin.Log.Info($"[ArcFix][Check] EARLY head={head} tail={tail} @ {a.time:F3}->{a.tailTime:F3} {mismatch}");
                 }
                 else
                 {
@@ -2412,7 +2417,7 @@ namespace AutoBS
                     tail = AccumBefore(a.tailTime);
                     mismatch = (head != tail) ? "<<< MISMATCH!" : "";
 
-                    //Plugin.Log.Info($"[ArcFix][Check] LATE head={head} tail={tail} @ {a.time:F3}->{a.tailTime:F3} {mismatch}");
+                    Plugin.Log.Info($"[ArcFix][Check] LATE head={head} tail={tail} @ {a.time:F3}->{a.tailTime:F3} {mismatch}");
                 }
             }
         }

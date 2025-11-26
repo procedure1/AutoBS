@@ -1839,6 +1839,21 @@ namespace AutoBS
                 default: return 0;//null; // Or throw, or clamp, as you see fit
             }
         }
+        public static int SpawnRotationDegreesToValue(int value)
+        {
+            switch (value)
+            {
+                //case -60: return 0;
+                case -45: return 1;
+                case -30: return 2;
+                case -15: return 3;
+                case  15: return 4;
+                case  30: return 5;
+                case  45: return 6;
+                //case 7: return 60f;
+                default: return 4;//not 0 which is 60 degrees
+            }
+        }
         public static int SpawnRotationValueToStepsV2(int value)
         {
             switch (value)

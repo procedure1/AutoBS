@@ -276,5 +276,9 @@ namespace AutoBS
         public virtual float DesiredJD  { get; set; } = 30f;
         public enum AutoNjsFixerModeType { MaintainNoteSpeed, ForceNJS } // bpm is required for maintain speed mode
         public virtual AutoNjsFixerModeType AutoNjsFixerMode { get; set; } = AutoNjsFixerModeType.MaintainNoteSpeed;
+
+        //------------------------
+        public virtual bool OutputV2JsonDatFileToDDriveRoot { get; set; } = false; //will convert to v2
+        public virtual bool OutputV3JsonDatFileToDDriveRoot { get; set; } = false; //will convert to v3
     }
 }
