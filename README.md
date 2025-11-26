@@ -1,4 +1,5 @@
-# Beat Saber AutoBS Plugin
+# AutoBS Beat Saber Automation Mod 
+# Featuring 360fyer and Arcitect Arc and Chain Maker
 The following content will be completely re-written...!
 ---
 A Beat Saber mod to play most beatmaps in 360 or 90 degree mode. 360fyer will take a standard map and create a new map with rotation events.
