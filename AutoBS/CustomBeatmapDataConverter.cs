@@ -19,7 +19,7 @@ namespace AutoBS
         /// <param name="preferredVersion"></param>
         /// <param name="outputSecondsToBeats"></param>
         /// <returns></returns>
-        public static string ToJsonStringFile(CustomBeatmapData data, int preferredVersion = 3, bool outputSecondsToBeats = true, EditableCBD eData = null) // if converted to seconds for FromJsonString then need this
+        public static string ToJsonStringFile(CustomBeatmapData data, int preferredVersion = 3, bool outputSecondsToBeats = true) // if converted to seconds for FromJsonString then need this
         {
             // ───────── Common setup ─────────────────────────────────────
             float timeMult = 1;
@@ -33,7 +33,7 @@ namespace AutoBS
             if (preferredVersion == 2 && majorVersion < 3)
                 root = JsonV2Output(data, timeMult);
             else if (preferredVersion >= 3)
-                root = JsonV3Output(data, timeMult, eData.RotationEvents);
+                root = JsonV3Output(data, timeMult);
 
             string jsonString = JsonConvert.SerializeObject(root, Formatting.None);
 
@@ -93,7 +93,7 @@ namespace AutoBS
                     ["_width"] = w.width,
                     //["_height"] = w.height
                 };
-                if (w.rotation != 0) o["_rotation"] = w.rotation;
+                //if (w.rotation != 0) o["_rotation"] = w.rotation;
                 if (w.customData.Count > 0)
                     o["_customData"] = JObject.FromObject(w.customData);
                 obs.Add(o);
@@ -109,42 +109,46 @@ namespace AutoBS
                 return 2;     // Free wall (V3-style)
             }
 
-
-            // ───────── SLIDERS (ARCS) ───────────────────────────────────
-            var sliders = new JArray();
-            foreach (var s in data.beatmapObjectDatas
-                              .OfType<CustomSliderData>()
-                              .Where(x => x.sliderType == SliderData.Type.Normal))
+            bool useV2Sliders = false; //these do not work and cause infinite arcs. i cannot find a single v2 map that uses arcs.
+            if (useV2Sliders)
             {
-                var o = new JObject
+                // ───────── SLIDERS (ARCS) ───────────────────────────────────
+                var sliders = new JArray();
+                foreach (var s in data.beatmapObjectDatas
+                                  .OfType<CustomSliderData>()
+                                  .Where(x => x.sliderType == SliderData.Type.Normal))
                 {
-                    ["_colorType"] = (int)s.colorType,
-                    ["_headTime"] = s.time * timeMult,
-                    // ["_headBeat"] = s.beat,
-                    // ["_rotation"] = s.rotation,
-                    ["_headLineIndex"] = s.headLineIndex,
-                    ["_headLineLayer"] = (int)s.headLineLayer,
-                    //["_headBeforeJumpLineLayer"] = (int)s.headBeforeJumpLineLayer,
-                    ["_headControlPointLengthMultiplier"] = s.headControlPointLengthMultiplier,
-                    ["_headCutDirection"] = (int)s.headCutDirection,
-                    ["_tailTime"] = s.tailTime * timeMult,
-                    //["_tailRotation"] = s.tailRotation,
-                    ["_tailLineIndex"] = s.tailLineIndex,
-                    ["_tailLineLayer"] = (int)s.tailLineLayer,
-                    //["_tailBeforeJumpLineLayer"] = (int)s.tailBeforeJumpLineLayer,
-                    ["_tailControlPointLengthMultiplier"] = s.tailControlPointLengthMultiplier,
-                    ["_tailCutDirection"] = (int)s.tailCutDirection,
-                    ["_sliderMidAnchorMode"] = (int)s.midAnchorMode
-                };
-                if (s.customData.Count > 0)
-                    o["_customData"] = JObject.FromObject(s.customData);
-                sliders.Add(o);
-            }
-            if (sliders.Count > 0)
-                root["_sliders"] = sliders;
-
+                    var o = new JObject
+                    {
+                        ["_colorType"] = (int)s.colorType,
+                        ["_headTime"] = s.time * timeMult,
+                        // ["_headBeat"] = s.beat,
+                        // ["_rotation"] = s.rotation,
+                        ["_headLineIndex"] = s.headLineIndex,
+                        ["_headLineLayer"] = (int)s.headLineLayer,
+                        //["_headBeforeJumpLineLayer"] = (int)s.headBeforeJumpLineLayer,
+                        ["_headControlPointLengthMultiplier"] = s.headControlPointLengthMultiplier,
+                        ["_headCutDirection"] = (int)s.headCutDirection,
+                        ["_tailTime"] = s.tailTime * timeMult,
+                        //["_tailRotation"] = s.tailRotation,
+                        ["_tailLineIndex"] = s.tailLineIndex,
+                        ["_tailLineLayer"] = (int)s.tailLineLayer,
+                        //["_tailBeforeJumpLineLayer"] = (int)s.tailBeforeJumpLineLayer,
+                        ["_tailControlPointLengthMultiplier"] = s.tailControlPointLengthMultiplier,
+                        ["_tailCutDirection"] = (int)s.tailCutDirection,
+                        ["_sliderMidAnchorMode"] = (int)s.midAnchorMode
+                    };
+                    if (s.customData.Count > 0)
+                        o["_customData"] = JObject.FromObject(s.customData);
+                    sliders.Add(o);
+                }
+                if (sliders.Count > 0)
+                    root["_sliders"] = sliders;
+            
             // ───────── BURST SLIDERS (CHAINS) v3 only!!!! ────────────────────────────
             //https://bsmg.wiki/mapping/map-format/beatmap.html#arcs
+            }
+
 
             // ───────── EVENTS & CUSTOM EVENTS ───────────────────────────
             var evts = new JArray();
@@ -183,7 +187,7 @@ namespace AutoBS
             return root;
         }
 
-        public static JObject JsonV3Output(CustomBeatmapData data, float timeMult, List <ERotationEventData> rotationEvents1) //v3 maps
+        public static JObject JsonV3Output(CustomBeatmapData data, float timeMult) //v3 maps
         {
             // ---- v3.3.0 format ----
             var root = new JObject();

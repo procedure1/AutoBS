@@ -95,7 +95,7 @@ namespace AutoBS
         public virtual bool ArcFixFull { get; set; } = true;//removes all rotations during sliders
 
         public enum ArcRotationModeType { ForceZero, NetZero, NoRestriction }
-        public virtual ArcRotationModeType ArcRotationMode { get; set; } = ArcRotationModeType.ForceZero;
+        public virtual ArcRotationModeType ArcRotationMode { get; set; } = ArcRotationModeType.NetZero;
         public virtual bool ForceNaturalArcs { get; set; } = true; //False will allow more variety in arc connections between the head and tail notes. Some of these arcs will take a less natural path since they are 135 degree changes instead of 180 degree changes.
 
         //public virtual bool ForceZeroArcRotations { get; set; } = false; //strict: no deviation inside covered segments of arcs. no rotations for any events during arcs!
@@ -172,13 +172,13 @@ namespace AutoBS
 
         public virtual bool EnableParticleWalls { get; set; } = true;
         public virtual bool EnableLargeParticleWalls { get; set; } = true;
-        public virtual float ParticleWallsMultiplier { get; set; } = 1;
-        public float ParticleWallsBatchSize { get; set; } = 5; // can get stuck on some songs if higher than this
+        public virtual float ParticleWallsMultiplier { get; set; } = 4;
+        public float ParticleWallsBatchSize { get; set; } = 20; // can get stuck on some songs if higher than this
         public virtual float ParticleWallsMinDistance { get; set; } = 0; 
         
         public virtual bool EnableFloorWalls { get; set; } = true;
-        public virtual float FloorWallsMultiplier { get; set; } = 1;
-        public float FloorWallsBatchSize { get; set; } = 10; // can get stuck on some songs if higher than this Halo Expl is worst so far
+        public virtual float FloorWallsMultiplier { get; set; } = 4;
+        public float FloorWallsBatchSize { get; set; } = 20; // can get stuck on some songs if higher than this Halo Expl is worst so far
         public virtual float FloorWallsMinDistance { get; set; } = 0; 
         
         public virtual float MaxWaitTime { get; set; } = 6; // how many seconds to wait to remove problem walls before give up and let all remaining walls pass through (crossing vision etc)
@@ -278,7 +278,10 @@ namespace AutoBS
         public virtual AutoNjsFixerModeType AutoNjsFixerMode { get; set; } = AutoNjsFixerModeType.MaintainNoteSpeed;
 
         //------------------------
-        public virtual bool OutputV2JsonDatFileToDDriveRoot { get; set; } = false; //will convert to v2
+        //v2 not working well. rotation event have wall penetrations. the mapping extension walls don't work and arcs do not work even though they are supposed to be supported. i can't find a single custom map v2 with arcs and none in the built in system for v1.34 either
+        public virtual bool OutputV2JsonDatFileToDDriveRootBROKEN { get; set; } = false; //will convert to v2 - doesn't output arcs or chains. arcs are supposed to be supported but always produce infinitely long arcs.
         public virtual bool OutputV3JsonDatFileToDDriveRoot { get; set; } = false; //will convert to v3
+        //add to v2 or v3! since its the info.dat file. add it to each "_difficultyBeatmaps" that needs it: "_customData": {"_requirements": ["Mapping Extensions"]},
+        // at least for beat sage, need to remove in info.dat:  "_environmentNames": [ "DefaultEnvironment" ], AND remove "_environmentNameIdx": 0, from each difficultyBeatmap in order for 360 map to use 360 environment
     }
 }

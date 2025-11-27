@@ -19,43 +19,8 @@ namespace AutoBS.UI
     internal class GameplaySetupView : BSMLAutomaticViewController//BW added BSMLAutomaticViewController so could use NotifyPropertyChanged() which is needed for interactable bsml
     {
         // --- Safety wrapper for NotifyPropertyChanged to prevent errors when deactivated/reactivated ---
-        private bool _isBound;
+        
 
-        protected override void DidActivate(
-            bool firstActivation,
-            bool addedToHierarchy,
-            bool screenSystemEnabling)
-        {
-            base.DidActivate(firstActivation, addedToHierarchy, screenSystemEnabling);
-            _isBound = true;
-        }
-
-        protected override void DidDeactivate(
-            bool removedFromHierarchy,
-            bool screenSystemDisabling)
-        {
-            _isBound = false;
-            base.DidDeactivate(removedFromHierarchy, screenSystemDisabling);
-        }
-
-        // Hide the base method with a safe wrapper
-        protected new void NotifyPropertyChanged(
-            [CallerMemberName] string propertyName = null)
-        {
-            // Unity "fake null" check
-            if (!this || gameObject == null)
-            {
-                Plugin.Log?.Warn(
-                    $"[GameplaySetupView] NotifyPropertyChanged('{propertyName}') on destroyed view – ignoring");
-                return;
-            }
-
-            // Avoid spamming after we’ve been deactivated
-            if (!_isBound || !isActiveAndEnabled)
-                return;
-
-            base.NotifyPropertyChanged(propertyName);
-        }
         //-----------------------------------------------
 
 
@@ -92,6 +57,8 @@ namespace AutoBS.UI
                 NotifyPropertyChanged(nameof(FontColorArcs));
                 NotifyPropertyChanged(nameof(EnablerChains));
                 NotifyPropertyChanged(nameof(FontColorChains));
+                NotifyPropertyChanged(nameof(EnablerAutoNjsFixer));
+                NotifyPropertyChanged(nameof(EnablerDesiredNJS));
                 NotifyPropertyChanged(nameof(EnablerWallGenerator));
                 NotifyPropertyChanged(nameof(FontColorWallGenerator));
                 NotifyPropertyChanged(nameof(EnablerExtWallGenerator));
@@ -1214,6 +1181,7 @@ namespace AutoBS.UI
             FontColorAutoNjsFixer = isEnabled ? OnColor : OffColor;
 
             NotifyPropertyChanged(nameof(EnablerAutoNjsFixer));
+            NotifyPropertyChanged(nameof(EnablerDesiredNJS));
             NotifyPropertyChanged(nameof(FontColorAutoNjsFixer));
             NotifyPropertyChanged(nameof(AutoNjsFixerMode));
         }

@@ -1402,13 +1402,13 @@ namespace AutoBS
             // --------------------------------------------------------------------
             // Optional: emit v2/3-style rotation basic events (14 / 15) for debug - v3 still has legacy 14/15 rotation events inside of basic data
             // --------------------------------------------------------------------
-            if ((Config.Instance.OutputV2JsonDatFileToDDriveRoot  || 
+            if ((Config.Instance.OutputV2JsonDatFileToDDriveRootBROKEN  || 
                  Config.Instance.OutputV3JsonDatFileToDDriveRoot) &&
                 eData.RotationEvents != null &&
                 eData.RotationEvents.Count > 0)
             {
                 int v2orv3 = 0;
-                if (Config.Instance.OutputV2JsonDatFileToDDriveRoot)
+                if (Config.Instance.OutputV2JsonDatFileToDDriveRootBROKEN)
                     v2orv3 = 2;
                 if (Config.Instance.OutputV3JsonDatFileToDDriveRoot)
                     v2orv3 = 3;
@@ -1422,10 +1422,10 @@ namespace AutoBS
                         return delta;
                 }
 
-                // Choose early vs late event type based on your RotationModeLate flag
-                var rotEventType = Config.Instance.RotationModeLate
-                    ? BasicBeatmapEventType.Event15  // late
-                    : BasicBeatmapEventType.Event14; // early
+                // Choose early vs late event type based on your RotationModeLate flag -- this chooses LATE but it doesn't work for final output. must be EARLY!!!
+                //var rotEventType = Config.Instance.RotationModeLate
+                //   ? BasicBeatmapEventType.Event15  // late
+                //   : BasicBeatmapEventType.Event14; // early
 
                 eData.RotationEvents = ERotationEventData.RecalculateAccumulatedRotations(eData.RotationEvents);
 
@@ -1439,10 +1439,10 @@ namespace AutoBS
                     // For debugging it's usually nice to see the *accumulated* lane:
                     //int value = GetValue(delta);
 
-                    // Adjust to whatever constructor / factory you actually use:
+                    // This doesn't work in-game and so has no effect in-game! this is just for outputting JSON .dat files.
                     var ev = EBasicEventData.Create(
                         time: rot.time,
-                        basicBeatmapEventType: rotEventType,
+                        basicBeatmapEventType: BasicBeatmapEventType.Event14, // rotEventType, ********* THIS MUST BE EARLY (14) TO WORK PROPERLY for output JSON maps using CustomBeatmapDataConverter.ToJsonStringFile
                         value: Generator.SpawnRotationDegreesToValue(delta)
                     );
 
@@ -1781,8 +1781,8 @@ namespace AutoBS
                 //if (bomb.time < 30)
                 //    Plugin.Log.Info($"[RotationApplier] Note @{bomb.time:F2}s → rot: {bomb.rotation}");
             }
-
-            var arcTailAccumRotationOverride = new List<ERotationEventData>(); // list of accumRotations changed for arc tails // didn't help as far as i could see to create arcTailAccumRotationOverride() and actually caused problems for old version of vision blocking fix
+            
+            //var arcTailAccumRotationOverride = new List<ERotationEventData>(); // list of accumRotations changed for arc tails // didn't help as far as i could see to create arcTailAccumRotationOverride() and actually caused problems for old version of vision blocking fix
 
             foreach (var arc in eData.Arcs)
             {
@@ -1799,11 +1799,12 @@ namespace AutoBS
                 arc.tailRotation = desiredAccum;// tailRot;
 
                 //bool tailRotationCorrected = false;
-                 
+                
+                /*
                 int tailAccumBefore = (arc.tailNote != null)
                     ? arc.tailNote.rotation
                     : GetAccumRotationAt(arc.tailTime - EPS);
-                /*
+                
                 if (tailAccumBefore != desiredAccum)
                 {
                     //tailRotationCorrected = true;
@@ -2004,8 +2005,7 @@ namespace AutoBS
             */
             Plugin.Log.Info("[RotationApplier] Finished per-object rotation application");
         }
-        
-        
+
         /// <summary>
         /// When arc tail rotation overrides exist where I had to force the tail to match the head, apply them to the rotation events list
         /// </summary>

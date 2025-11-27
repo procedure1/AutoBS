@@ -1860,7 +1860,7 @@ namespace AutoBS
         /// <param name="rotations"></param>
         /// <param name="eData"></param>
         /// <returns></returns>
-        public static List<ERotationEventData> ArcFix(
+        public static List<ERotationEventData> ArcFixOLD( // before trying to fix NoRestrictions when 2 notes at the same time on same layer on different rotations will cross together 
             List<ERotationEventData> rotations,
             EditableCBD eData)
         {
@@ -2372,7 +2372,609 @@ namespace AutoBS
 
             return result;
         }
+        
+        
+        public static List<ERotationEventData> ArcFix(
+            List<ERotationEventData> rotations,
+            EditableCBD eData)
+        {
+            // ---------------- CONFIG & SETUP ----------------
+            const float TOL = 0.0005f;
 
+            bool rotationModeLate = Config.Instance.RotationModeLate;
+
+            int allowedCumulativeRots = Config.Instance.ArcRotationMode == Config.ArcRotationModeType.ForceZero ? 0 : 15;
+
+            if (rotations == null || rotations.Count < 2) return rotations;
+            if (eData?.Arcs == null || eData.Arcs.Count == 0) return rotations;
+
+            rotations = rotations.OrderBy(r => r.time).ToList();
+            var arcs = eData.Arcs.OrderBy(a => a.time).ToList();
+
+            // ---------------- ADD MISSING HEAD/TAIL MARKERS ----------------
+            int addedHeads = 0, addedTails = 0;
+            bool HasEventAt(float t) => rotations.Any(r => Math.Abs(r.time - t) <= TOL);
+
+            void AddZeroEventAt(float t, string why)
+            {
+                //Plugin.Log.Info($"[ArcFix] Inserting 0-delta marker at {t:F3}s ({why}).");
+                rotations.Add(ERotationEventData.Create(t, 0));
+            }
+
+            foreach (var a in arcs)
+            {
+                if (!HasEventAt(a.time)) { AddZeroEventAt(a.time, "arc head"); addedHeads++; }
+                if (!HasEventAt(a.tailTime)) { AddZeroEventAt(a.tailTime, "arc tail"); addedTails++; }
+            }
+            if (addedHeads + addedTails > 0)
+                rotations = rotations.OrderBy(r => r.time).ToList();
+
+            // ---------------- GROUP OVERLAPPING ARCS ----------------
+            var arcGroups = new List<List<ESliderData>>();
+            {
+                var cur = new List<ESliderData>();
+                float curMaxTail = float.NegativeInfinity;
+
+                foreach (var a in arcs)
+                {
+                    if (cur.Count == 0)
+                    {
+                        cur.Add(a);
+                        curMaxTail = a.tailTime;
+                    }
+                    else if (a.time <= curMaxTail + TOL)
+                    {
+                        cur.Add(a);
+                        curMaxTail = Math.Max(curMaxTail, a.tailTime);
+                    }
+                    else
+                    {
+                        arcGroups.Add(new List<ESliderData>(cur));
+                        cur.Clear();
+                        cur.Add(a);
+                        curMaxTail = a.tailTime;
+                    }
+                }
+                if (cur.Count > 0) arcGroups.Add(cur);
+            }
+
+            //Plugin.Log.Info($"[ArcFix] Start: arcs={arcs.Count}, groups={arcGroups.Count}, rotBefore={rotations.Count}, " +
+            //                $"addedHeads={addedHeads}, addedTails={addedTails}, allowedCumulativeRots={allowedCumulativeRots}, " +
+            //                $"mode={(rotationModeLate ? "Late" : "Early")}");
+
+            // ---------------- ADJUSTMENTS ----------------
+            var adjusted = new Dictionary<int, int>(); // idx -> reduced delta (never increase)
+
+            int DeltaAt(int idx) => adjusted.TryGetValue(idx, out var v) ? v : rotations[idx].rotation;
+
+            int SumUpTo(float tInclusive)
+            {
+                int s = 0;
+                for (int i = 0; i < rotations.Count; i++)
+                {
+                    var r = rotations[i];
+                    if (r.time <= tInclusive + TOL) s += DeltaAt(i);
+                    else break;
+                }
+                return s;
+            }
+
+            // Segment event selection:
+            // Early  => (start, end]  (head excluded)
+            // Late   => (start, end]  (head excluded)  <-- corrected: never include head in Late segments
+            List<int> EventIdxsIn(float start, float end, bool includeStart)
+            {
+                var idxs = new List<int>();
+                for (int i = 0; i < rotations.Count; i++)
+                {
+                    float tt = rotations[i].time;
+                    bool afterStart = includeStart ? (tt >= start - TOL) : (tt > start + TOL);
+                    if (afterStart && tt <= end + TOL) idxs.Add(i);
+                    else if (tt > end + TOL) break;
+                }
+                return idxs;
+            }
+
+            bool IsAt(float a, float b) => Math.Abs(a - b) <= TOL;
+
+            foreach (var group in arcGroups)
+            {
+                float gStart = group.Min(a => a.time);
+                float gEnd = group.Max(a => a.tailTime);
+
+                // Baseline (engine semantics):
+                // Early: include events at head (objects at head see the post-head state).
+                // Late:  exclude events at head (objects at head see the pre-head state).
+                int baseCum = rotationModeLate
+                    ? SumUpTo(gStart - 1e-6f)
+                    : SumUpTo(gStart);
+
+                // Boundaries = union of heads/tails in group
+                var boundarySet = new SortedSet<float>();
+                foreach (var a in group) { boundarySet.Add(a.time); boundarySet.Add(a.tailTime); }
+                var B = boundarySet.OrderBy(x => x).ToList();
+                if (B.Count < 2) continue;
+
+                int D = 0; // running deviation from baseline within the group
+
+                // ---- Late mode: process head-time events in a dedicated pass, then anchor to AFTER-head state
+                if (rotationModeLate)
+                {
+                    // Collect exact head-time indices
+                    var headIdxs = new List<int>();
+                    for (int i = 0; i < rotations.Count; i++)
+                    {
+                        if (IsAt(rotations[i].time, gStart))
+                            headIdxs.Add(i);
+                        else if (rotations[i].time > gStart + TOL) break;
+                    }
+
+                    // Clamp head deltas to stay within ±allowedCumulativeRots relative to D (starts 0)
+                    foreach (int idx in headIdxs)
+                    {
+                        int orig = DeltaAt(idx);
+                        if (orig == 0) continue;
+
+                        int lower = -allowedCumulativeRots - D;
+                        int upper = allowedCumulativeRots - D;
+
+                        int newVal = orig;
+                        if (orig > 0)
+                        {
+                            int clamped = Math.Min(orig, Math.Max(0, upper));
+                            //if (clamped != orig)
+                            //    Plugin.Log.Info($"[ArcFix][HeadClamp] t={rotations[idx].time:F3}s +{orig} → +{clamped} (D={D}, upper={upper})");
+                            newVal = clamped;
+                        }
+                        else // orig < 0
+                        {
+                            int clamped = Math.Max(orig, Math.Min(0, lower));
+                            //if (clamped != orig)
+                            //    Plugin.Log.Info($"[ArcFix][HeadClamp] t={rotations[idx].time:F3}s {orig} → {clamped} (D={D}, lower={lower})");
+                            newVal = clamped;
+                        }
+
+                        adjusted[idx] = newVal;
+                        D += newVal; // now D reflects the AFTER-head state delta
+                    }
+
+                    // Anchor baseline to AFTER-head state for math inside the covered window
+                    baseCum += D;
+                }
+
+                //Plugin.Log.Info($"[ArcFix][Group] Window {gStart:F3}s → {gEnd:F3}s, baseCum={baseCum}, boundaries={B.Count}, mode={(rotationModeLate ? "Late" : "Early")}");
+
+                float segStart = B[0];
+                for (int k = 1; k < B.Count; k++)
+                {
+                    float segEnd = B[k];
+
+                    // Coverage test (same as before; Early excludes head, Late also excludes head)
+                    bool covered = false;
+                    foreach (var a in group)
+                    {
+                        bool headOK = a.time < segEnd - TOL; // head must be strictly before segEnd
+                        if (headOK && a.tailTime >= segEnd - TOL) { covered = true; break; }
+                    }
+
+                    // In Early, includeStart=false ( (start,end] ).
+                    // In Late, also includeStart=false ( (start,end] )  <-- corrected
+                    var segIdxs = EventIdxsIn(segStart, segEnd, includeStart: false);
+
+                    if (segIdxs.Count > 0)
+                    {
+                        //Plugin.Log.Info($"[ArcFix][Seg] {segStart:F3}s → {segEnd:F3}s, covered={covered}, events={segIdxs.Count}, includeStart=False");
+
+                        // ---- 1) Clamp pass: keep |baseCum + D + delta| <= allowed ----
+                        foreach (int idx in segIdxs)
+                        {
+                            int orig = DeltaAt(idx);
+                            if (orig == 0) continue;
+
+                            int lower = -allowedCumulativeRots - D;
+                            int upper = allowedCumulativeRots - D;
+
+                            int newVal = orig;
+                            if (orig > 0)
+                            {
+                                int clamped = Math.Min(orig, Math.Max(0, upper));
+                                //if (clamped != orig)
+                                //    Plugin.Log.Info($"[ArcFix][Clamp] t={rotations[idx].time:F3}s +{orig} → +{clamped} (D={D}, upper={upper})");
+                                newVal = clamped;
+                            }
+                            else // orig < 0
+                            {
+                                int clamped = Math.Max(orig, Math.Min(0, lower));
+                                //if (clamped != orig)
+                                //    Plugin.Log.Info($"[ArcFix][Clamp] t={rotations[idx].time:F3}s {orig} → {clamped} (D={D}, lower={lower})");
+                                newVal = clamped;
+                            }
+
+                            adjusted[idx] = newVal;
+                            D += newVal;
+                        }
+
+                        // ---- 2) Net-zero covered segments so head==tail accum inside overlap ----
+                        if (covered)
+                        {
+                            int segSum = 0;
+                            foreach (int idx in segIdxs) segSum += DeltaAt(idx);
+
+                            if (segSum != 0)
+                            {
+                                //Plugin.Log.Info($"[ArcFix][Zero] Neutralizing segSum={segSum} by shaving from end.");
+
+                                if (segSum > 0)
+                                {
+                                    int remain = segSum;
+                                    for (int j = segIdxs.Count - 1; j >= 0 && remain > 0; j--)
+                                    {
+                                        int idx = segIdxs[j];
+                                        int val = DeltaAt(idx);
+                                        if (val > 0)
+                                        {
+                                            int dec = Math.Min(val, remain);
+                                            int newVal = val - dec;
+                                            adjusted[idx] = newVal;
+                                            remain -= dec;
+                                            //Plugin.Log.Info($"[ArcFix][Zero]  t={rotations[idx].time:F3}s +{val} → +{newVal} (took {dec})");
+                                        }
+                                    }
+                                    D -= segSum; // restore deviation to seg start
+                                }
+                                else // segSum < 0
+                                {
+                                    int remain = -segSum;
+                                    for (int j = segIdxs.Count - 1; j >= 0 && remain > 0; j--)
+                                    {
+                                        int idx = segIdxs[j];
+                                        int val = DeltaAt(idx);
+                                        if (val < 0)
+                                        {
+                                            int inc = Math.Min(-val, remain); // toward 0
+                                            int newVal = val + inc;
+                                            adjusted[idx] = newVal;
+                                            remain -= inc;
+                                            //Plugin.Log.Info($"[ArcFix][Zero]  t={rotations[idx].time:F3}s {val} → {newVal} (gave {inc})");
+                                        }
+                                    }
+                                    D -= segSum; // segSum is negative; restores D to seg start
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        //Plugin.Log.Info($"[ArcFix][Seg] {segStart:F3}s → {segEnd:F3}s, covered={covered}, events=0 (nothing to adjust).");
+                    }
+
+                    segStart = segEnd;
+                }
+            }
+
+            // NEW -- trying to fix NoRestrictions when 2 notes at the same time on same layer on different rotations will cross together. need to enforce same rotation on each note in that case.
+            // Identify arcs that are involved in "problem" same-time/same-layer note clusters.
+            // Used ONLY when ArcRotationMode == NoRestriction.
+            var arcsNeedingNetZero = new HashSet<ESliderData>();
+
+            if (Config.Instance.ArcRotationMode == Config.ArcRotationModeType.NoRestriction
+                && eData?.ColorNotes != null
+                && eData.ColorNotes.Count > 1)
+            {
+                // Key: (time, layer) where >=2 notes share that (within TOL)
+                var problemKeys = new HashSet<(float time, int layer)>();
+
+                var notesByTime = eData.ColorNotes
+                    .OrderBy(n => n.time)
+                    .ToList();
+
+                int i = 0;
+                while (i < notesByTime.Count)
+                {
+                    float baseTime = notesByTime[i].time;
+                    int j = i + 1;
+
+                    while (j < notesByTime.Count &&
+                           Math.Abs(notesByTime[j].time - baseTime) <= TOL)
+                    {
+                        j++;
+                    }
+
+                    var cluster = notesByTime.GetRange(i, j - i);
+
+                    // Group by layer and only mark (time,layer) with >=2 notes
+                    foreach (var g in cluster.GroupBy(n => n.layer))
+                    {
+                        if (g.Count() >= 2)
+                        {
+                            // everything in this small time window is effectively same time
+                            float clusterTime = baseTime;
+                            problemKeys.Add((clusterTime, g.Key));
+                            //Plugin.Log.Info($"[ArcFix][ProblemCluster] t≈{clusterTime:F3}s layer={g.Key} count={g.Count()}");
+                        }
+                    }
+
+                    i = j;
+                }
+
+                if (problemKeys.Count > 0)
+                {
+                    // Helper to see if a (time, layer) is near a problemKey
+                    bool IsProblemTimeLayer(float t, int layer)
+                    {
+                        foreach (var pk in problemKeys)
+                        {
+                            if (pk.layer != layer) continue;
+                            if (Math.Abs(pk.time - t) <= TOL)
+                                return true;
+                        }
+                        return false;
+                    }
+
+                    // Map problem (time,layer) back to arcs via their head/tail notes
+                    foreach (var a in arcs)
+                    {
+                        bool mark = false;
+
+                        if (a.headNote != null &&
+                            IsProblemTimeLayer(a.headNote.time, a.headNote.layer))
+                        {
+                            mark = true;
+                        }
+
+                        if (!mark && a.tailNote != null &&
+                            IsProblemTimeLayer(a.tailNote.time, a.tailNote.layer))
+                        {
+                            mark = true;
+                        }
+
+                        if (mark)
+                            arcsNeedingNetZero.Add(a);
+                    }
+
+                    //Plugin.Log.Info($"[ArcFix] arcsNeedingNetZero={arcsNeedingNetZero.Count} (NoRestriction, same-time+layer)");
+                }
+            }
+
+
+
+            // ---------------- PER-ARC NET-ZERO ENFORCEMENT ----------------
+            // Ensures selected arcs have head==tail accum per engine semantics.
+            //
+            // - In NetZero mode: all arcs.
+            // - In NoRestriction: only arcs in arcsNeedingNetZero.
+            bool doPerArcNetZero =
+                Config.Instance.ArcRotationMode == Config.ArcRotationModeType.NetZero
+                || (Config.Instance.ArcRotationMode == Config.ArcRotationModeType.NoRestriction
+                    && arcsNeedingNetZero.Count > 0);
+
+            if (doPerArcNetZero)
+            {
+                // Precompute times for binary search
+                var times = rotations.Select(r => r.time).ToArray();
+
+                // Binary search helpers
+                int LowerBound(float x)
+                { // first idx with times[idx] >= x
+                    int lo = 0, hi = times.Length;
+                    while (lo < hi)
+                    {
+                        int mid = (lo + hi) >> 1;
+                        if (times[mid] < x) lo = mid + 1; else hi = mid;
+                    }
+                    return lo;
+                }
+                int UpperBound(float x)
+                { // first idx with times[idx] > x
+                    int lo = 0, hi = times.Length;
+                    while (lo < hi)
+                    {
+                        int mid = (lo + hi) >> 1;
+                        if (times[mid] <= x) lo = mid + 1; else hi = mid;
+                    }
+                    return lo;
+                }
+
+                // Get current (possibly adjusted) delta
+                int GetVal(int i) => adjusted.TryGetValue(i, out var v) ? v : rotations[i].rotation;
+
+                // Sum over [i0, i1] inclusive (caller ensures i0<=i1)
+                int SumRange(int i0, int i1)
+                {
+                    int s = 0;
+                    for (int i = i0; i <= i1; i++) s += GetVal(i);
+                    return s;
+                }
+
+                // For diagnostics: show what sanity check compares for Late/Early
+                int AccumInclusive(float t)
+                {
+                    int s = 0;
+                    for (int i = 0; i < rotations.Count; i++)
+                    {
+                        if (rotations[i].time <= t + TOL) s += GetVal(i); else break;
+                    }
+                    return s;
+                }
+                int AccumBefore(float t)
+                {
+                    int s = 0;
+                    for (int i = 0; i < rotations.Count; i++)
+                    {
+                        if (rotations[i].time < t - TOL) s += GetVal(i); else break;
+                    }
+                    return s;
+                }
+
+                foreach (var a in arcs)
+                {
+                    float head = a.time;
+                    float tail = a.tailTime;
+
+                    // Interval indices per engine semantics:
+                    // Early:  [head, tail]  -> include events at both ends (unchanged)
+                    // Late:   [head-TOL, tail-TOL)  -> EXACT match for AccumBefore(tail)-AccumBefore(head)
+                    int startIdx, endIdx;
+
+                    if (!rotationModeLate)
+                    {
+                        // Early: include head and tail as before
+                        startIdx = LowerBound(head - TOL);      // first idx with time >= head - TOL
+                        endIdx = UpperBound(tail + TOL) - 1;  // last  idx with time <= tail + TOL
+                    }
+                    else
+                    {
+                        // Late: sum events e with head - TOL <= e.time < tail - TOL
+                        startIdx = LowerBound(head - TOL);      // first idx with time >= head - TOL
+                        int endExclusive = LowerBound(tail - TOL); // first idx with time >= tail - TOL
+                        endIdx = endExclusive - 1;              // last idx with time < tail - TOL
+                    }
+
+                    if (startIdx >= rotations.Count || endIdx < 0 || startIdx > endIdx)
+                    {
+                        // No events in this arc interval — log once for visibility
+                        //Plugin.Log.Info($"[ArcFix][ArcZero][SKIP] no events in {(rotationModeLate ? "(head,tail]" : "[head,tail]")} @ {head:F3}->{tail:F3} (idx {startIdx}..{endIdx})");
+                        continue;
+                    }
+
+                    int arcSum = SumRange(startIdx, endIdx);
+
+                    // Cross-check: what does sanity compare?
+                    int sanHead = rotationModeLate ? AccumBefore(head) : AccumInclusive(head);
+                    int sanTail = rotationModeLate ? AccumBefore(tail) : AccumInclusive(tail);
+                    int sanDiff = sanTail - sanHead; // should equal arcSum if indices are correct
+
+                    //string intervalLabel = rotationModeLate ? "[head-TOL,tail-TOL)" : "[head,tail]";
+                    //Plugin.Log.Info(
+                    //    $"[ArcFix][ArcZero][CHK] {intervalLabel} @ {head:F3}->{tail:F3}  "
+                    //  + $"idx {startIdx}..{endIdx}  arcSum={arcSum}  sanityDiff={sanDiff}  "
+                    //  + $"events={Math.Max(0, endIdx - startIdx + 1)}"
+                    //);
+
+                    if (arcSum == 0) continue; // already neutral for this arc
+
+                    // Safety: if our interval sum doesn't match sanity, tighten bounds
+                    if (arcSum != sanDiff)
+                    {
+                        // Try one more time with stricter bounds matching exact semantics:
+                        if (!rotationModeLate)
+                        {
+                            // exact [head, tail]
+                            startIdx = LowerBound(head - TOL);
+                            while (startIdx > 0 && Math.Abs(times[startIdx - 1] - head) <= TOL) startIdx--;
+                            endIdx = UpperBound(tail + TOL) - 1;
+                        }
+                        else
+                        {
+                            // exact (head, tail]
+                            startIdx = UpperBound(head + TOL);
+                            endIdx = UpperBound(tail + TOL) - 1;
+                        }
+
+                        if (!(startIdx < rotations.Count && endIdx >= 0 && startIdx <= endIdx))
+                        {
+                            //Plugin.Log.Info($"[ArcFix][ArcZero][WARN] could not align indices for {head:F3}->{tail:F3}");
+                            continue;
+                        }
+
+                        arcSum = SumRange(startIdx, endIdx);
+                        sanDiff = (rotationModeLate ? AccumBefore(tail) - AccumBefore(head)
+                                                    : AccumInclusive(tail) - AccumInclusive(head));
+                        //Plugin.Log.Info($"[ArcFix][ArcZero][CHK2] idx {startIdx}..{endIdx}  arcSum={arcSum}  sanityDiff={sanDiff} (post-align)");
+                        if (arcSum == 0) continue;
+                    }
+
+                    // Neutralize by shaving from the end toward zero
+                    //Plugin.Log.Info($"[ArcFix][ArcZero] Neutralizing arcSum={arcSum} over {(rotationModeLate ? "(head,tail]" : "[head,tail]")} @ {head:F3}->{tail:F3}");
+
+                    if (arcSum > 0)
+                    {
+                        int remain = arcSum;
+                        for (int j = endIdx; j >= startIdx && remain > 0; j--)
+                        {
+                            int val = GetVal(j);
+                            if (val > 0)
+                            {
+                                int take = Math.Min(val, remain);
+                                int newVal = val - take;           // move toward 0
+                                adjusted[j] = newVal;
+                                remain -= take;
+                                //Plugin.Log.Info($"[ArcFix][ArcZero]  t={times[j]:F3}s +{val} → +{newVal} (took {take})");
+                            }
+                        }
+                    }
+                    else
+                    { // arcSum < 0
+                        int remain = -arcSum;
+                        for (int j = endIdx; j >= startIdx && remain > 0; j--)
+                        {
+                            int val = GetVal(j);
+                            if (val < 0)
+                            {
+                                int give = Math.Min(-val, remain); // toward 0
+                                int newVal = val + give;
+                                adjusted[j] = newVal;
+                                remain -= give;
+                                //Plugin.Log.Info($"[ArcFix][ArcZero]  t={times[j]:F3}s {val} → {newVal} (gave {give})");
+                            }
+                        }
+                    }
+                    // (No D tracking here; this is a local fine-tune.)
+                }
+            }
+
+
+
+
+
+
+
+
+            // ---------------- BUILD RESULT ----------------
+            // Keep boundary markers (even if 0), drop other zeros to keep things tidy.
+            var boundaryTimes = new HashSet<float>(arcs.Select(a => a.time));
+            foreach (var a in arcs) boundaryTimes.Add(a.tailTime);
+
+            var result = new List<ERotationEventData>(rotations.Count);
+            int reduced = 0, removed = 0, unchanged = 0;
+
+            for (int i = 0; i < rotations.Count; i++)
+            {
+                var r = rotations[i];
+                int val = adjusted.TryGetValue(i, out var v) ? v : r.rotation;
+
+                bool isBoundary = boundaryTimes.Any(bt => Math.Abs(bt - r.time) <= TOL);
+
+                if (val == 0 && !isBoundary)
+                {
+                    removed++;
+                    // drop interior zero
+                }
+                else if (val == r.rotation)
+                {
+                    unchanged++;
+                    result.Add(r);
+                }
+                else
+                {
+                    reduced++;
+                    result.Add(ERotationEventData.Create(r.time, val, 0, r.customData));
+                }
+            }
+
+            result = result.OrderBy(r => r.time).ToList();
+
+            // ---------------- FINAL: RECOMPUTE accumRotation ----------------
+            result = ERotationEventData.RecalculateAccumulatedRotations(result);
+
+            Plugin.Log.Info($"[ArcFix] Done: Rotation Final Count={result.Count} (reduced={reduced}, removed={removed}, unchanged={unchanged}). " +
+                            $"ArcRotationMode={Config.Instance.ArcRotationMode}, allowedCumul={allowedCumulativeRots}, mode={(rotationModeLate ? "Late" : "Early")}");
+
+            // Engine-accurate sanity check: show only assumed accumRotation at arc HEAD and TAIL.
+            //SanityCheckHeadsTails_EngineView(result, arcs, TOL, rotationModeLate);
+
+            return result;
+        }
         // ---- Engine-accurate sanity: print ONLY accumRotation seen at arc HEAD and TAIL ----
         // Early: objects at boundary see INCLUSIVE (post-boundary) state
         // Late:  objects at boundary see EXCLUSIVE (pre-boundary) state
