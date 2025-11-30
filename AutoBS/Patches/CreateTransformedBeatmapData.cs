@@ -310,20 +310,8 @@ namespace AutoBS.Patches
                          $"{__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()} Bpm Change Events");
                     // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
-                    int v2orv3 = 0;
-                    if (Config.Instance.OutputV2JsonDatFileToDDriveRootBROKEN)
-                        v2orv3 = 2;
-                    if (Config.Instance.OutputV3JsonDatFileToDDriveRoot)
-                        v2orv3 = 3;
+                    CustomBeatmapDataConverter.ToJsonStringFile(__result as CustomBeatmapData, eData.RotationEvents);
 
-                    if (v2orv3 != 0)
-                    {
-                        Plugin.Log.Info($"[CreateTransformedBeatmapData] Outputting CustomBeatmapData to D:\\ root folder as JSON .dat file. Only 1 file per beat saber session.");
-
-                        CustomBeatmapDataConverter.ToJsonStringFile(__result as CustomBeatmapData, v2orv3);
-                        Config.Instance.OutputV2JsonDatFileToDDriveRootBROKEN = false; // reset after one use
-                        Config.Instance.OutputV3JsonDatFileToDDriveRoot = false;
-                    }
                 }
                 else
                 {

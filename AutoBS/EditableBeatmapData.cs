@@ -913,6 +913,8 @@ namespace AutoBS
         public List<ESliderData> Arcs { get; set; }
         public List<ESliderData> Chains { get; set; }
         public List<ERotationEventData> RotationEvents { get; set; }
+
+        //public List<ERotationEventData> RotationEventsMatchEarlyPerObject { get; set; } // this is created at the last step after assigning per object and is used to output rotation events for v2/3 JSON dat files. but this list casues more wall and arc rotaiton problems for json. best to use original rotation events
         public List<EBasicEventData> BasicEvents { get; }
         public List<EColorBoostEvent> ColorBoostEvents { get; set; }
         public List <ECustomEventData> CustomEvents { get; set; }
@@ -1400,17 +1402,18 @@ namespace AutoBS
         {
 
             // --------------------------------------------------------------------
-            // Optional: emit v2/3-style rotation basic events (14 / 15) for debug - v3 still has legacy 14/15 rotation events inside of basic data
+            // Emit v2/3-style rotation basic events (14 / 15) for JSON output only. Not needed in-game since per object rotation is set. v3 still has legacy 14/15 rotation events inside of basic data so it works for v3 JSON output
             // --------------------------------------------------------------------
-            if ((Config.Instance.OutputV2JsonDatFileToDDriveRootBROKEN  || 
-                 Config.Instance.OutputV3JsonDatFileToDDriveRoot) &&
+            if ((Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls || 
+                 Config.Instance.OutputV3JsonToSongFolder) &&
                 eData.RotationEvents != null &&
                 eData.RotationEvents.Count > 0)
             {
+                
                 int v2orv3 = 0;
-                if (Config.Instance.OutputV2JsonDatFileToDDriveRootBROKEN)
+                if (Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls)
                     v2orv3 = 2;
-                if (Config.Instance.OutputV3JsonDatFileToDDriveRoot)
+                if (Config.Instance.OutputV3JsonToSongFolder)
                     v2orv3 = 3;
                 //Plugin.Log.Info($"[ConvertEditableCBD] Injecting rotation events for JSON File Output v{v2orv3} ...");
 
@@ -1427,9 +1430,9 @@ namespace AutoBS
                 //   ? BasicBeatmapEventType.Event15  // late
                 //   : BasicBeatmapEventType.Event14; // early
 
-                eData.RotationEvents = ERotationEventData.RecalculateAccumulatedRotations(eData.RotationEvents);
+                //eData.RotationEvents = ERotationEventData.RecalculateAccumulatedRotations(eData.RotationEvents);
 
-                foreach (var rot in eData.RotationEvents) //delta is not setup on this at this point
+                foreach (var rot in eData.RotationEvents) //delta and accumRotation are setup from within ApplyPerObjectRotations
                 {
                     int delta = rot.rotation;
                     if (delta == 0)
@@ -1443,13 +1446,13 @@ namespace AutoBS
                     var ev = EBasicEventData.Create(
                         time: rot.time,
                         basicBeatmapEventType: BasicBeatmapEventType.Event14, // rotEventType, ********* THIS MUST BE EARLY (14) TO WORK PROPERLY for output JSON maps using CustomBeatmapDataConverter.ToJsonStringFile
-                        value: Generator.SpawnRotationDegreesToValue(delta)
+                        value: GetValue(delta)
                     );
 
                     eData.BasicEvents.Add(ev);
                     //Plugin.Log.Debug($"[ConvertEditableCBD] Injected rotation event @{ev.time:F2}s type:{ev.basicBeatmapEventType} value:{ev.value} -- FROM: rot.Rotation: {delta} rot.accum: {rot.accumRotation}");
                 }
-
+                
                 //Plugin.Log.Info($"[ConvertEditableCBD] Injected for JSON File Output - {eData.RotationEvents.Count} rotation events as {(Config.Instance.RotationModeLate ? "late (15)" : "early (14)")} basic events.");
             }
 
@@ -1557,122 +1560,7 @@ namespace AutoBS
 
             return newData;
         }
-        /*
-        public static CustomBeatmapData Convert(EditableCBD eData)
-        {
-            CustomBeatmapData newData = new CustomBeatmapData(
-                4,
-                eData.BeatmapCustomData,
-                eData.LevelCustomData,
-                new CustomData(),
-                eData.Version
-            );
 
-            // 1) Your edited objects:
-            // 1) Your edited objects:
-            var allItems = new List<object>();
-            allItems.AddRange(eData.ColorNotes.Select(n => n.ToCustomNoteData(eData.Version)));
-            allItems.AddRange(eData.BombNotes.Select(n => n.ToCustomNoteData(eData.Version)));
-            allItems.AddRange(eData.Obstacles.Select(o => o.ToCustomObstacleData(eData.Version)));
-            allItems.AddRange(eData.Arcs.Select(a => a.ToCustomSliderData(eData.Version)));
-            allItems.AddRange(eData.Chains.Select(c => c.ToCustomSliderData(eData.Version)));
-            allItems.AddRange(eData.BasicEvents.Select(e => e.ToCustomBasicBeatmapEventData(eData.Version)));
-            allItems.AddRange(eData.ColorBoostEvents.Select(e => e.ToCustomColorBoostBeatmapEventData(eData.Version)));
-
-            // ---- CUSTOM EVENTS (choose exactly ONE source) ----
-            bool haveEditableCustomEvents = eData.CustomEvents != null && eData.CustomEvents.Count > 0;
-
-            if (haveEditableCustomEvents)
-            {
-                // Use your curated/edited custom events
-                allItems.AddRange(eData.CustomEvents.Select(e => e.ToCustomEventData(eData.Version)));
-            }
-            else if (eData.OriginalCBData != null && eData.OriginalCBData.customEventDatas != null)
-            {
-                // Fallback to original pass-through ONLY if you did not populate eData.CustomEvents
-                allItems.AddRange(eData.OriginalCBData.customEventDatas.Cast<object>());
-            }
-
-
-
-
-            Plugin.Log.Info($"[ConvertEditableCBD] eData.BasicEvents Count: {eData.BasicEvents.Count}");
-
-            // 2) **Pass-through** any beatmapEventData you never edited** CustomBPMChangeBeatmapEventData, CustomLightRotationBeatmapEventData, etc., so they just get carried along by that pass-through clause.
-            // 2) Pass-through beatmapEventData, but only if OriginalCBData exists:
-            if (eData.OriginalCBData != null)
-            {
-                allItems.AddRange(
-                    eData.OriginalCBData.beatmapEventDatas
-                    .Where(evt =>
-                        !(evt is CustomColorBoostBeatmapEventData)
-                        && !(evt is CustomBasicBeatmapEventData cb1 && cb1.basicBeatmapEventType == BasicBeatmapEventType.Event5)
-                        && !(evt is CustomBasicBeatmapEventData cb2 && (cb2.basicBeatmapEventType == BasicBeatmapEventType.Event14 || cb2.basicBeatmapEventType == BasicBeatmapEventType.Event15))
-                    ).Cast<object>()
-                );
-                allItems.AddRange(
-                    eData.OriginalCBData.allBeatmapDataItems
-                    .Where(item =>
-                        !(item is CustomNoteData)
-                        && !(item is CustomObstacleData)
-                        && !(item is CustomSliderData)
-                        && !(item is CustomEventData))
-                    .Cast<object>()
-                );
-            }
-            else if (eData.OriginalBData != null)
-            {
-                allItems.AddRange(
-                    eData.OriginalBData.allBeatmapDataItems
-                    .Where(item =>
-                        !(item is NoteData)
-                        && !(item is ObstacleData)
-                        && !(item is SliderData))
-                    .Cast<object>()
-                );
-            }
-
-
-            // sort by time (and fallback by type index if needed)
-            var sorted = allItems
-                .OrderBy(item =>
-                {
-                    switch (item)
-                    {
-                        case BeatmapObjectData o: return o.time;
-                        case BeatmapEventData e: return e.time;
-                        case CustomEventData c: return c.time;
-                        default: return float.MaxValue;
-                    }
-                });
-
-            foreach (var o in sorted)
-            {
-                switch (o)
-                {
-                    case BeatmapObjectData obj:
-                        newData.AddBeatmapObjectDataInOrder(obj);
-                        break;
-                    case BeatmapEventData evt:
-                        newData.InsertBeatmapEventDataInOrder(evt);
-                        break;
-                    case CustomEventData cev:
-                        newData.InsertCustomEventDataInOrder(cev);
-                        break;
-                }
-            }
-
-            // apply rotations per object if needed
-            //if (eData.RotationEvents != null && eData.RotationEvents.Count > 0)
-            //    newData = ApplyPerObjectRotations(newData, eData.RotationEvents);
-
-            newData.ProcessAndSortBeatmapData();
-
-            Plugin.Log.Info($"[ConvertEditableCBD] Converted EditableCBD to CustomBeatmapData with {newData.beatmapObjectDatas.Count} objects and {newData.beatmapEventDatas.Count} events");
-
-            return newData;
-        }
-        */
         /// <summary>
         /// Must convert built-in OST maps to standard beatmapData or for some reason heck will crash beat saber since it finds cast exception for customBeatmapData
         /// </summary>
@@ -1726,16 +1614,13 @@ namespace AutoBS
         {
             Plugin.Log.Info("[RotationApplier] ---------- Starting per-object rotation application");
 
+            if (eData.RotationEvents.Count == 0 || eData.ColorNotes.Count == 0)
+                return;
+
             // 1) Sort your raw rotation events by time
             eData.RotationEvents = eData.RotationEvents
                 .OrderBy(r => r.time)
                 .ToList();
-
-            if (eData.RotationEvents.Count == 0)
-            {
-                Plugin.Log.Info("[RotationApplier] No rotation events found — skipping");
-                return;
-            }
 
             bool rotationModeLate = Config.Instance.RotationModeLate;
 
@@ -1883,6 +1768,35 @@ namespace AutoBS
                 .OrderBy(x => x.time)
                 .ToList();
 
+            // Build a normalized rotation event list from *final* note/bomb rotations. this is a set of Early Events that should work well with the convert method to create a JSON .dat file later
+
+            //if (Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls || Config.Instance.OutputV3JsonToSongFolder)
+            //    RebuildRotationEventsFromKeyframes();
+
+            /*
+            void RebuildRotationEventsFromKeyframes()
+            {
+                var rebuilt = new List<ERotationEventData>();
+
+                int prevAccum = 0;
+                foreach (var k in noteAndBombKeyframes)
+                {
+                    int delta = k.rot - prevAccum;
+                    if (delta == 0)
+                        continue; // skip 0-delta events
+
+                    // accumRotation here is simply k.rot (the new cumulative value)
+                    rebuilt.Add(new ERotationEventData(k.time, delta, k.rot));
+                    prevAccum = k.rot;
+                }
+
+                //eData.RotationEventsMatchEarlyPerObject = rebuilt;
+
+                // Debug (optional):
+                // foreach (var ev in rebuilt.TakeWhile(ev => ev.time < 20f))
+                //     Plugin.Log.Info($"[RotationApplier] Rebuilt rotEvt @ {ev.time:F3}s: Δ={ev.rotation}, accum={ev.accumRotation}");
+            }
+            */
             const float TOL = 0.0005f;
 
             int GetLogicalRotationFromNotes(float t)
@@ -1934,76 +1848,182 @@ namespace AutoBS
 
                 foreach (var obs in eData.Obstacles)
                 {
-                    obs.rotation = GetLogicalRotationFromNotes(obs.time);
-
-
-                    //obs.rotation = GetAccumRotationAt(obs.time);
-                    /*
-                    // obstacle span
-                    float obsStart = obs.time;
-                    float obsEnd = obs.time + obs.duration;
-
-                    // does any arc-tail override fall inside this span?
-                    bool affected = arcTailAccumRotationOverride
-                        .Any(ovr => ovr.time >= obsStart && ovr.time <= obsEnd);
-
-                    if (affected)
-                    {
-                        ObstaclesAffectedByArcTailOverrides.Add(obs);
-                        Plugin.Log.Info($"[ArcTailOverride] Obstacle @{obs.time:F2}s dur={obs.duration:F2}s was affected by tail override(s).");
-                    }
-                    */
-                    //if (obs.time < 20) Plugin.Log.Info($"[RotationApplier] Obstacle @{obs.time:F2}s → rot: {obs.rotation} dur: {obs.duration} line: {obs.line} layer: {obs.layer} width: {obs.width} height: {obs.height}");
+                    obs.rotation = GetLogicalRotationFromNotes(obs.time); //suggested to use this instead of rotationEvents
                 }
 
                 eData.Obstacles = ApplyWallVisionBlockingFix(eData); // will alter eData by reference
             }
+
+            //if (Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls || Config.Instance.OutputV3JsonToSongFolder)
+            //    eData.RotationEventsMatchEarlyPerObject = BuildEarlyRotationEventsFromPerObjectRotations(eData);
+
             //else
             //{
             //    Plugin.Log.Warn("[RotationApplier] Skipping Wall Rotation Application and Wall Vision Blocking Fix due to Noodle customData on obstacles!");
             //}
 
-                
-            /*
-            // ---- REBUILD affected subset from the CURRENT master ----
-            // use the tail-override times to select walls that *now* span those times
-            var ObstaclesAffectedByArcTailOverrides = new List<EObstacleData>(); // list of obstacles potentially affected by arc tail rotation overrides
-            
-            if (arcTailAccumRotationOverride.Count > 0)
+            //Plugin.Log.Info("[RotationApplier] Finished per-object rotation application");
+        }
+
+        // Not used currently. i made this list to prevent arcs and walls from have rotation problems in JSON output files. but it turns out the the origianl rotation events list is best.
+        /// <summary>
+        /// Builds a new rotation events list based on the actual per-object rotations.
+        /// This list accurately represents "early" rotation events for JSON export,
+        /// accounting for arc tail corrections and wall rotations from notes.
+        /// </summary>
+        public static List<ERotationEventData> BuildEarlyRotationEventsFromPerObjectRotations(EditableCBD eData)
+        {
+            const float EPS = 0.0005f;
+
+            // Gather all objects with their times and rotations
+            var allObjects = new List<(float time, int rotation)>();
+
+            foreach (var note in eData.ColorNotes)
+                allObjects.Add((note.time, note.rotation));
+            foreach (var bomb in eData.BombNotes)
+                allObjects.Add((bomb.time, bomb.rotation));
+            foreach (var obs in eData.Obstacles)
+                allObjects.Add((obs.time, obs.rotation));
+            foreach (var arc in eData.Arcs)
             {
-                // (Optionally sort events for faster scans)
-                var overrideTimes = arcTailAccumRotationOverride.Select(e => e.time).OrderBy(t => t).ToList();
+                allObjects.Add((arc.time, arc.rotation));
+                // Include tail time with head rotation (since we forced tail = head)
+                allObjects.Add((arc.tailTime, arc.rotation));
+            }
+            foreach (var chain in eData.Chains)
+            {
+                allObjects.Add((chain.time, chain.rotation));
+                allObjects.Add((chain.tailTime, chain.rotation));
+            }
 
-                foreach (var obs in eData.Obstacles)
+            // Sort by time
+            allObjects = allObjects.OrderBy(o => o.time).ToList();
+
+            if (allObjects.Count == 0)
+                return new List<ERotationEventData>();
+
+            // Build rotation events: emit an event whenever the accumulated rotation changes
+            var rotationEvents = new List<ERotationEventData>();
+            int prevAccumRotation = 0;
+            float prevTime = float.MinValue;
+
+            foreach (var (time, rotation) in allObjects)
+            {
+                // Skip if same time as previous (within epsilon) - use the first object at each time
+                if (Math.Abs(time - prevTime) < EPS)
+                    continue;
+
+                // If this object has a different accumulated rotation, emit an event
+                if (rotation != prevAccumRotation)
                 {
-                    float start = obs.time;
-                    float end = obs.time + obs.duration;
+                    int deltaRotation = rotation - prevAccumRotation;
+                    rotationEvents.Add(ERotationEventData.Create(time, deltaRotation, rotation, new CustomData()));
+                    prevAccumRotation = rotation;
+                }
 
-                    // any override time inside this (post-pass-1) wall?
-                    // (If overrideTimes is sorted, you can binary-search a window; Any(...) is fine if small.)
-                    if (overrideTimes.Any(t => t >= start && t <= end))
-                        ObstaclesAffectedByArcTailOverrides.Add(obs);
+                prevTime = time;
+            }
+
+            Plugin.Log.Info($"[BuildEarlyRotationEvents] Built {rotationEvents.Count} early rotation events from per-object rotations");
+
+            // Ensure arc tails match heads by adding corrective events
+            rotationEvents = EnsureArcTailsMatchHeads(rotationEvents, eData.Arcs);
+
+            return rotationEvents;
+        }
+
+        /// <summary>
+        /// Ensures that at each arc tail time, the accumulated rotation matches the head rotation.
+        /// If rotations occurred between head and tail, adds a corrective event at the tail time.
+        /// Call this AFTER building rotation events from per-object rotations.
+        /// </summary>
+        public static List<ERotationEventData> EnsureArcTailsMatchHeads(
+            List<ERotationEventData> rotationEvents,
+            List<ESliderData> arcs)
+        {
+            const float EPS = 0.0005f;
+
+            if (arcs == null || arcs.Count == 0)
+                return rotationEvents;
+
+            // Sort rotation events by time
+            var events = rotationEvents.OrderBy(e => e.time).ToList();
+
+            // Build accumulated rotation lookup
+            var accumulated = new List<(float time, int total)>();
+            int runningTotal = 0;
+            foreach (var evt in events)
+            {
+                runningTotal += evt.rotation;
+                accumulated.Add((evt.time, runningTotal));
+            }
+
+            // Get accumulated rotation at time t (early style - at or before t)
+            int GetAccumAt(float t)
+            {
+                if (accumulated.Count == 0) return 0;
+
+                int lo = 0, hi = accumulated.Count - 1, ans = -1;
+                while (lo <= hi)
+                {
+                    int mid = (lo + hi) >> 1;
+                    if (accumulated[mid].time <= t + EPS)
+                    {
+                        ans = mid;
+                        lo = mid + 1;
+                    }
+                    else hi = mid - 1;
+                }
+                return ans >= 0 ? accumulated[ans].total : 0;
+            }
+
+            var corrections = new List<ERotationEventData>();
+
+            foreach (var arc in arcs)
+            {
+                int headRotation = arc.rotation; // The desired accumulated rotation at head (and tail)
+                int tailAccumBefore = GetAccumAt(arc.tailTime);
+
+                if (tailAccumBefore != headRotation)
+                {
+                    int deltaCorrection = headRotation - tailAccumBefore;
+
+                    // Check if a correction already exists at this tail time
+                    var existingCorrection = corrections.FirstOrDefault(c => Math.Abs(c.time - arc.tailTime) < EPS);
+                    if (existingCorrection != null)
+                    {
+                        // Merge: update the delta (use the latest target rotation)
+                        existingCorrection.rotation += deltaCorrection;
+                        existingCorrection.accumRotation = headRotation;
+                    }
+                    else
+                    {
+                        corrections.Add(ERotationEventData.Create(
+                            arc.tailTime,
+                            deltaCorrection,
+                            headRotation,
+                            new CustomData()
+                        ));
+                    }
+
+                    Plugin.Log.Info($"[ArcTailCorrection] Arc @{arc.time:F2}s tail @{arc.tailTime:F2}s: " +
+                        $"tailAccumBefore={tailAccumBefore}, headRot={headRotation}, delta={deltaCorrection}");
                 }
             }
 
-            if (ObstaclesAffectedByArcTailOverrides.Count > 0)
+            if (corrections.Count > 0)
             {
-                // take a snapshot of the subset before the 2nd pass
-                var subsetBefore = new HashSet<EObstacleData>(ObstaclesAffectedByArcTailOverrides);
+                Plugin.Log.Info($"[ArcTailCorrection] Added {corrections.Count} corrective rotation events for arc tails");
 
-                // Run the 2nd pass. It returns the processed subset (may contain new segments and/or same objects)
-                ObstaclesAffectedByArcTailOverrides = ApplyWallVisionBlockingFix(arcTailAccumRotationOverride, ObstaclesAffectedByArcTailOverrides, true);
+                // Merge corrections into events
+                events.AddRange(corrections);
+                events = events.OrderBy(e => e.time).ToList();
 
-                // Remove ALL originals of the subset from the master
-                eData.Obstacles.RemoveAll(o => subsetBefore.Contains(o));
-
-                // Add all processed results back into the master
-                eData.Obstacles.AddRange(ObstaclesAffectedByArcTailOverrides);
-
-                eData.Obstacles = eData.Obstacles.OrderBy(o => o.time).ToList();
+                // Recalculate accumulated rotations
+                events = ERotationEventData.RecalculateAccumulatedRotations(events);
             }
-            */
-            Plugin.Log.Info("[RotationApplier] Finished per-object rotation application");
+
+            return events;
         }
 
         /// <summary>

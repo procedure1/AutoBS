@@ -1,12 +1,15 @@
 ﻿using AutoBS.Patches;
+using BeatmapSaveDataVersion3;
 using CustomJSONData.CustomBeatmap;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace AutoBS
 {
@@ -19,7 +22,7 @@ namespace AutoBS
         /// <param name="preferredVersion"></param>
         /// <param name="outputSecondsToBeats"></param>
         /// <returns></returns>
-        public static string ToJsonStringFile(CustomBeatmapData data, int preferredVersion = 3, bool outputSecondsToBeats = true) // if converted to seconds for FromJsonString then need this
+        public static bool ToJsonStringFile(CustomBeatmapData data, List<ERotationEventData> rotationEvents, bool outputSecondsToBeats = true) // if converted to seconds for FromJsonString then need this
         {
             // ───────── Common setup ─────────────────────────────────────
             float timeMult = 1;
@@ -30,24 +33,59 @@ namespace AutoBS
 
             JObject root = new JObject();
 
-            if (preferredVersion == 2 && majorVersion < 3)
-                root = JsonV2Output(data, timeMult);
-            else if (preferredVersion >= 3)
-                root = JsonV3Output(data, timeMult);
+            // Output V2 (no arcs/chains) if requested
+            if (Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls)
+            {
+                Plugin.Log.Info($"[ToJsonStringFile] Outputting V2 JSON...");
+                root = JsonV2Output(data, timeMult, rotationEvents);
+                createFile(root, 2);
+            }
 
-            string jsonString = JsonConvert.SerializeObject(root, Formatting.None);
+            // Output V3 if requested
+            if (Config.Instance.OutputV3JsonToSongFolder)
+            {
+                Plugin.Log.Info($"[ToJsonStringFile] Outputting V3 JSON...");
+                root = JsonV3Output(data, timeMult, rotationEvents);
+                createFile(root, 3);
+            }
 
-            string path = @"D:\" + SetContent.SongName + "_" + TransitionPatcher.SelectedDifficulty.ToString() + "_" + TransitionPatcher.SelectedCharacteristicSO.serializedName + "_v" + preferredVersion + ".dat";
+            // Reset only if "turn off after one play" is enabled
+            if (Config.Instance.TurnOffJSONDatOutputAfterOneMapPlay)
+            {
+                Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls = false;
+                Config.Instance.OutputV3JsonToSongFolder = false;
+                Config.Instance.Changed();
+            }
 
-            Plugin.Log.Info($"[ToJsonStringFile] Original Map v{data.version}. Outputing JSON file to: {path}");
+            void createFile (JObject root, int version) 
+            {
+                string jsonString = JsonConvert.SerializeObject(root, Formatting.None);
 
-            System.IO.File.WriteAllText(path, jsonString); // Test
+                string fileName = $"{TransitionPatcher.SelectedCharacteristicSO.serializedName}{TransitionPatcher.SelectedDifficulty}_v{version}_AutoBS_Generator.dat";
+                
 
-            return jsonString;
+                string path;
 
+                if (!string.IsNullOrEmpty(SetContent.SongFolderPath))
+                {
+                    path = Path.Combine(SetContent.SongFolderPath, fileName);
+                }
+                else
+                {
+                    path = Path.Combine(@"D:\", fileName);
+                }
+
+                File.WriteAllText(path, jsonString);
+
+                Plugin.Log.Info($"[ToJsonStringFile] Original Map v{data.version}. Outputing JSON file to: {path}");
+
+                File.WriteAllText(path, jsonString);
+            }
+
+            return true;
         }
 
-        public static JObject JsonV2Output(CustomBeatmapData data, float timeMult) //v2 maps
+        public static JObject JsonV2Output(CustomBeatmapData data, float timeMult, List<ERotationEventData> rotationEventsData) //v2 maps
         {
             var root = new JObject
             {
@@ -84,23 +122,84 @@ namespace AutoBS
             var obs = new JArray();
             foreach (var w in data.beatmapObjectDatas.OfType<CustomObstacleData>())
             {
+                if (!TryGetPlainV2ObstacleType(w, out int legacyType))
+                    continue; // skip Mapping Extensions / weird walls
+
                 var o = new JObject
                 {
                     ["_time"] = w.time * timeMult,
+                    ["_lineIndex"] = w.lineIndex,            // safe (we filtered ≥1000)
+                    ["_type"] = legacyType,                  // 0 or 1 only
+                    ["_duration"] = w.duration * timeMult,
+                    ["_width"] = w.width                     // safe (we filtered ≥1000)
+                };
+
+                /*
+                var o = new JObject //couldn't get this to work with Mapping Extensions walls
+                {
+                    ["_time"] = w.time * timeMult,
                     ["_lineIndex"] = w.lineIndex,
-                    ["_type"] = GetLegacyWallType(w),
+                    ["_lineLayer"] = (int)w.lineLayer,//v2.6 has this
+                    ["_type"] = GetLegacyWallType1(w),
                     ["_duration"] = w.duration * timeMult,
                     ["_width"] = w.width,
-                    //["_height"] = w.height
+                    ["_height"] = w.height//v2.6 has this
                 };
-                //if (w.rotation != 0) o["_rotation"] = w.rotation;
+                */
+
                 if (w.customData.Count > 0)
                     o["_customData"] = JObject.FromObject(w.customData);
                 obs.Add(o);
             }
             root["_obstacles"] = obs;
 
-            int GetLegacyWallType(CustomObstacleData obstacle)
+            bool TryGetPlainV2ObstacleType(CustomObstacleData obstacle, out int legacyType)
+            {
+                legacyType = 0;
+
+                // 1) Reject Mapping Extensions / weird data outright
+
+                // ME precise lanes / out-of-bounds crazy positions
+                if (Math.Abs(obstacle.lineIndex) >= 1000)
+                    return false;
+
+                // ME precise widths (>= 1000 or <= -1000)
+                if (Math.Abs(obstacle.width) >= 1000)
+                    return false;
+
+                // ME-coded heights (>= 1000 / <= -1000)
+                if (obstacle.height >= 1000 || obstacle.height <= -1000)
+                    return false;
+
+                // If you ALSO want to reject extension walls (far left/right lanes),
+                // uncomment one of these:
+                // if (obstacle.lineIndex < 0 || obstacle.lineIndex > 3)
+                //     return false;
+
+                // 2) Now only accept "real" v2 shapes
+
+                int layer = (int)obstacle.lineLayer;
+                int height = obstacle.height;
+
+                // Full-height wall: v3 style (layer 0, height 5)
+                if (layer == 0 && height == 5)
+                {
+                    legacyType = 0; // v2 full-height
+                    return true;
+                }
+
+                // Crouch wall: v3 style (layer 2, height 3)
+                if (layer == 2 && height == 3)
+                {
+                    legacyType = 1; // v2 crouch
+                    return true;
+                }
+
+                // Everything else = not safely representable in plain v2
+                return false;
+            }
+
+            int GetLegacyWallType1(CustomObstacleData obstacle)
             {
                 if ((int)obstacle.lineLayer == 0 && obstacle.height == 5)
                     return 0; // Full-height wall
@@ -108,7 +207,89 @@ namespace AutoBS
                     return 1; // Crouch wall
                 return 2;     // Free wall (V3-style)
             }
+            
+            int ConvertToV2Type(CustomObstacleData obstacle)
+            {
+                // Reverse the Mapping Extensions decoding:
+                // outputHeight = obsHeight * 5 + 1000
+                // outputLayer = startHeight * (5000 / 750) + 1334
 
+                // Solve for obsHeight: obsHeight = (height - 1000) / 5
+                int obsHeight = (obstacle.height - 1000) / 5;
+
+                // Solve for startHeight: startHeight = (lineLayer - 1334) * 750 / 5000
+                int startHeight = ((int)obstacle.lineLayer - 1334) * 750 / 5000;
+
+                // Clamp to valid ranges
+                if (obsHeight < 0) obsHeight = 0;
+                if (startHeight < 0) startHeight = 0;
+                if (startHeight > 999) startHeight = 999;
+
+                // Encode: type = 4001 + (obsHeight * 1000) + startHeight
+                return 4001 + (obsHeight * 1000) + startHeight;
+            }
+
+            int GetLegacyWallType2(CustomObstacleData obstacle)
+            {
+                int layer = (int)obstacle.lineLayer;
+                int h = obstacle.height;
+
+                // ── Vanilla walls ─────────────────────────────────────────
+                // Full-height wall (standard v2)
+                if (layer == 0 && h == 5)
+                    return 0;
+
+                // Crouch wall (standard v2)
+                if (layer == 2 && h == 3)
+                    return 1;
+
+                // ── Mapping Extensions-coded heights (your particle walls etc.) ────
+                float trackHeight;
+
+                if (h >= 1000)
+                {
+                    // v3 ME coding: tiny walls like 1050, 1100, 1500, 2500...
+                    trackHeight = (h - 1000) / 1000f;
+                }
+                else if (h <= -1000)
+                {
+                    // negative ME coding, if you ever use it
+                    trackHeight = (h + 2000) / 1000f;
+                }
+                else if (h > 2)
+                {
+                    // direct "track units" height
+                    trackHeight = h;
+                }
+                else
+                {
+                    // very small or weird: just give them something tiny
+                    trackHeight = 0.1f;
+                }
+
+                // don't let anything go insane
+                trackHeight = Mathf.Clamp(trackHeight, 0f, 5f);
+
+                // From v2 ME math: finalHeight_v2 = 5 * obsHeight / 1000
+                // => obsHeight = trackHeight * 1000 / 5
+                int obsHeight = Mathf.RoundToInt(trackHeight * 1000f / 5f);
+                obsHeight = Mathf.Clamp(obsHeight, 0, 4000);
+
+                // Now map your integer v3 lineLayer -> startHeight
+                // using the relation: layerInt ≈ 1334 + startHeight * 5000/750 ≈ 1000 * layer
+                // ⇒ startHeight ≈ 150 * layer - 200
+                float rawStart = 150f * layer - 200f;
+                int startHeight = Mathf.RoundToInt(rawStart);
+                startHeight = Mathf.Clamp(startHeight, 0, 999);
+
+                // PreciseHeightStart encoding (4001+):
+                // type = wallHeight * 1000 + startHeight + 4001
+                int type = 4001 + obsHeight * 1000 + startHeight;
+
+                return type;
+            }
+
+            /*
             bool useV2Sliders = false; //these do not work and cause infinite arcs. i cannot find a single v2 map that uses arcs.
             if (useV2Sliders)
             {
@@ -148,24 +329,52 @@ namespace AutoBS
             // ───────── BURST SLIDERS (CHAINS) v3 only!!!! ────────────────────────────
             //https://bsmg.wiki/mapping/map-format/beatmap.html#arcs
             }
-
+            */
 
             // ───────── EVENTS & CUSTOM EVENTS ───────────────────────────
-            var evts = new JArray();
-            foreach (var e in data.beatmapEventDatas.OfType<CustomBasicBeatmapEventData>())
+            // build basic events
+            IEnumerable<JObject> basicEvents = data.beatmapEventDatas
+                .OfType<CustomBasicBeatmapEventData>()
+                .Select(e =>
+                {
+                    var o = new JObject
+                    {
+                        ["_time"] = e.time * timeMult,
+                        ["_type"] = (int)e.basicBeatmapEventType,
+                        ["_value"] = e.value,
+                        // ["_floatValue"] = e.floatValue   // uncomment if you want it
+                    };
+
+                    if (e.customData != null && e.customData.Count > 0)
+                        o["_customData"] = JObject.FromObject(e.customData);
+
+                    return o;
+                });
+
+            // build rotation events (v2: 14=early, 15=late if you support both)
+            IEnumerable<JObject> rotationEvents = rotationEventsData.Select(r =>
             {
                 var o = new JObject
                 {
-                    ["_time"] = e.time * timeMult,
-                    ["_type"] = (int)e.basicBeatmapEventType,
-                    ["_value"] = e.value,
-                    //["_floatValue"] = e.floatValue
+                    ["_time"] = r.time * timeMult,
+                    ["_type"] = 14, // or 14/15 depending on early/late if you track that
+                    ["_value"] = Generator.SpawnRotationDegreesToValue(r.rotation),
                 };
-                if (e.customData.Count > 0)
-                    o["_customData"] = JObject.FromObject(e.customData);
-                evts.Add(o);
-            }
-            root["_events"] = evts;
+
+                if (r.customData != null && r.customData.Count > 0)
+                    o["_customData"] = JObject.FromObject(r.customData);
+
+                return o;
+            });
+
+            // combine + sort
+            var allEvents = basicEvents
+                .Concat(rotationEvents)
+                .OrderBy(o => (float)o["_time"]);
+
+            // finally, assign to root
+            root["_events"] = new JArray(allEvents);
+
 
             if (data.customEventDatas.Count > 0)
             {
@@ -187,7 +396,7 @@ namespace AutoBS
             return root;
         }
 
-        public static JObject JsonV3Output(CustomBeatmapData data, float timeMult) //v3 maps
+        public static JObject JsonV3Output(CustomBeatmapData data, float timeMult, List<ERotationEventData>rotationEventsData) //v3 maps
         {
             // ---- v3.3.0 format ----
             var root = new JObject();
@@ -302,9 +511,7 @@ namespace AutoBS
 
             // 6. Basic Events (lighting, etc)
             var basicEvents = new JArray();
-            foreach (var e in data.beatmapEventDatas
-                    .OfType<CustomBasicBeatmapEventData>()
-                    .Where(e => (int)e.basicBeatmapEventType != 14 && (int)e.basicBeatmapEventType != 15))
+            foreach (var e in data.beatmapEventDatas.OfType<CustomBasicBeatmapEventData>())//.Where(e => (int)e.basicBeatmapEventType != 14 && (int)e.basicBeatmapEventType != 15))
             {
                 var o = new JObject
                 {
@@ -320,10 +527,11 @@ namespace AutoBS
             root["basicBeatmapEvents"] = basicEvents;
 
             // 7. Rotation Events 
+            /*
             var rotationEvents = new JArray();
             foreach (var r in data.beatmapEventDatas
-                                .OfType<CustomBasicBeatmapEventData>()
-                                .Where(r => (int)r.basicBeatmapEventType == 14 || (int)r.basicBeatmapEventType == 15)) // this should work even though v3 since these legacy event types remain
+                .OfType<CustomBasicBeatmapEventData>()
+                .Where(r => (int)r.basicBeatmapEventType == 14 || (int)r.basicBeatmapEventType == 15)) // this should work even though v3 since these legacy event types remain
             {
                 var o = new JObject
                 {
@@ -337,7 +545,24 @@ namespace AutoBS
                 //Plugin.Log.Info($"Rotation Event added to JSON: {r.time:F} rotation: {Generator.SpawnRotationValueToDegreesV3(r.value)} ");
             }
             root["rotationEvents"] = rotationEvents;
-
+            */
+            var rotationsEvents = new JArray();
+            foreach (var r in rotationEventsData)
+            {
+                var o = new JObject
+                {
+                    ["b"] = r.time * timeMult,
+                    ["e"] = 0, //early type (14)
+                    ["r"] = r.rotation//Generator.SpawnRotationValueToDegrees(r.rotation)  // Magnitude (rotation in degrees)
+                };
+                if (r.customData.Count > 0)
+                    o["customData"] = JObject.FromObject(r.customData);
+                rotationsEvents.Add(o);
+                //Plugin.Log.Info($"Rotation Event added to JSON: {r.time:F} rotation: {Generator.SpawnRotationValueToDegreesV3(r.value)} ");
+            }
+            
+            root["rotationEvents"] = rotationsEvents;
+            
             // 8. Bpm Events 
             var bpmEvents = new JArray();
             foreach (var bp in data.beatmapEventDatas.OfType<CustomBPMChangeBeatmapEventData>())

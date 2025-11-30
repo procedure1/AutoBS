@@ -89,7 +89,13 @@ namespace AutoBS
 
 
         [OnExit]
-        public void OnApplicationQuit() { }
+        public void OnApplicationQuit() 
+        {
+            Config.Instance.TurnOffJSONDatOutputAfterOneMapPlay = true;
+            Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls = false;
+            Config.Instance.OutputV3JsonToSongFolder = false;
+            Config.Instance.Changed();
+        }
     }
     //Zenject installer. Need this to access and control ParametricBoxController since I couldn't find another way to access that method. If could figure out how to patch a level of beatsaber i might be able to find it another way
     //I access this in LevelUpdatePatcher.cs so that the level has already started and gameObject that uses this has spawned. I cannot access it here since the gameObject hasn't spawned.

@@ -55,7 +55,7 @@ namespace AutoBS
         public virtual bool EnableEnvironmentAutoBS { get; set; } = false; // add rotated geometry to standard environments!!
 
 
-        public virtual bool Wireless360 { get; set; } = false;//BW This assumes the user doesn't want rotation limits and it sets LimitRotations to 999 and BottleneckRotations to 999. only for 360 not 90.
+        public virtual bool Wireless360 { get; set; } = true; //BW This assumes the user doesn't want rotation limits and it sets LimitRotations to 999 and BottleneckRotations to 999. only for 360 not 90.
         public virtual float LimitRotations360 { get; set; } = 360;//BW changed this to Degrees. Previously Default 28 where 24 is 360 degree circle. designed to avoid riping a cable
 
         // 90
@@ -279,9 +279,10 @@ namespace AutoBS
 
         //------------------------
         //v2 not working well. rotation event have wall penetrations. the mapping extension walls don't work and arcs do not work even though they are supposed to be supported. i can't find a single custom map v2 with arcs and none in the built in system for v1.34 either
-        public virtual bool OutputV2JsonDatFileToDDriveRootBROKEN { get; set; } = false; //will convert to v2 - doesn't output arcs or chains. arcs are supposed to be supported but always produce infinitely long arcs.
-        public virtual bool OutputV3JsonDatFileToDDriveRoot { get; set; } = false; //will convert to v3
+        public virtual bool TurnOffJSONDatOutputAfterOneMapPlay { get; set; } = true; // to prevent constant JSON outputs
+        public virtual bool OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls { get; set; } = false; //will convert to v2 - doesn't output arcs or chains. arcs are supposed to be supported but always produce infinitely long arcs. Mappring extension walls don't work either for some reason so i filtered them out.
+        public virtual bool OutputV3JsonToSongFolder { get; set; } = false; //will convert to v3
         //add to v2 or v3! since its the info.dat file. add it to each "_difficultyBeatmaps" that needs it: "_customData": {"_requirements": ["Mapping Extensions"]},
-        // at least for beat sage, need to remove in info.dat:  "_environmentNames": [ "DefaultEnvironment" ], AND remove "_environmentNameIdx": 0, from each difficultyBeatmap in order for 360 map to use 360 environment
+        //at least for beat sage, need to remove in info.dat:  "_environmentNames": [ "DefaultEnvironment" ], AND remove "_environmentNameIdx": 0, from each difficultyBeatmap in order for 360 map to use 360 environment
     }
 }

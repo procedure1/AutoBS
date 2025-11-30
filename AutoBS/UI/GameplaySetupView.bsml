@@ -96,7 +96,7 @@
         <!-- Rotation Section -->
           <text text="360fyer" align="Center" fontSize="5" font-color="#64ff16" underlined='true' />
           <text text="Thanks to the genius CodeStix who built the original 360fyer plugin!" align="Center" fontSize="2.3" font-color="#BBBBBB" />
-          <toggle-setting text='Wireless 360' apply-on-change='true' value='Wireless360' bind-value='true' font-color='~FontColorRotationSettings' interactable="~EnablerRotationSettings" hover-hint="For wireless headsets. Maps will no rotation restrictions and less tendencies to reverse direction."></toggle-setting>
+          <toggle-setting text='Wireless 360' apply-on-change='true' value='Wireless360' bind-value='true' font-color='~FontColorRotationSettings' interactable="~EnablerRotationSettings" hover-hint="Default: True. For wireless headsets. Maps will no rotation restrictions and less tendencies to reverse direction."></toggle-setting>
           <slider-setting text="Limit Rotations 360" apply-on-change="true" value="LimitRotations360" bind-value="true" show-buttons="true" increment="30" min="0" max="720" formatter="AngleFormatter" font-color='~FontColorLimitRotations360' interactable="~EnablerLimitRotations360" hover-hint="Default: 360°. Disabled if Wireless 360 is enabled. For wired headsets use 360° or less to avoid cable rip! Decrease the angle for spaces that are obstructed with furniture for example. Disables score submission if set less than 90." rich-text='true'></slider-setting>
 
           <text text="Rotation" align="Center" fontSize="4" font-color="#BBBBBB" />

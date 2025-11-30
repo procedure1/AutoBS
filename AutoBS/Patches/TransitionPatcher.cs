@@ -226,6 +226,9 @@ namespace AutoBS.Patches
                 var difficultyData = songCoreExtraData?._difficulties.FirstOrDefault(d =>
                                         d._beatmapCharacteristicName == SelectedSerializedName &&
                                         d._difficulty == SelectedDifficulty);
+
+                SetContent.SongFolderPath = SongFolderUtils.TryGetSongFolder(beatmapLevel.levelID);
+                
                 if (songCoreExtraData != null && songCoreExtraData._difficulties != null && difficultyData != null &&
                         (difficultyData._envColorLeftBoost != null || difficultyData._envColorRightBoost != null))
                 {

@@ -7,7 +7,9 @@ using BeatSaberMarkupLanguage.Parser;
 using BeatSaberMarkupLanguage.ViewControllers;
 using HMUI;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -16,10 +18,97 @@ using UnityEngine.UI;
 
 namespace AutoBS.UI
 {
-    internal class GameplaySetupView : BSMLAutomaticViewController//BW added BSMLAutomaticViewController so could use NotifyPropertyChanged() which is needed for interactable bsml
+    internal class GameplaySetupView : BSMLAutomaticViewController//BW added BSMLAutomaticViewController so could use SafeNotify() which is needed for interactable bsml
     {
-        // --- Safety wrapper for NotifyPropertyChanged to prevent errors when deactivated/reactivated ---
-        
+        private Coroutine _pendingRefresh;
+
+        // BSML calls this after parsing
+        [UIAction("#post-parse")]
+        private void PostParse()
+        {
+            Plugin.Log.Info("[GameplaySetupView] PostParse called!");
+            RefreshAllUI();
+        }
+
+        // Simple wrapper - NO guards, just try/catch for safety
+        private void SafeNotify([CallerMemberName] string propertyName = null)
+        {
+            try
+            {
+                base.NotifyPropertyChanged(propertyName);
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.Warn($"[SafeNotify] Exception for {propertyName}: {ex.Message}");
+            }
+        }
+
+        // Deferred refresh - schedules a refresh for next frame as a safety net
+        private void ScheduleRefresh()
+        {
+            if (_pendingRefresh != null)
+                StopCoroutine(_pendingRefresh);
+
+            _pendingRefresh = StartCoroutine(DeferredRefresh());
+        }
+
+        private IEnumerator DeferredRefresh()
+        {
+            yield return null; // Wait one frame
+            _pendingRefresh = null;
+            Plugin.Log.Info("[GameplaySetupView] Deferred refresh executing");
+            RefreshAllUI();
+        }
+
+        private void RefreshAllUI()
+        {
+            // Re-evaluate all grouped UI logic from current Config
+            UpdateRotationSettingsUI();
+            UpdateArcsUI();
+            UpdateChainsUI();
+            UpdateWallGeneratorUI();
+            UpdateLightingGeneratorUI();
+            UpdateCleanBeatSageUI();
+            UpdateAutoNjsFixerUI();
+
+            // Master plugin on/off & its visual state
+            SafeNotify(nameof(EnablePlugin));
+            SafeNotify(nameof(ActiveEnablePlugin));
+            SafeNotify(nameof(EnablerEnablePlugin));
+            SafeNotify(nameof(FontColorEnablePlugin));
+
+            // Top-level enablers that many interactables bind to
+            SafeNotify(nameof(EnablerRotationSettings));
+            SafeNotify(nameof(FontColorRotationSettings));
+
+            SafeNotify(nameof(EnablerArcs));
+            SafeNotify(nameof(FontColorArcs));
+
+            SafeNotify(nameof(EnablerChains));
+            SafeNotify(nameof(FontColorChains));
+
+            SafeNotify(nameof(EnablerWallGenerator));
+            SafeNotify(nameof(FontColorWallGenerator));
+
+            SafeNotify(nameof(EnablerExtWallGenerator));
+            SafeNotify(nameof(FontColorExtWallGenerator));
+
+            SafeNotify(nameof(EnablerLightingGenerator));
+            SafeNotify(nameof(FontColorLightingGenerator));
+
+            SafeNotify(nameof(EnablerLightAutoMapper));
+            SafeNotify(nameof(FontColorLightAutoMapper));
+
+            SafeNotify(nameof(EnablerAutoNjsFixer));
+            SafeNotify(nameof(FontColorAutoNjsFixer));
+
+            SafeNotify(nameof(EnablerDesiredNJS));
+            SafeNotify(nameof(FontColorDesiredNJS));
+
+            SafeNotify(nameof(EnablerCleanBeatSage));
+            SafeNotify(nameof(FontColorCleanBeatSage));
+        }
+
 
         //-----------------------------------------------
 
@@ -37,58 +126,59 @@ namespace AutoBS.UI
             get => Config.Instance.EnablePlugin;
             set
             {
+                Plugin.Log.Info($"[EnablePlugin] Setter called with value: {value}");
                 Config.Instance.EnablePlugin = value;
+                UpdateRotationSettingsUI();
                 UpdateArcsUI(); 
                 UpdateChainsUI(); 
                 UpdateWallGeneratorUI(); 
                 UpdateLightingGeneratorUI(); 
                 UpdateCleanBeatSageUI();
+                UpdateAutoNjsFixerUI();
 
                 ActiveEnablePlugin = !value;
-                NotifyPropertyChanged();
-                NotifyPropertyChanged("ActiveEnablePlugin");
-                NotifyPropertyChanged("EnablerEnablePlugin");
-                NotifyPropertyChanged("FontColorEnablePlugin");
-                NotifyPropertyChanged(nameof(EnablerRotationSettings));
-                NotifyPropertyChanged(nameof(FontColorRotationSettings));
-                NotifyPropertyChanged(nameof(EnablerLimitRotations360));
-                NotifyPropertyChanged(nameof(FontColorLimitRotations360));
-                NotifyPropertyChanged(nameof(EnablerArcs));
-                NotifyPropertyChanged(nameof(FontColorArcs));
-                NotifyPropertyChanged(nameof(EnablerChains));
-                NotifyPropertyChanged(nameof(FontColorChains));
-                NotifyPropertyChanged(nameof(EnablerAutoNjsFixer));
-                NotifyPropertyChanged(nameof(EnablerDesiredNJS));
-                NotifyPropertyChanged(nameof(EnablerWallGenerator));
-                NotifyPropertyChanged(nameof(FontColorWallGenerator));
-                NotifyPropertyChanged(nameof(EnablerExtWallGenerator));
-                NotifyPropertyChanged(nameof(FontColorExtWallGenerator));
-                NotifyPropertyChanged(nameof(EnablerStandard));
-                NotifyPropertyChanged(nameof(FontColorStandard));
-                NotifyPropertyChanged(nameof(EnablerDistant));
-                NotifyPropertyChanged(nameof(FontColorDistant));
-                NotifyPropertyChanged(nameof(EnablerColumns));
-                NotifyPropertyChanged(nameof(FontColorColumns));
-                NotifyPropertyChanged(nameof(EnablerRows));
-                NotifyPropertyChanged(nameof(FontColorRows));
-                NotifyPropertyChanged(nameof(EnablerTunnels));
-                NotifyPropertyChanged(nameof(FontColorTunnels));
-                NotifyPropertyChanged(nameof(EnablerGrids));
-                NotifyPropertyChanged(nameof(FontColorGrids));
-                NotifyPropertyChanged(nameof(EnablerPanes));
-                NotifyPropertyChanged(nameof(FontColorPanes));
-                NotifyPropertyChanged(nameof(EnablerParticles));
-                NotifyPropertyChanged(nameof(FontColorParticles));
-                NotifyPropertyChanged(nameof(EnablerFloors));
-                NotifyPropertyChanged(nameof(FontColorFloors));
-                NotifyPropertyChanged(nameof(EnablerCleanBeatSage));
-                NotifyPropertyChanged(nameof(FontColorCleanBeatSage));
-                NotifyPropertyChanged(nameof(EnablerLightingGenerator));
-                NotifyPropertyChanged(nameof(FontColorLightingGenerator));
-                NotifyPropertyChanged(nameof(EnablerLightAutoMapper));
-                NotifyPropertyChanged(nameof(FontColorLightAutoMapper));
-                NotifyPropertyChanged(nameof(Enabler90));
-                NotifyPropertyChanged(nameof(FontColor90));
+                SafeNotify();
+                SafeNotify("ActiveEnablePlugin");
+                SafeNotify("EnablerEnablePlugin");
+                SafeNotify("FontColorEnablePlugin");
+                SafeNotify(nameof(EnablerRotationSettings));
+                SafeNotify(nameof(FontColorRotationSettings));
+                SafeNotify(nameof(EnablerLimitRotations360));
+                SafeNotify(nameof(FontColorLimitRotations360));
+                SafeNotify(nameof(EnablerArcs));
+                SafeNotify(nameof(FontColorArcs));
+                SafeNotify(nameof(EnablerChains));
+                SafeNotify(nameof(FontColorChains));
+                SafeNotify(nameof(EnablerAutoNjsFixer));
+                SafeNotify(nameof(EnablerDesiredNJS));
+                SafeNotify(nameof(EnablerWallGenerator));
+                SafeNotify(nameof(FontColorWallGenerator));
+                SafeNotify(nameof(EnablerExtWallGenerator));
+                SafeNotify(nameof(FontColorExtWallGenerator));
+                SafeNotify(nameof(EnablerStandard));
+                SafeNotify(nameof(FontColorStandard));
+                SafeNotify(nameof(EnablerDistant));
+                SafeNotify(nameof(FontColorDistant));
+                SafeNotify(nameof(EnablerColumns));
+                SafeNotify(nameof(FontColorColumns));
+                SafeNotify(nameof(EnablerRows));
+                SafeNotify(nameof(FontColorRows));
+                SafeNotify(nameof(EnablerTunnels));
+                SafeNotify(nameof(FontColorTunnels));
+                SafeNotify(nameof(EnablerGrids));
+                SafeNotify(nameof(FontColorGrids));
+                SafeNotify(nameof(EnablerPanes));
+                SafeNotify(nameof(FontColorPanes));
+                SafeNotify(nameof(EnablerParticles));
+                SafeNotify(nameof(FontColorParticles));
+                SafeNotify(nameof(EnablerFloors));
+                SafeNotify(nameof(FontColorFloors));
+                SafeNotify(nameof(EnablerCleanBeatSage));
+                SafeNotify(nameof(FontColorCleanBeatSage));
+                SafeNotify(nameof(EnablerLightingGenerator));
+                SafeNotify(nameof(FontColorLightingGenerator));
+                SafeNotify(nameof(EnablerLightAutoMapper));
+                SafeNotify(nameof(FontColorLightAutoMapper));
             }
         }
 
@@ -324,8 +414,8 @@ namespace AutoBS.UI
             _originalNjs = $"{TransitionPatcher.NoteJumpMovementSpeed:F1}";
             _originalJd  = $"{TransitionPatcher.JumpDistance:F1}";
 
-            NotifyPropertyChanged(nameof(_originalNjs));
-            NotifyPropertyChanged(nameof(_originalJd));
+            SafeNotify(nameof(_originalNjs));
+            SafeNotify(nameof(_originalJd));
         }
 
         private void OnDestroy()
@@ -337,8 +427,8 @@ namespace AutoBS.UI
         {
             _originalNjs = $"{njs:F1}";
             _originalJd = $"{jd:F1}";
-            NotifyPropertyChanged(nameof(_originalNjs));
-            NotifyPropertyChanged(nameof(_originalJd));
+            SafeNotify(nameof(_originalNjs));
+            SafeNotify(nameof(_originalJd));
         }
         */
         /*
@@ -373,7 +463,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.VolumeAdjuster = value;
                 ApplyVolumeChange(); // Apply the volume change immediately
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         */
@@ -479,10 +569,10 @@ namespace AutoBS.UI
                 Config.Instance.Wireless360 = value;
 
                 // Notify that the dependent properties changed
-                NotifyPropertyChanged(nameof(EnablerLimitRotations360));
-                NotifyPropertyChanged(nameof(FontColorLimitRotations360));
-                NotifyPropertyChanged(nameof(FontColorWireless360));
-                NotifyPropertyChanged(); // for Wireless360 itself
+                SafeNotify(nameof(EnablerLimitRotations360));
+                SafeNotify(nameof(FontColorLimitRotations360));
+                SafeNotify(nameof(FontColorWireless360));
+                SafeNotify(); // for Wireless360 itself
             }
         }
 
@@ -575,7 +665,7 @@ namespace AutoBS.UI
                 Config.Instance.EnableArcs = value;
                 EnablerArcs = value;
                 if (EnablerArcs) { FontColorArcs = OnColor; EnablerArcs = true; } else { FontColorArcs = OffColor; EnablerArcs = false; };
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         */
@@ -641,7 +731,7 @@ namespace AutoBS.UI
                 Config.Instance.EnableChains = value;
                 EnablerChains = value;
                 if (EnablerChains) { FontColorChains = OnColor; EnablerChains = true; } else { FontColorChains = OffColor; EnablerChains = false; };
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         */
@@ -682,14 +772,14 @@ namespace AutoBS.UI
         /// </summary>
         private void UpdateArchitectUI()
         {
-            NotifyPropertyChanged(nameof(EnablerArcs));
+            SafeNotify(nameof(EnablerArcs));
 
             // Ensure all dependent UI elements update
-            NotifyPropertyChanged(nameof(EnablerArcs));
-            NotifyPropertyChanged(nameof(FontColorArcs));
+            SafeNotify(nameof(EnablerArcs));
+            SafeNotify(nameof(FontColorArcs));
 
-            NotifyPropertyChanged(nameof(EnablerChains));
-            NotifyPropertyChanged(nameof(FontColorChains));
+            SafeNotify(nameof(EnablerChains));
+            SafeNotify(nameof(FontColorChains));
         }
         */
         /*
@@ -718,7 +808,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableCleanBeatSage = value;
                 UpdateCleanBeatSageUI();
-                NotifyPropertyChanged(); // for CleanBeatSage itself
+                SafeNotify(); // for CleanBeatSage itself
             }
         }
 
@@ -760,7 +850,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableStandardWalls = value;
                 UpdateWallGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
 
@@ -772,7 +862,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableBigWalls = value;
                 UpdateWallGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         [UIValue("StandardWallsMultiplier")]
@@ -796,7 +886,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableMappingExtensionsWallsGenerator = value;
                 UpdateWallGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         [UIValue("EnableDistantExtensionWalls")]
@@ -807,7 +897,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableDistantExtensionWalls = value;
                 UpdateWallGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         [UIValue("DistantExtensionWallsMultiplier")]
@@ -826,7 +916,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableColumnWalls = value;
                 UpdateWallGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         [UIValue("ColumnWallsMultiplier")]
@@ -851,7 +941,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableRowWalls = value;
                 UpdateWallGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         [UIValue("RowWallsMultiplier")]
@@ -876,7 +966,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableTunnelWalls = value;
                 UpdateWallGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         [UIValue("TunnelWallsMultiplier")]
@@ -901,7 +991,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableGridWalls = value;
                 UpdateWallGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         [UIValue("GridWallsMultiplier")]
@@ -926,7 +1016,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableWindowPaneWalls = value;
                 UpdateWallGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         /*
@@ -966,7 +1056,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableParticleWalls = value;
                 UpdateWallGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         [UIValue("EnableLargeParticleWalls")]
@@ -1004,9 +1094,9 @@ namespace AutoBS.UI
                 Config.Instance.EnableFloorWalls = value;
                 EnablerPanes = value;
                 if (EnablerFloors) { FontColorFloors = OnColor; EnablerFloors = true; } else { FontColorFloors = OffColor; EnablerFloors = false; };
-                NotifyPropertyChanged();
+                SafeNotify();
                 UpdateWallGeneratorUI();     // recalc all wall sub-groups consistently
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         [UIValue("FloorWallsMultiplier")]
@@ -1038,9 +1128,9 @@ namespace AutoBS.UI
 
         private void UpdateRotationSettingsUI()
         {
-            NotifyPropertyChanged(nameof(Enable360fyer));
-            NotifyPropertyChanged(nameof(EnablerRotationSettings));
-            NotifyPropertyChanged(nameof(FontColorRotationSettings));
+            SafeNotify(nameof(Enable360fyer));
+            SafeNotify(nameof(EnablerRotationSettings));
+            SafeNotify(nameof(FontColorRotationSettings));
         }
 
 
@@ -1051,9 +1141,9 @@ namespace AutoBS.UI
             EnablerArcs = isEnabled;
             FontColorArcs = isEnabled ? OnColor : OffColor;
 
-            NotifyPropertyChanged(nameof(EnableArcsGenerator));
-            NotifyPropertyChanged(nameof(EnablerArcs));
-            NotifyPropertyChanged(nameof(FontColorArcs));
+            SafeNotify(nameof(EnableArcsGenerator));
+            SafeNotify(nameof(EnablerArcs));
+            SafeNotify(nameof(FontColorArcs));
         }
 
         private void UpdateChainsUI()
@@ -1063,9 +1153,9 @@ namespace AutoBS.UI
             EnablerChains = isEnabled;
             FontColorChains = isEnabled ? OnColor : OffColor;
 
-            NotifyPropertyChanged(nameof(EnableChainsGenerator));
-            NotifyPropertyChanged(nameof(EnablerChains));
-            NotifyPropertyChanged(nameof(FontColorChains));
+            SafeNotify(nameof(EnableChainsGenerator));
+            SafeNotify(nameof(EnablerChains));
+            SafeNotify(nameof(FontColorChains));
         }
         /// <summary>
         /// Updates all the UI settings to enable/disable and dim/undim the text.
@@ -1107,40 +1197,40 @@ namespace AutoBS.UI
             EnablerFloors = EnablerExtWallGenerator && Config.Instance.EnableFloorWalls;
             FontColorFloors = EnablerFloors ? OnColor : OffColor;
 
-            NotifyPropertyChanged(nameof(EnableWallGenerator));
-            NotifyPropertyChanged(nameof(EnablerWallGenerator));
-            NotifyPropertyChanged(nameof(FontColorWallGenerator));
+            SafeNotify(nameof(EnableWallGenerator));
+            SafeNotify(nameof(EnablerWallGenerator));
+            SafeNotify(nameof(FontColorWallGenerator));
 
             // Ensure all dependent UI elements update
-            NotifyPropertyChanged(nameof(EnablerExtWallGenerator));
-            NotifyPropertyChanged(nameof(FontColorExtWallGenerator));
+            SafeNotify(nameof(EnablerExtWallGenerator));
+            SafeNotify(nameof(FontColorExtWallGenerator));
 
-            NotifyPropertyChanged(nameof(EnablerStandard));
-            NotifyPropertyChanged(nameof(FontColorStandard));
+            SafeNotify(nameof(EnablerStandard));
+            SafeNotify(nameof(FontColorStandard));
 
-            NotifyPropertyChanged(nameof(EnablerDistant));
-            NotifyPropertyChanged(nameof(FontColorDistant));
+            SafeNotify(nameof(EnablerDistant));
+            SafeNotify(nameof(FontColorDistant));
 
-            NotifyPropertyChanged(nameof(EnablerColumns));
-            NotifyPropertyChanged(nameof(FontColorColumns));
+            SafeNotify(nameof(EnablerColumns));
+            SafeNotify(nameof(FontColorColumns));
 
-            NotifyPropertyChanged(nameof(EnablerRows));
-            NotifyPropertyChanged(nameof(FontColorRows));
+            SafeNotify(nameof(EnablerRows));
+            SafeNotify(nameof(FontColorRows));
 
-            NotifyPropertyChanged(nameof(EnablerTunnels));
-            NotifyPropertyChanged(nameof(FontColorTunnels));
+            SafeNotify(nameof(EnablerTunnels));
+            SafeNotify(nameof(FontColorTunnels));
 
-            NotifyPropertyChanged(nameof(EnablerGrids));
-            NotifyPropertyChanged(nameof(FontColorGrids));
+            SafeNotify(nameof(EnablerGrids));
+            SafeNotify(nameof(FontColorGrids));
 
-            NotifyPropertyChanged(nameof(EnablerPanes));
-            NotifyPropertyChanged(nameof(FontColorPanes));
+            SafeNotify(nameof(EnablerPanes));
+            SafeNotify(nameof(FontColorPanes));
 
-            NotifyPropertyChanged(nameof(EnablerParticles));
-            NotifyPropertyChanged(nameof(FontColorParticles));
+            SafeNotify(nameof(EnablerParticles));
+            SafeNotify(nameof(FontColorParticles));
 
-            NotifyPropertyChanged(nameof(EnablerFloors));
-            NotifyPropertyChanged(nameof(FontColorFloors));
+            SafeNotify(nameof(EnablerFloors));
+            SafeNotify(nameof(FontColorFloors));
         }
 
         private void UpdateLightingGeneratorUI()
@@ -1155,12 +1245,12 @@ namespace AutoBS.UI
             EnablerLightAutoMapper = isLightingEnabled && isAutoMapperEnabled;
             FontColorLightAutoMapper = EnablerLightAutoMapper ? OnColor : OffColor;
 
-            NotifyPropertyChanged(nameof(EnableLightingGenerator));
-            NotifyPropertyChanged(nameof(EnablerLightingGenerator));
-            NotifyPropertyChanged(nameof(FontColorLightingGenerator));
+            SafeNotify(nameof(EnableLightingGenerator));
+            SafeNotify(nameof(EnablerLightingGenerator));
+            SafeNotify(nameof(FontColorLightingGenerator));
 
-            NotifyPropertyChanged(nameof(EnablerLightAutoMapper));
-            NotifyPropertyChanged(nameof(FontColorLightAutoMapper));
+            SafeNotify(nameof(EnablerLightAutoMapper));
+            SafeNotify(nameof(FontColorLightAutoMapper));
         }
 
         private void UpdateCleanBeatSageUI()
@@ -1170,8 +1260,8 @@ namespace AutoBS.UI
             EnablerCleanBeatSage = isEnabled;
             FontColorCleanBeatSage = isEnabled ? OnColor : OffColor;
 
-            NotifyPropertyChanged(nameof(EnablerCleanBeatSage));
-            NotifyPropertyChanged(nameof(FontColorCleanBeatSage));
+            SafeNotify(nameof(EnablerCleanBeatSage));
+            SafeNotify(nameof(FontColorCleanBeatSage));
         }
 
         private void UpdateAutoNjsFixerUI()
@@ -1180,10 +1270,10 @@ namespace AutoBS.UI
             EnablerAutoNjsFixer = isEnabled;
             FontColorAutoNjsFixer = isEnabled ? OnColor : OffColor;
 
-            NotifyPropertyChanged(nameof(EnablerAutoNjsFixer));
-            NotifyPropertyChanged(nameof(EnablerDesiredNJS));
-            NotifyPropertyChanged(nameof(FontColorAutoNjsFixer));
-            NotifyPropertyChanged(nameof(AutoNjsFixerMode));
+            SafeNotify(nameof(EnablerAutoNjsFixer));
+            SafeNotify(nameof(EnablerDesiredNJS));
+            SafeNotify(nameof(FontColorAutoNjsFixer));
+            SafeNotify(nameof(AutoNjsFixerMode));
         }
 
 
@@ -1197,28 +1287,28 @@ namespace AutoBS.UI
                 Config.Instance.EnableWallGenerator = value;
                 EnablerWallGenerator = value;
                 if (EnablerWallGenerator) { FontColorWallGenerator = OnColor; EnablerWallGenerator = true; } else { FontColorWallGenerator = OffColor; EnablerWallGenerator = false; };
-                NotifyPropertyChanged();
+                SafeNotify();
                 // Notify changes for Wall enabler and font color properties
-                NotifyPropertyChanged(nameof(EnablerExtWallGenerator));
-                NotifyPropertyChanged(nameof(FontColorExtWallGenerator));
-                NotifyPropertyChanged(nameof(EnablerStandard));
-                NotifyPropertyChanged(nameof(FontColorStandard));
-                NotifyPropertyChanged(nameof(EnablerDistant));
-                NotifyPropertyChanged(nameof(FontColorDistant));
-                NotifyPropertyChanged(nameof(EnablerColumns));
-                NotifyPropertyChanged(nameof(FontColorColumns));
-                NotifyPropertyChanged(nameof(EnablerRows));
-                NotifyPropertyChanged(nameof(FontColorRows));
-                NotifyPropertyChanged(nameof(EnablerTunnels));
-                NotifyPropertyChanged(nameof(FontColorTunnels));
-                NotifyPropertyChanged(nameof(EnablerGrids));
-                NotifyPropertyChanged(nameof(FontColorGrids));
-                NotifyPropertyChanged(nameof(EnablerPanes));
-                NotifyPropertyChanged(nameof(FontColorPanes));
-                NotifyPropertyChanged(nameof(EnablerParticles));
-                NotifyPropertyChanged(nameof(FontColorParticles));
-                NotifyPropertyChanged(nameof(EnablerFloors));
-                NotifyPropertyChanged(nameof(FontColorFloors));
+                SafeNotify(nameof(EnablerExtWallGenerator));
+                SafeNotify(nameof(FontColorExtWallGenerator));
+                SafeNotify(nameof(EnablerStandard));
+                SafeNotify(nameof(FontColorStandard));
+                SafeNotify(nameof(EnablerDistant));
+                SafeNotify(nameof(FontColorDistant));
+                SafeNotify(nameof(EnablerColumns));
+                SafeNotify(nameof(FontColorColumns));
+                SafeNotify(nameof(EnablerRows));
+                SafeNotify(nameof(FontColorRows));
+                SafeNotify(nameof(EnablerTunnels));
+                SafeNotify(nameof(FontColorTunnels));
+                SafeNotify(nameof(EnablerGrids));
+                SafeNotify(nameof(FontColorGrids));
+                SafeNotify(nameof(EnablerPanes));
+                SafeNotify(nameof(FontColorPanes));
+                SafeNotify(nameof(EnablerParticles));
+                SafeNotify(nameof(FontColorParticles));
+                SafeNotify(nameof(EnablerFloors));
+                SafeNotify(nameof(FontColorFloors));
             }
         }
         */
@@ -1250,7 +1340,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableLightAutoMapper = value;
                 UpdateLightingGeneratorUI();
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
         [UIValue("LightFrequencyMultiplier")]
@@ -1305,7 +1395,7 @@ namespace AutoBS.UI
                 {
                     Config.Style style = _styleLabels.FirstOrDefault(x => x.Value == value).Key;
                     Config.Instance.LightStyle = style;
-                    NotifyPropertyChanged();
+                    SafeNotify();
                 }
             }
         }
@@ -1331,7 +1421,7 @@ namespace AutoBS.UI
                 {
                     var mode = _arcRotationModeLabels.First(kv => kv.Value == value).Key;
                     Config.Instance.ArcRotationMode = mode;
-                    NotifyPropertyChanged(); // updates the UI
+                    SafeNotify(); // updates the UI
                 }
             }
         }
@@ -1356,9 +1446,9 @@ namespace AutoBS.UI
                 {
                     var mode = _autoNjsFixerModeLabels.First(kv => kv.Value == value).Key;
                     Config.Instance.AutoNjsFixerMode = mode;
-                    NotifyPropertyChanged(); // for AutoNjsFixerMode itself
-                    NotifyPropertyChanged(nameof(EnablerDesiredNJS));
-                    NotifyPropertyChanged(nameof(FontColorDesiredNJS));
+                    SafeNotify(); // for AutoNjsFixerMode itself
+                    SafeNotify(nameof(EnablerDesiredNJS));
+                    SafeNotify(nameof(FontColorDesiredNJS));
                 }
             }
         }
@@ -1372,9 +1462,9 @@ namespace AutoBS.UI
             set
             {
                 Config.Instance.ShowGenerated90 = value;
-                NotifyPropertyChanged();
-                NotifyPropertyChanged(nameof(Enabler90));
-                NotifyPropertyChanged(nameof(FontColor90));
+                SafeNotify();
+                SafeNotify(nameof(Enabler90));
+                SafeNotify(nameof(FontColor90));
             }
         }
         [UIValue("LimitRotations90")]
@@ -1455,11 +1545,11 @@ namespace AutoBS.UI
         // Tried this to make vertical container active/inactive to hide all settings but when used caused the window to jump in odd ways and sometimes even be unscrollable so hid many settings and could only be reset by going to another mod settings tab
         [UIValue("ActiveEnablePlugin")]
         public bool ActiveEnablePlugin
-        { get => !Config.Instance.EnablePlugin; set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin; set { SafeNotify(); } }
 
         [UIValue("EnablerEnablePlugin")] // used to enable/disable many items to make the plugin appear inactive
         public bool EnablerEnablePlugin
-        { get => Config.Instance.EnablePlugin; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin; set { SafeNotify(); } }
 
 
         [UIValue("EnablerRotationSettings")]
@@ -1468,7 +1558,7 @@ namespace AutoBS.UI
             get => Config.Instance.EnablePlugin && Config.Instance.Enable360fyer; // add && !Config.Instance.Wireless360 if you also want to lock these in Wireless mode
             set
             {
-                NotifyPropertyChanged();
+                SafeNotify();
             }
         }
 
@@ -1481,29 +1571,29 @@ namespace AutoBS.UI
         // Wireless360 enable/gray-out
         [UIValue("EnablerWireless360")]
         public bool EnablerWireless360
-        { get => Config.Instance.EnablePlugin; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin; set { SafeNotify(); } }
 
 
 
 
         [UIValue("FontColorWireless360")]
         public string FontColorWireless360
-        { get => Config.Instance.EnablePlugin ? OnColor : OffColor; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin ? OnColor : OffColor; set { SafeNotify(); } }
 
 
         /*
         [UIValue("EnablerEnableFeaturesForNonGen360Maps")] // used to enable/disable many items to make the plugin appear inactive
         public bool EnablerEnableFeaturesForNonGen360Maps
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableFeaturesForNonGen360Maps; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && Config.Instance.EnableFeaturesForNonGen360Maps; set { SafeNotify(); } }
 
         [UIValue("EnablerEnableFeaturesForStandardMaps")] // used to enable/disable many items to make the plugin appear inactive
         public bool EnablerEnableFeaturesForStandardMaps
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableFeaturesForStandardMaps; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && Config.Instance.EnableFeaturesForStandardMaps; set { SafeNotify(); } }
         */
 
         [UIValue("EnablerLimitRotations360")]
         public bool EnablerLimitRotations360
-        { get => Config.Instance.EnablePlugin && !Config.Instance.Wireless360; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && !Config.Instance.Wireless360; set { SafeNotify(); } }
 
         [UIValue("EnablerArcs")]
         public bool EnablerArcs
@@ -1511,7 +1601,7 @@ namespace AutoBS.UI
             get => EnableArcsGenerator;
             set
             {
-                NotifyPropertyChanged(nameof(FontColorArcs));
+                SafeNotify(nameof(FontColorArcs));
             }
         }
 
@@ -1521,13 +1611,13 @@ namespace AutoBS.UI
             get => EnableChainsGenerator;
             set
             {
-                NotifyPropertyChanged(nameof(FontColorChains));
+                SafeNotify(nameof(FontColorChains));
             }
         }
         /*
         [UIValue("EnablerArcs")]
         public bool EnablerArcs
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableArcs; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && Config.Instance.EnableArcs; set { SafeNotify(); } }
 
         [UIValue("EnablerChains")]
         public bool EnablerChains
@@ -1535,15 +1625,15 @@ namespace AutoBS.UI
         /*
         [UIValue("EnablerWallGenerator")]
         public bool EnablerWallGenerator
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableWallGenerator ? true : false; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && Config.Instance.EnableWallGenerator ? true : false; set { SafeNotify(); } }
 
         [UIValue("EnablerExtWallGenerator")]
         public bool EnablerExtWallGenerator
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableWallGenerator && Config.Instance.EnableExtensionMappingWallsGenerator ? true : false; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && Config.Instance.EnableWallGenerator && Config.Instance.EnableExtensionMappingWallsGenerator ? true : false; set { SafeNotify(); } }
         */
         [UIValue("EnablerWallGenerator")]
         public bool EnablerWallGenerator
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator ? true : false; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator ? true : false; set { SafeNotify(); } }
 
         [UIValue("EnablerExtWallGenerator")]
         public bool EnablerExtWallGenerator
@@ -1552,66 +1642,62 @@ namespace AutoBS.UI
                    && EnableWallGenerator
                    && IsMappingExtensionsInstalledNow
                    && Config.Instance.EnableMappingExtensionsWallsGenerator;
-            set => NotifyPropertyChanged();
+            set => SafeNotify();
         }
         [UIValue("EnablerStandard")]
         public bool EnablerStandard
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls); set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls); set { SafeNotify(); } }
 
 
         [UIValue("EnablerDistant")]
         public bool EnablerDistant
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableDistantExtensionWalls; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableDistantExtensionWalls; set { SafeNotify(); } }
 
         [UIValue("EnablerColumns")]
         public bool EnablerColumns
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableColumnWalls; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableColumnWalls; set { SafeNotify(); } }
 
         [UIValue("EnablerRows")]
         public bool EnablerRows
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableRowWalls; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableRowWalls; set { SafeNotify(); } }
 
         [UIValue("EnablerTunnels")]
         public bool EnablerTunnels
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableTunnelWalls; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableTunnelWalls; set { SafeNotify(); } }
 
         [UIValue("EnablerGrids")]
         public bool EnablerGrids
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableGridWalls; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableGridWalls; set { SafeNotify(); } }
 
         [UIValue("EnablerPanes")]
         public bool EnablerPanes
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableWindowPaneWalls; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableWindowPaneWalls; set { SafeNotify(); } }
 
         [UIValue("EnablerParticles")]
         public bool EnablerParticles
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableParticleWalls; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableParticleWalls; set { SafeNotify(); } }
 
         [UIValue("EnablerFloors")]
         public bool EnablerFloors
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableFloorWalls; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalledNow && Config.Instance.EnableMappingExtensionsWallsGenerator && Config.Instance.EnableFloorWalls; set { SafeNotify(); } }
 
         [UIValue("EnablerCleanBeatSage")]
         public bool EnablerCleanBeatSage
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableCleanBeatSage; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && Config.Instance.EnableCleanBeatSage; set { SafeNotify(); } }
 
 
         [UIValue("EnablerLightingGenerator")]
         public bool EnablerLightingGenerator
-        { get => Config.Instance.EnablePlugin && (Config.Instance.EnableLightingGen360 || Config.Instance.EnableLightingNonGen360 || Config.Instance.EnableLightingStandard); set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && (Config.Instance.EnableLightingGen360 || Config.Instance.EnableLightingNonGen360 || Config.Instance.EnableLightingStandard); set { SafeNotify(); } }
 
 
         [UIValue("EnablerLightAutoMapper")]
         public bool EnablerLightAutoMapper
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableLightAutoMapper; set { NotifyPropertyChanged(); } }
-
-        [UIValue("Enabler90")]
-        public bool Enabler90
-        { get => Config.Instance.EnablePlugin && Config.Instance.ShowGenerated90; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && Config.Instance.EnableLightAutoMapper; set { SafeNotify(); } }
 
         [UIValue("EnablerAutoNjsFixer")]
         public bool EnablerAutoNjsFixer
-        { get => Config.Instance.EnablePlugin && (Config.Instance.EnableAutoNjsFixerGen360 || Config.Instance.EnableAutoNjsFixerNonGen360 || Config.Instance.EnableAutoNjsFixerStandard); set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin && (Config.Instance.EnableAutoNjsFixerGen360 || Config.Instance.EnableAutoNjsFixerNonGen360 || Config.Instance.EnableAutoNjsFixerStandard); set { SafeNotify(); } }
 
         [UIValue("EnablerDesiredNJS")]
         public bool EnablerDesiredNJS
@@ -1619,7 +1705,7 @@ namespace AutoBS.UI
             get => Config.Instance.EnablePlugin
                    && EnablerAutoNjsFixer
                    && Config.Instance.AutoNjsFixerMode == Config.AutoNjsFixerModeType.ForceNJS; // "Set Velocity"
-            set => NotifyPropertyChanged();
+            set => SafeNotify();
         }
 
         // Item FontColors (allows a toggle to dim/undim another item #############################################################################################################
@@ -1631,47 +1717,47 @@ namespace AutoBS.UI
 
         [UIValue("FontColorEnablePlugin")]
         public String FontColorEnablePlugin
-        { get => Config.Instance.EnablePlugin ? OnColor : OffColor; set { NotifyPropertyChanged(); } }
+        { get => Config.Instance.EnablePlugin ? OnColor : OffColor; set { SafeNotify(); } }
 
         [UIValue("FontColorRotationSettings")]
         public string FontColorRotationSettings
         {
             get => (Config.Instance.EnablePlugin && Config.Instance.Enable360fyer) ? OnColor : OffColor;
-            set { NotifyPropertyChanged(); }
+            set { SafeNotify(); }
         }
 
         /*
         [UIValue("FontColorEnableFeaturesForNonGen360Maps")]
         public String FontColorEnableFeaturesForNonGen360Maps
-        { get => Config.Instance.EnablePlugin ? OnColorStandardMaps : OffColor; set { NotifyPropertyChanged(); } } // only change this color when EnablePlugin changes
+        { get => Config.Instance.EnablePlugin ? OnColorStandardMaps : OffColor; set { SafeNotify(); } } // only change this color when EnablePlugin changes
 
         [UIValue("FontColorEnableFeaturesForStandardMaps")]
         public String FontColorEnableFeaturesForStandardMaps
-        { get => Config.Instance.EnablePlugin ? OnColorStandardMaps : OffColor; set { NotifyPropertyChanged(); } } // only change this color when EnablePlugin changes
+        { get => Config.Instance.EnablePlugin ? OnColorStandardMaps : OffColor; set { SafeNotify(); } } // only change this color when EnablePlugin changes
         */
         [UIValue("FontColorLimitRotations360")]
         public String FontColorLimitRotations360
         { 
-            get => !Config.Instance.EnablePlugin ? OffColor : (Config.Instance.Wireless360 ? OffColor : OnColor); set { NotifyPropertyChanged(); } 
+            get => !Config.Instance.EnablePlugin ? OffColor : (Config.Instance.Wireless360 ? OffColor : OnColor); set { SafeNotify(); } 
         }
 
 
 
         [UIValue("FontColorArcs")]
         public String FontColorArcs
-        { get => !Config.Instance.EnablePlugin ? OffColor : (EnablerArcs ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin ? OffColor : (EnablerArcs ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorChains")]
         public String FontColorChains
-        { get => !Config.Instance.EnablePlugin ? OffColor : (EnablerChains ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin ? OffColor : (EnablerChains ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorWallGenerator")]
         public String FontColorWallGenerator
-        { get => !Config.Instance.EnablePlugin ? OffColor : (EnableWallGenerator ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin ? OffColor : (EnableWallGenerator ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorStandard")]
         public String FontColorStandard
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || (!Config.Instance.EnableStandardWalls && !Config.Instance.EnableBigWalls) ? OffColor : ((Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls) ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || (!Config.Instance.EnableStandardWalls && !Config.Instance.EnableBigWalls) ? OffColor : ((Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls) ? OnColor : OffColor); set { SafeNotify(); } }
 
 
         [UIValue("FontColorExtWallGenerator")]
@@ -1682,67 +1768,64 @@ namespace AutoBS.UI
                     || !IsMappingExtensionsInstalledNow
                 ? OffColor
                 : (Config.Instance.EnableMappingExtensionsWallsGenerator ? OnColor : OffColor);
-            set => NotifyPropertyChanged();
+            set => SafeNotify();
         }
 
         [UIValue("FontColorDistant")]
         public String FontColorDistant
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableDistantExtensionWalls ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableDistantExtensionWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorColumns")]
         public String FontColorColumns
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableColumnWalls ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableColumnWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorRows")]
         public String FontColorRows
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableRowWalls ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableRowWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorTunnels")]
         public String FontColorTunnels
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableTunnelWalls ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableTunnelWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorGrids")]
         public String FontColorGrids
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableGridWalls ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableGridWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorPanes")]
         public String FontColorPanes
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableWindowPaneWalls ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableWindowPaneWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorParticles")]
         public String FontColorParticles
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableParticleWalls ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableParticleWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorFloors")]
         public String FontColorFloors
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableFloorWalls ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalledNow || !Config.Instance.EnableMappingExtensionsWallsGenerator ? OffColor : (Config.Instance.EnableFloorWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorCleanBeatSage")]
         public string FontColorCleanBeatSage
-        { get => !Config.Instance.EnablePlugin ? OffColor : (EnablerCleanBeatSage ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin ? OffColor : (EnablerCleanBeatSage ? OnColor : OffColor); set { SafeNotify(); } }
 
 
         [UIValue("FontColorLightingGenerator")]
         public String FontColorLightingGenerator
-        { get => !Config.Instance.EnablePlugin ? OffColor : (EnableLightingGenerator ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin ? OffColor : (EnableLightingGenerator ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorLightAutoMapper")]
         public String FontColorLightAutoMapper
-        { get => !Config.Instance.EnablePlugin ? OffColor : (EnablerLightAutoMapper ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin ? OffColor : (EnablerLightAutoMapper ? OnColor : OffColor); set { SafeNotify(); } }
 
-        [UIValue("FontColor90")]
-        public String FontColor90
-        { get => !Config.Instance.EnablePlugin ? OffColor : (Config.Instance.ShowGenerated90 ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
 
         [UIValue("FontColorAutoNjsFixer")]
         public String FontColorAutoNjsFixer
-        { get => !Config.Instance.EnablePlugin ? OffColor : (EnableAutoNjsFixer ? OnColor : OffColor); set { NotifyPropertyChanged(); } }
+        { get => !Config.Instance.EnablePlugin ? OffColor : (EnableAutoNjsFixer ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorDesiredNJS")]
         public string FontColorDesiredNJS
         {
             get => EnablerDesiredNJS ? OnColor : OffColor;
-            set => NotifyPropertyChanged();
+            set => SafeNotify();
         }
         /*
         [UIComponent("AllSettingsContainer")]

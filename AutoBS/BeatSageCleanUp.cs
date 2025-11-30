@@ -100,8 +100,62 @@ namespace AutoBS
                     if (nextNote.time - currentNote.time <= 0.05f)//0.03 seems good. 0.08 will start to catch notes from different beats.
                     {
 
-                        //if (Math.Round(currentNote.time, 2) == 17.58 && Math.Round(nextNote.time, 2) == 17.58)
-                        //    Plugin.Log.Info($"BW 2 ********Found the offending notes!!!!!*******************");
+                        // FIX: same-color, near-simultaneous, same-direction, but misaligned for a single stroke → remove later note (j)
+                        // SURGICAL FIX: same-color, near-simultaneous pair rules
+                        if (currentNote.gameplayType == GameplayType.Normal &&
+    nextNote.gameplayType == GameplayType.Normal &&
+    currentNote.colorType == nextNote.colorType &&
+    currentNote.cutDirection != NoteCutDirection.Any &&
+    nextNote.cutDirection != NoteCutDirection.Any)
+                        {
+                            var cutDirCurrentNote = currentNote.cutDirection;
+                            var cutDirNextNote = nextNote.cutDirection;
+
+                            bool bothHoriz =
+                                (cutDirCurrentNote == NoteCutDirection.Left || cutDirCurrentNote == NoteCutDirection.Right) &&
+                                (cutDirNextNote == NoteCutDirection.Left || cutDirNextNote == NoteCutDirection.Right);
+
+                            bool bothVert =
+                                (cutDirCurrentNote == NoteCutDirection.Up || cutDirCurrentNote == NoteCutDirection.Down) &&
+                                (cutDirNextNote == NoteCutDirection.Up || cutDirNextNote == NoteCutDirection.Down);
+
+                            bool sameDirection = cutDirCurrentNote == cutDirNextNote;
+
+                            // Horizontal same-color pair rules
+                            if (bothHoriz)
+                            {
+                                // Must match direction & layer
+                                if (!sameDirection || currentNote.layer != nextNote.layer)
+                                {
+                                    indicesToRemove.Add(j);
+                                    Plugin.Log.Info(
+                                        $"BeatSage(surgical): horiz same-color mismatch dir or layer at {currentNote.time:F} → rm later " +
+                                        $"(dirA={cutDirCurrentNote}, dirB={cutDirNextNote}, layerA={currentNote.layer}, layerB={nextNote.layer})"
+                                    );
+                                    j++;
+                                    continue;
+                                }
+                            }
+
+                            // Vertical same-color pair rules
+                            if (bothVert)
+                            {
+                                // Must match direction & index
+                                if (!sameDirection || currentNote.line != nextNote.line)
+                                {
+                                    indicesToRemove.Add(j);
+                                    Plugin.Log.Info(
+                                        $"BeatSage(surgical): vert same-color mismatch dir or index at {currentNote.time:F} → rm later " +
+                                        $"(dirA={cutDirCurrentNote}, dirB={cutDirNextNote}, lineA={currentNote.line}, lineB={nextNote.line})"
+                                    );
+                                    j++;
+                                    continue;
+                                }
+                            }
+                        }
+
+
+
 
                         //Plugin.Log.Info($"Beat Sage found 2 notes at the exact same time (or close) of {currentNote.time} current note: {currentNote.gameplayType} index: {currentNote.line} layer: {currentNote.layer} --- Nextnote: {nextNote.gameplayType} index: {nextNote.line} layer: {nextNote.layer}");
 

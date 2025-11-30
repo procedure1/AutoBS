@@ -38,6 +38,8 @@ namespace AutoBS.Patches
     {
         public static string SongName;
 
+        public static string SongFolderPath; //path to the folder containing the song selected. used to output generated JSON files if needed
+
         public static string basedOn;
 
         public static bool IsCustomLevel = false;
@@ -804,8 +806,20 @@ namespace AutoBS.Patches
 
                         version = GetBeatMapDataJsonVersion(beatmapJson); // 0,0,0 if json empty or null
 
+                        SongFolderPath = SongFolderUtils.TryGetSongFolder(level.levelID);
+
+                        //if (SongFolderPath == null)
+                        //{
+                        //    Plugin.Log.Error($"[CreateGen360DifficultySet] Could not find song folder.");
+                        //}
+                        //else
+                        //    Plugin.Log.Info($"[CreateGen360DifficultySet] Found song folder at '{SongFolderPath}'");
+
+
                         return (beatmapJson, lightshowJson, audioDataJson, version);
                     }
+
+                    
                 }
                 catch (Exception ex)
                 {
@@ -895,6 +909,30 @@ namespace AutoBS.Patches
                 _ => 10f,
             };
         }
+
+        public static class SongFolderUtils
+        {
+            public static string? TryGetSongFolder(string levelId)
+            {
+                // CustomLevels
+                foreach (var kvp in SongCore.Loader.CustomLevels)
+                    if (kvp.Value.levelID == levelId)
+                        return kvp.Key;
+
+                // WIP
+                foreach (var kvp in SongCore.Loader.CustomWIPLevels)
+                    if (kvp.Value.levelID == levelId)
+                        return kvp.Key;
+
+                // Cached WIP
+                foreach (var kvp in SongCore.Loader.CachedWIPLevels)
+                    if (kvp.Value.levelID == levelId)
+                        return kvp.Key;
+
+                return null; // OST/DLC or not found
+            }
+        }
+
 
         private static void LogBeatmapV4Inputs(
             string audioDataJson,
