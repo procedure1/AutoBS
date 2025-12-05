@@ -183,8 +183,8 @@ namespace AutoBS
         
         public virtual float MaxWaitTime { get; set; } = 6; // how many seconds to wait to remove problem walls before give up and let all remaining walls pass through (crossing vision etc)
 
-        public virtual bool AllowCrouchWalls { get; set; } = false;//BW added this
-        public virtual bool AllowLeanWalls { get; set; } = false;//BW added this
+        public virtual bool AllowCrouchWalls { get; set; } = true;//BW added this
+        public virtual bool AllowLeanWalls { get; set; } = true;//BW added this
         public virtual float MinWallDuration { get; set; } = 0.001f;
         public virtual float MinDistanceBetweenNotesAndWalls { get; set; } = .2f;
 
@@ -284,5 +284,7 @@ namespace AutoBS
         public virtual bool OutputV3JsonToSongFolder { get; set; } = false; //will convert to v3
         //add to v2 or v3! since its the info.dat file. add it to each "_difficultyBeatmaps" that needs it: "_customData": {"_requirements": ["Mapping Extensions"]},
         //at least for beat sage, need to remove in info.dat:  "_environmentNames": [ "DefaultEnvironment" ], AND remove "_environmentNameIdx": 0, from each difficultyBeatmap in order for 360 map to use 360 environment
+        public virtual bool OutputV4JsonToSongFolder { get; set; } = false;
+        public virtual int OutputV4JsonSongFrequency { get; set; } = 44100;
     }
 }

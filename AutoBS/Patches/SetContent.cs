@@ -19,7 +19,6 @@ using SongData = SongCore.Data.SongData;
 
 namespace AutoBS.Patches
 {
-
     //StandardLevelDetailView.SetContent - Called when a song's been selected and its levels are displayed in the right menu
     //BW 1st item that runs. This calls GameModeHelper.cs and creates Standard map duplicate with 360 characteristics
     //Called when a song's been selected and its levels are displayed in the right menu (but not when another difficulty is selected from the same song)
@@ -64,6 +63,7 @@ namespace AutoBS.Patches
 
         {
             if (!Config.Instance.EnablePlugin) return;
+
 
             SongName = level.songName;
             float bpm = level.beatsPerMinute;
@@ -808,13 +808,16 @@ namespace AutoBS.Patches
 
                         SongFolderPath = SongFolderUtils.TryGetSongFolder(level.levelID);
 
-                        //if (SongFolderPath == null)
-                        //{
-                        //    Plugin.Log.Error($"[CreateGen360DifficultySet] Could not find song folder.");
-                        //}
-                        //else
-                        //    Plugin.Log.Info($"[CreateGen360DifficultySet] Found song folder at '{SongFolderPath}'");
-
+                        /*
+                        if (SongFolderPath == null)
+                        {
+                            Plugin.Log.Error($"[CreateGen360DifficultySet] Could not find song folder.");
+                        }
+                        else
+                        {
+                            Plugin.Log.Info($"[CreateGen360DifficultySet] Found song folder at '{SongFolderPath}'");
+                        }
+                        */
 
                         return (beatmapJson, lightshowJson, audioDataJson, version);
                     }

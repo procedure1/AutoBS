@@ -310,7 +310,7 @@ namespace AutoBS.Patches
                          $"{__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()} Bpm Change Events");
                     // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
-                    CustomBeatmapDataConverter.ToJsonStringFile(__result as CustomBeatmapData, eData.RotationEvents);
+                    JsonOutputConverter.ToJsonFile(__result as CustomBeatmapData, eData);
 
                 }
                 else

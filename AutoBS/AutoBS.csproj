@@ -49,7 +49,7 @@
     <Compile Include="BeatSageCleanUp.cs" />
     <Compile Include="UNUSED_BuiltInBeatmapLogger.cs" />
     <Compile Include="BuiltInMapJsonLoader.cs" />
-    <Compile Include="CustomBeatmapDataConverter.cs" />
+    <Compile Include="JsonOutputConverter.cs" />
     <Compile Include="DataRegistry.cs" />
     <Compile Include="EditableBeatmapData.cs" />
     <Compile Include="ForceRequiredModActivation.cs" />

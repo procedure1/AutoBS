@@ -1,5 +1,6 @@
 ﻿using AutoBS.Patches;
 using CustomJSONData.CustomBeatmap;
+using SiraUtil.Zenject;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
@@ -62,15 +63,15 @@ namespace AutoBS
             bool needsRING = !eventTypeCounts.ContainsKey(BasicBeatmapEventType.Event1) ||
                              eventTypeCounts[BasicBeatmapEventType.Event1] == 0;
             bool needsLEFT = !eventTypeCounts.ContainsKey(BasicBeatmapEventType.Event2) ||
-                             eventTypeCounts[BasicBeatmapEventType.Event2] == 0;
+                             eventTypeCounts[BasicBeatmapEventType.Event2] == 0; //rotating laser
             bool needsRIGHT = !eventTypeCounts.ContainsKey(BasicBeatmapEventType.Event3) ||
-                              eventTypeCounts[BasicBeatmapEventType.Event3] == 0;
+                              eventTypeCounts[BasicBeatmapEventType.Event3] == 0; //rotating laser
             bool needsCENTER = !eventTypeCounts.ContainsKey(BasicBeatmapEventType.Event4) ||
                                eventTypeCounts[BasicBeatmapEventType.Event4] == 0;
             bool needsLEFTSPEED = !eventTypeCounts.ContainsKey(BasicBeatmapEventType.Event12) ||
-                                  eventTypeCounts[BasicBeatmapEventType.Event12] == 0;
+                                  eventTypeCounts[BasicBeatmapEventType.Event12] == 0; // Laser rotation speed
             bool needsRIGHTSPEED = !eventTypeCounts.ContainsKey(BasicBeatmapEventType.Event13) ||
-                                   eventTypeCounts[BasicBeatmapEventType.Event13] == 0;
+                                   eventTypeCounts[BasicBeatmapEventType.Event13] == 0; // Laser rotation speed
             bool needsRINGSPIN = !eventTypeCounts.ContainsKey(BasicBeatmapEventType.Event8) ||
                                  eventTypeCounts[BasicBeatmapEventType.Event8] == 0;
             bool needsRINGZOOM = !eventTypeCounts.ContainsKey(BasicBeatmapEventType.Event9) ||

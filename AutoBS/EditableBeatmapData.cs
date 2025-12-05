@@ -1400,7 +1400,7 @@ namespace AutoBS
     {
         public static CustomBeatmapData Convert(EditableCBD eData)
         {
-
+            /*
             // --------------------------------------------------------------------
             // Emit v2/3-style rotation basic events (14 / 15) for JSON output only. Not needed in-game since per object rotation is set. v3 still has legacy 14/15 rotation events inside of basic data so it works for v3 JSON output
             // --------------------------------------------------------------------
@@ -1455,7 +1455,7 @@ namespace AutoBS
                 
                 //Plugin.Log.Info($"[ConvertEditableCBD] Injected for JSON File Output - {eData.RotationEvents.Count} rotation events as {(Config.Instance.RotationModeLate ? "late (15)" : "early (14)")} basic events.");
             }
-
+            */
             var newData = new CustomBeatmapData(
                 numberOfLines: 4, // Standard; parameterize if you support others
                 beatmapCustomData: eData.BeatmapCustomData ?? new CustomData(),
@@ -1513,7 +1513,7 @@ namespace AutoBS
             {
                 foreach (var item in eData.OriginalBData.allBeatmapDataItems)
                 {
-                    if (item is NoteData || item is ObstacleData || item is SliderData || item is BurstSliderData)
+                    if (item is NoteData || item is ObstacleData || item is SliderData)// || item is BurstSliderData)
                         continue;
 
                     // Keep vanilla events when CustomBeatmapData wasn’t available

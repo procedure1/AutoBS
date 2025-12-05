@@ -94,6 +94,7 @@ namespace AutoBS
             Config.Instance.TurnOffJSONDatOutputAfterOneMapPlay = true;
             Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls = false;
             Config.Instance.OutputV3JsonToSongFolder = false;
+            Config.Instance.OutputV4JsonToSongFolder = false;
             Config.Instance.Changed();
         }
     }

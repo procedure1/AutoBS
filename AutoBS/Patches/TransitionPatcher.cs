@@ -75,6 +75,8 @@ namespace AutoBS.Patches
         public static ColorScheme theOverrideColorScheme;
         public static CustomBeatmapData beatMapDataCBforColorScheme;
 
+        public static BeatmapLevel SelectedBeatmapLevel;
+
         public static float OriginalNoteJumpMovementSpeed = 0;
         public static float FinalNoteJumpMovementSpeed = 0;
         public static float NoteJumpOffset; //noteJumpStartBeatOffset
@@ -139,6 +141,7 @@ namespace AutoBS.Patches
 
             SelectedCharacteristicSO = beatmapKey.beatmapCharacteristic;
             SelectedDifficulty = beatmapKey.difficulty;
+            SelectedBeatmapLevel = beatmapLevel;
             CurrentPlayKey = beatmapKey;
             bpm = beatmapLevel.beatsPerMinute;
 
