@@ -26,7 +26,7 @@ namespace AutoBS.UI
         [UIAction("#post-parse")]
         private void PostParse()
         {
-            Plugin.Log.Info("[GameplaySetupView] PostParse called!");
+            //Plugin.Log.Info("[GameplaySetupView] PostParse called!");
             RefreshAllUI();
         }
 
@@ -1551,14 +1551,14 @@ namespace AutoBS.UI
         public bool EnablerEnablePlugin
         { get => Config.Instance.EnablePlugin; set { SafeNotify(); } }
 
-
+        //this doesn't work
         [UIValue("EnablerRotationSettings")]
         public bool EnablerRotationSettings
         {
-            get => Config.Instance.EnablePlugin && Config.Instance.Enable360fyer; // add && !Config.Instance.Wireless360 if you also want to lock these in Wireless mode
+            get => Config.Instance.Enable360fyer && Config.Instance.EnablePlugin; // add && !Config.Instance.Wireless360 if you also want to lock these in Wireless mode
             set
             {
-                SafeNotify();
+                SafeNotify();//NotifyPropertyChanged(nameof(EnablerRotationSettings)); // Error but can't find a problem: [SafeNotify] Exception for EnablerRotationSettings: 
             }
         }
 

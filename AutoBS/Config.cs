@@ -60,8 +60,8 @@ namespace AutoBS
 
         // 90
 
-        public virtual float LimitRotations90 { get; set; } = 90;//BW changed this to Degrees
-        public virtual bool ShowGenerated90 { get; set; } = false;
+        //public virtual float LimitRotations90 { get; set; } = 90;//BW changed this to Degrees
+        //public virtual bool ShowGenerated90 { get; set; } = false;
 
         // ROTATION
         public virtual bool RotationModeLate { get; set; } = true; // late means rotations only occur on an object if the object is later than the rotation event time. early, means the rotation applies to any object on or after the rotation event time
@@ -280,11 +280,11 @@ namespace AutoBS
         //------------------------
         //v2 not working well. rotation event have wall penetrations. the mapping extension walls don't work and arcs do not work even though they are supposed to be supported. i can't find a single custom map v2 with arcs and none in the built in system for v1.34 either
         public virtual bool TurnOffJSONDatOutputAfterOneMapPlay { get; set; } = true; // to prevent constant JSON outputs
-        public virtual bool OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls { get; set; } = false; //will convert to v2 - doesn't output arcs or chains. arcs are supposed to be supported but always produce infinitely long arcs. Mappring extension walls don't work either for some reason so i filtered them out.
-        public virtual bool OutputV3JsonToSongFolder { get; set; } = false; //will convert to v3
+        public virtual bool OutputV2JsonToSongFolder_NoArcsNoChainsNoMapExtWalls { get; set; } = false; //will convert to v2 - doesn't output arcs or chains. arcs are supposed to be supported but always produce infinitely long arcs. Mappring extension walls don't work either for some reason so i filtered them out.
+        public virtual bool OutputV3JsonToSongFolder { get; set; } = false; //will convert to v3 -- use ForceZero arc rotation mode or will have intersecting arcs/walls
         //add to v2 or v3! since its the info.dat file. add it to each "_difficultyBeatmaps" that needs it: "_customData": {"_requirements": ["Mapping Extensions"]},
         //at least for beat sage, need to remove in info.dat:  "_environmentNames": [ "DefaultEnvironment" ], AND remove "_environmentNameIdx": 0, from each difficultyBeatmap in order for 360 map to use 360 environment
-        public virtual bool OutputV4JsonToSongFolder { get; set; } = false;
+        public virtual bool OutputV4JsonToSongFolder { get; set; } = false; // ouptuts perfect map
         public virtual int OutputV4JsonSongFrequency { get; set; } = 44100;
     }
 }

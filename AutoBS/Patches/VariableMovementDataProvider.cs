@@ -24,6 +24,7 @@ namespace AutoBS.Patches
             ref Vector3 forwardVector
         )
         {
+            if (!Config.Instance.EnablePlugin) return;
             if (!Utils.IsEnabledAutoNjsFixer()) return; //checks for conflicting mods too
 
             bool WillOverride = BS_Utils.Plugin.LevelData.IsSet && !BS_Utils.Gameplay.Gamemode.IsIsolatedLevel

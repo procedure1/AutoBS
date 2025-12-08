@@ -16,6 +16,8 @@ namespace AutoBS // required adding reference to UnityEngine.AudioModule
         {
             public static void Postfix(bool addedToHierarchy, bool screenSystemEnabling, ref SongPreviewPlayer ____songPreviewPlayer, ref LevelCompletionResults ____levelCompletionResults)
             {
+                if (!Config.Instance.EnablePlugin) return;
+
                 if (!addedToHierarchy)
                     return;
 

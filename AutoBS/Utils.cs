@@ -26,14 +26,6 @@ namespace AutoBS
     {
         public static bool IsEnabledForGeneralFeatures()
         {
-            //if (HarmonyPatches.RequiresNoodle) return false; // Added this since any changes to original map are causing CustomJSONData.CustomBeatmap.CustomObstacleData errors. Even If I don't alter obstacles. I did want to allow lights and arcs/chains when there were no problem notes and wall gen when there were obs problems. but for now, can't do it. But any feature that gets added will crash map on all the maps I've tried.
-            //bool requiresVivify = SetContent.RequiresVivify.TryGetValue(TransitionPatcher.SelectedDifficulty, out var foundValue) && foundValue;
-
-            //if (requiresVivify)
-            //{
-            //    Plugin.Log.Info("General features disabled by Vivify Requirement.");
-            //    return false;
-            //}
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE || IsEnabledArcs() || IsEnabledChains() || IsEnabledWalls() || IsEnabledLighting() || IsEnabledAutoNjsFixer() || Config.Instance.EnableCleanBeatSage)
             {
                 Plugin.Log.Info("[Utils] General features enabled.");
@@ -47,8 +39,6 @@ namespace AutoBS
         }
         public static bool IsEnabledRotations()
         {
-            if (!Config.Instance.EnablePlugin) return false;
-
             //if (HarmonyPatches.RequiresNoodle) return false;
 
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
@@ -63,10 +53,6 @@ namespace AutoBS
         }
         public static bool IsEnabledFOV()
         {
-            if (!Config.Instance.EnablePlugin) return false;
-
-            //if (HarmonyPatches.RequiresNoodle) return false;
-
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE ||
                 (Config.Instance.EnableWallsNonGen360 &&
                 (TransitionPatcher.SelectedSerializedName == "360Degree" || TransitionPatcher.SelectedSerializedName == "90Degree"))) // use this for nonGen360 maps with wall gen since old 360fyer generated maps have wild rotations that cause walls to reverse through the frame. this will not help some walls blocking player vision that are built into 360fyer old generated output
@@ -82,21 +68,6 @@ namespace AutoBS
 
         public static bool IsEnabledArcs()
         {
-            if (!Config.Instance.EnablePlugin) return false;
-
-            //if (BeatmapDataTransformHelperPatcher.NoodleProblemNotes) return false;
-            //if (!Config.Instance.EnableArcs)   return false;
-            /*
-            if (type == "Arcs")
-            {
-                if (!Config.Instance.EnableArcs) return false;
-            }
-            else if (type == "Chains")
-            {
-                if (!Config.Instance.EnableChains) return false;
-            }
-            */
-
             string characteristic = TransitionPatcher.SelectedSerializedName;
 
             if ((!Config.Instance.EnableArcsGen360    && characteristic  == "Generated360Degree") ||
@@ -112,11 +83,6 @@ namespace AutoBS
 
         public static bool IsEnabledChains()
         {
-            if (!Config.Instance.EnablePlugin) return false;
-
-            //if (BeatmapDataTransformHelperPatcher.NoodleProblemNotes) return false;
-            //if (!Config.Instance.EnableChains) return false;
-
             string characteristic = TransitionPatcher.SelectedSerializedName;
 
             if ((!Config.Instance.EnableChainsGen360    && characteristic  == "Generated360Degree") ||
@@ -132,10 +98,6 @@ namespace AutoBS
 
         public static bool IsEnabledWalls()
         {
-            if (!Config.Instance.EnablePlugin) return false;
-
-            //if (HarmonyPatches.RequiresNoodle) return false;
-
             string characteristic = TransitionPatcher.SelectedSerializedName;
             //Plugin.Log.Info($"IsEnabledWalls Characteristic: {characteristic}");
 
@@ -160,11 +122,6 @@ namespace AutoBS
 
         public static bool IsEnabledLighting()
         {
-            if (!Config.Instance.EnablePlugin) return false;
-
-            //if (HarmonyPatches.RequiresNoodle) return false;
-            //Will need to check for various types of lighting despite this function (such as lightmapper, etc)
-
             string characteristic = TransitionPatcher.SelectedSerializedName;
 
             if ((!Config.Instance.EnableLightingGen360    && characteristic  == "Generated360Degree") ||
@@ -180,7 +137,6 @@ namespace AutoBS
         }
         public static bool IsEnabledAutoNjsFixer()
         {
-            if (!Config.Instance.EnablePlugin) return false;
             if (TransitionPatcher.AutoNJSDisabledByConflictingMod) return false;
 
             //if (HarmonyPatches.RequiresNoodle) return false;

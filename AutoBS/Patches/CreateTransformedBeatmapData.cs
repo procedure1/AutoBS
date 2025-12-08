@@ -42,6 +42,7 @@ namespace AutoBS.Patches
             EnvironmentIntensityReductionOptions environmentIntensityReductionOptions,
             in Settings settings)
         {
+            if (!Config.Instance.EnablePlugin) return;
             if (!Utils.IsEnabledForGeneralFeatures()) return;
 
             //if (!(beatmapData is CustomBeatmapData)) return;

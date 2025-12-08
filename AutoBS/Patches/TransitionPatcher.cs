@@ -129,7 +129,6 @@ namespace AutoBS.Patches
             Action<StandardLevelScenesTransitionSetupDataSO, LevelCompletionResults> levelRestartedCallback,
             RecordingToolManager.SetupData? recordingToolData)
         {
-            Plugin.Log.Info($"[TransitionPatcher] Called!");
             if (!Config.Instance.EnablePlugin) return;
 
             SelectedSerializedName = beatmapKey.beatmapCharacteristic.serializedName;
@@ -281,24 +280,6 @@ namespace AutoBS.Patches
             ForceActivatePatches.MappingExtensionsForceActivate();
 
         }
-
-        [HarmonyPatch(typeof(MenuTransitionsHelper), nameof(MenuTransitionsHelper.StartStandardLevel))]
-        static class StartStandardLevel_FallbackGate
-        {
-            static void Postfix(/* capture what you need: level, diff, etc. */)
-            {
-                if (!ScoreGate.IsDisabledThisRun)
-                {
-                    string disabledText = TransitionPatcher.DetermineScoreSubmissionReason(BeatSageCleanUp.DisableScoreSubmission, 0);
-                    if (!string.IsNullOrEmpty(disabledText))
-                    {
-                        ScoreGate.Set(disabledText);
-                        Plugin.Log.Info($"[TransitionPatcher][ScoreGate][Fallback] Disabled – Reason: {ScoreGate.ReasonThisRun}");
-                    }
-                }
-            }
-        }
-
 
         // Doesn't check if the mod itself is self-enabled. so JDFixer and NJSFixer start disabled but will be considered enabled here.
         public static void CheckConflictingMods()

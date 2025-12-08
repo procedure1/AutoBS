@@ -182,7 +182,7 @@ namespace AutoBS
 
             //List<CustomSliderData> sliders = dataItems.OfType<CustomSliderData>().ToList();//Where((e) => e.sliderType == SliderData.Type.Normal).ToList();//get arcs and chains (original or added by arcitect)
 
-            if (isEnabledWalls && (!Config.Instance.AllowCrouchWalls || !Config.Instance.AllowLeanWalls) || isEnabledWalls || Utils.IsEnabledArcs() || Utils.IsEnabledChains() || Config.Instance.Enable360fyer || Config.Instance.ShowGenerated90)
+            if (isEnabledWalls && (!Config.Instance.AllowCrouchWalls || !Config.Instance.AllowLeanWalls) || isEnabledWalls || Utils.IsEnabledArcs() || Utils.IsEnabledChains() || Config.Instance.Enable360fyer)// || Config.Instance.ShowGenerated90)
                 WallGenerator.ResetWalls(eData); // reset for each song so variables clear out - do this even if wall generator is off since need to change walls for chains and rotations etc
 
             //List<SliderData> burstSliders = dataItems.OfType<SliderData>().Where((e) => e.sliderType == SliderData.Type.Burst).ToList();//get original arcs
@@ -1651,9 +1651,18 @@ namespace AutoBS
 
                 // (Optional but wise) sanitize numbers if you ever mix doubles/longs
                 // NormalizeCustomJson(cbd.customData); etc.
-                Plugin.Log.Info($"[Generator] Final Result CustomBeatmapData after Generator - notes: {cbd.allBeatmapDataItems.OfType<NoteData>().Count()} obstacles: {cbd.allBeatmapDataItems.OfType<ObstacleData>().Count()} events: {cbd.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Count()} customEvents: {cbd.allBeatmapDataItems.OfType<CustomEventData>().Count()}.");
-
-
+                Plugin.Log.Info($"[Generator] Final Result CustomBeatmapData after Generator - notes: {cbd.allBeatmapDataItems.OfType<NoteData>().Count()} obstacles: {cbd.allBeatmapDataItems.OfType<ObstacleData>().Count()} basicEvents: {cbd.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Count()} customEvents: {cbd.allBeatmapDataItems.OfType<CustomEventData>().Count()}.");
+                /*
+                foreach (var e in cbd.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>())
+                {
+                    if (e.basicBeatmapEventType == BasicBeatmapEventType.Event5)
+                        Plugin.Log.Info($"  [Generator] Color Boost Found: Time: {e.time:F} - Boost: {e.value}");
+                    if (e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15)
+                        Plugin.Log.Info($"  [Generator] Spawn Rotation Found: Time: {e.time:F} - Rotation: {e.value}");
+                    if (e.basicBeatmapEventType == BasicBeatmapEventType.Event1 || e.basicBeatmapEventType == BasicBeatmapEventType.Event2 || e.basicBeatmapEventType == BasicBeatmapEventType.Event3)
+                        Plugin.Log.Info($"  [Generator] Events 1 or 2 or 3 found: Time: {e.time:F} - Rotation: {e.value}");
+                }
+                */
                 return new GeneratorOutput { Custom = cbd };
             }
 

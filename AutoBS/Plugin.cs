@@ -89,13 +89,16 @@ namespace AutoBS
 
 
         [OnExit]
-        public void OnApplicationQuit() 
+        public void OnApplicationQuit()
         {
-            Config.Instance.TurnOffJSONDatOutputAfterOneMapPlay = true;
-            Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls = false;
-            Config.Instance.OutputV3JsonToSongFolder = false;
-            Config.Instance.OutputV4JsonToSongFolder = false;
-            Config.Instance.Changed();
+            if (!Config.Instance.TurnOffJSONDatOutputAfterOneMapPlay)
+            {
+                Config.Instance.TurnOffJSONDatOutputAfterOneMapPlay = true;
+                Config.Instance.OutputV2JsonToSongFolder_NoArcsNoChainsNoMapExtWalls = false;
+                Config.Instance.OutputV3JsonToSongFolder = false;
+                Config.Instance.OutputV4JsonToSongFolder = false;
+                //Config.Instance.Changed(); dont' need
+            } 
         }
     }
     //Zenject installer. Need this to access and control ParametricBoxController since I couldn't find another way to access that method. If could figure out how to patch a level of beatsaber i might be able to find it another way

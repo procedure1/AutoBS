@@ -44,7 +44,7 @@ namespace AutoBS
                 try
                 {
                     h.Patch(mi, postfix: new HarmonyMethod(typeof(ForceActivatePatches), nameof(ChromaConditionPostfix)));
-                    Plugin.Log.Info($"[ForceActivate] Patched Chroma Condition: {mi}");
+                    //Plugin.Log.Info($"[ForceActivate] Patched Chroma Condition: {mi}");
                 }
                 catch (Exception ex)
                 {
@@ -70,7 +70,7 @@ namespace AutoBS
             try
             {
                 h.Patch(mi, postfix: new HarmonyMethod(typeof(ForceActivatePatches), nameof(NoodleConditionPostfix)));
-                Plugin.Log.Info($"[ForceActivate] Patched Noodle Condition: {mi}");
+                //Plugin.Log.Info($"[ForceActivate] Patched Noodle Condition: {mi}");
             }
             catch (Exception ex)
             {
@@ -101,6 +101,9 @@ namespace AutoBS
         // Mapping Extension has its own built-in method to force activate it for a song
         public static void MappingExtensionsForceActivate()
         {
+            if (!Config.Instance.EnablePlugin || !Utils.IsEnabledForGeneralFeatures())
+                return;
+
             bool alreadyUsing = TransitionPatcher.MapAlreadyUsesMappingExtensions;
 
             //Plugin.Log.Warn($"Mapping Extensions test - IsEnabledExtensionWalls: {Utils.IsEnabledExtensionWalls()}, mapAlreadyUsesMappingExtensions: {mapAlreadyUsesMappingExtensions}");

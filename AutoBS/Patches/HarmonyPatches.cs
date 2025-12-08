@@ -59,6 +59,7 @@ namespace AutoBS.Patches
 
         private static void BrightenLights(ref Color color)
         {
+            if (!Config.Instance.EnablePlugin) return;
             if (!Utils.IsEnabledLighting()) return;
             /*
             if (!Config.Instance.EnablePlugin) return;
@@ -79,7 +80,6 @@ namespace AutoBS.Patches
             // Doesn't apply to standard maps
             if (Config.Instance.BrightLights &&
                 (TransitionPatcher.SelectedSerializedName == "Generated360Degree" ||
-                 TransitionPatcher.SelectedSerializedName == "Generated90Degree" ||
                  TransitionPatcher.SelectedSerializedName == "360Degree" ||
                  TransitionPatcher.SelectedSerializedName == "90Degree"))
             {
@@ -93,7 +93,6 @@ namespace AutoBS.Patches
     //BW 5th item that runs. JDFixer uses this method so that the user can update the MaxJNS over and over. i tried it in LevelUpdatePatcher. it works but can only be updated before play song one time https://github.com/zeph-yr/JDFixer/blob/b51c659def0e9cefb9e0893b19647bb9d97ee9ae/StandardLevelDetailViewPatch.cs
     //note jump offset determines how far away notes spawn from you. A negative modifier means notes will spawn closer to you, and a positive modifier means notes will spawn further away
 
-    //v1.40
     [HarmonyPatch(typeof(BeatmapObjectSpawnMovementData), nameof(BeatmapObjectSpawnMovementData.Init))]
     [HarmonyPatch(new Type[] { typeof(int), typeof(IJumpOffsetYProvider), typeof(Vector3) })]
     internal class SpawnMovementDataUpdatePatch
@@ -103,6 +102,7 @@ namespace AutoBS.Patches
         //public static float OriginalNJO;
         internal static void Prefix(int noteLinesCount, IJumpOffsetYProvider jumpOffsetYProvider, Vector3 rightVec)
         {
+            if (!Config.Instance.EnablePlugin) return;
             if (!Utils.IsEnabledLighting()) return;
 
             if (Config.Instance.BigLasers &&
@@ -163,127 +163,6 @@ namespace AutoBS.Patches
         }
     }
     #endregion
-
-    #region UNUSED Prefix - Custom Colors - Gets  author's custom color scheme to work NOT WORKING but MAYBE NOT NEEDED. TEST!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // THIS DOENS'T Work in the same way anymore for v1.40 since IDifficultyBeatmap and overrideColorScheme are gone. Can get this info from another prefix if need to use this
-    //This patch was originally intended to override the ColorScheme used for a given beatmap, typically based on custom data in the beatmap’s JSON (e.g. _colorLeft, _envColorRight, _obstacleColor, etc.), but only for certain gamemodes like Generated360 and non-gen 360
-    //This will set an author's custom color scheme to work. But built-in and non-customized colors on custom maps will get the standard default color scheme. Colors will revert to the player's color override if that is set.
-    //v1.34
-    //[HarmonyPatch(typeof(StandardLevelScenesTransitionSetupDataSO), "Init")]
-    //v1.40
-    /*
-    [HarmonyPatch]
-    internal class ColorSchemeUpdatePatch
-    {
-        //v1.34
-        //internal static void Prefix(IDifficultyBeatmap difficultyBeatmap, ref ColorScheme overrideColorScheme, ColorScheme beatmapOverrideColorScheme)
-        //v1.40
-        internal static void Prefix(ref ColorScheme colorScheme)
-        {
-            if (!Utils.IsEnabledForGeneralFeatures()) return;
-
-            //if (!Config.Instance.EnablePlugin) return;
-
-            // If EnableFeaturesForNonGen360Maps is false and the map is 360Degree or 90Degree, exit
-            //if (!Config.Instance.EnableFeaturesForNonGen360Maps &&
-            //    (TransitionPatcher.characteristicSerializedName == "360Degree" ||
-            //    TransitionPatcher.characteristicSerializedName == "90Degree")) return;
-
-            //only needed for non-standard environments
-
-            //v1.40
-            if (TransitionPatcher.characteristicSerializedName == "Generated360Degree" || TransitionPatcher.characteristicSerializedName == "360Degree" || TransitionPatcher.characteristicSerializedName == "90Degree")//only do this for gen 360 or else it will do this for all maps
-            {
-
-                string beatmapString = beatmapLevelData.GetBeatmapString(in beatmapKey);
-
-                if (!string.IsNullOrEmpty(beatmapString) && beatmapString.TrimStart().StartsWith("{"))
-                {
-                    JObject fullJson = JObject.Parse(beatmapString);
-                    JObject beatmapCustomData = (JObject)fullJson["customData"];
-
-                    if (beatmapCustomData != null &&
-                        (beatmapCustomData["_colorLeft"] != null ||
-                         beatmapCustomData["_envColorLeft"] != null ||
-                         beatmapCustomData["_obstacleColor"] != null))
-                    {
-                        // Parse custom colors
-                        Color saberAColor = GetColorOrFallback(beatmapCustomData, "_colorLeft", HarmonyPatches.OriginalColorScheme.saberAColor);
-                        Color saberBColor = GetColorOrFallback(beatmapCustomData, "_colorRight", HarmonyPatches.OriginalColorScheme.saberBColor);
-                        Color environmentColor0 = GetColorOrFallback(beatmapCustomData, "_envColorLeft", HarmonyPatches.OriginalColorScheme.environmentColor0);
-                        Color environmentColor1 = GetColorOrFallback(beatmapCustomData, "_envColorRight", HarmonyPatches.OriginalColorScheme.environmentColor1);
-                        Color environmentColorW = GetColorOrFallback(beatmapCustomData, "_envColorWhite", HarmonyPatches.OriginalColorScheme.environmentColorW);
-                        Color environmentColor0Boost = GetColorOrFallback(beatmapCustomData, "_envColorLeftBoost", HarmonyPatches.OriginalColorScheme.environmentColor0Boost);
-                        Color environmentColor1Boost = GetColorOrFallback(beatmapCustomData, "_envColorRightBoost", HarmonyPatches.OriginalColorScheme.environmentColor1Boost);
-                        Color environmentColorWBoost = GetColorOrFallback(beatmapCustomData, "_envColorWhiteBoost", HarmonyPatches.OriginalColorScheme.environmentColorWBoost);
-                        Color obstaclesColor = GetColorOrFallback(beatmapCustomData, "_obstacleColor", HarmonyPatches.OriginalColorScheme.obstaclesColor);
-
-                        bool supportsEnvironmentColorBoost =
-                            beatmapCustomData["_envColorLeftBoost"] != null &&
-                            beatmapCustomData["_envColorRightBoost"] != null;
-
-                        //v1.40 added bool usesEnvironmentColor and bool usesObstacleColor 
-                        overrideColorScheme = new ColorScheme(
-                            "theAuthorsColorScheme",          // colorSchemeId
-                            "theAuthorsLocalizationKey",      // localization key
-                            false,                            // useOverride
-                            "Author's Color Scheme",          // name
-                            true,                             // isDefault
-                            supportsEnvironmentColorBoost,    // supportsEnvironmentColorBoost
-                            saberAColor,                      // saberAColor
-                            saberBColor,                      // saberBColor
-                            true,                             // usesEnvironmentColor
-                            environmentColor0,                // environmentColor0
-                            environmentColor1,                // environmentColor1
-                            environmentColorW,                // environmentColorW
-                            true,                             // usesObstacleColor
-                            environmentColor0Boost,           // environmentColor0Boost
-                            environmentColor1Boost,           // environmentColor1Boost
-                            environmentColorWBoost,           // environmentColorWBoost
-                            obstaclesColor                    // obstaclesColor
-                        );
-
-
-                        Plugin.Log.Info("[ColorPatch] Applied author's custom color scheme");
-                        return;
-                    }
-                }
-
-                // If no author-defined scheme, fallback to user or default
-                PlayerDataModel playerDataModel = UnityEngine.Object.FindObjectOfType<PlayerDataModel>();
-                PlayerData playerData = playerDataModel.playerData;
-                bool overrideDefaultColors = playerData.colorSchemesSettings.overrideDefaultColors;
-
-                if (!overrideDefaultColors)
-                {
-                    Plugin.Log.Info("[ColorPatch] Using default level color scheme");
-                    overrideColorScheme = HarmonyPatches.OriginalColorScheme;
-                }
-                else
-                {
-                    Plugin.Log.Info("[ColorPatch] User override color scheme is active, doing nothing");
-                }
-
-                Color GetColorOrFallback(JObject data, string key, Color fallback)
-                {
-                    if (data[key] == null)
-                        return fallback;
-
-                    return new Color(
-                        data[key]["r"]?.Value<float>() ?? fallback.r,
-                        data[key]["g"]?.Value<float>() ?? fallback.g,
-                        data[key]["b"]?.Value<float>() ?? fallback.b
-                    );
-                }
-                
-
-            }
-
-        }
-    }
-    */
-    #endregion
-
 
 
     #region Prefix - BeatmapDataLoader.LoadBeatmapDataAsync - adds the beatmapData (IReadonlyBeatmapData)
@@ -371,7 +250,6 @@ namespace AutoBS.Patches
             //---------------------------------------
 
             if (!Config.Instance.EnablePlugin) return true;
-
             if (!Utils.IsEnabledForGeneralFeatures()) return true;
 
             if (!loadingForDesignatedEnvironment)
@@ -423,6 +301,7 @@ namespace AutoBS.Patches
         static bool Prefix(StandardLevelDetailView __instance)
         {
             if (!Config.Instance.EnablePlugin) return true;
+            if (!Config.Instance.Enable360fyer) return true;
 
             // Access current level and selected difficulty
             var levelField = typeof(StandardLevelDetailView).GetField("_beatmapLevel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -538,6 +417,9 @@ namespace AutoBS.Patches
                            ref GameObject ____clearedBannerGo,
                            ref GameObject ____failedBannerGo)
         {
+            if (!Config.Instance.EnablePlugin) return;
+            if (!Utils.IsEnabledForGeneralFeatures()) return;
+
             var obj = ____clearedBannerGo.activeInHierarchy ? ____clearedBannerGo : ____failedBannerGo;
             var tmp = obj.GetComponentInChildren<CurvedTextMeshPro>();
             if (tmp != null) _baseText[__instance.GetHashCode()] = tmp.text ?? "";
@@ -549,6 +431,9 @@ namespace AutoBS.Patches
 
         static void Postfix(ref GameObject ____clearedBannerGo, ref GameObject ____failedBannerGo, ref TextMeshProUGUI ____rankText)
         {
+            if (!Config.Instance.EnablePlugin) return;
+            if (!Utils.IsEnabledForGeneralFeatures()) return;
+
             // Debug: confirm gate state at render time
             Plugin.Log.Info($"[ScoreGate] Results UI: IsDisabled={ScoreGate.IsDisabledThisRun} Reason='{ScoreGate.ReasonThisRun}'");
 
@@ -597,12 +482,15 @@ namespace AutoBS.Patches
             label.gameObject.SetActive(true);
         }
     }
-   //Clear your flag when you return to menu so it doesn’t carry over
+    //Clear your flag when you return to menu so it doesn’t carry over
     [HarmonyPatch(typeof(MainFlowCoordinator), "DidActivate")]
     static class ScoreGate_ClearOnMenu
     {
         static void Postfix()
         {
+            if (!Config.Instance.EnablePlugin) return;
+            if (!Utils.IsEnabledForGeneralFeatures()) return;
+
             Plugin.Log.Info("[ScoreGate] Clearing on MainFlowCoordinator.DidActivate");
             ScoreGate.Clear();
         }
@@ -627,159 +515,7 @@ namespace AutoBS.Patches
         }
     }
 
-
-
-
-
-
-    #region UNUSED Postfix HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty - MAY NOT NEED THIS!!!!!!!!
-    /*
     // Gets User selected difficulty when a user changes the difficulty in the menu. Otherwise, SetContent will have the default difficulty when a new song is selected.
-    [HarmonyPatch(typeof(StandardLevelDetailView), "HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty")]
-    class Patch_DifficultyChange
-    {
-        public static BeatmapDifficulty UserSelectedDifficulty = BeatmapDifficulty.Hard; // Default value, can be set by the caller
-        static void Postfix(StandardLevelDetailView __instance, BeatmapDifficultySegmentedControlController controller, BeatmapDifficulty difficulty)
-        {
-            var charController = Traverse.Create(__instance)
-                .Field("_beatmapCharacteristicSegmentedControlController")
-                .GetValue<BeatmapCharacteristicSegmentedControlController>();
-
-            var selectedCharacteristic = charController.selectedBeatmapCharacteristic;
-
-            var level = Traverse.Create(__instance).Field("_beatmapLevel").GetValue<BeatmapLevel>();
-
-
-            //SetContent.UserSelectedDifficulty = controller.selectedDifficulty;
-
-            Plugin.Log.Info($"[Patch_DifficultyChange] User selected difficulty: {controller.selectedDifficulty}, characteristic: {selectedCharacteristic.serializedName}");
-
-            //Utils.CreateGen360DifficultySet(level);
-        }
-    }
-    */
-    #endregion
-
-
-    // Beatmap Lighting Logger
-    /*
-    public static class BeatmapLightingLogger
-    {
-        public static void LogGLSLightingEvents(BeatmapSaveData beatmapSaveData)
-        {
-            if (beatmapSaveData == null)
-            {
-                Plugin.Log.Error("LogLightingEvents: BeatmapSaveData is null!");
-                return;
-            }
-            StringBuilder logOutput = new StringBuilder();
-
-            logOutput.AppendLine($"===== SONG NAME: {HarmonyPatches.SongName} -- LIGHTING EVENT LOG =====");
-
-            // Log Basic Beatmap Events
-            logOutput.AppendLine("\n--- Basic Beatmap Events ---");
-
-            foreach (var eventData in beatmapSaveData.basicBeatmapEvents)
-            {
-                logOutput.AppendLine($"[Beat: {eventData.beat}] | Type: {eventData.eventType} | Value: {eventData.value} | Float Value: {eventData.floatValue}");
-
-                if (beatmapSaveData is CustomBeatmapSaveData customData && eventData is CustomBeatmapSaveData.BasicEventData customEvent)
-                {
-                    if (customEvent.customData != null)
-                    {
-                        logOutput.AppendLine($"  ├ Custom Data: {customEvent.customData}");
-                    }
-                }
-            }
-
-
-
-            Plugin.Log.Info($"---- SONG NAME: {HarmonyPatches.SongName} LIGHT COLOR EVENT BOX GROUPS ----");
-            foreach (var group in beatmapSaveData.lightColorEventBoxGroups)
-            {
-                Plugin.Log.Info($"Group {group.groupId} at Beat {group.beat}, Events: {group.eventBoxes.Count}");
-                foreach (var eventBox in group.eventBoxes)
-                {
-                    Plugin.Log.Info($"  ├─ LightColorEventBox:");
-                    LogIndexFilter(eventBox.indexFilter);
-
-                    Plugin.Log.Info($"  │   ├─ BeatDistParam: {eventBox.beatDistributionParam}, BeatDistType: {eventBox.beatDistributionParamType}");
-                    Plugin.Log.Info($"  │   ├─ BrightnessDistParam: {eventBox.brightnessDistributionParam}, BrightnessDistType: {eventBox.brightnessDistributionParamType}");
-                    Plugin.Log.Info($"  │   ├─ BrightnessEase: {eventBox.brightnessDistributionEaseType}");
-
-                    foreach (var lightEvent in eventBox.lightColorBaseDataList)
-                    {
-                        Plugin.Log.Info($"  │   │   ├─ Light Event: Beat {lightEvent.beat}, Transition {lightEvent.transitionType}, Color {lightEvent.colorType}, Brightness {lightEvent.brightness}");
-                        Plugin.Log.Info($"  │   │   ├─ StrobeFreq {lightEvent.strobeBeatFrequency}, StrobeBrightness {lightEvent.strobeBrightness}, StrobeFade {lightEvent.strobeFade}");
-                    }
-                }
-
-            }
-
-            Plugin.Log.Info($"---- SONG NAME: {HarmonyPatches.SongName} LIGHT ROTATION EVENT BOX GROUPS ----");
-            foreach (var group in beatmapSaveData.lightRotationEventBoxGroups)
-            {
-                Plugin.Log.Info($"Group {group.groupId} at Beat {group.beat}, Events: {group.eventBoxes.Count}");
-                foreach (var eventBox in group.eventBoxes)
-                {
-                    Plugin.Log.Info($"  ├─ LightRotationEventBox:");
-                    LogIndexFilter(eventBox.indexFilter);
-
-                    Plugin.Log.Info($"  │   ├─ BeatDistParam: {eventBox.beatDistributionParam}, BeatDistType: {eventBox.beatDistributionParamType}");
-                    Plugin.Log.Info($"  │   ├─ RotationDistParam: {eventBox.rotationDistributionParam}, RotationDistType: {eventBox.rotationDistributionParamType}, Axis: {eventBox.axis}");
-                    Plugin.Log.Info($"  │   ├─ FlipRotation: {eventBox.flipRotation}, RotationEase: {eventBox.rotationDistributionEaseType}");
-
-                    foreach (var rotationEvent in eventBox.lightRotationBaseDataList)
-                    {
-                        Plugin.Log.Info($"  │   │   ├─ Rotation Event: Beat {rotationEvent.beat}, UsePrev {rotationEvent.usePreviousEventRotationValue}, Ease {rotationEvent.easeType}");
-                        Plugin.Log.Info($"  │   │   ├─ Loops {rotationEvent.loopsCount}, Rotation {rotationEvent.rotation}, Direction {rotationEvent.rotationDirection}");
-                    }
-                }
-            }
-
-            Plugin.Log.Info("---- LIGHT TRANSLATION EVENT BOX GROUPS ----");
-            foreach (var group in beatmapSaveData.lightTranslationEventBoxGroups)
-            {
-                Plugin.Log.Info($"Group {group.groupId} at Beat {group.beat}, Events: {group.eventBoxes.Count}");
-                foreach (var eventBox in group.eventBoxes)
-                {
-                    Plugin.Log.Info($"  ├─ LightTranslationEventBox:");
-                    LogIndexFilter(eventBox.indexFilter);
-
-                    Plugin.Log.Info($"  │   ├─ BeatDistParam: {eventBox.beatDistributionParam}, BeatDistType: {eventBox.beatDistributionParamType}");
-                    Plugin.Log.Info($"  │   ├─ GapDistParam: {eventBox.gapDistributionParam}, GapDistType: {eventBox.gapDistributionParamType}, Axis: {eventBox.axis}");
-                    Plugin.Log.Info($"  │   ├─ FlipTranslation: {eventBox.flipTranslation}, TranslationEase: {eventBox.gapDistributionEaseType}");
-
-                    foreach (var translationEvent in eventBox.lightTranslationBaseDataList)
-                    {
-                        Plugin.Log.Info($"  │   │   ├─ Translation Event: Beat {translationEvent.beat}, UsePrev {translationEvent.usePreviousEventTranslationValue}, Ease {translationEvent.easeType}");
-                        Plugin.Log.Info($"  │   │   ├─ Translation: {translationEvent.translation}");
-                    }
-                }
-            }
-
-
-
-            // Print log output
-            Plugin.Log.Info(logOutput.ToString());
-        }
-        private static void LogIndexFilter(BeatmapSaveDataVersion3.BeatmapSaveData.IndexFilter indexFilter)
-        {
-            if (indexFilter == null)
-            {
-                Plugin.Log.Info($"  │   ├─ IndexFilter: NULL");
-                return;
-            }
-
-            Plugin.Log.Info($"  │   ├─ IndexFilter:");
-            Plugin.Log.Info($"  │   │   ├─ Type: {indexFilter.type}");
-            Plugin.Log.Info($"  │   │   ├─ Param0: {indexFilter.param0}, Param1: {indexFilter.param1}");
-            Plugin.Log.Info($"  │   │   ├─ Reversed: {indexFilter.reversed}, Random: {indexFilter.random}");
-            Plugin.Log.Info($"  │   │   ├─ Seed: {indexFilter.seed}, Chunks: {indexFilter.chunks}");
-            Plugin.Log.Info($"  │   │   ├─ Limit: {indexFilter.limit}, LimitAffects: {indexFilter.limitAlsoAffectsType}");
-        }
-
-    }
-    */
+    //[HarmonyPatch(typeof(StandardLevelDetailView), "HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty")]
 
 }

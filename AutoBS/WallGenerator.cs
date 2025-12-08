@@ -957,7 +957,7 @@ namespace AutoBS
                     if (alreadyHasGenWall != "left" && alreadyHasBigWall != "left") // left wall
                     {
                         //Plugin.Log.Info($"Window Panes left - Time: {newWallStartTime}, Index:{-leftLineIndex}, Layer: {layer}, Dur: .0000001f, Width: {width}, Height: {height1}");
-                        EObstacleData customObsData = EObstacleData.Create(newWallStartTime, -leftLineIndex, layer, .0000001f, width, height1); // left wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
+                        EObstacleData customObsData = EObstacleData.Create(newWallStartTime, -leftLineIndex, layer, .000001f, width, height1); // left wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                         _generatedExtensionWalls.Add(customObsData);
 
                         //data.AddBeatmapObjectDataInOrder(customObsData);
