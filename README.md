@@ -1,5 +1,5 @@
 # AutoBS Beat Saber Automation Mod 
-# Featuring 360fyer, Arcitect Arc and Chain Maker, and Auto NJS
+# Featuring 360fyer, Arcitect Arc + Chain Maker, Auto Walls, and Auto NJS
 
 ---
 
@@ -24,9 +24,10 @@ v1.40.0
 - Or install this mod manually by downloading a release from the Releases tab: https://github.com/procedure1/autobs/releases and placing it in the `Plugins/` directory of your modded Beat Saber installation.
 - Requires CustomJSONData Mod (also with ModAssistant)
 - Recommended to install Mapping Extensions Mod (also with ModAssistant) if you want full wall custimization
-- Aeroluna's 'Technicolor' dod is awesome with 360fyer
+- Aeroluna's `Technicolor` mod is awesome with 360fyer
 
-- ![Technicolor with 360fyer](https://github.com/procedure1/AutoBS/blob/master/AutoBS-Big-Lasers-Big-Walls-Technicolor.gif)
+![Technicolor with 360fyer](https://github.com/procedure1/AutoBS/blob/master/AutoBS-Big-Lasers-Big-Walls-Technicolor.gif)
+
 ## 360fyer
 
 `360fyer` will take a standard map and create a new map with rotation events. After installation, **every** beatmap will have the 360 degree gamemode enabled. Just choose `360` when you select a song. The level will be generated once you start the level.
@@ -243,6 +244,7 @@ To test and build this project locally, do the following:
 ## Todo
 
 Beat Saber Mixed Reality Mode support
+
 Modern GLS lighting and evironment support
 
 
