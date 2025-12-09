@@ -1,5 +1,5 @@
-# AutoBS Beat Saber Automation Mod 
-# Featuring 360fyer, Arcitect Arc + Chain Maker, Auto Walls, and Auto NJS
+# AutoBS — Beat Saber Automation Mod 
+# Featuring 360fyer, Arcitect Arc + Chain Maker, Auto Lights, Auto Walls, and Auto NJS Fixer
 
 ---
 
