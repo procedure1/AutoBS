@@ -135,6 +135,7 @@ namespace AutoBS
             bool needsRotationLimitAdjustment = false;
 
             bool isEnabledWalls = Utils.IsEnabledWalls();
+            
             bool isEnabledRotations = Utils.IsEnabledRotations();
             /*
             var booster = new UNUSED_RotationBooster
@@ -171,7 +172,7 @@ namespace AutoBS
             //LinkedList<BeatmapDataItem> dataItems = data.allBeatmapDataItems;
 
             int originalWallCount = eData.Obstacles.Count;
-            Plugin.Log.Info($"Original Wall Count: {originalWallCount}");
+            Plugin.Log.Info($"[Generator] Original Wall Count: {originalWallCount}");
 
             /*
             foreach (ObstacleData obs in dataItems.OfType<ObstacleData>())
@@ -445,12 +446,12 @@ namespace AutoBS
 
             //All in seconds
             List<ENoteData> notesAndBombs = eData.ColorNotes;
-            Plugin.Log.Info($"Notes Count: {notesAndBombs.Count}"); // BW added to see how many notes are in the map
+            Plugin.Log.Info($"[Generator] Notes Count: {notesAndBombs.Count}"); // BW added to see how many notes are in the map
             notesAndBombs.AddRange(eData.BombNotes);//List<ENoteData> notes = data.GetBeatmapDataItems<ENoteData>(0).ToList(); // NOTES CONTAINS NOTES AND BOMBS
 
             notesAndBombs.Sort((a, b) => a.time.CompareTo(b.time));
 
-            Plugin.Log.Info($"Notes Count after adding bombs: {notesAndBombs.Count}"); 
+            Plugin.Log.Info($"[Generator] Notes Count after adding bombs: {notesAndBombs.Count}"); 
             /*
             foreach (var n in notesAndBombs)
             {
@@ -1222,7 +1223,7 @@ namespace AutoBS
             Plugin.Log.Info($"1 Rotation Events - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360} - Largest Neg Rot: {low.accumRot} Time: {low.time:F} - Largest Pos Rot: {high.accumRot} Time: {high.time:F} - Final Rotation: {endRot}");
 
             Plugin.Log.Info(
-                $" ------- Main Loop time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F} Called WallGenerator {wallGenCount} times.");
+                $" ------- Main Loop time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F} Called WallGenerator {wallGenCount} times. Wall Count: {eData.Obstacles.Count}");
             stopwatch.Stop();
 
             #endregion
@@ -1387,7 +1388,7 @@ namespace AutoBS
 
             #region Wall Generator
 
-
+            //Plugin.Log.Info($"Utils.IsEnabledExtensionWalls(): {Utils.IsEnabledExtensionWalls()} EnableMappingExtensionsWallsGenerator: {Config.Instance.EnableMappingExtensionsWallsGenerator} originalWallCount: {originalWallCount}");
             //outside the loop. so not using wallTime and not on the beat
             if (Utils.IsEnabledExtensionWalls() && Config.Instance.EnableMappingExtensionsWallsGenerator && originalWallCount < 5000)// && !BeatmapDataTransformHelperPatcher.NoodleProblemNotes && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles) // turn off automated extended walls for maps already using mapping extensions
             {

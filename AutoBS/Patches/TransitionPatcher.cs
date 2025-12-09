@@ -160,9 +160,6 @@ namespace AutoBS.Patches
             //                  (SuggestionsRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundValue2)  && foundValue2.Any(r => r.Contains("Chroma", StringComparison.OrdinalIgnoreCase))));
             //RequiresVivify = RequirementsRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundValue3) && foundValue3.Any(r => r.Contains("Vivify", StringComparison.OrdinalIgnoreCase));
             //MapAlreadyUsesMappingExtensions = MapAlreadyUsesMappingExtensionsRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundValue5) && foundValue5 == true;
-            
-
-
 
             // For noodle standard maps, need to do it this way. but this works for all maps so use this instead of the registry lookup.
             //if (SetContent.basedOn != SelectedSerializedName)

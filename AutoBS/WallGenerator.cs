@@ -139,7 +139,7 @@ namespace AutoBS
             _allWallsContainsParticleWalls = false;
             _allWallsContainsFloorWalls = false;
 
-            Plugin.Log.Info($"Walls RESET: original wall count: {_originalWalls.Count}");
+            Plugin.Log.Info($"[WallGenerator] Walls RESET: original wall count: {_originalWalls.Count}");
         }
 
         //private static void AddWall(List<EObstacleData>walls, EObstacleData wall)

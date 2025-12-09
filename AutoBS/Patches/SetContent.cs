@@ -46,7 +46,6 @@ namespace AutoBS.Patches
 
         public static bool IsBeatSageMap = false;
         public static Dictionary<BeatmapDifficulty, CustomData> BeatmapCustomData = new Dictionary<BeatmapDifficulty, CustomData>();
-        public static bool IsMappingExtensionsInstalled = false;
 
         //public static readonly Dictionary<BeatmapKey, BeatmapKey> generatedToStandardKey = new Dictionary<BeatmapKey, BeatmapKey>(); // don't need anymore! store the matching standard key for each generated key so when the player choses the gen 360 map we can give beatsaber the stardard corresponding key
 
@@ -87,16 +86,6 @@ namespace AutoBS.Patches
             Plugin.Log.Info($".");
             Plugin.Log.Info($"[SetContent] Song Name: {level.songName} - {defaultBeatmapCharacteristic.serializedName} -------------------------------------------- ");
             Plugin.Log.Info($"[SetContent] LevelID: {level.levelID} BPM: {level.beatsPerMinute}, Duration: {level.songDuration}, Musician: {level.songAuthorName}"); // all accurate for custom and built-in levels
-
-            IsMappingExtensionsInstalled = AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "MappingExtensions");
-            if (IsMappingExtensionsInstalled)
-            {
-                Plugin.Log.Info("[SetContent] Mapping Extensions is installed.");
-            }
-            else
-            {
-                Plugin.Log.Info("[SetContent] Mapping Extensions is NOT installed.");
-            }
 
             CreateGen360DifficultySet(level);
 

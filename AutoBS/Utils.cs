@@ -1,4 +1,5 @@
 ﻿using AutoBS.Patches;
+using AutoBS.UI;
 using BeatmapSaveDataVersion2_6_0AndEarlier;
 using BeatmapSaveDataVersion3;
 using BGLib.UnityExtension;
@@ -115,7 +116,7 @@ namespace AutoBS
         {
             if (!IsEnabledWalls()) return false;
 
-            if (!SetContent.IsMappingExtensionsInstalled) return false;
+            if (!GameplaySetupView.IsMappingExtensionsInstalled) return false;
 
             return true;
         }

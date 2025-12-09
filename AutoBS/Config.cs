@@ -51,8 +51,8 @@ namespace AutoBS
 
 
         // 360
-        public virtual bool Enable360ForStandardMaps { get; set; } = false; // add rotations to an actual standard map!
-        public virtual bool EnableEnvironmentAutoBS { get; set; } = false; // add rotated geometry to standard environments!!
+        //public virtual bool Enable360ForStandardMaps { get; set; } = false; // add rotations to an actual standard map!
+        //public virtual bool EnableEnvironmentAutoBS { get; set; } = false; // add rotated geometry to standard environments!!
 
 
         public virtual bool Wireless360 { get; set; } = true; //BW This assumes the user doesn't want rotation limits and it sets LimitRotations to 999 and BottleneckRotations to 999. only for 360 not 90.
@@ -71,7 +71,7 @@ namespace AutoBS
         public virtual float RotationGroupLimit { get; set; } = 10f;//If totalRotations are under this limit, will add more rotations
         public virtual float RotationGroupSize { get; set; } = 12;//The number of rotations to remain inactive for adding rotations
 
-        public virtual int MaxSameDirectionStreak { get; set; } = 20; // prevent too many rotations in same direction in a row
+        //public virtual int MaxSameDirectionStreak { get; set; } = 20; // prevent too many rotations in same direction in a row
 
         //BW Not needed since rotates outside of the 15 degree pasages
         //public virtual float RotationAngleMultiplier { get; set; } = 1.0f;//BW added this to lessen/increase rotation angle amount
@@ -100,10 +100,10 @@ namespace AutoBS
 
         //public virtual bool ForceZeroArcRotations { get; set; } = false; //strict: no deviation inside covered segments of arcs. no rotations for any events during arcs!
         //public virtual bool ForceNetZeroPerArcRotations { get; set; } = false; //force arcs to net zero rotation over the course of the arc. may allow some rotations as long as net zero during arc.
-        public virtual bool EnableArcsForStandardMaps { get; set; } = false;
+        //public virtual bool EnableArcsForStandardMaps { get; set; } = false;
         public virtual float PreferredArcCountPerMin { get; set; } = 12.0f;//how many arcs per minute to aim for.
         // public virtual float ArcMultiplier { get; set; } = 1.0f;//.1 is 10th of time and 1 is always add arc
-        public virtual float ControlPointLength { get; set; } = 1.0f;
+        //public virtual float ControlPointLength { get; set; } = 1.0f;
         public virtual float MinArcDuration { get; set; } = 0.9f;
         public virtual float MaxArcDuration { get; set; } = 2.5f;
 
@@ -111,7 +111,7 @@ namespace AutoBS
 
         //public virtual bool EnableChains { get; set; } = true;
 
-        public virtual bool EnableChainsForStandardMaps { get; set; } = false;
+        //public virtual bool EnableChainsForStandardMaps { get; set; } = false;
 
         public virtual float PreferredChainCountPerMin { get; set; } = 10.0f;//how many chains per minute to aim for.
         public virtual bool AlterNotes { get; set; } = false; // alter notes so that chains will be compatible - will move note position so tail can exist
@@ -196,11 +196,11 @@ namespace AutoBS
         public virtual bool BrightLights { get; set; } = true;
         public virtual bool BoostLighting { get; set; } = true;
 
-        public virtual bool EnableLightEnhanceForStandardMaps { get; set; } = false;
+        //public virtual bool EnableLightEnhanceForStandardMaps { get; set; } = false;
 
         public virtual bool EnableLightAutoMapper { get; set; } = true;
 
-        public virtual bool EnableLightAutoMapperForStandardMaps { get; set; } = false;
+        //public virtual bool EnableLightAutoMapperForStandardMaps { get; set; } = false;
         public virtual float LightFrequencyMultiplier { get; set; } = 1.0f;// Default is 1, adjust as needed use from 0 - 1 to reduce frequency
         public virtual float BrightnessMultiplier { get; set; } = 1.0f;//affect the floatValue property can increase or decrease
 
