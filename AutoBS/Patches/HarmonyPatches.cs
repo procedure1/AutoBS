@@ -194,61 +194,6 @@ namespace AutoBS.Patches
             bool enableBeatmapDataCaching,
             ref Task<IReadonlyBeatmapData> __result)
         {
-
-            //TEST for BUILT -IN BEATMAPS ----------------------------------------------
-            //BeatmapData originalData;
-            /*
-            // not called
-            string beatmapJson = beatmapLevelData.GetBeatmapString(in beatmapKey);
-            string lightShowJson = beatmapLevelData.GetLightshowString(in beatmapKey);
-
-            var environmentLightGroups = targetEnvironmentInfo.environmentLightGroups;
-
-            var lightEventConverter = new BeatmapLightEventConverterNoConvert(); // this works as a dummy but passes no content
-
-            if (beatmapJson != string.Empty)
-            {
-                Plugin.Log.Info("[Patch_BeatmapDataLoader_LoadAsync] beatmapJson loaded.");
-            }
-            */
-
-            //if (beatmapLevelData.version < BeatmapSaveDataHelpers.version3.Major)
-            //{
-            //according to chatGPT CustomJSONData.HarmonyPatches.BeatmapDataLoaderV2_6_0AndEarlierCustomify  CustomJSONData.HarmonyPatches.BeatmapDataLoaderV3Customify have patched the BeatmapDataLoader to keep the customData
-            //    originalData = BeatmapDataLoaderVersion2_6_0AndEarlier.BeatmapDataLoader
-            //      .GetBeatmapDataFromSaveDataJson(
-            //            beatmapJson,
-            //            lightShowJson,
-            //            beatmapKey.difficulty,
-            //            TransitionPatcher.bpm,
-            //            false,
-            //            targetEnvironmentInfo,
-            //            BeatmapLevelDataVersion.Original,
-            //            playerSpecificSettings,
-            //            lightEventConverter);
-            //}
-            //else
-            //{
-            //    originalData = BeatmapDataLoaderVersion3.BeatmapDataLoader
-            //      .GetBeatmapDataFromSaveDataJson(
-            //            beatmapJson,
-            //            lightShowJson,
-            //            beatmapKey.difficulty,
-            //            TransitionPatcher.bpm,
-            //            false,
-            //            null,
-            //            BeatmapLevelDataVersion.Original,
-            //            playerSpecificSettings,
-            //            null);
-            //}
-            //map error since 0 content in logs!!!!!!!!!!!!!!!!!!!!!
-            //Plugin.Log.Info($"[Patch_BeatmapDataLoader_LoadAsync] Retrieved Built-in BeatmapData - notes: {originalData.allBeatmapDataItems.OfType<NoteData>().Count()} obstacles: {originalData.allBeatmapDataItems.OfType<ObstacleData>().Count()} events: {originalData.allBeatmapDataItems.OfType<EventData>().Count()}.");
-
-            //__result = Task.FromResult<IReadonlyBeatmapData>(originalData);
-            //return false;
-
-            //---------------------------------------
-
             if (!Config.Instance.EnablePlugin) return true;
             if (!Utils.IsEnabledForGeneralFeatures()) return true;
 

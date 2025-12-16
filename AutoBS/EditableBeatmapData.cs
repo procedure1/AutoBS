@@ -648,6 +648,15 @@ namespace AutoBS
         }
 
         public ERotationEventData() { } // Default constructor needed for Create method
+
+        public ERotationEventData(RotationEventData original)
+        {
+            time = original.beat;
+            rotation = (int)original.rotation;
+            accumRotation = 0;
+            customData = new CustomData(); // v3 rotation events NEVER contain customData
+        }
+
         public ERotationEventData(float _time, int _rotation, int _accumRotation = 0, CustomData _customData = null)
         {
             time = _time;
@@ -907,6 +916,9 @@ namespace AutoBS
     {
         public CustomBeatmapData OriginalCBData { get; }
         public BeatmapData OriginalBData { get; }
+
+        public bool MapWasAltered { get; set; }
+
         public List<ENoteData> ColorNotes { get; set; }
         public List<ENoteData> BombNotes { get; }
         public List<EObstacleData> Obstacles { get; set; }
@@ -992,15 +1004,38 @@ namespace AutoBS
                 .Select(s => new ESliderData(s))
                 .ToList();
 
-            // Rotation Events (for v3/v2, you may want to adjust logic for rotation, but basic fallback below)
-            RotationEvents = original.allBeatmapDataItems
-                .OfType<RotationEventData>()
-                .Select(e => new ERotationEventData(e.beat, (int)e.rotation, 0, new CustomData()))
+            RotationEvents = new List<ERotationEventData>();
+
+            //no v2 or v3 files will come to this method at all. but someone could program rotations into basic events. v4.0.0 has SpawnRotations but was removed in v4.1.0 so very little change of those existing in any map
+
+            var basicRotEvents = original.allBeatmapDataItems
+                .OfType<BasicBeatmapEventData>()
+                .Where(e =>
+                    e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || // early
+                    e.basicBeatmapEventType == BasicBeatmapEventType.Event15    // late
+                )
                 .OrderBy(e => e.time)
                 .ToList();
 
-            // Fallback: synthesize from inline 'r' in the v4 beatmap 360 JSON (early events)
-            if (RotationEvents.Count == 0) 
+            int accum = 0;
+
+            foreach (var e in basicRotEvents)
+            {
+                // v2: value is a step that needs scaling (e.g., *15)
+                // v3: value is already degrees; if you’re not sure you can treat 2+3 the same using your helper
+                int deltaDegrees = Generator.SpawnRotationValueToDegrees(e.value);
+
+                accum += deltaDegrees;
+
+                RotationEvents.Add(new ERotationEventData(
+                    e.time,        // time in beats
+                    deltaDegrees,  // delta rotation
+                    accum          // accumRotation
+                                   // customData omitted, ctor defaults to new CustomData()
+                ));
+            }
+            
+            if (RotationEvents.Count == 0)
                 RotationEvents = BuildInlineRotations(ColorNotes, BombNotes, Obstacles, Arcs, Chains);
 
             // Basic events
@@ -1018,6 +1053,9 @@ namespace AutoBS
                 .OrderBy(e => e.time)
                 .ToList();
 
+            if (ColorBoostEvents.Count == 0) TransitionPatcher.MapAlreadyUsesEnvColorBoost = false;
+            else TransitionPatcher.MapAlreadyUsesEnvColorBoost = true;
+
             CustomEvents = original.allBeatmapDataItems.
                 OfType<CustomEventData>()
                 .Select(e => new ECustomEventData(e))
@@ -1034,7 +1072,7 @@ namespace AutoBS
             BeatmapCustomData = original.beatmapCustomData ?? new CustomData();
             LevelCustomData = original.levelCustomData ?? new CustomData();
             CustomData = original.customData ?? new CustomData();
-            Version = original.version;
+            Version = TransitionPatcher.CurrentBeatmapVersion;
 
             ColorNotes = original.beatmapObjectDatas
                 .OfType<CustomNoteData>()
@@ -1070,32 +1108,72 @@ namespace AutoBS
                 .Select(s => new ESliderData(s))
                 .ToList();
 
+
             // RotationEvents
-            if (Version.Major == 3)// CustomBeatmapData is not compatible with v4
+            if (Version.Major == 3)
             {
-                RotationEvents = original.beatmapEventDatas
-                    .OfType<RotationEventData>()
-                    .Select(e => new ERotationEventData(e.beat, (int)e.rotation, 0, new CustomData()))
-                    .OrderBy(e => e.time)
-                    .ToList();
+                // Try to look up v3 save-data rotations
+                if (RotationV3Registry.RotationEventsByKey.TryGetValue(TransitionPatcher.CurrentPlayKey, out var v3RotList)
+                    && v3RotList != null && v3RotList.Count > 0)
+                {
+                    // Build v3 rotations with accumRotation filled in
+                    var sorted = v3RotList.OrderBy(re => re.beat).ToList();
+
+                    RotationEvents = new List<ERotationEventData>(sorted.Count);
+
+                    float bps = TransitionPatcher.bpm / 60f;
+
+                    int accum = 0;
+
+                    foreach (var re in sorted)
+                    {
+                        int delta = (int)re.rotation;
+
+                        accum += delta;  // always apply delta to the accumulator, even if 0
+
+                        if (delta == 0)
+                            continue;    // DO NOT create a rotation event for zero-delta
+
+                        RotationEvents.Add(new ERotationEventData(
+                            re.beat / bps,   // time -- these are read from JSON so still in beats and need to be converted since everything else passed through beat saber's engine and was converted to sec
+                            delta,     // rotation delta
+                            accum      // accumulated rotation
+                                       // customData omitted
+                        ));
+                        //Plugin.Log.Info($"Rot time: {re.beat} rot: {delta} accum: {accum}");
+                    }
+                    Plugin.Log.Info($"[EditableCBD] v3: Loaded {RotationEvents.Count} rotation events from V3RotationRegistry.");
+                }
+                else
+                {
+                    RotationEvents = new List<ERotationEventData>();
+                }
             }
-            else if (Version.Major == 2)
+            else if (Version.Major == 2) // v2 custom maps
             {
                 RotationEvents = original.beatmapEventDatas
                     .OfType<CustomBasicBeatmapEventData>()
-                    .Where(e => e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15)
-                    .Select(e => new ERotationEventData(e.time, Generator.SpawnRotationValueToDegrees(e.value), 0, e.customData))
+                    .Where(e =>
+                        e.basicBeatmapEventType == BasicBeatmapEventType.Event14 ||
+                        e.basicBeatmapEventType == BasicBeatmapEventType.Event15)
+                    .Select(e => new ERotationEventData(
+                        e.time,
+                        Generator.SpawnRotationValueToDegrees(e.value), // v2: convert value -> degrees
+                        0,
+                        e.customData ?? new CustomData()
+                    ))
                     .OrderBy(e => e.time)
                     .ToList();
+            }
+            else if (Version.Major == 4)
+            {
+                if (RotationEvents.Count == 0)
+                    RotationEvents = BuildInlineRotations(ColorNotes, BombNotes, Obstacles, Arcs, Chains); // Fallback: synthesize from inline 'r' in the v4 beatmap 360 JSON (early events)
             }
             else
             {
                 RotationEvents = new List<ERotationEventData>();
             }
-
-            // Fallback: synthesize from inline 'r' in the v4 beatmap 360 JSON (early events)
-            if (Version.Major == 4 && RotationEvents.Count == 0) //
-                RotationEvents = BuildInlineRotations(ColorNotes, BombNotes, Obstacles, Arcs, Chains);
 
             // Basic lighting events (exclude rotation & color boost)
             BasicEvents = original.beatmapEventDatas
@@ -1105,33 +1183,41 @@ namespace AutoBS
                 .Select(e => new EBasicEventData(e))
                 .ToList();
 
-            // Color Boost Events
-            if (Version.Major == 3)
-            {
-                ColorBoostEvents = original.beatmapEventDatas
-                    .OfType<CustomColorBoostBeatmapEventData>()
-                    .Select(e => new EColorBoostEvent(e))
+            // Color Boost Events (robust across v2/v3 loaders) possibly because the runtime moves v2 into this already
+            ColorBoostEvents =
+                original.allBeatmapDataItems
+                    .OfType<ColorBoostBeatmapEventData>()
+                    .Select(e =>
+                    {
+                        // preserve customData when present
+                        var cd = (e as CustomColorBoostBeatmapEventData)?.customData;
+                        return EColorBoostEvent.Create(e.time, e.boostColorsAreOn, cd);
+                    })
                     .OrderBy(e => e.time)
                     .ToList();
-            }
-            else if (Version.Major == 2)
+
+            // Fallback: legacy v2 boost encoded as Basic Event5 -- i don't think this gets used...
+            if (ColorBoostEvents.Count == 0 && Version.Major == 2)
             {
                 ColorBoostEvents = original.beatmapEventDatas
-                    .OfType<CustomBasicBeatmapEventData>()
+                    .OfType<BasicBeatmapEventData>()
                     .Where(e => e.basicBeatmapEventType == BasicBeatmapEventType.Event5)
-                    .Select(e => EColorBoostEvent.Create(e.time, e.value == 1))
+                    .Select(e =>
+                    {
+                        var cd = (e as CustomBasicBeatmapEventData)?.customData;
+                        return EColorBoostEvent.Create(e.time, e.value == 1, cd);
+                    })
                     .OrderBy(e => e.time)
                     .ToList();
-            }
-            else
-            {
-                ColorBoostEvents = new List<EColorBoostEvent>();
             }
 
-            CustomEvents = original.customEventDatas
-                .Select(e => new ECustomEventData(e))
-                .OrderBy(e => e.time)
-                .ToList();
+            if (ColorBoostEvents.Count == 0) TransitionPatcher.MapAlreadyUsesEnvColorBoost = false;
+            else TransitionPatcher.MapAlreadyUsesEnvColorBoost = true;
+
+                CustomEvents = original.customEventDatas
+                    .Select(e => new ECustomEventData(e))
+                    .OrderBy(e => e.time)
+                    .ToList();
 
             LinkArcEndpointsToNotes();
 
@@ -1287,6 +1373,9 @@ namespace AutoBS
                 Plugin.Log.Info($"[EditableCBD][BuildInlineRotations] rotation time:{rot.time:F} rot: {rot.rotation} accumRotation {rot.accumRotation}");
             }
             */
+
+            Plugin.Log.Info($"[BuildInlineRotations] {rotations.Count} rotationEvents created from per object rotations.");
+
             return rotations;// returns reference so  //MergeAndDedupeRotations(rotations);
         }
         /*
@@ -1613,14 +1702,79 @@ namespace AutoBS
         public static void ApplyPerObjectRotations(EditableCBD eData)
         {
             Plugin.Log.Info("[RotationApplier] ---------- Starting per-object rotation application");
-
-            if (eData.RotationEvents.Count == 0 || eData.ColorNotes.Count == 0)
+            if (eData.ColorNotes.Count == 0 || eData.RotationEvents.Count == 0)
                 return;
+            /*
+            if (eData.RotationEvents.Count == 0 && eData.OriginalCBData != null)
+            {
+
+                Plugin.Log.Info($"[RotationRebuild] 0 eData.RotationEvents. This may be a non-gen 360 map. Look for rotation events in OriginalCBData.");
+
+                int majorVersion = eData.OriginalCBData.version.Major;
+                if (majorVersion == 3)
+                {
+                    // Rebuild from v3 RotationEventData if available
+                    var v3RotEvents = eData.OriginalCBData.allBeatmapDataItems
+                        .OfType<RotationEventData>()
+                        .ToList();
+
+                    if (v3RotEvents.Count > 0)
+                    {
+                        // v3: RotationEventData has explicit execution time
+                        eData.RotationEvents = v3RotEvents
+                            .Select(e => new ERotationEventData(
+                                e.beat,
+                                (int)e.rotation))
+                            .OrderBy(e => e.time)
+                            .ToList();
+                    }
+
+                    Plugin.Log.Info($"[RotationRebuild] Rebuilt {eData.RotationEvents.Count} rotation events from v3 RotationEventData.");
+                }
+                else if (majorVersion == 2)
+                {
+                    // v2 legacy: rotations stored as basic events with type 14/15
+                    var v2RotEvents = eData.OriginalCBData.allBeatmapDataItems
+                        .OfType<BasicBeatmapEventData>()
+                        .Where(e =>
+                            e.basicBeatmapEventType == BasicBeatmapEventType.Event14 ||   // early rotation
+                            e.basicBeatmapEventType == BasicBeatmapEventType.Event15)     // late rotation
+                        .ToList();
+
+                    if (v2RotEvents.Count > 0)
+                    {
+                        eData.RotationEvents = v2RotEvents
+                            .Select(e => new ERotationEventData(
+                                e.time,                                                      // beat/time
+                                e.value,    // NOTE: if your v2 convention is "value * 15°", change to e.value * 15
+                                e.basicBeatmapEventType == BasicBeatmapEventType.Event14
+                                    ? 0    // early
+                                    : 1,   // late
+                                new CustomData()))
+                            .OrderBy(e => e.time)
+                            .ToList();
+
+                        Plugin.Log.Info($"[RotationRebuild] Rebuilt {eData.RotationEvents.Count} rotation events.");
+                    }
+
+
+
+                    if (eData.RotationEvents.Count == 0)
+                    {
+                        Plugin.Log.Info("[RotationApplier] No rotation events; skipping rotation application.");
+                        return;
+                    }
+                }
+
+            }
+            */
+
+
 
             // 1) Sort your raw rotation events by time
             eData.RotationEvents = eData.RotationEvents
-                .OrderBy(r => r.time)
-                .ToList();
+                    .OrderBy(r => r.time)
+                    .ToList();
 
             bool rotationModeLate = Config.Instance.RotationModeLate;
 
@@ -2727,6 +2881,11 @@ namespace AutoBS
 
         static List<EObstacleData> ApplyWallVisionBlockingFix(EditableCBD eData) // COMBO Method seems to allow more walls on both sides during turns 
         {
+            
+            //if (WallGenerator._originalWallCount == eData.Obstacles.Count) // started to add this since an untouched map, should keep its obstacles but doesn't work. v3 not working and not v4 since probably is translating everyting from per object into rotation events and then back again and causes wall crossing again
+            //    return eData.Obstacles;
+
+
             var obstacles = eData.Obstacles ?? new List<EObstacleData>();
             var rotationEvents = eData.RotationEvents ?? new List<ERotationEventData>();
             

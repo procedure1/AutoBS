@@ -349,6 +349,18 @@ namespace AutoBS
                 float duration = ob.duration;
                 int line = ob.line; // indexes outside of 0-3 do not work!!!!!
                 float endTime = ob.time + ob.duration;
+
+                int right = line;
+                int left  = line + ob.width - 1;
+                bool outsideRange = (left < 0) || (right > 3);
+
+                if (outsideRange)
+                {
+                    finalWalls.Add(ob);  // keep original as-is
+                    continue;
+                }
+
+
                 EObstacleData customObstacle = null;
 
                 for (int i = lastProcessedIndex; i < notes.Count; i++) // Check if there is already a wall

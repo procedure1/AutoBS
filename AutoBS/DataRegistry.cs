@@ -71,38 +71,48 @@ namespace AutoBS
     */
     public static class AlreadyUsingEnvColorBoostRegistry
     {
-        // Holds mod suggestions for each key (and thus by difficulty)
         public static Dictionary<BeatmapKey, bool> findByKey
             = new Dictionary<BeatmapKey, bool>();
     }
     /*
     public static class MapAlreadyUsesMappingExtensionsRegistry
     {
-        // Holds mod suggestions for each key (and thus by difficulty)
         public static Dictionary<BeatmapKey, bool> findByKey
             = new Dictionary<BeatmapKey, bool>();
     }
     */
     public static class MapAlreadyUsesChainsRegistry
     {
-        // Holds mod suggestions for each key (and thus by difficulty)
+        public static Dictionary<BeatmapKey, bool> findByKey
+            = new Dictionary<BeatmapKey, bool>();
+    }
+    public static class MapAlreadyUsesArcsRegistry
+    {
         public static Dictionary<BeatmapKey, bool> findByKey
             = new Dictionary<BeatmapKey, bool>();
     }
     public static class NotesPerSecRegistry
     {
-        // Holds mod suggestions for each key (and thus by difficulty)
         public static Dictionary<BeatmapKey, float> findByKey
             = new Dictionary<BeatmapKey, float>();
     }
 
-    // holds the SaveData to get the full JSON data from a difficulty
-    public static class SaveDataRegistry
+    // holds the v3 SaveData rotation events since cbm and beatmapData do not contain RotationEventData. its only held in SaveData. only needed for v3 since v2 uses basic events for rotation and v4 uses per object rotation which is held in beatmapData
+    //This hold v3 rotation events from a loaded beatmapData JSON file
+    internal static class RotationV3Registry
     {
-        // Holds lightweight cjdSaveData for each generated Gen360 map
-        public static Dictionary<BeatmapKey, Version2_6_0AndEarlierCustomBeatmapSaveData> cjdSaveDataByKey
-            = new Dictionary<BeatmapKey, Version2_6_0AndEarlierCustomBeatmapSaveData>();
+        internal sealed class V3RotationRecord
+        {
+            public float beat;
+            public int rotation;
+            public int execution;
+        }
+
+        public static readonly Dictionary<BeatmapKey, List<V3RotationRecord>> RotationEventsByKey
+            = new Dictionary<BeatmapKey, List<V3RotationRecord>>();
     }
+
+
     public static class BeatmapDataRegistry
     {
         // Holds beatmapData for each generated Gen360 map

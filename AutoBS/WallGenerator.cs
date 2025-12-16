@@ -57,18 +57,18 @@ namespace AutoBS
 
         private static int _lastProcessedIndex = 0; // make the loop more efficient
 
-        private static int _originalWallCount = -1; // used so can see how many walls before any removals
+        public static int _originalWallCount = -1; // used so can see how many walls before any removals
 
         private static float _startTime = -1; // End time of first note so start adding walls
         private static float _endTime = -1; // End time of last note so stop adding walls
 
         public static List<EObstacleData> _originalWalls = new List<EObstacleData>();
 
-        private static List<EObstacleData> _generatedStandardWalls = new List<EObstacleData>();
+        public static List<EObstacleData> _generatedStandardWalls = new List<EObstacleData>();
 
         private static List<EObstacleData> _tempOriginalAndStandardWalls = new List<EObstacleData>(); // just for updating a loop
 
-        private static List<EObstacleData> _generatedExtensionWalls = new List<EObstacleData>();
+        public static List<EObstacleData> _generatedExtensionWalls = new List<EObstacleData>();
 
         //private static List<EObstacleData> _allWallsExceptFloorsAndParticles = new List<EObstacleData>();
 
@@ -88,6 +88,16 @@ namespace AutoBS
         private static bool failedWallRemovalForRotations2x = false;
         private static bool failedWallRemovalForRotations3x = false;
 
+        private static float StandardWallsMultiplier = Config.Instance.StandardWallsMultiplier;
+        private static float DistantExtensionWallsMultiplier = Config.Instance.DistantExtensionWallsMultiplier;
+        private static float ColumnWallsMultiplier = Config.Instance.ColumnWallsMultiplier;
+        private static float RowWallsMultiplier = Config.Instance.RowWallsMultiplier;
+        private static float TunnelWallsMultiplier = Config.Instance.TunnelWallsMultiplier;
+        private static float GridWallsMultiplier = Config.Instance.GridWallsMultiplier;
+        private static float WindowPaneWallsMultiplier = Config.Instance.WindowPaneWallsMultiplier;
+        private static float ParticleWallsMultiplier = Config.Instance.ParticleWallsMultiplier;
+        private static float FloorWallsMultiplier = Config.Instance.FloorWallsMultiplier;
+
         //private static List<EObstacleData> _leftWalls = new List<EObstacleData>();
 
         //private static List<EObstacleData> _rightWalls = new List<EObstacleData>();
@@ -99,7 +109,42 @@ namespace AutoBS
 
         public static void ResetWalls(EditableCBD eData)
         {
-            _divisorCounter = 0; 
+            if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE ||
+                TransitionPatcher.SelectedSerializedName == "360Degree" ||
+                TransitionPatcher.SelectedSerializedName == "90Degree")
+            {
+                StandardWallsMultiplier = Config.Instance.StandardWallsMultiplier;
+                DistantExtensionWallsMultiplier = Config.Instance.DistantExtensionWallsMultiplier;
+                ColumnWallsMultiplier = Config.Instance.ColumnWallsMultiplier;
+                RowWallsMultiplier = Config.Instance.RowWallsMultiplier;
+                TunnelWallsMultiplier = Config.Instance.TunnelWallsMultiplier;
+                GridWallsMultiplier = Config.Instance.GridWallsMultiplier;
+                WindowPaneWallsMultiplier = Config.Instance.WindowPaneWallsMultiplier;
+                ParticleWallsMultiplier = Config.Instance.ParticleWallsMultiplier;
+                FloorWallsMultiplier = Config.Instance.FloorWallsMultiplier;
+
+                Plugin.Log.Info($"[WallGenerator][ResetWalls] - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty} -  360/90 maps get all full wall multipliers.");
+
+            }
+            else // reduce number of wall in standard map since without rotations, it makes millions of walls that don't get removed
+            {
+                float mult = Config.Instance.StandardLevelWallMultiplier;
+
+                StandardWallsMultiplier = Config.Instance.StandardWallsMultiplier * mult;
+                DistantExtensionWallsMultiplier = Config.Instance.DistantExtensionWallsMultiplier * mult;
+                ColumnWallsMultiplier = Config.Instance.ColumnWallsMultiplier * mult;
+                RowWallsMultiplier = Config.Instance.RowWallsMultiplier * mult;
+                TunnelWallsMultiplier = Config.Instance.TunnelWallsMultiplier * mult;
+                GridWallsMultiplier = Config.Instance.GridWallsMultiplier * mult;
+                WindowPaneWallsMultiplier = Config.Instance.WindowPaneWallsMultiplier * mult;
+                ParticleWallsMultiplier = Config.Instance.ParticleWallsMultiplier * mult;
+                FloorWallsMultiplier = Config.Instance.FloorWallsMultiplier * mult;
+
+                Plugin.Log.Info($"[WallGenerator][ResetWalls] - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty} - Standard maps get all wall multipliers reduced by {mult}.");
+            }
+
+
+                _divisorCounter = 0; 
 
             _lastProcessedIndex = 0; // make the loop more efficient
 
@@ -239,7 +284,7 @@ namespace AutoBS
                 CreateExtensionWalls(i, wallTime, wallDuration, generatedWall, generatedBigWall);
 
             _divisorCounter++;
-            int divisor = (int)(100/Config.Instance.StandardWallsMultiplier); // Get the divisor based on the user input percentage
+            int divisor = (int)(100/StandardWallsMultiplier); // Get the divisor based on the user input percentage
             if (_divisorCounter % divisor != 0) return;
 
             //Plugin.Log.Info($"Config.Instance.StandardWallsMultiplier: {Config.Instance.StandardWallsMultiplier} divisor: {divisor}");
@@ -475,9 +520,9 @@ namespace AutoBS
             //These are distant low walls lineIndex 15 or -15 or very high walls so don't need to check for existing walls
             if (Config.Instance.EnableDistantExtensionWalls)
             {
-                int divisorOne = Math.Max((int)Math.Round(5 / Config.Instance.DistantExtensionWallsMultiplier), 1); // Use Math.Round: Ensure that you round the result of your division to get meaningful divisors for the modulo operation.This avoids erroneous behavior from using floating-point division directly in integer contexts. Check for Zero Divisor: Ensure that the divisor does not round to zero, as dividing by zero will throw an exception.
-                int divisorTwo = Math.Max((int)Math.Round(8 / Config.Instance.DistantExtensionWallsMultiplier), 1);
-                int divisorThr = Math.Max((int)Math.Round(11 / Config.Instance.DistantExtensionWallsMultiplier), 1);
+                int divisorOne = Math.Max((int)Math.Round(5 / DistantExtensionWallsMultiplier), 1); // Use Math.Round: Ensure that you round the result of your division to get meaningful divisors for the modulo operation.This avoids erroneous behavior from using floating-point division directly in integer contexts. Check for Zero Divisor: Ensure that the divisor does not round to zero, as dividing by zero will throw an exception.
+                int divisorTwo = Math.Max((int)Math.Round(8 / DistantExtensionWallsMultiplier), 1);
+                int divisorThr = Math.Max((int)Math.Round(11 / DistantExtensionWallsMultiplier), 1);
 
                 if (i % divisorOne == 0 || i % divisorTwo == 0 || i % divisorThr == 0)
                 {
@@ -608,11 +653,11 @@ namespace AutoBS
 
             int paneWidth = windowPaneWallSize[(int)wallTime % windowPaneWallSize.Length];// using HASH caused only 2 options to be selected always from entire list  same for every song !!!!
 
-            int divisorCol    = Math.Max((int)Math.Round(15 / Config.Instance.ColumnWallsMultiplier), 1);
-            int divisorRow    = Math.Max((int)Math.Round(17 / Config.Instance.RowWallsMultiplier), 1);
-            int divisorTunnel = Math.Max((int)Math.Round(5 / Config.Instance.TunnelWallsMultiplier), 1);
-            int divisorGrid   = Math.Max((int)Math.Round(18 / Config.Instance.GridWallsMultiplier), 1);// was 21
-            int divisorPane   = Math.Max((int)Math.Round(9 / Config.Instance.WindowPaneWallsMultiplier), 1);
+            int divisorCol    = Math.Max((int)Math.Round(15 / ColumnWallsMultiplier), 1);
+            int divisorRow    = Math.Max((int)Math.Round(17 / RowWallsMultiplier), 1);
+            int divisorTunnel = Math.Max((int)Math.Round(5 / TunnelWallsMultiplier), 1);
+            int divisorGrid   = Math.Max((int)Math.Round(18 / GridWallsMultiplier), 1);// was 21
+            int divisorPane   = Math.Max((int)Math.Round(9 / WindowPaneWallsMultiplier), 1);
 
             //Plugin.Log.Info($"[GridWalls DEBUG] hash: {hash}, divisorGrid: {divisorGrid}, hash % divisorGrid: {hash % divisorGrid}");
 
@@ -768,8 +813,8 @@ namespace AutoBS
             //introduced this since must reduce the number of grid walls since slow the game down. so if this is called more frequenly, then make the cols/rows smaller
             //problem is that at 1, it makes huge grids which is cool. at higher GridWallsMultiplier's, grids are quite small
             float mult = 3; // at 1 or less
-            if (Config.Instance.GridWallsMultiplier > 1)
-                mult = 4 - Config.Instance.GridWallsMultiplier; // mult = 2 if GridWallsMultiplier = 2, mult = 1 if GridWallsMultiplier = 3
+            if (GridWallsMultiplier > 1)
+                mult = 4 - GridWallsMultiplier; // mult = 2 if GridWallsMultiplier = 2, mult = 1 if GridWallsMultiplier = 3
 
             int gridColumns = (int)(mult * (gridWallWide ? 3   : 1)); // if wide grid walls then multiplier is 4 else it is 1
             int gridRows    = (int)(mult * (gridWallWide ? 1.5 : 5)); // if wide grid walls then multiplier is 1.5 else it is 6
@@ -1003,9 +1048,9 @@ namespace AutoBS
 
             if (Config.Instance.EnableParticleWalls && Config.Instance.EnableMappingExtensionsWallsGenerator)
             {
-                int divisorOne = Math.Max((int)Math.Round(3 / Config.Instance.ParticleWallsMultiplier), 1); // Use Math.Round: Ensure that you round the result of your division to get meaningful divisors for the modulo operation.This avoids erroneous behavior from using floating-point division directly in integer contexts. Check for Zero Divisor: Ensure that the divisor does not round to zero, as dividing by zero will throw an exception.
-                int divisorTwo = Math.Max((int)Math.Round(5 / Config.Instance.ParticleWallsMultiplier), 1);
-                int divisorThr = Math.Max((int)Math.Round(8 / Config.Instance.ParticleWallsMultiplier), 1);
+                int divisorOne = Math.Max((int)Math.Round(3 / ParticleWallsMultiplier), 1); // Use Math.Round: Ensure that you round the result of your division to get meaningful divisors for the modulo operation.This avoids erroneous behavior from using floating-point division directly in integer contexts. Check for Zero Divisor: Ensure that the divisor does not round to zero, as dividing by zero will throw an exception.
+                int divisorTwo = Math.Max((int)Math.Round(5 / ParticleWallsMultiplier), 1);
+                int divisorThr = Math.Max((int)Math.Round(8 / ParticleWallsMultiplier), 1);
 
                 if (repeatLimit == -1)
                     repeatLimit = (int)Config.Instance.ParticleWallsBatchSize;
@@ -1167,9 +1212,9 @@ namespace AutoBS
         {
             if (Config.Instance.EnableFloorWalls && Config.Instance.EnableMappingExtensionsWallsGenerator)
             {
-                int divisorOne = Math.Max((int)Math.Round(4 / Config.Instance.FloorWallsMultiplier), 1); // Use Math.Round: Ensure that you round the result of your division to get meaningful divisors for the modulo operation.This avoids erroneous behavior from using floating-point division directly in integer contexts. Check for Zero Divisor: Ensure that the divisor does not round to zero, as dividing by zero will throw an exception.
-                int divisorTwo = Math.Max((int)Math.Round(6 / Config.Instance.FloorWallsMultiplier), 1);
-                int divisorThr = Math.Max((int)Math.Round(9 / Config.Instance.FloorWallsMultiplier), 1);
+                int divisorOne = Math.Max((int)Math.Round(4 / FloorWallsMultiplier), 1); // Use Math.Round: Ensure that you round the result of your division to get meaningful divisors for the modulo operation.This avoids erroneous behavior from using floating-point division directly in integer contexts. Check for Zero Divisor: Ensure that the divisor does not round to zero, as dividing by zero will throw an exception.
+                int divisorTwo = Math.Max((int)Math.Round(6 / FloorWallsMultiplier), 1);
+                int divisorThr = Math.Max((int)Math.Round(9 / FloorWallsMultiplier), 1);
 
                 if (repeatLimit == -1)
                     repeatLimit = (int)Config.Instance.FloorWallsBatchSize;

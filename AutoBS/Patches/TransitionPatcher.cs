@@ -38,25 +38,25 @@ namespace AutoBS.Patches
                 BindingFlags.Instance | BindingFlags.Public,
                 null,
                 new[] {
-            typeof(string),
-            typeof(BeatmapKey).MakeByRefType(),
-            typeof(BeatmapLevel),
-            typeof(OverrideEnvironmentSettings),
-            typeof(ColorScheme),
-            typeof(bool), // playerOverrideLightshowColors
-            typeof(ColorScheme),
-            typeof(GameplayModifiers),
-            typeof(PlayerSpecificSettings),
-            typeof(PracticeSettings),
-            typeof(EnvironmentsListModel),
-            typeof(string),
-            typeof(bool),
-            typeof(bool),
-            typeof(Action),
-            typeof(Action<DiContainer>),
-            typeof(Action<StandardLevelScenesTransitionSetupDataSO, LevelCompletionResults>),
-            typeof(Action<StandardLevelScenesTransitionSetupDataSO, LevelCompletionResults>),
-            typeof(Nullable<>).MakeGenericType(typeof(RecordingToolManager.SetupData))
+                    typeof(string),
+                    typeof(BeatmapKey).MakeByRefType(),
+                    typeof(BeatmapLevel),
+                    typeof(OverrideEnvironmentSettings),
+                    typeof(ColorScheme),
+                    typeof(bool), // playerOverrideLightshowColors
+                    typeof(ColorScheme),
+                    typeof(GameplayModifiers),
+                    typeof(PlayerSpecificSettings),
+                    typeof(PracticeSettings),
+                    typeof(EnvironmentsListModel),
+                    typeof(string),
+                    typeof(bool),
+                    typeof(bool),
+                    typeof(Action),
+                    typeof(Action<DiContainer>),
+                    typeof(Action<StandardLevelScenesTransitionSetupDataSO, LevelCompletionResults>),
+                    typeof(Action<StandardLevelScenesTransitionSetupDataSO, LevelCompletionResults>),
+                    typeof(Nullable<>).MakeGenericType(typeof(RecordingToolManager.SetupData))
                 },
                 null
             );
@@ -64,7 +64,7 @@ namespace AutoBS.Patches
 
         //v1.40
         public static BeatmapKey CurrentPlayKey;  // store the key here
-        public static Version CurrentBeatmapVersion;
+        public static Version CurrentBeatmapVersion = new Version(2, 6, 0);
         // Only inject once, for the map the player actually "Starts" instead of all difficulties in the set
         public static bool UserSelectedMapToInject = false;
         //public static string startingGameMode;
@@ -85,14 +85,15 @@ namespace AutoBS.Patches
         public static bool AutoNJSPracticeModeDisabledByConflictingMod = false;
 
         //public static int majorVersion = 3;
-        public static Version LevelVersion = new Version(2, 6, 0);
+        //public static Version LevelVersion = new Version(2, 6, 0);
 
         public static float bpm;
         public static float NotesPerSecond;
 
         public static bool MapAlreadyUsesMappingExtensions = false; // used by generator360.cs to turn off automated extended walls for maps already using mapping extensions
-        public static bool AlreadyUsingEnvColorBoost = false;
+        public static bool MapAlreadyUsesEnvColorBoost = false;
         public static bool MapAlreadyUsesChains = false;
+        public static bool MapAlreadyUsesArcs   = false;
 
         public static bool IsBeatSageMap = false;
 
@@ -144,10 +145,10 @@ namespace AutoBS.Patches
             CurrentPlayKey = beatmapKey;
             bpm = beatmapLevel.beatsPerMinute;
 
-            CurrentBeatmapVersion = BeatmapDataRegistry.versionByKey.TryGetValue(CurrentPlayKey, out Version foundVersion) ? foundVersion : new Version(2,6,0);
+            CurrentBeatmapVersion = BeatmapDataRegistry.versionByKey.TryGetValue(CurrentPlayKey, out Version foundVersion) ? foundVersion : new Version(0,0,0);
 
             Plugin.Log.Info(".");
-            Plugin.Log.Info($"[TransitionPatcher] User selected:  {beatmapKey.beatmapCharacteristic.serializedName} {SelectedDifficulty} v{CurrentBeatmapVersion} - ID: {beatmapKey.levelId} -------------------------------------"); // will be solo and standard, Generater360Degree, Generated90Degree, 360Degree, 90Degree, Lightshow, etc
+            Plugin.Log.Info($"[TransitionPatcher] User selected:  {beatmapKey.beatmapCharacteristic.serializedName} {SelectedDifficulty} - ID: {beatmapKey.levelId} -------------------------------------"); // will be solo and standard, Generater360Degree, Generated90Degree, 360Degree, 90Degree, Lightshow, etc
 
             bool isGen360 = SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
             UserSelectedMapToInject = isGen360;
@@ -161,13 +162,10 @@ namespace AutoBS.Patches
             //RequiresVivify = RequirementsRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundValue3) && foundValue3.Any(r => r.Contains("Vivify", StringComparison.OrdinalIgnoreCase));
             //MapAlreadyUsesMappingExtensions = MapAlreadyUsesMappingExtensionsRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundValue5) && foundValue5 == true;
 
-            // For noodle standard maps, need to do it this way. but this works for all maps so use this instead of the registry lookup.
-            //if (SetContent.basedOn != SelectedSerializedName)
-            {
-                RequiresNoodle = CheckForExternalModRequirement(beatmapLevel, "Noodle Extensions");
-                RequiresChroma = CheckForExternalModRequirement(beatmapLevel, "Chroma");
-                RequiresVivify = CheckForExternalModRequirement(beatmapLevel, "Vivify");
-            }
+            // For noodle standard maps, need to do it this way. but this works for all maps so use this instead of the registry lookup. not checked in SetContent.
+            RequiresNoodle = CheckForExternalModRequirement(beatmapLevel, "Noodle Extensions");
+            RequiresChroma = CheckForExternalModRequirement(beatmapLevel, "Chroma");
+            RequiresVivify = CheckForExternalModRequirement(beatmapLevel, "Vivify");
 
             Plugin.Log.Info($"[TransitionPatcher] Requirements for this map: Noodle={RequiresNoodle}, Chroma={RequiresChroma}, Vivify={RequiresVivify}");
 
@@ -179,33 +177,37 @@ namespace AutoBS.Patches
 
             IsBeatSageMap = false;
 
-            //if (OriginalNoteJumpMovementSpeed == -99) // nonGen map that is not a basedOn map
+
+            // BOTH of these are done in setContent now for gen360 and basedOn maps. so only need to do it here for nonGen non basedOn maps. so should restore autoNjs registry for those maps only and can also leave beat sage in setcontent
+            var basic = beatmapLevel.GetDifficultyBeatmapData(SelectedCharacteristicSO, SelectedDifficulty);
+            if (basic != null)
             {
-                // BOTH of these are done in setContent now for gen360 and basedOn maps. so only need to do it here for nonGen non basedOn maps. so should restore autoNjs registry for those maps only and can also leave beat sage in setcontent
-                var basic = beatmapLevel.GetDifficultyBeatmapData(SelectedCharacteristicSO, SelectedDifficulty);
-                if (basic != null)
-                {
-                    OriginalNoteJumpMovementSpeed = NoteJumpMovementSpeed(SelectedDifficulty, basic.noteJumpMovementSpeed);
-                    NoteJumpOffset = basic.noteJumpStartBeatOffset;
-                    float originalJD;
-                    (FinalNoteJumpMovementSpeed, FinalJumpDistance, originalJD) = AutoNjsFixer.Fix(OriginalNoteJumpMovementSpeed, NoteJumpOffset, bpm);
-                    Plugin.Log.Info($"[TransitionPatcher] BasicBeatmapData - Original NJS: {OriginalNoteJumpMovementSpeed} Original NJO: {NoteJumpOffset}, AutoNjsFixer NJS: {FinalNoteJumpMovementSpeed}, Original JD: {originalJD}, AutoNjsFixer JD: {FinalJumpDistance}");
-                    IsBeatSageMap = basic.mappers.Contains("Beat Sage");
-                    Plugin.Log.Info($"[TransitionPatcher] BasicBeatmapData - Beat Sage Map: {IsBeatSageMap}");
-                }
+                OriginalNoteJumpMovementSpeed = NoteJumpMovementSpeed(SelectedDifficulty, basic.noteJumpMovementSpeed);
+                NoteJumpOffset = basic.noteJumpStartBeatOffset;
+                float originalJD;
+                (FinalNoteJumpMovementSpeed, FinalJumpDistance, originalJD) = AutoNjsFixer.Fix(OriginalNoteJumpMovementSpeed, NoteJumpOffset, bpm);
+                Plugin.Log.Info($"[TransitionPatcher] BasicBeatmapData - Original NJS: {OriginalNoteJumpMovementSpeed} Original NJO: {NoteJumpOffset}, AutoNjsFixer NJS: {FinalNoteJumpMovementSpeed}, Original JD: {originalJD}, AutoNjsFixer JD: {FinalJumpDistance}");
+                IsBeatSageMap = basic.mappers.Contains("Beat Sage");
+                Plugin.Log.Info($"[TransitionPatcher] BasicBeatmapData - Beat Sage Map: {IsBeatSageMap}");
             }
+
             bool isBasedOn = SelectedSerializedName == basedOn;
             if (isGen360 || isBasedOn)
             {
-                AlreadyUsingEnvColorBoost = AlreadyUsingEnvColorBoostRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundValue4) && foundValue4 == true;
-                MapAlreadyUsesChains = MapAlreadyUsesChainsRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundChains) ? foundChains : false;
+                MapAlreadyUsesEnvColorBoost = AlreadyUsingEnvColorBoostRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundValue4) && foundValue4 == true;
+                MapAlreadyUsesArcs          = MapAlreadyUsesArcsRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundArcs) ? foundArcs : false;
+                MapAlreadyUsesChains        = MapAlreadyUsesChainsRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundChains) ? foundChains : false;
+
+                CurrentBeatmapVersion = BeatmapDataRegistry.versionByKey[CurrentPlayKey];
+
                 NotesPerSecond = NotesPerSecRegistry.findByKey.TryGetValue(CurrentPlayKey, out var nps) ? nps : 0f; // used by generator to reduce rotations for nigh density maps
-                Plugin.Log.Info($"[TransitionPatcher] Gen or BasedOn Map - Retrieved from Registries. AlreadyUsingEnvColorBoost: {AlreadyUsingEnvColorBoost}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, NotesPerSecond: {NotesPerSecond}");
+                Plugin.Log.Info($"[TransitionPatcher] Gen or BasedOn Map - Retrieved from Registries. AlreadyUsingEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, NotesPerSecond: {NotesPerSecond}");
             }
             else
             {
+                MapAlreadyUsesArcs   = false;
                 MapAlreadyUsesChains = false;
-                AlreadyUsingEnvColorBoost = false;
+                MapAlreadyUsesEnvColorBoost = false;
                 NotesPerSecond = 0;
 
                 (string beatmapJson, string lightShowJson, string a, Version version) = GetJson(beatmapLevel, SelectedDifficulty, CurrentPlayKey); //works for custom and built-in levels
@@ -213,7 +215,15 @@ namespace AutoBS.Patches
                 CurrentBeatmapVersion = version;
 
                 JObject beatmapObj = JObject.Parse(beatmapJson);
-                
+
+                bool hasNormalSliders = beatmapObj["sliders"] != null ? beatmapObj["sliders"].Count() > 0 : false; // v3 (v2 can have sliders but i've never seen them and they don't work)
+                bool hasArcs = beatmapObj["arcs"] != null ? beatmapObj["arcs"].Count() > 0 : false; //v4
+                if (hasNormalSliders || hasArcs)
+                {
+                    MapAlreadyUsesArcs = true;
+                    Plugin.Log.Info($"[TransitionPatcher] NonGen and Non BasedOn Map - Detected Original Arcs in JSON. MapAlreadyUsesArcs");
+                }
+
                 bool hasBurstSliders = beatmapObj["burstSliders"] != null ? beatmapObj["burstSliders"].Count() > 0 : false; //v3 (v2 has no burst sliders only arcs)
                 bool hasChains = beatmapObj["chains"] != null ? beatmapObj["chains"].Count() > 0 : false; //v4
                 if (hasBurstSliders || hasChains)
@@ -221,6 +231,7 @@ namespace AutoBS.Patches
                     MapAlreadyUsesChains = true;
                     Plugin.Log.Info($"[TransitionPatcher] NonGen and Non BasedOn Map - Detected Original Chains in JSON. MapAlreadyUsesChains");
                 }
+
                 var songCoreExtraData = SongCoreBridge.TryGetSongCoreSongData(beatmapLevel);
                 var difficultyData = songCoreExtraData?._difficulties.FirstOrDefault(d =>
                                         d._beatmapCharacteristicName == SelectedSerializedName &&
@@ -231,7 +242,7 @@ namespace AutoBS.Patches
                 if (songCoreExtraData != null && songCoreExtraData._difficulties != null && difficultyData != null &&
                         (difficultyData._envColorLeftBoost != null || difficultyData._envColorRightBoost != null))
                 {
-                    AlreadyUsingEnvColorBoost = true;
+                    MapAlreadyUsesEnvColorBoost = true;
                     Plugin.Log.Info($"[TransitionPatcher] NonGen and Non BasedOn Map - Detected Boosts in SongCore. AlreadyUsingEnvColorBoost");
                 }
                 else
@@ -250,13 +261,13 @@ namespace AutoBS.Patches
                         if (!string.IsNullOrWhiteSpace(lightShowJson))
                         {
                             lightShowObj = JObject.Parse(lightShowJson);
-                            AlreadyUsingEnvColorBoost = lightShowObj["colorBoostEvents"] != null ? lightShowObj["colorBoostEvents"].Count() > 0 : false; //v4
+                            MapAlreadyUsesEnvColorBoost = lightShowObj["colorBoostEvents"] != null ? lightShowObj["colorBoostEvents"].Count() > 0 : false; //v4
                         }
                     }
                     else
-                        AlreadyUsingEnvColorBoost = true;
+                        MapAlreadyUsesEnvColorBoost = true;
 
-                    Plugin.Log.Info($"[TransitionPatcher] NonGen and Non BasedOn Map - Detecting in beatmapJson or lightShowJson. AlreadyUsingEnvColorBoost = {AlreadyUsingEnvColorBoost}");
+                    Plugin.Log.Info($"[TransitionPatcher] NonGen and Non BasedOn Map - Detecting in beatmapJson or lightShowJson. AlreadyUsingEnvColorBoost = {MapAlreadyUsesEnvColorBoost}");
                 }
                 
                 float songLength = beatmapLevel.songDuration;
@@ -268,6 +279,7 @@ namespace AutoBS.Patches
                 Plugin.Log.Info($"[TransitionPatcher] NonGen and Non BasedOn Map - Calculated NotesPerSecond: {NotesPerSecond} from {noteCount} notes over {songLength} seconds.");
             }
 
+            Plugin.Log.Info($"[TransitionPatcher] Map Version: v{CurrentBeatmapVersion}"); // will be solo and standard, Generater360Degree, Generated90Degree, 360Degree, 90Degree, Lightshow, etc
 
             CheckConflictingMods();
             //DetermineScoreSubmission();
@@ -292,7 +304,7 @@ namespace AutoBS.Patches
             if (Utils.IsModEnabled("PracticePlugin"))
                 str += "PracticePlugin ";
 
-            if (Utils.IsModEnabled("JDFixer") || Utils.IsModEnabled("NJSFixer"))
+            if (Utils.IsModEnabled("JDFixer") || Utils.IsModEnabled("NJSFixer")) // I tested this!!! installed is all that matters. can't detect if enabled or not.
                 AutoNJSDisabledByConflictingMod = true;
             else
                 AutoNJSDisabledByConflictingMod = false;

@@ -50,6 +50,7 @@ namespace AutoBS
 
     public class Generator//actually generates 90 maps too
     {
+        public bool OriginalMapAltered = false;
         /// <summary>
         /// The preferred bar duration in seconds. The generator will loop the song in bars. 
         /// This is called 'preferred' because this value will change depending on a song's bpm (will be aligned around this value).
@@ -131,12 +132,18 @@ namespace AutoBS
         public GeneratorOutput Generate(EditableCBD eData, float bpm)
         {
             //version = BeatmapDataTransformHelperPatcher.version;
+            OriginalMapAltered = false;
+
+            var originalRotations = eData.RotationEvents
+                .OrderBy(r => r.time)
+                .Select(r => (t: MathF.Round(r.time, 4), rot: r.rotation))
+                .ToList();
 
             bool needsRotationLimitAdjustment = false;
 
             bool isEnabledWalls = Utils.IsEnabledWalls();
             
-            bool isEnabledRotations = Utils.IsEnabledRotations();
+            bool isEnabledRotations = Utils.IsEnabledRotations(); // only Gen 360!
             /*
             var booster = new UNUSED_RotationBooster
             {
@@ -204,6 +211,14 @@ namespace AutoBS
             List<(float time, int rotationSteps)> wallCutMoments = new List<(float, int)>();
             List<ERotationEventData> allRotations = eData.RotationEvents.Count == 0 ? new List<ERotationEventData>() : eData.RotationEvents; // added for nonGen360 maps
 
+            Plugin.Log.Info($"0 Rotation List (original) Count: {allRotations.Count}");
+            /*
+            foreach (var rot in allRotations)
+            {
+                if (rot.time < 20)
+                    Plugin.Log.Info($"0 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
+            }
+            */
             // Previous spin direction, false is left, true is right
             bool previousDirectionPositive = true;
 
@@ -289,9 +304,12 @@ namespace AutoBS
 
 
 
-
-            int maxRotationStep = (int)Config.Instance.MaxRotationSize / 15;
             int minRotationStep = (int)Config.Instance.MinRotationSize / 15;
+            int maxRotationStep = (int)Config.Instance.MaxRotationSize / 15;
+
+            if (minRotationStep > maxRotationStep) 
+                minRotationStep = maxRotationStep;
+
 
             float notespersecond = TransitionPatcher.NotesPerSecond;
             float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
@@ -962,7 +980,7 @@ namespace AutoBS
                     // Works on standard and 360 gen and non-gen maps
                     //Creates a boost lighting event. if ON, will set color left to boost color left new color etc. Will only boost a color scheme that has boost colors set so works primarily with COLORS > OVERRIDE DEFAULT COLORS. Or an authors color scheme must have boost colors set (that will probably never happen since they will have boost colors set if they use boost events).
 
-                    if (Config.Instance.BoostLighting && !TransitionPatcher.AlreadyUsingEnvColorBoost)
+                    if (Config.Instance.BoostLighting && !TransitionPatcher.MapAlreadyUsesEnvColorBoost)
                     {
                         boostIteration++;
                         if (boostIteration == 24 || boostIteration == 29)//33)//5 & 13 is good but frequent
@@ -970,7 +988,7 @@ namespace AutoBS
                             var newBoostEvent = EColorBoostEvent.Create(lastNote.time, boostOn);
                             eData.ColorBoostEvents.Add(newBoostEvent);
                             //data.InsertBeatmapEventDataInOrder(new CustomColorBoostBeatmapEventData(lastNote.time, boostOn, new CustomData(), version));
-                            //Plugin.Log.Info($"Boost Light! --- Time: {time} On: {boostOn}");
+                            //Plugin.Log.Info($"Boost Light! --- Time: {lastNote.time:F} On: {boostOn}");
                             boostOn = !boostOn; // Toggle the boolean
                         }
 
@@ -1218,9 +1236,10 @@ namespace AutoBS
                     low = (rot.accumRotation, rot.time);
                 else if (rot.accumRotation > high.accumRot)
                     high = (rot.accumRotation, rot.time);
-                //Plugin.Log.Info($"1 Rotation - Time: {rot.time:F} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
+                //if (rot.time < 20)
+                //    Plugin.Log.Info($"2 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
             }
-            Plugin.Log.Info($"1 Rotation Events - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360} - Largest Neg Rot: {low.accumRot} Time: {low.time:F} - Largest Pos Rot: {high.accumRot} Time: {high.time:F} - Final Rotation: {endRot}");
+            Plugin.Log.Info($"2 Rotation Events - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360} - Largest Neg Rot: {low.accumRot} Time: {low.time:F} - Largest Pos Rot: {high.accumRot} Time: {high.time:F} - Final Rotation: {endRot}");
 
             Plugin.Log.Info(
                 $" ------- Main Loop time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F} Called WallGenerator {wallGenCount} times. Wall Count: {eData.Obstacles.Count}");
@@ -1228,7 +1247,7 @@ namespace AutoBS
 
             #endregion
 
-            
+
             /*
             // Remove bombs from walls
             // Do this before add tons of extension walls. Test if can add this somewhere else where a loop is already being done such as when add the wall in the first place --- also doesn't check for bombs on the other side of walls -
@@ -1247,7 +1266,7 @@ namespace AutoBS
             }
             */
             //List<(float time, int rotation)> finalRotations = allRotations.ToList(); // is a reference if don't use ToList()
-            
+
             //FIX!!!!!!!!!!!!!!!!!!!!!!!!!
             //if (allRotations.Count > 0)//FIX!!!!! not using the in-memory 360fyer map. its using the standard map. && TransitionPatcher.characteristicSerializedName == "Generated360Degree")
             //{
@@ -1256,11 +1275,12 @@ namespace AutoBS
             //}
             // otherwise the map was a non-gen 360 or 90 map with its own rotations so don't replace them.
 
-
-
             #region Optimize FOV
 
-            if (Utils.IsEnabledFOV() && allRotations.Count > 0) // use this for nonGen360 maps with wall gen since old 360fyer generated maps have wild rotations that cause walls to reverse through the frame. this will not help some walls blocking player vision that are built into 360fyer old generated output
+            bool wallsAdded = originalWallCount <= 5000 && ( WallGenerator._generatedStandardWalls.Count > 0 || WallGenerator._generatedExtensionWalls.Count > 0);
+            Plugin.Log.Info($"WallGenerator._generatedStandardWalls: {WallGenerator._generatedStandardWalls.Count} WallGenerator._generatedExtensionWalls: {WallGenerator._generatedExtensionWalls.Count}");
+
+            if (Utils.IsEnabledFOV(wallsAdded) && allRotations.Count > 0) // use this for nonGen360 maps with wall gen since old 360fyer generated maps have wild rotations that cause walls to reverse through the frame. this will not help some walls blocking player vision that are built into 360fyer old generated output
             {
                 //if (allRotations.Count == 0 &&
                 //    (TransitionPatcher.characteristicSerializedName == "360Degree" || TransitionPatcher.characteristicSerializedName == "90Degree")) // if no rotations, then must be nonGen360 map so need to populate finalRotations
@@ -1314,21 +1334,12 @@ namespace AutoBS
                 //    optimize.UpdateBeatmapDataWithRotations(data);
             }
             
-            Plugin.Log.Info($"2 Rotation List (after FOV)  Count: {allRotations.Count}");
+            Plugin.Log.Info($"3 Rotation List (after FOV)  Count: {allRotations.Count}");
             /*
-            float totalRotation2 = 0;
             foreach (var rot in allRotations)
             {
-                if (rot.time < 100)
-                {
-                    totalRotation2 += rot.rotation;
-                    Plugin.Log.Info($"2 Rotation - Time: {rot.time:F} - Rotation: {rot.rotation} - Total Rotation: {(int)totalRotation2} or {rot.accumRotation}");
-                }
-            }
-            */
-            /*foreach (var rotation in finalRotations)
-            {
-                Plugin.Log.Info($"Final Rotations before ArcFix() - time: {rotation.time} rotation: {rotation.rotation}");
+                if (rot.time < 20)
+                    Plugin.Log.Info($"3 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
             }
             */
             #endregion
@@ -1347,8 +1358,6 @@ namespace AutoBS
             }
             else
                 Plugin.Log.Info($"ArcFix not enabled or not applicable. Starting Game Mode: {TransitionPatcher.SelectedSerializedName} - Characteristic: {TransitionPatcher.SelectedSerializedName}");
-
-
 
 
             if (isEnabledRotations)
@@ -1370,7 +1379,7 @@ namespace AutoBS
             /*
             foreach (var rot in allRotations)
             {
-                if (rot.time < 100)
+                if (rot.time < 20)
                 {
                     Plugin.Log.Info($"3 Rotation - Time: {rot.time:F} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}"); // accum is accurate here
                 }
@@ -1640,10 +1649,65 @@ namespace AutoBS
                     Plugin.Log.Info($"Final Notes: time: {not.time:F} dir: {not.cutDirection} index: {not.line} layer: {not.layer} color: {not.colorType}");
             }
              */
-           
+
+            bool beatSageMapNotAltered = (TransitionPatcher.IsBeatSageMap && !BeatSageCleanUp.DisableScoreSubmission) || !TransitionPatcher.IsBeatSageMap;
+            Plugin.Log.Info($"[Generator] 1 beatSageMapNotAltered: {beatSageMapNotAltered}.");
+            
+            bool arcsEnabled = Utils.IsEnabledArcs();
+            bool arcsNotAdded = (arcsEnabled && TransitionPatcher.MapAlreadyUsesArcs) || !arcsEnabled;
+            Plugin.Log.Info($"[Generator] 2 arcsNotAdded: {arcsNotAdded}.");
+
+            bool chainsEnabled = Utils.IsEnabledChains();
+            bool chainsNotAdded = (chainsEnabled && TransitionPatcher.MapAlreadyUsesChains) || !chainsEnabled;
+            Plugin.Log.Info($"[Generator] 3 chainsNotAdded: {chainsNotAdded}.");
+
+            var rotAfter = eData.RotationEvents
+                .OrderBy(r => r.time)
+                .Select(r => (t: MathF.Round(r.time, 4), rot: r.rotation))
+                .ToList();
+            bool rotationsNotchanged = originalRotations.Count == rotAfter.Count && originalRotations.SequenceEqual(rotAfter); //compares starting rotations to final rotations
+            Plugin.Log.Info($"[Generator] 4 rotationsNotchanged: {rotationsNotchanged} (if they exist).");
+
+            bool lightsNotAdded = (Utils.IsEnabledLighting() && !LightAutoMapper.LightEventsAdded) || !Utils.IsEnabledLighting();
+            Plugin.Log.Info($"[Generator] 5 lightsNotAdded: {lightsNotAdded}.");
+
+            bool boostNotAdded = (Config.Instance.BoostLighting && eData.ColorBoostEvents.Count == 0) || TransitionPatcher.MapAlreadyUsesEnvColorBoost;
+            Plugin.Log.Info($"[Generator] 6 boostNotAdded: {boostNotAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {TransitionPatcher.MapAlreadyUsesEnvColorBoost}");
+
+            bool wallsNotAdded = (Utils.IsEnabledWalls() && originalWallCount == eData.Obstacles.Count) || !Utils.IsEnabledWalls();
+            Plugin.Log.Info($"[Generator] 7 wallsNotAdded: {wallsNotAdded}.");
+
+            if (beatSageMapNotAltered && arcsNotAdded && chainsNotAdded && rotationsNotchanged && lightsNotAdded && boostNotAdded && wallsNotAdded)
+            {
+                OriginalMapAltered = false;
+                Plugin.Log.Info("[Generator] 8 Original map NOT altered! So original untouched map will be passed through!");
+                if (eData.OriginalCBData != null)
+                {
+                    // This is a real CustomJSON map → build CustomBeatmapData
+                    return new GeneratorOutput { Custom = eData.OriginalCBData };
+                }
+                else if (eData.OriginalBData != null)
+                {
+                    return new GeneratorOutput { Vanilla = eData.OriginalBData };
+                }
+            }
+            else
+                OriginalMapAltered = true;
+
+            Plugin.Log.Info("[Generator] 8 Original map altered! Altered map will be passed through!");
+
+            Plugin.Log.Info($"[Generator] Starting Per Object Rotations after this moment:");
+            /*
+            foreach (var rot in allRotations)
+            {
+                if (rot.time < 20)
+                    Plugin.Log.Info($"4 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
+            }
+            */
             ConvertEditableCBD.ApplyPerObjectRotations(eData);
 
             Plugin.Log.Info($"[Generator] EditableCBD map version: {eData.Version} - notes: {eData.ColorNotes.Count()} bombs: {eData.BombNotes.Count()} arcs: {eData.Arcs.Count()} chains: {eData.Chains.Count()} obstacles: {eData.Obstacles.Count()} events: {eData.BasicEvents.Count()} customEvents: {eData.CustomEvents.Count()}.");
+
 
             if (eData.OriginalCBData != null)
             {
@@ -1921,7 +1985,7 @@ namespace AutoBS
         }
         public static CustomBeatmapData DeepCopyBeatmapData(BeatmapData original)// = new Version(2,6,0) // not really tested to see if catches all custom data. probably not!!!
         {
-            var copy = new CustomBeatmapData(original.numberOfLines, new CustomData(), new CustomData(), new CustomData(), TransitionPatcher.LevelVersion); // can get from JSON if need to
+            var copy = new CustomBeatmapData(original.numberOfLines, new CustomData(), new CustomData(), new CustomData(), TransitionPatcher.CurrentBeatmapVersion); // can get from JSON if need to
 
             // Copy objects
             foreach (var item in original.allBeatmapDataItems)

@@ -14,7 +14,10 @@ using UnityEngine;
 namespace AutoBS
 {
     public static class JsonOutputConverter
-    {     
+    {
+        // Set this if update mod!!! this is for customData metadata
+        public static string ModName = "AutoBS v1.0.0";
+
         /// <summary>
         /// Produce a JSON string from CustomBeatmapData. Works for v2 and v3 maps.
         /// </summary>
@@ -59,7 +62,7 @@ namespace AutoBS
                 root = JsonV4LightshowOutput(eData, timeMult);
                 createFile(root, 4, "Lightshow");
 
-                root = JsonV4AudioDataOutput(TransitionPatcher.SelectedBeatmapLevel, Config.Instance.OutputV4JsonSongFrequency); //default is 44100!
+                root = JsonV4AudioDataOutput(TransitionPatcher.SelectedBeatmapLevel, Config.Instance.OutputV4JsonSongSampleRate); //default is 44100!
                 createFile(root, 4, "AudioData");
             }
 
@@ -353,11 +356,13 @@ namespace AutoBS
                 root["_customEvents"] = ce;
             }
 
+            AddAutoBSMetadataV2(root); // Add AutoBS metadata without overwriting existing _customData keys
+
             return root;
         }
 
        
-
+        //customData entries still have "_" in front of items like _position if copied from v2. but that should be ok apparently.
         public static JObject JsonV3Output(CustomBeatmapData data, float timeMult, EditableCBD eData) //v3 maps - rotations are stripped out of events. Not using eData since arcs/chains don't link well to rotation events. they only work with per object rotations
         {
             var rotationEventsData = eData.RotationEvents;
@@ -366,6 +371,11 @@ namespace AutoBS
             // ---- v3.3.0 format ----
             var root = new JObject();
             root["version"] = new Version(3, 3, 0).ToString();
+
+            // Root-level customData (beatmap-level) from EditableCBD, if present
+            if (eData.BeatmapCustomData != null && eData.BeatmapCustomData.Count > 0)
+                root["customData"] = JObject.FromObject(eData.BeatmapCustomData);
+
 
             // 1. colorNotes
             var notes = new JArray();
@@ -576,6 +586,8 @@ namespace AutoBS
                 root["customEvents"] = customEvents;
             }
 
+            AddAutoBSMetadataV3OrV4(root); // Add AutoBS metadata without overwriting existing customData keys
+
             return root;
         }
 
@@ -595,6 +607,11 @@ namespace AutoBS
             {
                 ["version"] = "4.0.0" //4.1.0 has njs events but customJSONData doesn't work for v4
             };
+
+            // Root-level customData (beatmap-level) from EditableCBD, if present
+            if (eData.BeatmapCustomData != null && eData.BeatmapCustomData.Count > 0)
+                root["customData"] = JObject.FromObject(eData.BeatmapCustomData);
+
 
             // ============================================================
             // 1) COLOR NOTES (with deduped colorNotesData)
@@ -969,6 +986,8 @@ namespace AutoBS
             root["njsEvents"] = new JArray();
             root["njsEventData"] = new JArray();
 
+            AddAutoBSMetadataV3OrV4(root); // Add/merge AutoBS generator metadata at root (customData)
+
             return root;
         }
 
@@ -1270,7 +1289,9 @@ namespace AutoBS
             foreach (var w in data.beatmapObjectDatas.OfType<CustomObstacleData>())
             {
                 if (!RemoveMappingExtensionWalls(w, out int legacyType))
-                    continue; // skip Mapping Extensions / weird walls
+                   continue; // skip Mapping Extensions / weird walls
+                //if (!TryGetV2ObstacleType(w, out int legacyType)) // NOT WORKING
+                //    continue;
 
                 var o = new JObject
                 {
@@ -1299,6 +1320,93 @@ namespace AutoBS
                 obs.Add(o);
             }
             root["_obstacles"] = obs;
+
+            /*
+            bool TryGetV2ObstacleType(CustomObstacleData o, out int type)
+            {
+                type = 0;
+
+                int layerInt = (int)o.lineLayer;
+                int heightInt = o.height;
+
+                // Vanilla v2 (safe and exact)
+                if (layerInt == 0 && heightInt == 5) { type = 0; return true; }
+                if (layerInt == 2 && heightInt == 3) { type = 1; return true; }
+
+                // Detect "ME / precision" obstacles by any of these signals
+                bool isME =
+                    Math.Abs(o.lineIndex) >= 1000 ||
+                    Math.Abs(o.width) >= 1000 ||
+                    Math.Abs(layerInt) >= 1000 ||
+                    Math.Abs(heightInt) >= 1000 ||
+                    heightInt > 2; // (ME loader patches also act on height > 2 sometimes)
+
+                if (!isME)
+                    return false; // not representable in v2 without guessing
+
+                // We can only round-trip correctly if your current obstacle fields
+                // are in the same "decoded int" space ME uses:
+                //  - lineLayer like 3560, 5254...
+                //  - height like 1160...
+                // If you instead have generator-style height codes (1100, 1500, 2500),
+                // you need a different encoder (see note below).
+
+                // If heightInt looks like generator-style (e.g. 1100,1500,2500),
+                // convert it into ME-decoded heightInt (e.g. 1160 for 0.16) first:
+                // ME-decoded heightInt = 1000 + 1000 * trackHeight
+                // generator trackHeight = (h - 1000)/1000
+                // => decoded heightInt = h (so 1100 stays 1100). That’s OK.
+                // But to match tiny v2 particles like your sample (heightInt=1160),
+                // you need heightInt that already reflects the v2-derived height.
+                //
+                // So we’ll treat both cases:
+                // - If heightInt is close to "1000 + 5*k" we can invert cleanly.
+                // - Otherwise we’ll derive obsHeight from trackHeight.
+
+                int obsHeight;
+
+                // Case A: already ME-decoded heightInt from v2 loader: heightInt = 1000 + 5*obsHeight
+                if (heightInt >= 1000 && (heightInt - 1000) % 5 == 0)
+                {
+                    obsHeight = (int)Math.Round((heightInt - 1000) / 5f);
+                }
+                else
+                {
+                    // Case B: generator-style ME height code: trackHeight = (heightInt - 1000)/1000
+                    // v2 final trackHeight = 5*obsHeight/1000 => obsHeight = trackHeight*1000/5
+                    float trackHeight =
+                        heightInt >= 1000 ? (heightInt - 1000) / 1000f :
+                        heightInt <= -1000 ? (heightInt + 2000) / 1000f :
+                        heightInt > 2 ? heightInt : 0f;
+
+                    obsHeight = (int)Math.Round(trackHeight * 1000f / 5f);
+                }
+
+                obsHeight = Math.Clamp(obsHeight, 0, 4000);
+
+                // startHeight from layerInt:
+                // If layerInt looks like ME-decoded (>=1000), invert it.
+                // Otherwise (layer 0..9 etc.), you can choose startHeight=0 or map it.
+                int startHeight;
+                if (Math.Abs(layerInt) >= 1000)
+                {
+                    startHeight = (int)Math.Round((layerInt - 1334f) * 750f / 5000f);
+                }
+                else
+                {
+                    // If your generator uses lineLayer 0..9 and you want vertical placement,
+                    // keep it simple: startHeight=0 (particles centered), or map:
+                    // startHeight ≈ 150*layer - 200 (clamped)
+                    startHeight = (int)Math.Round(150f * layerInt - 200f);
+                }
+
+                startHeight = Math.Clamp(startHeight, 0, 999);
+
+                // PreciseHeightStart encoding
+                type = 4001 + obsHeight * 1000 + startHeight;
+                return true;
+            }
+            */
 
             bool RemoveMappingExtensionWalls(CustomObstacleData obstacle, out int legacyType)
             {
@@ -1858,6 +1966,46 @@ namespace AutoBS
                return root;
            }
            */
+
+        // ----------------------------------------------------------
+        // AutoBS metadata helpers
+        // ----------------------------------------------------------
+        
+        /// <summary>
+        /// Ensure v2 root has _customData and add/update "generatedBy".
+        /// Keeps any existing _customData keys intact.
+        /// </summary>
+        static void AddAutoBSMetadataV2(JObject root)
+        {
+            if (root == null) return;
+
+            var cd = root["_customData"] as JObject;
+            if (cd == null)
+            {
+                cd = new JObject();
+                root["_customData"] = cd;
+            }
+
+            cd["generatedBy"] = $"{ModName}";
+        }
+
+        /// <summary>
+        /// Ensure v3/v4 root has customData and add/update "generatedBy".
+        /// Keeps any existing customData keys intact.
+        /// </summary>
+        static void AddAutoBSMetadataV3OrV4(JObject root)
+        {
+            if (root == null) return;
+
+            var cd = root["customData"] as JObject;
+            if (cd == null)
+            {
+                cd = new JObject();
+                root["customData"] = cd;
+            }
+
+            cd["generatedBy"] = $"{ModName}";
+        }
 
     }
 

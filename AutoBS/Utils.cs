@@ -52,11 +52,11 @@ namespace AutoBS
                 return false;
             }
         }
-        public static bool IsEnabledFOV()
+        public static bool IsEnabledFOV(bool wallsAdded)
         {
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE ||
                 (Config.Instance.EnableWallsNonGen360 &&
-                (TransitionPatcher.SelectedSerializedName == "360Degree" || TransitionPatcher.SelectedSerializedName == "90Degree"))) // use this for nonGen360 maps with wall gen since old 360fyer generated maps have wild rotations that cause walls to reverse through the frame. this will not help some walls blocking player vision that are built into 360fyer old generated output
+                ((TransitionPatcher.SelectedSerializedName == "360Degree" || TransitionPatcher.SelectedSerializedName == "90Degree") && wallsAdded))) // use this for nonGen360 maps with wall gen since old 360fyer generated maps have wild rotations that cause walls to reverse through the frame. this will not help some walls blocking player vision that are built into 360fyer old generated output
             {
                 //Plugin.Log.Info("FOV enabled");
                 return true;

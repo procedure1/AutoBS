@@ -336,6 +336,7 @@ namespace AutoBS.Patches
                         obstacleCount = 0;
 
                         int chainsCount = 0;
+                        int arcsCount = 0;
                         int eventsCount = 0;
 
                         var env = GetUsableEnvironment(basedOn);
@@ -450,6 +451,10 @@ namespace AutoBS.Patches
                                 .OfType<NoteData>()
                                 .Count(n => n.colorType == ColorType.None);
 
+                            arcsCount = customBeatmapData.allBeatmapDataItems
+                                .OfType<SliderData>()
+                                .Count(s => s.sliderType == SliderData.Type.Normal);
+
                             chainsCount = customBeatmapData.allBeatmapDataItems
                                 .OfType<SliderData>()
                                 .Count(s => s.sliderType == SliderData.Type.Burst);
@@ -478,6 +483,10 @@ namespace AutoBS.Patches
                                 .OfType<NoteData>()
                                 .Count(n => n.colorType == ColorType.None);
 
+                            arcsCount = originalBeatmapData.allBeatmapDataItems
+                                .OfType<SliderData>()
+                                .Count(s => s.sliderType == SliderData.Type.Normal);
+
                             chainsCount = originalBeatmapData.allBeatmapDataItems
                                 .OfType<SliderData>()
                                 .Count(s => s.sliderType == SliderData.Type.Burst);
@@ -490,7 +499,18 @@ namespace AutoBS.Patches
                         }
 
 
-                        Plugin.Log.Info($"[CreateGen360DifficultySet] -- Retrieved BeatmapData v{version} from JSON - {difficulty} - notes: {noteCount} bombs: {bombCount} obstacles: {obstacleCount} events: {eventsCount} bpm change events: {originalBpmEventsCount} {customBpmEventsCount}.");
+                        Plugin.Log.Info($"[CreateGen360DifficultySet] -- Retrieved BeatmapData v{version} from JSON - {difficulty} - notes: {noteCount} bombs: {bombCount} obstacles: {obstacleCount} arcs: {arcsCount} chains: {chainsCount} events: {eventsCount} bpm change events: {originalBpmEventsCount} {customBpmEventsCount}.");
+                        
+                        if (arcsCount > 0)
+                        {
+                            MapAlreadyUsesArcsRegistry.findByKey[stdKey] = true;
+                            MapAlreadyUsesArcsRegistry.findByKey[genKey] = true;
+                        }
+                        else
+                        {
+                            MapAlreadyUsesArcsRegistry.findByKey[stdKey] = false;
+                            MapAlreadyUsesArcsRegistry.findByKey[genKey] = false;
+                        }
 
                         if (chainsCount > 0)
                         {
@@ -710,7 +730,8 @@ namespace AutoBS.Patches
                     {
                         //string beatmapJson = ExternalFileReader.ReadTextAsync(beatmapPath).GetAwaiter().GetResult();
                         //string lightshowJson = ExternalFileReader.ReadTextAsync(lightshowPath).GetAwaiter().GetResult();
-
+                        MapAlreadyUsesArcsRegistry.findByKey[stdKey]   = false; //don't know yet i think
+                        MapAlreadyUsesArcsRegistry.findByKey[genKey]   = false;
                         MapAlreadyUsesChainsRegistry.findByKey[stdKey] = false;
                         MapAlreadyUsesChainsRegistry.findByKey[genKey] = false;
                         //RequirementsRegistry.findByKey[genKey] = Array.Empty<string>(); RequirementsRegistry.findByKey[stdKey] = Array.Empty<string>();
@@ -797,16 +818,53 @@ namespace AutoBS.Patches
 
                         SongFolderPath = SongFolderUtils.TryGetSongFolder(level.levelID);
 
-                        /*
-                        if (SongFolderPath == null)
+                        //Tried to use this but could not read the beat!
+                        //var v3Save = Newtonsoft.Json.JsonConvert.DeserializeObject<BeatmapSaveDataVersion3.BeatmapSaveData>(beatmapJson);
+
+                        // Parse v3 rotationEvents directly from JSON
+                        if (version.Major == 3 && !string.IsNullOrEmpty(beatmapJson))
                         {
-                            Plugin.Log.Error($"[CreateGen360DifficultySet] Could not find song folder.");
+                            var root = Newtonsoft.Json.Linq.JObject.Parse(beatmapJson);
+                            var rotationArray = root["rotationEvents"] as Newtonsoft.Json.Linq.JArray;
+
+                            if (rotationArray != null && rotationArray.Count > 0)
+                            {
+                                var list = new List<RotationV3Registry.V3RotationRecord>(rotationArray.Count);
+
+                                foreach (var token in rotationArray)
+                                {
+                                    // Skip bad tokens
+                                    if (token == null || token.Type != Newtonsoft.Json.Linq.JTokenType.Object)
+                                        continue;
+
+                                    var obj = (Newtonsoft.Json.Linq.JObject)token;
+
+                                    // These must exist in well-formed v3 JSON:
+                                    var bTok = obj["b"];
+                                    var rTok = obj["r"];
+
+                                    if (bTok == null || rTok == null)
+                                        continue;
+
+                                    float beat = bTok.Value<float>();   // "b"
+                                    int rotation = rTok.Value<int>();   // "r"
+                                    int execution = obj["e"]?.Value<int>() ?? 0; // "e" (0/1) – not used by you yet
+
+                                    list.Add(new RotationV3Registry.V3RotationRecord
+                                    {
+                                        beat = beat,
+                                        rotation = rotation,
+                                        execution = execution
+                                    });
+                                }
+
+                                if (list.Count > 0)
+                                {
+                                    RotationV3Registry.RotationEventsByKey[beatmapKey] = list;
+                                    Plugin.Log.Info($"[RotationV3Registry] Stored {list.Count} v3 rotation events.");
+                                }
+                            }
                         }
-                        else
-                        {
-                            Plugin.Log.Info($"[CreateGen360DifficultySet] Found song folder at '{SongFolderPath}'");
-                        }
-                        */
 
                         return (beatmapJson, lightshowJson, audioDataJson, version);
                     }

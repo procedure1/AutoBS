@@ -137,6 +137,8 @@ namespace AutoBS
 
         //public virtual bool EnableWallGeneratorForStandardMaps { get; set; } = false;
 
+        public virtual float StandardLevelWallMultiplier { get; set; } = .4f; // reduces all the wall multipliers in ResetWalls since non rotating maps end up with tons of walls
+
         public virtual bool AllowV2BoostedWalls { get; set; } = true; // allow walls with negative duration (boosted walls) to stay in generated maps
         public virtual bool EnableStandardWalls { get; set; } = true; 
         public virtual bool EnableBigWalls { get; set; } = true;
@@ -144,7 +146,7 @@ namespace AutoBS
         public virtual float StandardWallsMinDistance { get; set; } = 0; // default 0 since comes into lanes 0 and 3
         public virtual bool EnableMappingExtensionsWallsGenerator { get; set; } = true; // not set by user currently. set by whether mapping extensions mod is installed. // turns on/off all ext walls - BW add new decorative extension mapping walls. must install extension mapping to work
         
-        public virtual bool EnableDistantExtensionWalls { get; set; } = true; // regular extension mapping walls
+        public virtual bool EnableDistantExtensionWalls { get; set; } = true; // -- i think i can delete this!!!!!!!!!!!!!!!!!!!!!!!
         public virtual float DistantExtensionWallsMultiplier { get; set; } = 2;
         
         public virtual bool EnableColumnWalls { get; set; } = true;
@@ -167,7 +169,7 @@ namespace AutoBS
 
         //public virtual float WindowPaneWallsSize { get; set; } = 2;
         //public virtual float WindowPaneWallsHeight { get; set; } = 3;
-        public virtual float WindowPaneWallsMultiplier { get; set; } = 1; 
+        public virtual float WindowPaneWallsMultiplier { get; set; } = 4; 
         public virtual float WindowPaneWallsMinDistance { get; set; } = 0; 
 
         public virtual bool EnableParticleWalls { get; set; } = true;
@@ -284,7 +286,7 @@ namespace AutoBS
         public virtual bool OutputV3JsonToSongFolder { get; set; } = false; //will convert to v3 -- use ForceZero arc rotation mode or will have intersecting arcs/walls
         //add to v2 or v3! since its the info.dat file. add it to each "_difficultyBeatmaps" that needs it: "_customData": {"_requirements": ["Mapping Extensions"]},
         //at least for beat sage, need to remove in info.dat:  "_environmentNames": [ "DefaultEnvironment" ], AND remove "_environmentNameIdx": 0, from each difficultyBeatmap in order for 360 map to use 360 environment
-        public virtual bool OutputV4JsonToSongFolder { get; set; } = false; // ouptuts perfect map
-        public virtual int OutputV4JsonSongFrequency { get; set; } = 44100;
+        public virtual bool OutputV4JsonToSongFolder { get; set; } = false; // outputs perfect map compared to v2 or 3
+        public virtual int OutputV4JsonSongSampleRate { get; set; } = 44100;
     }
 }

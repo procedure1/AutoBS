@@ -19,8 +19,11 @@ namespace AutoBS
     // V2 light events (not GLS v3 lights)
     public static class LightAutoMapper
     {
+        public static bool LightEventsAdded = false;
         public static void Start(EditableCBD eData)
         {
+            LightEventsAdded = false;
+
             // Check the environment.
             string envName = TransitionPatcher.EnvironmentName != null ? TransitionPatcher.EnvironmentName : "Default";
 
@@ -101,11 +104,11 @@ namespace AutoBS
             //Standard maps: If 2 or more light types already exist → skip light generation
             if (existingLightTypes > 2 && //counts how many false values exist in bools. It effectively counts how many light events already exist in the map.
                 TransitionPatcher.SelectedSerializedName != "Generated360Degree" &&
-                TransitionPatcher.SelectedSerializedName != "Generated90Degree" &&
                 TransitionPatcher.SelectedSerializedName != "360Degree" &&
                 TransitionPatcher.SelectedSerializedName != "90Degree")
             {
                 Plugin.Log.Info($"[AutoLightMapper] not used since there are 3 or more light events types programmed already for standard map.");
+                LightEventsAdded = false;
                 return;
             }
 
@@ -113,7 +116,6 @@ namespace AutoBS
 
             //360: If all 7 core types are already present, it skips generation
             if (TransitionPatcher.SelectedSerializedName == "Generated360Degree" ||
-                TransitionPatcher.SelectedSerializedName == "Generated90Degree" ||
                 TransitionPatcher.SelectedSerializedName == "360Degree" ||
                 TransitionPatcher.SelectedSerializedName == "90Degree")
             {
@@ -125,6 +127,7 @@ namespace AutoBS
                 else
                 {
                     Plugin.Log.Info($"[AutoLightMapper] not used since all seven 360 light event types are already programmed.");
+                    LightEventsAdded = false;
                     return;
                 }
             }
@@ -1037,6 +1040,13 @@ namespace AutoBS
             }
             return lights;
             */
+
+            if (lightEvents.Count > 0)
+            {
+                LightEventsAdded = true;
+                Plugin.Log.Info($"[CreateLight] {lightEvents.Count} Light Events Added.");
+            }
+
             return lightEvents;
         }
         //END CreateLight------------------------------------------------------------
