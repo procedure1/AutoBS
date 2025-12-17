@@ -37,6 +37,8 @@ Wireless headset users can use the `Wireless 360` menu setting, which has no rot
 
 Rotation size and frequency can be adjusted in the menu, and headset FOV limits can be set so that rotations don't move outside your peripheral vision.
 
+***HINT: For rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier` and `Min Rotation Size`. Then start decreasing `FOV Time Window` until rotations start to move too far outside your peripheral vision.***
+
 ## Arcitect Arc + Chain Maker
 
 `Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the segments can become impossible to hit when chains get too long.
@@ -87,7 +89,7 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 | **Min Rotation Size***    | Default: **15°**. Minimum rotation step size. Rotations are typically 15° or 30°. `FOV` rules may force this down to 15° sometimes. * ***Bump this up for larger rotations angles!***|
 | **Max Rotation Size**    | Default: **30°**. Maximum rotation step size. While 15° and 30° are typical, 45° rotations may fall outside peripheral vision. `FOV` rules may also force this value lower.|
 | **FOV**                  | Default: **80°**. Set to slightly below your headset’s actual field of view. This is used to keep rotations within your peripheral vision over time. 80° is recommended for Quest 2 and 3.|
-| **FOV Time Window**      | Default: **0.35 s**. Time window used to evaluate cumulative rotations against your FOV. Prevents multiple small rotations from stacking into a large FOV-breaking turns within this time span. Lower values allow more rapid rotations that can edge toward or outside the periphery.|
+| **FOV Time Window**      | Default: **0.36 s**. Time window used to evaluate cumulative rotations against your FOV. Prevents multiple small rotations from stacking into a large FOV-breaking turns within this time span. Lower values allow more rapid rotations that can edge toward or outside the periphery. ***Bump this down for more and larger rotation angles!***|
 | **Wall Removal Mult**    | Default: **1.0**. Controls how aggressively vision-blocking walls are removed during rotation sequences. Higher values remove more chaotic walls that may pass in front of the player and block visibility.|
 | **Wall Note Dist**       | Default: **0.2 s**. This is the minimum distance allowed between notes and walls. Rotation events can cause notes and walls to appear closer together. Increase this to allow more space between them.|
 | **Base Map**             | Default: **Standard**. Chooses which map type is used as the base for 360fyer-generated maps (e.g., Standard vs. other modes). **Score submission is disabled** if this is not set to Standard, and a Beat Saber restart is required for changes to take effect for maps that have already been selected in the menu.|

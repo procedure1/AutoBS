@@ -38,7 +38,7 @@ namespace AutoBS
         public virtual bool EnableLightingStandard { get; set; } = false;
 
         public virtual bool Wireless360 { get; set; } = true; //This assumes the user doesn't want rotation limits and it sets LimitRotations to 999 and BottleneckRotations to 999. only for 360 not 90.
-        public virtual float LimitRotations360 { get; set; } = 360;//changed this to Degrees. Previously Default 28 where 24 is 360 degree circle. designed to avoid riping a cable
+        public virtual float LimitRotations360 { get; set; } = 330;//changed this to Degrees. Previously Default 28 where 24 is 360 degree circle. designed to avoid riping a cable
 
 
         // ROTATION
@@ -52,7 +52,7 @@ namespace AutoBS
         public virtual float MinRotationSize { get; set; } = 15f;//disallows single rotations smaller than this
         public virtual float MaxRotationSize { get; set; } = 30f;//disallows single rotations larger than this
         public virtual float FOV { get; set; } = 80f;
-        public virtual float TimeWindow { get; set; } = 0.35f;
+        public virtual float TimeWindow { get; set; } = 0.36f;
 
         public virtual float VisionBlockingWallRemovalMult { get; set; } = 1f; // increase to remove more vision blocking walls 
 
