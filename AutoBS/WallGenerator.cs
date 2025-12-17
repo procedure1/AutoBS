@@ -98,15 +98,6 @@ namespace AutoBS
         private static float ParticleWallsMultiplier = Config.Instance.ParticleWallsMultiplier;
         private static float FloorWallsMultiplier = Config.Instance.FloorWallsMultiplier;
 
-        //private static List<EObstacleData> _leftWalls = new List<EObstacleData>();
-
-        //private static List<EObstacleData> _rightWalls = new List<EObstacleData>();
-
-        //private static List<EObstacleData> leftWalls = new List<EObstacleData>();
-        //private static List<EObstacleData> rightWalls = new List<EObstacleData>();
-
-        //private static List<EObstacleData> _obstaclesToDelete = new List<EObstacleData>();
-
         public static void ResetWalls(EditableCBD eData)
         {
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE ||
@@ -123,7 +114,7 @@ namespace AutoBS
                 ParticleWallsMultiplier = Config.Instance.ParticleWallsMultiplier;
                 FloorWallsMultiplier = Config.Instance.FloorWallsMultiplier;
 
-                Plugin.Log.Info($"[WallGenerator][ResetWalls] - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty} -  360/90 maps get all full wall multipliers.");
+                Plugin.LogDebug($"[WallGenerator][ResetWalls] - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty} -  360/90 maps get all full wall multipliers.");
 
             }
             else // reduce number of wall in standard map since without rotations, it makes millions of walls that don't get removed
@@ -140,7 +131,7 @@ namespace AutoBS
                 ParticleWallsMultiplier = Config.Instance.ParticleWallsMultiplier * mult;
                 FloorWallsMultiplier = Config.Instance.FloorWallsMultiplier * mult;
 
-                Plugin.Log.Info($"[WallGenerator][ResetWalls] - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty} - Standard maps get all wall multipliers reduced by {mult}.");
+                Plugin.LogDebug($"[WallGenerator][ResetWalls] - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty} - Standard maps get all wall multipliers reduced by {mult}.");
             }
 
 
@@ -154,7 +145,7 @@ namespace AutoBS
                 _endTime = eData.ColorNotes.Last().time;
             }
 
-            Plugin.Log.Info($"ResetWalls: StartTime: {_startTime:F}, EndTime: {_endTime:F} - ColorNotes.Count: {eData.ColorNotes.Count()} - Obstacles.Count: {eData.Obstacles.Count()}");
+            Plugin.LogDebug($"ResetWalls: StartTime: {_startTime:F}, EndTime: {_endTime:F} - ColorNotes.Count: {eData.ColorNotes.Count()} - Obstacles.Count: {eData.Obstacles.Count()}");
             _originalWalls.Clear();
             foreach (var obstacle in eData.Obstacles) // Clear existing obstacles from BeatmapData so obstacles are empty
             {
@@ -184,11 +175,8 @@ namespace AutoBS
             _allWallsContainsParticleWalls = false;
             _allWallsContainsFloorWalls = false;
 
-            Plugin.Log.Info($"[WallGenerator] Walls RESET: original wall count: {_originalWalls.Count}");
+            Plugin.LogDebug($"[WallGenerator] Walls RESET: original wall count: {_originalWalls.Count}");
         }
-
-        //private static void AddWall(List<EObstacleData>walls, EObstacleData wall)
-        //{ }
 
         public static void WallGen(int i, float wallTime, float wallDuration, ENoteData afterLastNote, List<ENoteData> notesInBarBeat, List<ENoteData> notesInBar, float nextNoteLeftTime, float nextNoteRightTime)
 
@@ -272,7 +260,6 @@ namespace AutoBS
 
             //Plugin.Log.Info($"WallGenerator: containsCustomWalls: {BeatmapDataTransformHelperPatcher.containsCustomWalls}");
 
-            // TEST!! if 360 map, gen walls a bit later so front of walls are not so close to notes (esp on rotations)
             float WallSpawnDelay = Config.Instance.MinDistanceBetweenNotesAndWalls; // seconds; set to 0f to disable
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
                 wallTime += WallSpawnDelay; // Shift wall start time forward
@@ -294,23 +281,9 @@ namespace AutoBS
             tunnelWallsHappening = false;
             paneWallsHappening = false;
 
-            //Plugin.Log.Info($"Wall Generate: wallTime: {currentBarBeatStart} wallDuration: {dividedBarLength}");
-
-            // Generate wall. BW fyi v2 wall with _type 1 or v3 wall y: noteLineLayer.Top or 2 is a crouch wall -- but must be wide enough to and over correct x: lineIndex to be over a player
-
-            // This will generate 1 wall on the left or 1 wall on the right or both (of all types standard, big, or extension) IF there is no native wall there. 
-
-            //int lineIndex = 0;
-
-
             bool generateWall = true;
 
             float minGapBetweenWalls = .2f; // seconds
-
-            
-
-            //if (Config.Instance.MaxRotationSize > 15 && Config.Instance.RotationSpeedMultiplier > 1.3)
-            //    minDistanceBetweenNotesAndWalls *= 2f;
 
             //Plugin.Log.Info($"Wall Gen - wallTime: {wallTime:F} wallDuration: {wallDuration}");
 
@@ -335,8 +308,7 @@ namespace AutoBS
                 // Log if the obstacle does not affect wall generation
                 //Plugin.Log.Info($"----- Obstacle {k} time: {obs.time} does not affect wall generation. Moving to the next obstacle.");
 
-                // Update the last processed index
-                _lastProcessedIndex = k;
+                _lastProcessedIndex = k; // Update the last processed index
             }
 
             if (generateWall && afterLastNote != null)
@@ -435,16 +407,6 @@ namespace AutoBS
                         int idxL = _tempOriginalAndStandardWalls.BinarySearch(customObsDataL, Comparer<EObstacleData>.Create((x, y) => x.time.CompareTo(y.time)));
                         if (idxL < 0) idxL = ~idxL;
                         _tempOriginalAndStandardWalls.Insert(idxL, customObsDataL);
-
-                        /*
-                        if (lStart > 38f && lStart < 41f)
-                        {
-                            Plugin.Log.Info($"Wall Generator Left:  Time: {lStart:F}, Dur: {lDur:F}, EndTime: {(lStart + lDur):F} Index: {startColLeft}, Layer: {customObsDataL.layer}, Width: {widthLeft}");
-                            int count = 0;
-                            foreach (var note in notesInBarBeat)
-                                Plugin.Log.Info($" Wall Generator --- NotesInBarBeat[{count++}]:  Time: {note.time:F}, Line: {note.line}, layer: {note.layer} dir: {note.cutDirection}, color: {note.colorType}");
-                        }
-                        */
                     }
                 }
 
@@ -456,8 +418,6 @@ namespace AutoBS
                     CreateExtensionWalls(i, wallTime, wallDuration, generatedWall, generatedBigWall);
                 }
 
-                //Plugin.Log.Info($"Sort _allWalls!");
-                //_allWalls.Sort((a, b) => a.time.CompareTo(b.time));
             }
             //Plugin.Log.Info($"WallTime: {wallTime} GeneratedWall: {generatedWall} Time: Count: {genWallCount} - GenderatedBigWall: {generatedBigWall} Count: {genBigWallCount}");
 
@@ -468,7 +428,7 @@ namespace AutoBS
             }
             //else
             //Plugin.Log.Info($"CreateExtensionWalls() NOT CALLED!");
-            //ParticleWalls(data, i, wallTime);
+
         }
 
 
@@ -477,11 +437,11 @@ namespace AutoBS
 
         #region Extension Walls
 
-        //[WARNING @ 12:53:12 | UnityEngine] BoxColliders does not support negative scale or size.
+        // [WARNING @ 12:53:12 | UnityEngine] BoxColliders does not support negative scale or size.
         // Caused by Window Panes and Floor Walls sometimes (360 or standard). couln't find any negative inputs from window panes anyway so stopped looking
         public static void CreateExtensionWalls(int i, float wallTime, float wallDuration, string alreadyHasGenWall, string alreadyHasBigWall) // big walls (not particle walls) - using walltime so on the beat
         {
-            if (!Utils.IsEnabledExtensionWalls()) return; // TEST THIS!!!!!!!!!!!!!!!
+            if (!Utils.IsEnabledExtensionWalls()) return;
 
             // give the appearance of randomness
             int[] hiLineLayer = { 10, 18, 20, 22 };// { 10, 20, 25, 30 }
@@ -537,10 +497,6 @@ namespace AutoBS
                     int allWalls1 = allWalls[hash % allWalls.Length];
 
                     int lineIndex = sign * 15;
-
-                    //Plugin.Log.Info($"Hash Outcomes - HIGH  -- hiLayer: {hiLayer}, hiLineIndx: {hiLineIndx}, hiWidth1: {hiWidth1}, hiBoth1: {hiBoth1}");
-                    //Plugin.Log.Info($"Hash Outcomes - LOW   -- loLayer: {loLayer}, indexx:     {indexx}, loWidth: {loWidth}, loBoth1: {loBoth1}");
-                    //Plugin.Log.Info($"Hash Outcomes - Common-- height1: {height1}, duration: {duration}, allWalls1: {allWalls1}");
 
                     EObstacleData customObsData;
                     if (allWalls1 == 1 || allWalls1 == 3)
@@ -612,12 +568,6 @@ namespace AutoBS
                         //data.AddBeatmapObjectDataInOrder(customObsData);
                         distantCount++;
 
-                        // not needed if high wall since out of the way
-                        //if (alreadyHasExtendedWalls == "none")
-                        //    alreadyHasExtendedWalls= "right";
-                        //else if (alreadyHasExtendedWalls == "left")
-                        //    alreadyHasExtendedWalls = "both";
-
                         if (hiBoth1)
                         {
                             customObsData = EObstacleData.Create(wallTime, -lineIndex, hiLayer, duration, hiWidth1, height1);
@@ -634,12 +584,6 @@ namespace AutoBS
                             //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                             //data.AddBeatmapObjectDataInOrder(customObsData);
                             distantCount++;
-
-                            // not needed if high wall since out of the way
-                            //if (alreadyHasExtendedWalls == "none")
-                            //    alreadyHasExtendedWalls = "left";
-                            //else if (alreadyHasExtendedWalls == "right")
-                            //    alreadyHasExtendedWalls = "both";
                         }
                     }
 
@@ -660,8 +604,6 @@ namespace AutoBS
             int divisorPane   = Math.Max((int)Math.Round(9 / WindowPaneWallsMultiplier), 1);
 
             //Plugin.Log.Info($"[GridWalls DEBUG] hash: {hash}, divisorGrid: {divisorGrid}, hash % divisorGrid: {hash % divisorGrid}");
-
-
             //Plugin.Log.Info($"Hash Outcomes - numOfColumns: {numberOfColumns}, Hash: {hash}, Hash % 4: {hash % 4}, Hash % numOfColumns.Length: {hash % numOfColumns.Length}");
 
             if (alreadyHasBigWall != "both" && alreadyHasExtendedWalls != "both")
@@ -687,46 +629,6 @@ namespace AutoBS
                     WindowPaneWalls(wallTime, alreadyHasGenWall, alreadyHasBigWall, paneWidth, windowPaneWallLineLayer, windowPaneWallLineIndex, numberOfColumns);
                 }
 
-                /*
-                else if (hash % 2 == 0) // floor grid walls parallel to player (not perpendicular which requires using time)
-                {
-                    int width = 3000; // 1000 = 0 and 2000 = 1!
-                    int height1 = 1001; 
-                    int gap = 400; // space between walls
-
-                    //int[] theLineLayer = { 0, 8, 9, 10, 0, 11, 12, 13, 0, 14, 15 };// took 15 out
-                    // layer = theLineLayer[hash % theLineLayer.Length];
-
-                    // random duration (thickness) and wallTime
-                    Random rand = new Random(); // Initialize the random number generator
-
-                    for (int j = 0; j <= numberOfColumns * 4; j++) // cols
-                    {
-
-                            float randomDuration = .001f + (float)rand.NextDouble() * (.15f); // Generate a random duration between .001f and .02f
-                                float randomTimeOffset = (float)(rand.NextDouble() * 0.1) - 0.05f; // Generate random time adjustment between -0.01 and +0.01
-                            if (randomDuration <= .02f && randomTimeOffset >= 0)
-                                randomDuration = .02f;
-                            else if (randomDuration >= -.02f && randomTimeOffset < 0)
-                                randomDuration = -.02f;
-
-                        float adjustedWallTime = wallTime + randomTimeOffset; // Adjust wallTime by the random time offset
-
-                            if (alreadyHasBigWall != "left" && alreadyHasExtendedWalls != "left")
-                            {
-                                // Left grid wall placement with random duration and adjusted wall time
-                                customObsData = EObstacleData.Create(adjustedWallTime, - (j * (width + gap)), 0, randomDuration, width, height1);
-                                data.AddBeatmapObjectDataInOrder(customObsData);
-                            }
-                            if (alreadyHasBigWall != "right" && alreadyHasExtendedWalls != "right")
-                            {
-                                // Right grid wall placement with random duration and adjusted wall time
-                                customObsData = EObstacleData.Create(adjustedWallTime, (j * (width + gap)), 0, randomDuration, width, height1);
-                                data.AddBeatmapObjectDataInOrder(customObsData);
-                            }
-                    }
-                }
-                */
             }
         }
         private static void ColumnWalls(float wallTime, string alreadyHasBigWall, int numberOfColumns,
@@ -742,7 +644,7 @@ namespace AutoBS
                     EObstacleData customObsData = EObstacleData.Create(wallTime, -k, j, .001f, 1, 10 + j); // -2, -4, -6, -8 columns with 1 space between
                     _generatedExtensionWalls.Add(customObsData);
                     //Plugin.Log.Info($"Wall Column Time: {wallTime}, Index:{-k}, Layer: {j}, Dur: .001f, Width: 1, Height: {10 + j}");
-                    //data.AddBeatmapObjectDataInOrder(customObsData);
+
                     columnCount++;
                 }
                 if (alreadyHasBigWall != "right" && alreadyHasExtendedWalls != "right")
@@ -750,7 +652,7 @@ namespace AutoBS
                     EObstacleData customObsData = EObstacleData.Create(wallTime, (k + 3), j, .001f, 1, 10 + j); // 5, 7, 9, 11 columns with 1 space between
                     _generatedExtensionWalls.Add(customObsData);
                     //Plugin.Log.Info($"Wall Column Time: {wallTime}, Index:{k + 3}, Layer: {j}, Dur: .001f, Width: 1, Height: {10 + j}");
-                    //data.AddBeatmapObjectDataInOrder(customObsData);
+
                     columnCount++;
                 }
             }
@@ -776,7 +678,7 @@ namespace AutoBS
                     EObstacleData customObsData = EObstacleData.Create(wallTime, -leftLineIndexCalc - (j * 500), k, .03f, 20 + j, 1200); // 2, 4, 6, 8 rows with 1 space between
                     _generatedExtensionWalls.Add(customObsData);
                     //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
-                    //data.AddBeatmapObjectDataInOrder(customObsData);
+
                     rowCount++;
                 }
                 if (alreadyHasBigWall != "right" && alreadyHasExtendedWalls != "right")
@@ -784,7 +686,6 @@ namespace AutoBS
                     EObstacleData customObsData = EObstacleData.Create(wallTime, rightLineIndexCalc - (j * 500), k, .03f, 20 + j, 1200); // 5, 7, 9, 11 columns with 1 space between
                     _generatedExtensionWalls.Add(customObsData);
                     //2100, 1600, 9000 too far away                                                                                                                 //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
-                    //AddBeatmapObjectDataInOrder(customObsData);
                     rowCount++;
                 }
             }
@@ -836,7 +737,7 @@ namespace AutoBS
                         // Left grid wall placement with random duration and adjusted wall time
                         EObstacleData customObsData = EObstacleData.Create(adjustedWallTime, -leftLineIndex - (j * (width + gap)) - adjustLineIndex, (k * (height1) + gap), randomDuration, width, height1);
                         _generatedExtensionWalls.Add(customObsData);
-                        //data.AddBeatmapObjectDataInOrder(customObsData);
+
                         gridCount++;
                     }
                     if (alreadyHasBigWall != "right" && alreadyHasExtendedWalls != "right")
@@ -844,7 +745,7 @@ namespace AutoBS
                         // Right grid wall placement with random duration and adjusted wall time
                         EObstacleData customObsData = EObstacleData.Create(adjustedWallTime, rightLineIndex + (j * (width + gap)), (k * (height1) + gap), randomDuration, width, 2000);
                         _generatedExtensionWalls.Add(customObsData);
-                        //data.AddBeatmapObjectDataInOrder(customObsData);
+
                         gridCount++;
                     }
                 }
@@ -878,18 +779,6 @@ namespace AutoBS
                 float newWallStartTime = wallTime + (j * 0.06f * durationMult);
                 float newWallEndTime = newWallStartTime + .03f * durationMult;  // Assuming duration is the length of the wall in time
 
-                /*
-                        int heightMult = 2;
-
-                        if (wallTime % 2 == 0)
-                            durationMult = 2;
-                        else if (wallTime % 5 == 0)
-                            durationMult = 3;
-                        if (wallTime % 6 == 0)
-                            heightMult = 1;
-                        */
-                //Plugin.Log.Info($"Box Walls: Time: {wallTime}, durationMult:{durationMult}, heightMult: {heightMult}");
-
                 // since walls are adding into the future from wallTime, the next loop may likely overlap walls so avoid this
                 if (newWallStartTime > lastTunnelWallTime && newWallStartTime < _endTime)
                 {
@@ -898,7 +787,7 @@ namespace AutoBS
                         EObstacleData customObsData = EObstacleData.Create(newWallStartTime, 0, topLineLayer, .03f * durationMult, 4500, 1010); // top wall  //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                         _generatedExtensionWalls.Add(customObsData);
                         //Plugin.Log.Info($"Tunnel Wall: Time: {newWallStartTime:F2}, line: 0, Layer: {topLineLayer}, Width: 4500, Height: 1010");
-                        //data.AddBeatmapObjectDataInOrder(customObsData);
+                 
                         tunnelCount++;
                     }
 
@@ -908,37 +797,29 @@ namespace AutoBS
                         _generatedExtensionWalls.Add(customObsData);
                         //Plugin.Log.Info($"Tunnel Wall: Time: {newWallStartTime:F2}, line: {-leftLineIndex}, Layer: 0, Width: 1010, Height: {height1}");
 
-                        //data.AddBeatmapObjectDataInOrder(customObsData);
-
                         if (wallCount == 2)// || wallCount == 3)
                         {
                             customObsData = EObstacleData.Create(newWallStartTime, -leftLineIndex, layer2, .03f * durationMult, 1010, height1); // left wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                             _generatedExtensionWalls.Add(customObsData);
                             //Plugin.Log.Info($"Tunnel Wall: Time: {newWallStartTime:F2}, line: {-leftLineIndex}, Layer: {layer2}, Width: 1010, Height: {height1}");
-                            //data.AddBeatmapObjectDataInOrder(customObsData);
+                           
                             tunnelCount++;
                         }
-                        /*
-                                if (wallCount == 3)
-                                {
-                                    customObsData = EObstacleData.Create(wallTime + (j * .06f * durationMult), -1500, layer3, .03f * durationMult, 1010, height1); // left wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
-                                    data.AddBeatmapObjectDataInOrder(customObsData);
-                                }
-                                */
+
                     }
                     if (alreadyHasGenWall != "right" && alreadyHasBigWall != "right") // right wall
                     {
                         EObstacleData customObsData = EObstacleData.Create(newWallStartTime, rightLineIndex, 0, .03f * durationMult, 1010, height1); // right wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                         _generatedExtensionWalls.Add(customObsData);
 
-                        //data.AddBeatmapObjectDataInOrder(customObsData);
+
 
                         if (wallCount == 2)// || wallCount == 3)
                         {
                             customObsData = EObstacleData.Create(newWallStartTime, rightLineIndex, layer2, .03f * durationMult, 1010, height1); // right wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                             _generatedExtensionWalls.Add(customObsData);
                             //Plugin.Log.Info($"Tunnel Wall: Time: {newWallStartTime:F2}, line: {rightLineIndex}, Layer: {layer2}, Width: 1010, Height: {height1}");
-                            //data.AddBeatmapObjectDataInOrder(customObsData);
+
                             tunnelCount++;
                         }
                         /*
@@ -969,8 +850,6 @@ namespace AutoBS
 
             if (width > 3 && layer < 4) // large panes should be high up
                 layer += 3;
-            //if (width < 3 && layer > 4) // small panes should be lower down
-            //    layer -= 1;
 
             int height1 = (int)(width * 1.5 * 1000) + 1000;
 
@@ -1043,9 +922,6 @@ namespace AutoBS
 
         public static void ParticleWalls(int repeatLimit = -1) // not using wallTime so not on the beat. if don't send in a repeatLimit, then will default to the user set ParticleWallsBatchSize
         {
-            //List<EObstacleData> leftParticles = new List<EObstacleData>();
-            //List<EObstacleData> rightParticles = new List<EObstacleData>();
-
             if (Config.Instance.EnableParticleWalls && Config.Instance.EnableMappingExtensionsWallsGenerator)
             {
                 int divisorOne = Math.Max((int)Math.Round(3 / ParticleWallsMultiplier), 1); // Use Math.Round: Ensure that you round the result of your division to get meaningful divisors for the modulo operation.This avoids erroneous behavior from using floating-point division directly in integer contexts. Check for Zero Divisor: Ensure that the divisor does not round to zero, as dividing by zero will throw an exception.
@@ -1067,18 +943,7 @@ namespace AutoBS
                     {
                         //Plugin.Log.Info($"Wall particle Start Time: {time}");
                         int repeatCount = 1 + ((int)time % repeatLimit); // Results in a value between 1 and 40
-                        /*
-                        int particlesCountLimit = 11; //11
 
-                        if (repeatCount > 30)
-                        {
-                            particlesCountLimit = 5; //4
-                        }
-                        else if (repeatCount >= 20 && repeatCount <= 30)
-                        {
-                            particlesCountLimit = 1; // even set to 1 mi gente is long wait when set ParticleWallLimit to 20
-                        }
-                        */
                         int constantSize = 3 + (int)(Math.Abs(Math.Sin(time) * 14));
 
                         for (int repeat = 0; repeat < repeatCount; repeat++)
@@ -1112,7 +977,7 @@ namespace AutoBS
                     // Use a modulus to pseudo-randomly determine pause duration
                     time += 1 + (int)(time) % 7; // Pause for 1 to 9 seconds
                 }
-                Plugin.Log.Info($"Wall particle Count: {_particleWalls.Count}");
+                Plugin.Log.Info($"[WallGenerator] Wall particle Count: {_particleWalls.Count}");
             }
             //return (leftParticles, rightParticles);
         }
@@ -1202,10 +1067,6 @@ namespace AutoBS
 
             //Plugin.Log.Info($"Wall EXTENSION Lo Rt: Time: {wallTime}, Index:{indexx}, Layer: {loLayer}, Dur: {duration}, Width: {loWidth}, Height: {height1}");
             _particleWalls.Add(customObsData);
-
-
-            //return (leftParticles, rightParticles);
-            //data.AddBeatmapObjectDataInOrder(customObsData);
         }
 
         public static void FloorWalls(List<TimeGap> gaps, int repeatLimit = -1) // not using wallTime so not on the beat
@@ -1310,10 +1171,8 @@ namespace AutoBS
                     // Use a modulus to pseudo-randomly determine pause duration
                     time += 1 + (int)(time) % 7; // Pause for 1 to 7 seconds
                 }
-                Plugin.Log.Info($"Wall floors Count: {_floorWalls.Count}");
+                Plugin.Log.Info($"[WallGenerator] Wall floors Count: {_floorWalls.Count}");
             }
-
-            //return (leftFloorWalls, rightFloorWalls);
         }
 
         private static void AddFloorWall(float time, int j, List<TimeGap> gaps, int lineIndex)
@@ -1339,34 +1198,6 @@ namespace AutoBS
                 height = heights[random.Next(heights.Length)];
             }
 
-            // Utilizing an oscillation function of wallTime for variability
-            /*
-            int variableIndex1;
-            int cycleIndexForLineIndex;
-            
-            int lineIndex;
-            if (j % 2 == 0)
-            {
-                variableIndex1 = (int)(Math.Sin(time) * 1000) + j;
-            }
-            else
-            {
-                variableIndex1 = (int)(Math.Cos(time) * 1000) + j;
-            }
-
-
-            if (j % 3 == 0)
-            {
-                cycleIndexForLineIndex = Math.Abs(variableIndex1) % lineIndexes2.Length;
-                lineIndex = lineIndexes2[cycleIndexForLineIndex];
-            }
-            else
-            {
-                cycleIndexForLineIndex = Math.Abs(variableIndex1) % lineIndexes1.Length;
-                lineIndex = lineIndexes1[cycleIndexForLineIndex];
-            }
-            */
-
             if (lineIndex < 2)
                 lineIndex -= (int)Config.Instance.FloorWallsMinDistance;
             else
@@ -1381,14 +1212,10 @@ namespace AutoBS
             else
                 variableWidths = (int)(Math.Cos(time) * 1000) + j;
 
-            //int variableHeights = variableWidths;
-
-            //int cycleIndexForHeight = Math.Abs(variableHeights) % heights.Length;
             int cycleIndexForWidth = Math.Abs(variableWidths) % widths.Length;
             int cycleIndexForDuration = Math.Abs(variableWidths) % dur.Length;
 
             int width = widths[cycleIndexForWidth];
-            //int height = heights[cycleIndexForHeight];
 
             float duration = dur[cycleIndexForDuration];
 
@@ -1454,8 +1281,6 @@ namespace AutoBS
             lastHeight = height;
 
         }
-
-
 
         public static void MegaWalls(List<TimeGap> gaps)
         {
@@ -1581,8 +1406,8 @@ namespace AutoBS
 
         public static void LogWallCount(EditableCBD eData)
         {
-            Plugin.Log.Info(
-                $"Walls Before Removal Tools - in eData: {eData.Obstacles.Count()} -- Original: {_originalWalls.Count} Standard: {_generatedStandardWalls.Count} Distant: {distantCount} Column: {columnCount} Row: {rowCount} Tunnel: {tunnelCount} Grid: {gridCount} Pane: {paneCount} Particle: {_particleWalls.Count} Floor: {_floorWalls.Count} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+            Plugin.LogDebug(
+                $"[WallGenerator] Walls Before Rotational Removal Tools - in eData: {eData.Obstacles.Count()} -- Original: {_originalWalls.Count} Standard: {_generatedStandardWalls.Count} Distant: {distantCount} Column: {columnCount} Row: {rowCount} Tunnel: {tunnelCount} Grid: {gridCount} Pane: {paneCount} Particle: {_particleWalls.Count} Floor: {_floorWalls.Count} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
         }
 
 
@@ -1597,21 +1422,6 @@ namespace AutoBS
             if (!Utils.IsEnabledWalls()) return;
             if (_originalWallCount > 5000) return;
 
-            // only original walls will have any crouch walls. standard and generated standard may have lean walls.
-            //List <EObstacleData> originalWalls = _originalWalls;
-            //standardWalls.AddRange(_generatedStandardWalls);
-            /*
-            if (!_allWallsContainsOriginalWalls)
-            {
-                Plugin.Log.Info($"DeDuplicating original walls");
-                foreach (var ob in _originalWalls)
-                {
-                    _allWalls.Add(EObstacleData.Create(ob.time, ob.lineIndex, ob.lineLayer, ob.duration, ob.width, ob.height, ob.CustomData));// ob.version2_6_0AndEarlier); //v1.39
-                }
-                //_allWalls.AddRange(_originalWalls);
-                _allWallsContainsOriginalWalls = true;
-            }
-            */
             _originalWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
             //BW noodle extensions causes BS crash in the section somewhere below. Could drill down and figure out why. Haven't figured out how to test for noodle extensions but noodle extension have custom walls that crash Beat Saber so BW added test for custom walls.
@@ -1619,7 +1429,7 @@ namespace AutoBS
 
             int count = 0;
 
-            Plugin.Log.Info($"[LeanCrouchWallRemoval] --- Original Wall Count: {obs.Count}");
+            Plugin.LogDebug($"[LeanCrouchWallRemoval] --- Original Wall Count: {obs.Count}");
 
             while (obs.Count > 0)
             {
@@ -1664,19 +1474,13 @@ namespace AutoBS
 
             _allWallsContainsOriginalWalls = true;
 
-            Plugin.Log.Info($"Lean Crouch Wall Removal End --- Original Standard Wall Count: {_originalWalls.Count} - Walls Removed: {count} -- allWalls Count: {_allWalls.Count}");
+            Plugin.LogDebug($"Lean Crouch Wall Removal End --- Original Standard Wall Count: {_originalWalls.Count} - Walls Removed: {count} -- allWalls Count: {_allWalls.Count}");
         }
         
         public static void MoveWallsBlockingChainTail(EditableCBD eData) // works with _originalWalls and _generatedStandardWalls only
         {
             List<ESliderData> chains = eData.Chains;
             int rotationEventsCount = eData.RotationEvents.Count;
-
-            // Precompute rotation events sorted by time.
-            //v1.34
-            //var rotationEvents = data.allBeatmapDataItems.OfType<SpawnRotationBeatmapEventData>().OrderBy(e => e.time).ToList();
-            //v1.39
-            //List<BasicBeatmapEventData> rotationEvents = data.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Where(e => e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15).OrderBy(e => e.time).ToList();
 
             // For each chain, flag if a rotation occurs at its head or during the chain.
             (bool, float)[] chainHasRotation = new (bool hasRot, float amount)[chains.Count];
@@ -1719,7 +1523,7 @@ namespace AutoBS
 
             _allWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
-            Plugin.Log.Info($"MoveWallsBlockingChainTail() ADJUSTING {_allWalls.Count} Walls now for {chains.Count} chains.");
+            Plugin.LogDebug($"MoveWallsBlockingChainTail() ADJUSTING {_allWalls.Count} Walls now for {chains.Count} chains.");
 
             foreach (var ob in _allWalls)
             {
@@ -1804,7 +1608,7 @@ namespace AutoBS
             }
             _allWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
-            Plugin.Log.Info($"MoveWallsBlockingArc() ADJUSTING {_allWalls.Count} Walls now for {eData.Arcs.Count} arcs.");
+            Plugin.LogDebug($"MoveWallsBlockingArc() ADJUSTING {_allWalls.Count} Walls now for {eData.Arcs.Count} arcs.");
 
             // Loop through each wall.
             foreach (var ob in _allWalls)
@@ -1911,9 +1715,9 @@ namespace AutoBS
                 _allWalls.Remove(obs);
             }
 
-            Plugin.Log.Info($"--- Remove Intersecting Walls --- Remaining Walls: {_allWalls.Count} --- Total Removed: {obstaclesToDelete.Count}");
+            Plugin.LogDebug($"--- Remove Intersecting Walls --- Remaining Walls: {_allWalls.Count} --- Total Removed: {obstaclesToDelete.Count}");
 
-            Plugin.Log.Info($" ------- Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}.");
+            Plugin.LogDebug($" ------- Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}.");
             stopwatch.Stop();
 
             void RemoveIntersectingWallsByList(List<EObstacleData> obs)
@@ -1922,7 +1726,7 @@ namespace AutoBS
                 {
                     if (stopwatch.ElapsedMilliseconds >= Config.Instance.MaxWaitTime * 1000)
                     {
-                        Plugin.Log.Info($"RemoveIntersectingWalls End ------- WARNING -- TOOK TOO LONG so had to prematurely terminate!");
+                        Plugin.Log.Info($"[RemoveIntersectingWalls] End ------- WARNING -- TOOK TOO LONG so had to prematurely terminate!");
                         break;
                     }
 
@@ -2065,77 +1869,6 @@ namespace AutoBS
             }
         }
 
-
-
-        public static void WallRemovalForRotationsRENAME(List<ERotationEventData> rotations) // verified in v1.40 these are rotation steps not degrees or cumulative degrees 
-        {
-            Plugin.Log.Info($"WallRemovalForRotationsNEW START --- Wall Count: {_allWalls.Count} RotationEvents Count: {rotations.Count}");
-            //if (BeatmapDataTransformHelperPatcher.NoodleProblemObstacles || BeatmapDataTransformHelperPatcher.NoodleProblemNotes) return;
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Restart();
-            if (!_allWallsContainsOriginalWalls)
-            {
-                _allWalls.AddRange(_originalWalls);
-                _allWallsContainsOriginalWalls = true;
-            }
-            if (!_allWallsContainsStandardWalls)
-            {
-                _allWalls.AddRange(_generatedStandardWalls);
-                _allWallsContainsStandardWalls = true;
-            }
-            if (!_allWallsContainsExtensionWalls)
-            {
-                _allWalls.AddRange(_generatedExtensionWalls);
-                _allWallsContainsExtensionWalls = true;
-            }
-            if (!_allWallsContainsParticleWalls)
-            {
-                _allWalls.AddRange(_particleWalls);
-                _allWallsContainsParticleWalls = true;
-            }
-            if (!_allWallsContainsFloorWalls)
-            {
-                _allWalls.AddRange(_floorWalls);
-                _allWallsContainsFloorWalls = true;
-            }
-            _allWalls.Sort((a, b) => a.time.CompareTo(b.time));
-
-            foreach (var ob in _allWalls)
-            {
-                if (ob.time < 20)
-                    Plugin.Log.Info($"Wall: time={ob.time} line={ob.line} duration={ob.duration} layer={ob.layer} width={ob.width} height: {ob.height}");
-                else break;
-            }
-
-            var leftWalls  = _allWalls.Where(r => r.line < 2).ToList();
-            var rightWalls = _allWalls.Where(r => r.line > 1).ToList();
-
-            int previousRotation = 0;
-
-            List<ERotationEventData> leftRotations  = new List<ERotationEventData>();
-            List<ERotationEventData> rightRotations = new List<ERotationEventData>(); ;
-            foreach (var rot in rotations)
-            {
-                if (rot.rotation > previousRotation)
-                {
-                    rightRotations.Add(rot);
-                }
-                else if (rot.rotation < previousRotation)
-                {
-                    leftRotations.Add(rot);
-                }
-                previousRotation = rot.rotation;
-            }
-
-            ProcessWallsWithRotations(leftWalls, leftRotations);
-            ProcessWallsWithRotations(rightWalls, rightRotations);
-
-
-            Plugin.Log.Info($" ------- Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1} secs - WallRemovalForRotations END --- Wall Count: {_allWalls.Count} RotationEvents Count: {rotations.Count}");
-            stopwatch.Stop();
-        }
-
-        // TEST!!!!!!!!!!!!!!!
         public static List<ERotationEventData> RemoveCrouchWallRotations(List<ERotationEventData> rotations)
         {
             List<EObstacleData> crouchWalls = new List<EObstacleData>();
@@ -2150,11 +1883,11 @@ namespace AutoBS
             }
             if (crouchWalls.Count == 0)
             {
-                Plugin.Log.Info("[RemoveCrouchWallRotations] No crouch wall found. No rotations to remove.");
+                Plugin.LogDebug("[RemoveCrouchWallRotations] No crouch wall found. No rotations to remove.");
                 return rotations;
             }
             else
-                Plugin.Log.Info($"[RemoveCrouchWallRotations] Crouch walls found: {crouchWalls.Count}.");
+                Plugin.LogDebug($"[RemoveCrouchWallRotations] Crouch walls found: {crouchWalls.Count}.");
 
             // 1) Build + merge crouch intervals
             var intervals = MergeCrouchIntervals(crouchWalls);
@@ -2205,11 +1938,11 @@ namespace AutoBS
                     result.Add(rotations[i]);
                 else
                 {
-                    Plugin.Log.Info($"[RemoveCrouchWallRotations] Removed Rotation at: {rotations[i].time:F}");
+                    Plugin.LogDebug($"[RemoveCrouchWallRotations] Removed Rotation at: {rotations[i].time:F}");
                     count++;
                 }
 
-            Plugin.Log.Info($"[RemoveCrouchWallRotations] Total Rotations Removed: {count}");
+            Plugin.LogDebug($"[RemoveCrouchWallRotations] Total Rotations Removed: {count}");
 
             return result;
         }
@@ -2257,342 +1990,10 @@ namespace AutoBS
             return merged;
         }
 
-
-
-        private static void ProcessWallsWithRotations(List<EObstacleData> walls,  List<ERotationEventData> rotations)
-        {
-            List<EObstacleData> wallsToRemove = new List<EObstacleData>();
-
-            foreach ( var wall in walls)
-            {
-                foreach (var rot in rotations)
-                {
-                    if (rot.time > (wall.time - .6f)  && rot.time < (wall.endTime + 1.4f))
-                    {
-                        wallsToRemove.Add(wall);
-                    }
-                }
-            }
-            foreach (var wall in wallsToRemove)
-            {
-                _allWalls.Remove(wall);
-            }
-        }
-
-
-
-
-        //this is old version which is best so far!
-        public static void WallRemovalForRotations(List<(float time, int rotationSteps)> wallCutMoments)
-        {
-            //if (BeatmapDataTransformHelperPatcher.NoodleProblemObstacles || BeatmapDataTransformHelperPatcher.NoodleProblemNotes) return;
-
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Restart();
-
-            if (!_allWallsContainsOriginalWalls)
-            {
-                //Plugin.Log.Info($"DeDuplicating original walls");
-                foreach (var ob in _originalWalls)
-                {
-                    _allWalls.Add(EObstacleData.Create(ob.time, ob.line, ob.layer, ob.duration, ob.width, ob.height));// ob.version2_6_0AndEarlier); //v1.39
-                }
-                //_allWalls.AddRange(_originalWalls);
-                _allWallsContainsOriginalWalls = true;
-            }
-            if (!_allWallsContainsStandardWalls)
-            {
-                _allWalls.AddRange(_generatedStandardWalls);
-                _allWallsContainsStandardWalls = true;
-            }
-            if (!_allWallsContainsExtensionWalls)
-            {
-                _allWalls.AddRange(_generatedExtensionWalls);
-                _allWallsContainsExtensionWalls = true;
-            }
-            if (!_allWallsContainsParticleWalls)
-            {
-                _allWalls.AddRange(_particleWalls);
-                _allWallsContainsParticleWalls = true;
-            }
-            if (!_allWallsContainsFloorWalls)
-            {
-                _allWalls.AddRange(_floorWalls);
-                _allWallsContainsFloorWalls = true;
-            }
-
-            _allWalls.Sort((a, b) => a.time.CompareTo(b.time));
-
-            Queue<EObstacleData> obstacles = new Queue<EObstacleData>(_allWalls);
-
-            int count = 0; int skipCount = 0; int count1 = 0; int count2 = 0; int count3 = 0; int count4 = 0;
-
-            Plugin.Log.Info($"[WallRemovalForRotations] START --- Wall Count: {obstacles.Count} WallCutMoments Count: {wallCutMoments.Count}");
-            /*
-            foreach (var moment in wallCutMoments)
-            {
-                if (moment.time > 0 && moment.time < 10)
-                    Plugin.Log.Info($" WallCutMoments: {moment.time} steps: {moment.rotationSteps}");
-            }
-            foreach (var wall in _allWalls)
-            {
-                if (wall.time > 0 && wall.time < 10)
-                    Plugin.Log.Info($" Walls: {wall.time} duration: {wall.duration} lineIndex: {wall.lineIndex}");
-            }
-            */
-            int wallCutIndex = 0;
-            float lastObstacleTime = -1f;
-
-            int waitTime = (int)Config.Instance.MaxWaitTime * 1000;
-            if (failedWallRemovalForRotations1x)
-                waitTime /= 2; // for 2nd failure only wait half the time set by the user
-            if (failedWallRemovalForRotations2x)
-                waitTime = 1000;
-
-
-            while (obstacles.Count > 0)
-            {
-                if (stopwatch.ElapsedMilliseconds >= waitTime)
-                {
-                    stopwatch.Stop();
-                    Plugin.Log.Info($" ------- Time Elapsed (Failure): {stopwatch.ElapsedMilliseconds / 1000.0:F1} secs - Iterations: {count} 1: {count1} 2: {count2} 3: {count3} 4: {count4} SkipCount: {skipCount} Wall Count: {_allWalls.Count()} FAILED TO COMPLETE.");
-                    FailedWallRemovalForRotations(wallCutMoments);
-                    break;
-                }
-
-                EObstacleData ob = obstacles.Dequeue();
-
-                if (ob.duration <= 0f) continue;
-
-                //Plugin.Log.Info($" Obstacle: {ob.beat:F}");
-
-                bool isCustomWall = _originalWalls.Contains(ob) && IsCustomNoodleWall(ob); //BW noodle extensions causes BS crash without this
-
-                float frontCut = isCustomWall ? 0f : WallFrontCut;
-                float backCut = isCustomWall ? 0f : WallBackCut;
-
-                int totalRotations = 0;//rotations during a single ob
-
-                // Check if ob.time has jumped backward
-                if (ob.time < lastObstacleTime)
-                {
-                    // Reset wallCutIndex and update to the correct position for the new time
-                    wallCutIndex = 0;
-                    while (wallCutIndex < wallCutMoments.Count && wallCutMoments[wallCutIndex].Item1 < ob.time - frontCut)
-                    {
-                        wallCutIndex++;
-                    }
-                }
-
-                lastObstacleTime = ob.time;
-
-                //foreach ((float cutTime, int cutAmount) in wallCutMoments)// Iterate over the list of rotation moments for the current obstacle. Cut walls, walls will be cut when a rotation event is emitted
-                for (int i = wallCutIndex; i < wallCutMoments.Count; i++) // Iterate over the list of rotation moments for the current obstacle. Cut walls, walls will be cut when a rotation event is emitted
-                {
-                    count++;
-
-                    (float cutTime, int cutAmount) = wallCutMoments[i];
-
-                    if (cutTime <= ob.time - frontCut)
-                    {
-                        wallCutIndex++;
-                        continue;
-                    }
-
-                    int cutMultiplier = Math.Abs(cutAmount);
-                    if (cutTime > ob.time + ob.duration + backCut * cutMultiplier) break; // Exit the loop and the rest of the cutTimes for cutTimes after the current obstacle ends
-
-                    //-------------BW added --- remove any walls whose duration is long enough to get enough rotations that the wall becomes visible again as it exits through the user space (is visible traveling backwards)-------------
-                    // Check if the total rotations is more than 75 degrees (5*15) which means it is no longer visible and therefore probably not needed and possibly will be seen leaving the user space
-                    if (cutTime >= ob.time && cutTime < ob.time + ob.duration)//checks if rotations occur during a wall
-                    {
-                        totalRotations += cutAmount;// Total number of rotations during the current obstacle - resets to 0 with each ob
-
-                        if ((totalRotations > 5 || totalRotations < -5))
-                        {
-                            //if (ob.time > 0 && ob.time < 100)
-                            //    Plugin.Log.Info($"Wall at: {ob.time} found with more than 5 rotation steps during its duration -- duration: {ob.duration} are: {totalRotations} rotations");
-                            float newDuration = (cutTime - ob.time) / 2.3f;
-                            if (newDuration >= minWallDuration)
-                            {
-                                ob.UpdateDuration(newDuration); // this will update the obstacle inside of _allWalls since its a reference.
-                                                                //if (ob.time > 0 && ob.time < 100)
-                                                                //    Plugin.Log.Info($"------Wall at: {ob.time} New Duration: {ob.duration} which is (cutTime - ob.time)/2 since half the wall occurs past the user play area");
-                                break;
-                            }
-                            else
-                            {
-                                _allWalls.Remove(ob);
-                                //if (ob.time > 0 && ob.time < 100)
-                                //    Plugin.Log.Info($"------Wall at: {ob.time} removed since shorter than MinWallDuration");
-                                break;
-                            }
-                        }
-                    }
-
-                    // was slower when i restricted high line layer also!
-                    if (isCustomWall || (ob.line <= 1 && cutAmount < 0) || (ob.line >= 2 && cutAmount > 0))//Removes, changes duration or splits problem walls
-                    {
-                        float originalTime = ob.time;
-                        float originalDuration = ob.duration;
-                        float firstPartTime = ob.time;
-                        float firstPartDuration = (cutTime - backCut * cutMultiplier) - firstPartTime;
-                        float secondPartTime = cutTime + frontCut;
-                        float secondPartDuration = (ob.time + ob.duration) - secondPartTime;
-
-                        if (firstPartDuration >= minWallDuration && secondPartDuration >= minWallDuration)
-                        {
-                            ob.UpdateDuration(firstPartDuration);// Update duration of existing obstacle
-                            EObstacleData secondPart = EObstacleData.Create(secondPartTime, ob.line, ob.line, secondPartDuration, ob.width, ob.height);// And create a new obstacle after it
-                            _allWalls.Add(secondPart);
-                            obstacles.Enqueue(secondPart);
-                            //if (ob.time > 0 && ob.time < 100)
-                            //Plugin.Log.Info($"Wall at: {ob.time:F} SPLIT: 1st Half starts: {ob.time:F} duration: {firstPartDuration} 2nd Half starts: Time: {secondPartTime}, Index: {ob.lineIndex}, Layer: {ob.lineLayer}, Dur: {secondPartDuration}, Width: {ob.width}, Height: {ob.height}");
-                            count1++;
-                        }
-                        else if (firstPartDuration >= minWallDuration)
-                        {
-                            ob.UpdateDuration(firstPartDuration);// Just update the existing obstacle, the second piece of the cut wall is too small
-                                                                 //if (ob.time > 0 && ob.time < 100)
-                                                                 //Plugin.Log.Info($"Wall at: {ob.time:F} shortened. New duration: {firstPartDuration} lineIndex: {ob.lineIndex}");
-                            count2++;
-                        }
-                        else if (secondPartDuration >= minWallDuration)
-                        {
-                            // Reuse the obstacle and use it as second part
-                            if (secondPartTime != ob.time && secondPartDuration != ob.duration)
-                            {
-                                // TEST THIS NEW VERSION **************************
-                                // Create a new obstacle with the updated time
-                                var newObstacle = EObstacleData.Create(secondPartTime, ob.line, ob.layer, secondPartDuration, ob.width, ob.height);// ob.version2_6_0AndEarlier); //v1.39
-                                _allWalls.Remove(ob);
-                                _allWalls.Add(newObstacle);
-                                obstacles.Enqueue(newObstacle);
-                                count3++;
-
-                                //Plugin.Log.Info($"Wall at: {ob.time:F}"); // mi gente tons of these
-
-                                /*
-                                //ob.UpdateTime(secondPartTime); //FIX!!!! not working can't update a private setter
-                                ob.UpdateDuration(secondPartDuration);
-
-                                //BW new version crashes beat saber!!
-                                //ObstacleData secondPart = CustomObstacle.Create(secondPartTime, ob.lineIndex, ob.lineLayer, secondPartDuration, ob.width, ob.height);
-                                //data.AddBeatmapObjectDataInOrder(secondPart);
-
-                                obstacles.Enqueue(ob);
-                                //if (ob.time > 160 && ob.time < 180)
-                                    //Plugin.Log.Info($"Wall at: {ob.time} shortened 2nd half starts: {secondPartTime} duration: {secondPartDuration} lineIndex: {ob.lineIndex}");
-                                count3++;
-                                */
-                            }
-                        }
-                        else
-                        {
-                            _allWalls.Remove(ob);// When this wall is cut, both pieces are too small, remove it
-                                                 //if (ob.time > 0 && ob.time < 100)
-                                                 //Plugin.Log.Info($"Remove Wall at:  {ob.time:F} since 1st & 2nd half too small. cutTime: {cutTime} lineIndex: {ob.lineIndex}"); // mi gente tons of these
-                            count4++;
-                        }
-
-                    }
-
-                }
-
-                //Plugin.Log.Info($"Wall Removal Iterations {count}");
-
-            }
-
-            //_allWalls.Sort((a, b) => a.time.CompareTo(b.time));
-
-            //foreach (var ob in _allWalls)
-            //{
-            //    data.AddBeatmapObjectDataInOrder(ob);
-            //}
-
-            if (!failedWallRemovalForRotations3x)
-            {
-                Plugin.Log.Info($" ------- Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1} secs - Iterations: {count} 1: {count1} 2: {count2} 3: {count3} 4: {count4} SkipCount: {skipCount} Wall Count: {_allWalls.Count()}.");
-                stopwatch.Stop();
-            }
-
-        }
-
-
-        private static void FailedWallRemovalForRotations(List<(float, int)> wallCutMoments)
-        {
-            bool hasParticleWalls = false;
-            bool hasFloorWalls = false;
-
-            if (_particleWalls.Count > 0)
-            {
-                hasParticleWalls = true;
-
-                foreach (var ob in _particleWalls)
-                {
-                    if (_allWalls.Contains(ob)) // can't be inside of original walls
-                        _allWalls.Remove(ob);
-                }
-                _particleWalls.Clear();
-            }
-
-            if (_floorWalls.Count > 0)
-            {
-                hasFloorWalls = true;
-                foreach (var ob in _floorWalls)
-                {
-                    if (_allWalls.Contains(ob)) // can't be inside of original walls
-                        _allWalls.Remove(ob);
-                }
-                _floorWalls.Clear();
-            }
-
-            if (!failedWallRemovalForRotations1x)
-            {
-                if (hasParticleWalls && (int)Config.Instance.ParticleWallsBatchSize > 6)
-                {
-                    _allWallsContainsParticleWalls = false;
-                    ParticleWalls(5);
-                }
-
-                if (hasFloorWalls && (int)Config.Instance.FloorWallsBatchSize > 6)
-                {
-                    _allWallsContainsFloorWalls = false;
-                    FloorWalls(Generator.gaps, 5);
-                }
-
-                failedWallRemovalForRotations1x = true;
-
-                Plugin.Log.Info($" ------- FAIL 1st Time: Wall Removal for Rotations Took longer than User Set Max Wait time: {Config.Instance.MaxWaitTime}s so had to prematurely terminate. Will reduce Particle/Floor Walls Batch Size");
-                WallRemovalForRotations(wallCutMoments);
-                return;
-            }
-            else if (!failedWallRemovalForRotations2x)
-            {
-                Plugin.Log.Info($" ------- FAIL 2nd Time: Wall Removal for Rotations Took too long so had to prematurely terminate. Will remove Particle/Floor Walls");
-                failedWallRemovalForRotations2x = true;
-                WallRemovalForRotations(wallCutMoments);
-                return;
-            }
-            else if (!failedWallRemovalForRotations3x)
-            {
-                Plugin.Log.Info($" ------- FAIL 3rd Time: Wall Removal for Rotations Took too long so had to prematurely terminate. WILL REMOVE ALL Walls!!!!!!!!!!!!!!!");
-                failedWallRemovalForRotations3x = true;
-
-                _allWallsContainsStandardWalls = true;
-                _allWallsContainsExtensionWalls = true;
-                _allWallsContainsParticleWalls = true;
-                _allWallsContainsFloorWalls = true;
-
-                _allWalls.Clear();
-
-                return;
-            }
-        }
         public static void FinalizeWallsToMap(EditableCBD eData)
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Restart();
+            //Stopwatch stopwatch = new Stopwatch();
+            //stopwatch.Restart();
 
             if (!_allWallsContainsOriginalWalls)
             {
@@ -2622,49 +2023,19 @@ namespace AutoBS
 
             _allWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
-            Plugin.Log.Info($"[FinalizeWallsToMap] _allWalls final count: {_allWalls.Count}");
-
-            //int wallCountCustom = data.allBeatmapDataItems.Count((e) => e is CustomObstacleData);
-            //int wallCount = data.allBeatmapDataItems.Count((e) => e is ObstacleData);
-
-            //Plugin.Log.Info($"EObstacleData count: {wallCountCustom}, ObstacleData count: {wallCount}");
-
-            // Manually iterate over the LinkedList and remove obstacles safely - don't know why this is necessary but it is. all walls are erased from Data by ResetWalls() but they come back again i don't know how
-            /*
-            var node = data.allBeatmapDataItems.First;
-
-            while (node != null)
-            {
-                var nextNode = node.Next; // Store next node before removing the current one
-
-                if (node.Value is CustomObstacleData)
-                {
-                    data.allBeatmapDataItems.Remove(node);
-                }
-
-                node = nextNode; // Move to the next node
-            }
-            */
-         
-            /*
-            foreach (var ob in _allWalls)
-            {
-                if (!data.allBeatmapDataItems.Contains(ob))
-                data.AddBeatmapObjectDataInOrder(ob);
-            }
-            */
+            Plugin.LogDebug($"[FinalizeWallsToMap] _allWalls final count: {_allWalls.Count}");
 
             eData.Obstacles = _allWalls;
 
-            Plugin.Log.Info($"[FinalizeWallsToMap] Walls Finalized Count: {eData.Obstacles.Count}");
+            Plugin.LogDebug($"[FinalizeWallsToMap] Walls Finalized Count: {eData.Obstacles.Count}");
 
-            Plugin.Log.Info($" ------- Add all walls Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}.");
-            stopwatch.Stop();
+            //Plugin.LogDebug($" ------- Add all walls Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}.");
+            //stopwatch.Stop();
         }
         public static void FinalizeOriginalOnlyWallsToMap(EditableCBD eData)
         {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Restart();
+            //Stopwatch stopwatch = new Stopwatch();
+            //stopwatch.Restart();
 
             if (!_allWallsContainsOriginalWalls)
             {
@@ -2677,10 +2048,10 @@ namespace AutoBS
 
             eData.Obstacles = _allWalls;
 
-            Plugin.Log.Info($"[FinalizeWallsToMap] Walls Finalized Count: {eData.Obstacles.Count} (only original walls since walls count > 5000)");
+            Plugin.LogDebug($"[FinalizeWallsToMap] Walls Finalized Count: {eData.Obstacles.Count} (only original walls since walls count > 5000)");
 
-            Plugin.Log.Info($" ------- Add all walls Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}.");
-            stopwatch.Stop();
+            //Plugin.Log.Info($" ------- Add all walls Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}.");
+            //stopwatch.Stop();
         }
 
         public static bool IsCustomNoodleWall(EObstacleData ob)

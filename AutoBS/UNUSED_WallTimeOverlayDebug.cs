@@ -10,6 +10,7 @@ using UnityEngine;
 
 namespace AutoBS
 {
+    /*
     public class WallTimeOverlayDebug : MonoBehaviour
     {
         // -------- Shared / timing --------
@@ -132,7 +133,10 @@ namespace AutoBS
                     if (bpmField?.GetValue(_ats) is float ff && ff > 0f) _bpm = ff;
                 }
             }
-            catch { /* keep default */ }
+            catch 
+            { 
+                // keep default
+            }
 
             Debug.Log($"[WallTimeOverlayDebug] BPM set to {_bpm:F3}");
         }
@@ -445,4 +449,5 @@ namespace AutoBS
                 transform.rotation = Quaternion.LookRotation(toCam);
         }
     }
+    */
 }

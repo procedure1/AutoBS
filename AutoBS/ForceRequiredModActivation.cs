@@ -143,7 +143,7 @@ namespace AutoBS
                 // Invoke the 'ForceActivateForSong' method
                 forceActivateForSongMethod.Invoke(null, null);
 
-                Plugin.Log.Info("Mapping Extensions - ForceActivateForSong method invoked successfully.");
+                Plugin.Log.Info("[MappingExtensionsForceActivate] Mapping Extensions - ForceActivateForSong method invoked successfully.");
                 //SongCore.Collections.RegisterCapability("Mapping Extensions");
             }
 

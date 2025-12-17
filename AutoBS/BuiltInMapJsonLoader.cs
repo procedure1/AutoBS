@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace AutoBS
 {
-
+    // Used by SetContent to load Built-in vanilla json maps
     public static class BuiltInMapJsonLoader
     {
         // ------------ public API ------------
@@ -20,7 +20,7 @@ namespace AutoBS
             {
                 if (_levels.TryGetValue(levelID.ToLowerInvariant(), out var cached) && cached.IsComplete)
                 {
-                    Plugin.Log.Info($"[CACHE] '{levelID}' already primed.");
+                    Plugin.LogDebug($"[CACHE] '{levelID}' already primed.");
                     return;
                 }
 
@@ -86,7 +86,7 @@ namespace AutoBS
 
                     storage.IsComplete = true;
                     _levels[levelID.ToLowerInvariant()] = storage;
-                    Plugin.Log.Info($"[BuiltInMapJsonLoader][CACHE] Primed '{levelID}': chars={storage.byChar.Count}, audioDataJsonLen={(audioJson?.Length ?? 0)}");
+                    Plugin.LogDebug($"[BuiltInMapJsonLoader][CACHE] Primed '{levelID}': chars={storage.byChar.Count}, audioDataJsonLen={(audioJson?.Length ?? 0)}");
                 }
                 finally
                 {
@@ -172,7 +172,7 @@ namespace AutoBS
         }
     }
 
-    // Slim helpers that reuse your existing logic but without timers/log spam.
+    // helpers that reuse your existing logic but without timers/log spam.
     internal static class BuiltInMapJsonLoader_Tiny
     {
         public static string TryGetAudioJsonFast(object levelDataSO, Type textAssetType, Array all, Type abType, object bundle)
@@ -382,17 +382,17 @@ namespace AutoBS
             var audioField = t.GetField("_audioDataAsset", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
             if (audioField == null)
             {
-                Plugin.Log.Info("[AudioMeta] _audioDataAsset field not found on BeatmapLevelDataSO.");
+                Plugin.LogDebug("[AudioMeta] _audioDataAsset field not found on BeatmapLevelDataSO.");
                 return;
             }
             var val = audioField.GetValue(levelDataSO);
-            if (val == null) { Plugin.Log.Info("[AudioMeta] _audioDataAsset is NULL."); return; }
+            if (val == null) { Plugin.LogDebug("[AudioMeta] _audioDataAsset is NULL."); return; }
 
             var typeName = val.GetType().FullName;
             var name = BuiltInMapJsonLoader.SafeGetName(val);
-            //Plugin.Log.Info($"[AudioMeta] _audioDataAsset → {typeName} name='{name ?? "(null)"}'");
+            //Plugin.LogDebug($"[AudioMeta] _audioDataAsset → {typeName} name='{name ?? "(null)"}'");
         }
 
     }
 
-    }
+}

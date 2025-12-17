@@ -112,12 +112,9 @@ namespace AutoBS.UI
 
         //-----------------------------------------------
 
-
-
         // Needed this since can't determine if MappingExtensions is installed or not until first song is selected by the user otherwise
         public static bool IsMappingExtensionsInstalled =>
             AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "MappingExtensions");
-
 
 
         [UIValue("EnablePlugin")]
@@ -394,157 +391,6 @@ namespace AutoBS.UI
             set => Config.Instance.DesiredJD = value;
         }
 
-        /*
-        [UIValue("OriginalNJS")]
-        private string _originalNjs = "—";
-
-        [UIValue("OriginalJD")]
-        private string _originalJd  = "—";
-
-        // Called after BSML is parsed; good place for initial fill
-        [UIAction("#post-parse")]
-        private void PostParse()
-        {
-            RefreshOriginals();
-        }
-
-        // Call this whenever TransitionPatcher values may have changed
-        private void RefreshOriginals()
-        {
-            _originalNjs = $"{TransitionPatcher.NoteJumpMovementSpeed:F1}";
-            _originalJd  = $"{TransitionPatcher.JumpDistance:F1}";
-
-            SafeNotify(nameof(_originalNjs));
-            SafeNotify(nameof(_originalJd));
-        }
-
-        private void OnDestroy()
-        {
-            OriginalStatsHub.OriginalsChanged -= OnOriginalsChanged;
-        }
-
-        private void OnOriginalsChanged(float njs, float jd)
-        {
-            _originalNjs = $"{njs:F1}";
-            _originalJd = $"{jd:F1}";
-            SafeNotify(nameof(_originalNjs));
-            SafeNotify(nameof(_originalJd));
-        }
-        */
-        /*
-        [UIValue("EnableFeaturesForNonGen360Maps")]
-        public bool EnableFeaturesForNonGen360Maps
-        {
-            get => Config.Instance.EnableFeaturesForNonGen360Maps;
-            set => Config.Instance.EnableFeaturesForNonGen360Maps = value;
-        }
-        [UIValue("EnableFeaturesForStandardMaps")]
-        public bool EnableFeaturesForStandardMaps
-        {
-            get => Config.Instance.EnableFeaturesForStandardMaps;
-            set => Config.Instance.EnableFeaturesForStandardMaps = value;
-        }
-        */
-
-
-        // Volume
-        /*
-        //private float _baseMainVolume;
-        private float _baseMusicVolume;
-
-        [UIAction("volFormat")]
-        private string VolFormat(float value) => $"{value} dB";
-
-        [UIValue("VolumeAdjuster")]
-        public float VolumeAdjuster
-        {
-            get => Config.Instance.VolumeAdjuster;
-            set
-            {
-                Config.Instance.VolumeAdjuster = value;
-                ApplyVolumeChange(); // Apply the volume change immediately
-                SafeNotify();
-            }
-        }
-        */
-        /*
-        private void Start()
-        {
-            var audioTimeSyncController = Resources.FindObjectsOfTypeAll<AudioTimeSyncController>().FirstOrDefault();
-            if (audioTimeSyncController != null)
-            {
-                FieldInfo audioSourceField = typeof(AudioTimeSyncController).GetField("_audioSource", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (audioSourceField != null)
-                {
-                    AudioSource audioSource = audioSourceField.GetValue(audioTimeSyncController) as AudioSource;
-                    if (audioSource != null)
-                    {
-                        if (audioSource.outputAudioMixerGroup.audioMixer.GetFloat("MusicVolume", out var currentMusicVolume))
-                        {
-                            _baseMusicVolume = currentMusicVolume;
-                        }
-                    }
-                }
-            }
-        }
-        */
-        /*
-        private void ApplyVolumeChange()
-        {
-            // Get the instance of AudioTimeSyncController
-            var audioTimeSyncController = Resources.FindObjectsOfTypeAll<AudioTimeSyncController>().FirstOrDefault();
-            if (audioTimeSyncController != null)
-            {
-                // Use reflection to get the private _audioSource field
-                FieldInfo audioSourceField = typeof(AudioTimeSyncController).GetField("_audioSource", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (audioSourceField != null)
-                {
-                    AudioSource audioSource = audioSourceField.GetValue(audioTimeSyncController) as AudioSource;
-                    if (audioSource != null)
-                    {
-                        // Set the music volume to the base volume plus the adjuster value
-                        audioSource.outputAudioMixerGroup.audioMixer.SetFloat("MusicVolume", _baseMusicVolume + Config.Instance.VolumeAdjuster);
-                    }
-                }
-            }
-        }
-        */
-
-        // DIDN'T use this version below in the end...--- works for raising game main volume
-        /*
-        [UIAction("volFormat")]
-        private string VolFormat(float value) => $"{value} dB";
-
-        private void Start()
-        {
-            // Initialize _baseVolume with the current main volume when the game starts
-            var audioManagerSO = Resources.FindObjectsOfTypeAll<AudioManagerSO>().FirstOrDefault();
-            if (audioManagerSO != null)
-            {
-                PropertyInfo mainVolumeProperty = typeof(AudioManagerSO).GetProperty("mainVolume", BindingFlags.Public | BindingFlags.Instance);
-                if (mainVolumeProperty != null)
-                {
-                    _baseMainVolume = (float)mainVolumeProperty.GetValue(audioManagerSO);
-                }
-            }
-        }
-        private void ApplyVolumeChange()
-        {
-            // Get the instance of AudioManagerSO
-            var audioManagerSO = Resources.FindObjectsOfTypeAll<AudioManagerSO>().FirstOrDefault();
-            if (audioManagerSO != null)
-            {
-                // Access the mainVolume property and apply the new volume
-                PropertyInfo mainVolumeProperty = typeof(AudioManagerSO).GetProperty("mainVolume", BindingFlags.Public | BindingFlags.Instance);
-                if (mainVolumeProperty != null)
-                {
-                    // Set the volume to the base volume plus the adjuster value
-                    mainVolumeProperty.SetValue(audioManagerSO, _baseMainVolume + Config.Instance.VolumeAdjuster);
-                }
-            }
-        }
-        */
-
         // 360
 
         [UIValue("Enable360fyer")]
@@ -598,14 +444,7 @@ namespace AutoBS.UI
             get => Config.Instance.AddExtraRotation;
             set => Config.Instance.AddExtraRotation = value;
         }
-        /*
-        [UIValue("AddExtraRotationV2")]
-        public bool AddExtraRotationV2
-        {
-            get => Config.Instance.AddExtraRotationV2;
-            set => Config.Instance.AddExtraRotationV2 = value;
-        }
-        */
+
         [UIValue("MinRotationSize")]
         public float MinRotationSize
         {
@@ -643,41 +482,6 @@ namespace AutoBS.UI
             get => Config.Instance.MinDistanceBetweenNotesAndWalls;
             set => Config.Instance.MinDistanceBetweenNotesAndWalls = value;
         }
-        
-        /*
-        [UIValue("RotationGroupSize")]
-        public float RotationGroupSize
-        {
-            get => Config.Instance.RotationGroupSize;
-            set => Config.Instance.RotationGroupSize = value;
-        }
-        */
-
-        //Arcs & Chains
-
-        /*
-        [UIValue("EnableArcs")]
-        public bool EnableArcs
-        {
-            get => Config.Instance.EnableArcs;
-            set
-            {
-                Config.Instance.EnableArcs = value;
-                EnablerArcs = value;
-                if (EnablerArcs) { FontColorArcs = OnColor; EnablerArcs = true; } else { FontColorArcs = OffColor; EnablerArcs = false; };
-                SafeNotify();
-            }
-        }
-        */
-        /*
-        [UIValue("ArcFixFull")]
-        public bool ArcFix
-        {
-            get => Config.Instance.ArcFixFull;
-            set => Config.Instance.ArcFixFull = value;
-        }
-        */
-
 
         // supply list of display names for the dropdown
         public List<object> ArcRotationChoices { get; set; } = new List<object>
@@ -699,14 +503,7 @@ namespace AutoBS.UI
             get => Config.Instance.PreferredArcCountPerMin;
             set => Config.Instance.PreferredArcCountPerMin = value;
         }
-        /*
-        [UIValue("ControlPointLength")]
-        public float ControlPointLength
-        {
-            get => Config.Instance.ControlPointLength;
-            set => Config.Instance.ControlPointLength = value;
-        }
-        */
+
         [UIValue("MinArcDuration")]
         public float MinArcDuration
         {
@@ -720,21 +517,6 @@ namespace AutoBS.UI
             set => Config.Instance.MaxArcDuration = value;
         }
 
-        // Chains
-        /*
-        [UIValue("EnableChains")]
-        public bool EnableChains
-        {
-            get => Config.Instance.EnableChains;
-            set
-            {
-                Config.Instance.EnableChains = value;
-                EnablerChains = value;
-                if (EnablerChains) { FontColorChains = OnColor; EnablerChains = true; } else { FontColorChains = OffColor; EnablerChains = false; };
-                SafeNotify();
-            }
-        }
-        */
         [UIValue("PreferredChainCountPerMin")]
         public float PreferredChainCountPerMin
         {
@@ -765,38 +547,6 @@ namespace AutoBS.UI
             get => Config.Instance.LongChainMaxDuration;
             set => Config.Instance.LongChainMaxDuration = value;
         }
-        /*
-
-        /// <summary>
-        /// Updates all the UI settings to enable/disable and dim/undim the text.
-        /// </summary>
-        private void UpdateArchitectUI()
-        {
-            SafeNotify(nameof(EnablerArcs));
-
-            // Ensure all dependent UI elements update
-            SafeNotify(nameof(EnablerArcs));
-            SafeNotify(nameof(FontColorArcs));
-
-            SafeNotify(nameof(EnablerChains));
-            SafeNotify(nameof(FontColorChains));
-        }
-        */
-        /*
-        [UIValue("PauseDetection")]
-        public bool PauseDetection
-        {
-            get => Config.Instance.PauseDetection;
-            set => Config.Instance.PauseDetection = value;
-        }
-        [UIValue("AlterNotes")]
-        public bool AlterNotes
-        {
-            get => Config.Instance.AlterNotes;
-            set => Config.Instance.AlterNotes = value;
-        }
-        */
-
 
         // Beatsage
 
@@ -1019,20 +769,7 @@ namespace AutoBS.UI
                 SafeNotify();
             }
         }
-        /*
-        [UIValue("WindowPaneWallsSize")]
-        public float WindowPaneWallsSize
-        {
-            get => Config.Instance.WindowPaneWallsSize;
-            set => Config.Instance.WindowPaneWallsSize = value;
-        }
-        [UIValue("WindowPaneWallsHeight")]
-        public float WindowPaneWallsHeight
-        {
-            get => Config.Instance.WindowPaneWallsHeight;
-            set => Config.Instance.WindowPaneWallsHeight = value;
-        }
-        */
+
         [UIValue("WindowPaneWallsMultiplier")]
         public float WindowPaneWallsMultiplier
         {
@@ -1276,42 +1013,6 @@ namespace AutoBS.UI
             SafeNotify(nameof(AutoNjsFixerMode));
         }
 
-
-        /*
-        [UIValue("EnableWallGenerator")]
-        public bool EnableWallGenerator
-        {
-            get => Config.Instance.EnableWallGenerator;
-            set
-            {
-                Config.Instance.EnableWallGenerator = value;
-                EnablerWallGenerator = value;
-                if (EnablerWallGenerator) { FontColorWallGenerator = OnColor; EnablerWallGenerator = true; } else { FontColorWallGenerator = OffColor; EnablerWallGenerator = false; };
-                SafeNotify();
-                // Notify changes for Wall enabler and font color properties
-                SafeNotify(nameof(EnablerExtWallGenerator));
-                SafeNotify(nameof(FontColorExtWallGenerator));
-                SafeNotify(nameof(EnablerStandard));
-                SafeNotify(nameof(FontColorStandard));
-                SafeNotify(nameof(EnablerDistant));
-                SafeNotify(nameof(FontColorDistant));
-                SafeNotify(nameof(EnablerColumns));
-                SafeNotify(nameof(FontColorColumns));
-                SafeNotify(nameof(EnablerRows));
-                SafeNotify(nameof(FontColorRows));
-                SafeNotify(nameof(EnablerTunnels));
-                SafeNotify(nameof(FontColorTunnels));
-                SafeNotify(nameof(EnablerGrids));
-                SafeNotify(nameof(FontColorGrids));
-                SafeNotify(nameof(EnablerPanes));
-                SafeNotify(nameof(FontColorPanes));
-                SafeNotify(nameof(EnablerParticles));
-                SafeNotify(nameof(FontColorParticles));
-                SafeNotify(nameof(EnablerFloors));
-                SafeNotify(nameof(FontColorFloors));
-            }
-        }
-        */
         // Lights
 
         [UIValue("BigLasers")]
@@ -1453,42 +1154,6 @@ namespace AutoBS.UI
             }
         }
 
-        // 90
-        /*
-        [UIValue("ShowGenerated90")]
-        public bool ShowGenerated90
-        {
-            get => Config.Instance.ShowGenerated90;
-            set
-            {
-                Config.Instance.ShowGenerated90 = value;
-                SafeNotify();
-                SafeNotify(nameof(Enabler90));
-                SafeNotify(nameof(FontColor90));
-            }
-        }
-        [UIValue("LimitRotations90")]
-        public float LimitRotations90
-        {
-            get => Config.Instance.LimitRotations90;
-            set => Config.Instance.LimitRotations90 = value;
-        }
-
-        // One Saber Not Good so UNUSED
-        /*
-        [UIValue("OnlyOneSaber")]
-        public bool OnlyOneSaber
-        {
-            get => Config.Instance.OnlyOneSaber;
-            set => Config.Instance.OnlyOneSaber = value;
-        }
-        [UIValue("LeftHandedOneSaber")]
-        public bool LeftHandedOneSaber
-        {
-            get => Config.Instance.LeftHandedOneSaber;
-            set => Config.Instance.LeftHandedOneSaber = value;
-        }
-        */
         // Based On
 
         [UIValue("available-bases")]
@@ -1509,29 +1174,29 @@ namespace AutoBS.UI
             return $"{intValue}";
         }
 
-        public string AngleFormatter(float value)//BW This will output the text on the slider to be an integer with a degree symbol in BSML
+        public string AngleFormatter(float value)//This will output the text on the slider to be an integer with a degree symbol in BSML
         {
             int intValue = Mathf.RoundToInt(value);
             return $"{intValue}°";
         }
-        public string TimeFormatter(float value)//BW This will output the text on the slider with an 's' at the end in BSML
+        public string TimeFormatter(float value)//This will output the text on the slider with an 's' at the end in BSML
         {
             return $"{value}s";
         }
-        public string MultFormatter(float value)//BW This will output the text on the slider with an 's' at the end in BSML
+        public string MultFormatter(float value)
         {
             return $"{value:F1}x";
         }
-        public string PercentFormatter(float value)//BW This will output the text on the slider with an 's' at the end in BSML
-        {
+        public string PercentFormatter(float value) 
+        { 
             return $"{value}%";
         }
-        public string SpeedFormatter(float value)//BW This will output the text on the slider with an 's' at the end in BSML
-        {
+        public string SpeedFormatter(float value) 
+        { 
             int intValue = Mathf.RoundToInt(value);
             return $"{intValue}m/s";
         }
-        public string DistanceFormatter(float value)//BW This will output the text on the slider with an 's' at the end in BSML
+        public string DistanceFormatter(float value)
         {
             int intValue = Mathf.RoundToInt(value);
             return $"{intValue}m";
@@ -1581,16 +1246,6 @@ namespace AutoBS.UI
         { get => Config.Instance.EnablePlugin ? OnColor : OffColor; set { SafeNotify(); } }
 
 
-        /*
-        [UIValue("EnablerEnableFeaturesForNonGen360Maps")] // used to enable/disable many items to make the plugin appear inactive
-        public bool EnablerEnableFeaturesForNonGen360Maps
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableFeaturesForNonGen360Maps; set { SafeNotify(); } }
-
-        [UIValue("EnablerEnableFeaturesForStandardMaps")] // used to enable/disable many items to make the plugin appear inactive
-        public bool EnablerEnableFeaturesForStandardMaps
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableFeaturesForStandardMaps; set { SafeNotify(); } }
-        */
-
         [UIValue("EnablerLimitRotations360")]
         public bool EnablerLimitRotations360
         { get => Config.Instance.EnablePlugin && !Config.Instance.Wireless360; set { SafeNotify(); } }
@@ -1614,23 +1269,7 @@ namespace AutoBS.UI
                 SafeNotify(nameof(FontColorChains));
             }
         }
-        /*
-        [UIValue("EnablerArcs")]
-        public bool EnablerArcs
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableArcs; set { SafeNotify(); } }
-
-        [UIValue("EnablerChains")]
-        public bool EnablerChains
-        */
-        /*
-        [UIValue("EnablerWallGenerator")]
-        public bool EnablerWallGenerator
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableWallGenerator ? true : false; set { SafeNotify(); } }
-
-        [UIValue("EnablerExtWallGenerator")]
-        public bool EnablerExtWallGenerator
-        { get => Config.Instance.EnablePlugin && Config.Instance.EnableWallGenerator && Config.Instance.EnableExtensionMappingWallsGenerator ? true : false; set { SafeNotify(); } }
-        */
+       
         [UIValue("EnablerWallGenerator")]
         public bool EnablerWallGenerator
         { get => Config.Instance.EnablePlugin && EnableWallGenerator ? true : false; set { SafeNotify(); } }
@@ -1726,15 +1365,6 @@ namespace AutoBS.UI
             set { SafeNotify(); }
         }
 
-        /*
-        [UIValue("FontColorEnableFeaturesForNonGen360Maps")]
-        public String FontColorEnableFeaturesForNonGen360Maps
-        { get => Config.Instance.EnablePlugin ? OnColorStandardMaps : OffColor; set { SafeNotify(); } } // only change this color when EnablePlugin changes
-
-        [UIValue("FontColorEnableFeaturesForStandardMaps")]
-        public String FontColorEnableFeaturesForStandardMaps
-        { get => Config.Instance.EnablePlugin ? OnColorStandardMaps : OffColor; set { SafeNotify(); } } // only change this color when EnablePlugin changes
-        */
         [UIValue("FontColorLimitRotations360")]
         public String FontColorLimitRotations360
         { 
@@ -1842,7 +1472,7 @@ namespace AutoBS.UI
 
     }
     /*
-    //trying to display the original NJS and NJO
+    //trying to display the original NJS and NJO in menu but not working
     public static class OriginalStatsHub
     {
         public static event Action<float, float> OriginalsChanged; // (njs, jd)

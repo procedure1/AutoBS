@@ -30,7 +30,7 @@ namespace AutoBS
             // PROBLEM: if choose override same environment as default for the map, it was list as DefaultEnvironment!!!!!!!!!!!!!!!!!!!!!!!!! also, if the 2nd is overriden, it was listed as "TheSecondEnvironment" and if is defualt is listed as "The Second Environment"
             bool isSupportedEnvironment = IsV2Environment(envName);// || envName.Contains("Second");// || envName == "EDMEnvironment";
 
-            Plugin.Log.Info($"[AutoLightMapper] {envName} Environment isSupported: {isSupportedEnvironment}"); // if v3 environment is chosen, then there is no reason to produce lights since they are not supported. Never was able to produce GLS lights
+            Plugin.LogDebug($"[AutoLightMapper] {envName} Environment isSupported: {isSupportedEnvironment}"); // if v3 environment is chosen, then there is no reason to produce lights since they are not supported. Never was able to produce GLS lights
 
             if (!isSupportedEnvironment) return;
 
@@ -80,7 +80,7 @@ namespace AutoBS
             bool needsRINGZOOM = !eventTypeCounts.ContainsKey(BasicBeatmapEventType.Event9) ||
                                  eventTypeCounts[BasicBeatmapEventType.Event9] == 0;
 
-            Plugin.Log.Info($"[AutoLightMapper] - this map needsBACK: {needsBACK}, needsRING: {needsRING}, needsLEFT: {needsLEFT}, needsRIGHT: {needsRIGHT}, needsCENTER: {needsCENTER}, needsLEFTSPEED: {needsLEFTSPEED}, needsRIGHTSPEED: {needsRIGHTSPEED}, needsRINGSPIN: {needsRINGSPIN}, needsRINGZOOM: {needsRINGZOOM}");
+            Plugin.LogDebug($"[AutoLightMapper] - this map needsBACK: {needsBACK}, needsRING: {needsRING}, needsLEFT: {needsLEFT}, needsRIGHT: {needsRIGHT}, needsCENTER: {needsCENTER}, needsLEFTSPEED: {needsLEFTSPEED}, needsRIGHTSPEED: {needsRIGHTSPEED}, needsRINGSPIN: {needsRINGSPIN}, needsRINGZOOM: {needsRINGZOOM}");
 
             bool[] allLightTypes = { needsBACK, needsRING, needsLEFT, needsRIGHT, needsCENTER, needsLEFTSPEED, needsRIGHTSPEED, needsRINGSPIN, needsRINGZOOM };
             bool[] threeSixtyTypes = { needsBACK, needsRING, needsLEFT, needsRIGHT, needsCENTER, needsLEFTSPEED, needsRIGHTSPEED };
@@ -99,7 +99,7 @@ namespace AutoBS
             */
 
             int existingLightTypes = allLightTypes.Count(b => !b);
-            Plugin.Log.Info($"[AutoLightMapper] - Existing Light Types: {existingLightTypes} count");
+            Plugin.LogDebug($"[AutoLightMapper] - Existing Light Types: {existingLightTypes} count");
 
             //Standard maps: If 2 or more light types already exist → skip light generation
             if (existingLightTypes > 2 && //counts how many false values exist in bools. It effectively counts how many light events already exist in the map.
@@ -107,7 +107,7 @@ namespace AutoBS
                 TransitionPatcher.SelectedSerializedName != "360Degree" &&
                 TransitionPatcher.SelectedSerializedName != "90Degree")
             {
-                Plugin.Log.Info($"[AutoLightMapper] not used since there are 3 or more light events types programmed already for standard map.");
+                Plugin.LogDebug($"[AutoLightMapper] not used since there are 3 or more light events types programmed already for standard map.");
                 LightEventsAdded = false;
                 return;
             }
@@ -126,7 +126,7 @@ namespace AutoBS
                 }
                 else
                 {
-                    Plugin.Log.Info($"[AutoLightMapper] not used since all seven 360 light event types are already programmed.");
+                    Plugin.LogDebug($"[AutoLightMapper] not used since all seven 360 light event types are already programmed.");
                     LightEventsAdded = false;
                     return;
                 }
@@ -159,7 +159,6 @@ namespace AutoBS
             foreach (EBasicEventData light in v2lights)
             {
                 //Plugin.Log.Info($"[AutoLightMapper] Inserting event: Time={light.time:F3}, Type={(EventType)light.basicBeatmapEventType}, Value={(EventValue)light.value}, Brightness={light.floatValue:F2}");
-                //data.InsertBeatmapEventDataInOrder(light);
                 eData.BasicEvents.Add(light);
             }
 
@@ -225,7 +224,7 @@ namespace AutoBS
             // --- NEW: Determine allowed special events based on environment ---
             string environmentName = TransitionPatcher.EnvironmentName != null ? TransitionPatcher.EnvironmentName : "Default";
             //Plugin.Log.Info($"[AutoLightMapper] Songname: {HarmonyPatches.SongName} --- Current environment name: {environmentName} -------------------");
-            Plugin.Log.Info($" -------------------");
+            Plugin.LogDebug($" -------------------");
 
             List<EventType> allowedSpecialEventTypes = new List<EventType>();
             if (environmentName.IndexOf("Skrillex", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -253,9 +252,9 @@ namespace AutoBS
             }
             else
             {
-                Plugin.Log.Info($"[AutoLightMapper] Environment '{environmentName}' does not support special events. No special events will be added.");
+                Plugin.LogDebug($"[AutoLightMapper] Environment '{environmentName}' does not support special events. No special events will be added.");
             }
-            Plugin.Log.Info($"[AutoLightMapper] Allowed special event types: {string.Join(", ", allowedSpecialEventTypes)}");
+            Plugin.LogDebug($"[AutoLightMapper] Allowed special event types: {string.Join(", ", allowedSpecialEventTypes)}");
             // --- End of environment check ---
 
             // Use a counter to track when to trigger a light event based on the multiplier
@@ -1028,28 +1027,18 @@ namespace AutoBS
             lightEvents = lightEvents.OrderBy(o => o.time).ToList();
             lightEvents = RemoveFused(lightEvents);
             lightEvents = lightEvents.OrderBy(o => o.time).ToList();
-            /*
-            List<EBasicEventData> lights = new List<EBasicEventData>();
-
-            foreach (EBasicEventData e in lightEvent)
-            {
-                
-                EBasicEventData customLightData = EBasicEventData.Create(e.time, e.basicBeatmapEventType, e.value, e.floatValue);
-                lights.Add(customLightData);
-                //Plugin.Log.Info($"[AutoLightMapper] Final light event: Time={e.time:F3}, Type={(EventType)e.basicBeatmapEventType}, Value={(EventValue)e.value}, FloatValue={e.floatValue}");
-            }
-            return lights;
-            */
 
             if (lightEvents.Count > 0)
             {
                 LightEventsAdded = true;
-                Plugin.Log.Info($"[CreateLight] {lightEvents.Count} Light Events Added.");
+                Plugin.LogDebug($"[CreateLight] {lightEvents.Count} Light Events Added.");
             }
 
             return lightEvents;
         }
         //END CreateLight------------------------------------------------------------
+
+
 
         //clean up pass. detect when Multiple events of the same type that overlap but don’t add visual meaning and OFF events at the same time as an ON/FLASH/TRANSITION event.
         private static List<EBasicEventData> RemoveFused(List<EBasicEventData> events)
@@ -1184,7 +1173,7 @@ namespace AutoBS
             {
                 if (!lastEventColors.TryGetValue(eventType, out EventValue lastColor) || lastColor != color)
                 {
-                    Plugin.Log.Info($"[AutoLightMapper] Adding event for {eventType} at time {time:F3} with new color {color}");
+                    Plugin.LogDebug($"[AutoLightMapper] Adding event for {eventType} at time {time:F3} with new color {color}");
                     eventTempo.Add(EBasicEventData.Create(time, eventType, color));
                     lastEventColors[eventType] = color;
                 }
@@ -1239,7 +1228,5 @@ namespace AutoBS
                 (list[n], list[k]) = (list[k], list[n]);
             }
         }
-
-
     }
 }

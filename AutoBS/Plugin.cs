@@ -44,7 +44,7 @@ namespace AutoBS
         [OnStart]
         public void OnApplicationStart()
         {
-            var harmony = new Harmony("com.bradwallace.AutoBS");
+            var harmony = new Harmony("com.procedure1.AutoBS");
             
             ForceActivatePatches.Install(harmony); // forcing Chroma/Noodle activation 
 

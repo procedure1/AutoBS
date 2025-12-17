@@ -11,26 +11,22 @@ namespace AutoBS
     public class AutoNjsFixer
     {
         public static string ScoreSubmissionDisableText = "";
-        public static (float finalNjs, float finalJD, float originalJD) Fix(float originalNJS, float originalNJO, float bpm)
+        public static (float finalNjs, float finalJD, float originalJD) Fix(float originalNJS, float originalNJO, float bpm) // Calculate AutoNjsFixerFinalNJS here since we need NJS for other patches
         {
-            // Calculate AutoNjsFixerFinalNJS here since we need NJS for other patches
-
             //if (!Utils.IsEnabledAutoNjsFixer()) return (0,0); // called before TransitionPatcher so can't use this.
+            
             bpm = bpm == 0 ? TransitionPatcher.bpm : bpm;
-
-            // → (10, 0) for 100Bills Easy Standard (matches menu)
-
 
             float originalJD = GetJumpDistance(bpm, originalNJS, originalNJO);
 
-            float desiredNJS = Config.Instance.DesiredNJS > 0 ? Config.Instance.DesiredNJS : originalNJS;
+            float desiredNJS = Config.Instance.DesiredNJS > 0 ? Config.Instance.DesiredNJS : originalNJS; // → (10, 0) for 100Bills Easy Standard (matches menu)
             float finalNJS = desiredNJS; // maybe be different from desiredNJS if maintainVelocity is ON
 
             float desiredJD = Config.Instance.DesiredJD > 0 ? Config.Instance.DesiredJD : originalNJS;
             float finalJD = desiredJD;
 
 
-            Plugin.Log.Info($"[AutoNjsFixer] Called... originalNJS: {originalNJS}, originalNJO: {originalNJO} originalJD: {originalJD}, desiredNJS: {desiredNJS}, desiredJD: {desiredJD}");
+            Plugin.LogDebug($"[AutoNjsFixer] Called... originalNJS: {originalNJS}, originalNJO: {originalNJO} originalJD: {originalJD}, desiredNJS: {desiredNJS}, desiredJD: {desiredJD}");
 
             bool maintainVelocity = (Config.Instance.AutoNjsFixerMode == Config.AutoNjsFixerModeType.MaintainNoteSpeed) ? true : false; // if false , it's ForceNJS mode
 
@@ -50,8 +46,6 @@ namespace AutoBS
             string mode = "Force NJS";
             if (maintainVelocity) mode = "Maintain Velocity";
             Plugin.Log.Info($"[AutoNjsFixer] originalNJS: {originalNJS}, originalJD: {originalJD} => finalNJS: {finalNJS}, finalJD: {finalJD} (mode: {mode})");
-
-            //Activate = true;
 
             return (finalNJS, finalJD, originalJD);
         }
@@ -84,8 +78,5 @@ namespace AutoBS
 
             return jumpDistance;
         }
-
-        
     }
-
 }

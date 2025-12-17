@@ -18,44 +18,11 @@ namespace AutoBS
         //REMOVE NOTES (and bombs) located at the same space and also remove any notes side by side with cutDirections facing out 
         public static void Clean(EditableCBD eData) // is reference so don't need to return it (unless you create a new instance of EditableCBD and then return that)
         {
-            Plugin.Log.Info($"[BeatSageCleanUp] Beat Sage Map being cleaned!");
-
-            //ScoreSubmissionDisableText = "";
-            //List<ENoteData> notes = eData.ColorNotes.ToList();
-
-            //List<int> indicesToRemove = new List<int>();
-
-
-            /*
-            int count = 0;
-            Plugin.Log.Info($"Original Notes (BPM: {TransitionPatcher.bpm}):");
-            foreach (var note in notes)
-            {
-                count++;
-                if (note.time > 150f && note.time < 160f)
-                    Plugin.Log.Info(
-                    Plugin.Log.Info(
-                        $"{count} Note: t: {note.time:F} b: {(note.time * TransitionPatcher.bpm / 60):F} i: {note.line} l: {(int)note.layer} dir: {note.cutDirection}");
-            }
-            */
-
-            /*
-            int count1 = 0;
-            Plugin.Log.Info($"Original Walls (BPM: {TransitionPatcher.bpm}):");
-            foreach (var ob in obs)
-            {
-                count1++;
-                Plugin.Log.Info(
-                    $"{count1} Wall: t: {ob.time:F} d: {ob.duration:F} b: {(ob.time * TransitionPatcher.bpm / 60):F} i: {ob.line} l: {(int)ob.lineLayer} w: {ob.width} h: {ob.height}");// cus: {obs.customData}");
-            }
-            */
-
-            // Example: 10s threshold, up to 4 starting/ending notes allowed to be purged
+            Plugin.LogDebug($"[BeatSageCleanUp] Beat Sage Map being cleaned!");
 
             int originalNoteCount = eData.ColorNotes.Count();
 
             BeatSageStrayNoteCleaner.RemoveStragglers(eData, TransitionPatcher.bpm, minPauseSeconds: Config.Instance.StrayNoteCleanerOffset, maxStragglers: 4);
-
 
             eData = notesAdjustment(eData);
             eData = wallsAdjustment(eData);
@@ -66,8 +33,6 @@ namespace AutoBS
             }
             else
                 DisableScoreSubmission = false;
-
-            //return eData; // Return the modified BeatmapData
         }
 
         #region Adjust Notes
@@ -81,7 +46,6 @@ namespace AutoBS
 
             Plugin.Log.Info($"[BeatSageCleanUp] Studying {notes.Count} notes.");
 
-            // Iterate through the notes list
             for (int i = 0; i < notes.Count; i++)
             {
                 ENoteData currentNote = notes[i];
@@ -101,12 +65,12 @@ namespace AutoBS
                     {
 
                         // FIX: same-color, near-simultaneous, same-direction, but misaligned for a single stroke → remove later note (j)
-                        // SURGICAL FIX: same-color, near-simultaneous pair rules
+                        // FIX: same-color, near-simultaneous pair rules
                         if (currentNote.gameplayType == GameplayType.Normal &&
-    nextNote.gameplayType == GameplayType.Normal &&
-    currentNote.colorType == nextNote.colorType &&
-    currentNote.cutDirection != NoteCutDirection.Any &&
-    nextNote.cutDirection != NoteCutDirection.Any)
+                            nextNote.gameplayType == GameplayType.Normal &&
+                            currentNote.colorType == nextNote.colorType &&
+                            currentNote.cutDirection != NoteCutDirection.Any &&
+                            nextNote.cutDirection != NoteCutDirection.Any)
                         {
                             var cutDirCurrentNote = currentNote.cutDirection;
                             var cutDirNextNote = nextNote.cutDirection;
@@ -128,8 +92,8 @@ namespace AutoBS
                                 if (!sameDirection || currentNote.layer != nextNote.layer)
                                 {
                                     indicesToRemove.Add(j);
-                                    Plugin.Log.Info(
-                                        $"BeatSage(surgical): horiz same-color mismatch dir or layer at {currentNote.time:F} → rm later " +
+                                    Plugin.LogDebug(
+                                        $"[BeatSageCleanUp] horiz same-color mismatch dir or layer at {currentNote.time:F} → rm later " +
                                         $"(dirA={cutDirCurrentNote}, dirB={cutDirNextNote}, layerA={currentNote.layer}, layerB={nextNote.layer})"
                                     );
                                     j++;
@@ -144,8 +108,8 @@ namespace AutoBS
                                 if (!sameDirection || currentNote.line != nextNote.line)
                                 {
                                     indicesToRemove.Add(j);
-                                    Plugin.Log.Info(
-                                        $"BeatSage(surgical): vert same-color mismatch dir or index at {currentNote.time:F} → rm later " +
+                                    Plugin.LogDebug(
+                                        $"[BeatSageCleanUp] vert same-color mismatch dir or index at {currentNote.time:F} → rm later " +
                                         $"(dirA={cutDirCurrentNote}, dirB={cutDirNextNote}, lineA={currentNote.line}, lineB={nextNote.line})"
                                     );
                                     j++;
@@ -180,7 +144,7 @@ namespace AutoBS
                                 if (!goodPair)
                                 {
                                     indicesToRemove.Add(i);
-                                    Plugin.Log.Info($"Beat Sage 1 - remove note side-by-side SAME COLOR with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
+                                    Plugin.LogDebug($"Beat Sage 1 - remove note side-by-side SAME COLOR with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
                                 }
                             }
                             // 2 side-by-side notes of different colors - Check if the leftmost note has cutDirection Left and the rightmost note has cutDirection Right - and other impossible configurations
@@ -193,7 +157,7 @@ namespace AutoBS
                                    ((currentNote.cutDirection == NoteCutDirection.UpLeft) && (nextNote.cutDirection != NoteCutDirection.UpLeft && nextNote.cutDirection != NoteCutDirection.DownRight)))
                                 {
                                     indicesToRemove.Add(i);
-                                    Plugin.Log.Info($"Beat Sage 2 - remove left note side-by-side with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
+                                    Plugin.LogDebug($"Beat Sage 2 - remove left note side-by-side with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
                                 }
                             }
                             else
@@ -204,7 +168,7 @@ namespace AutoBS
                                    ((currentNote.cutDirection == NoteCutDirection.UpRight) && (nextNote.cutDirection != NoteCutDirection.UpRight && nextNote.cutDirection != NoteCutDirection.DownLeft)))
                                 {
                                     indicesToRemove.Add(i);
-                                    Plugin.Log.Info($"Beat Sage 3 - remove right note side-by-side with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
+                                    Plugin.LogDebug($"Beat Sage 3 - remove right note side-by-side with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
                                 }
                             }
                         }
@@ -226,7 +190,7 @@ namespace AutoBS
                                 if (!goodPair)
                                 {
                                     indicesToRemove.Add(i);
-                                    Plugin.Log.Info($"Beat Sage 1 - remove note one-above-the-other SAME COLOR with other note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
+                                    Plugin.LogDebug($"Beat Sage 1 - remove note one-above-the-other SAME COLOR with other note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
                                 }
                             }
                             // 2 ONE-ABOVE-THE-OTHER notes of different colors - Check if the bottommost note has cutDirection Down and the uppermost note has cutDirection Up - and other impossible configurations
@@ -238,7 +202,7 @@ namespace AutoBS
                                    ((currentNote.cutDirection == NoteCutDirection.DownRight) && (nextNote.cutDirection != NoteCutDirection.DownRight && nextNote.cutDirection != NoteCutDirection.UpLeft)))
                                 {
                                     indicesToRemove.Add(i);
-                                    Plugin.Log.Info($"Beat Sage 2 - remove bottom note one-above-the-other of DIFFERENT COLORS with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
+                                    Plugin.LogDebug($"Beat Sage 2 - remove bottom note one-above-the-other of DIFFERENT COLORS with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
                                 }
                             }
                             else
@@ -249,7 +213,7 @@ namespace AutoBS
                                    ((currentNote.cutDirection == NoteCutDirection.UpRight) && (nextNote.cutDirection != NoteCutDirection.UpRight && nextNote.cutDirection != NoteCutDirection.DownLeft)))
                                 {
                                     indicesToRemove.Add(i);
-                                    Plugin.Log.Info($"Beat Sage 3 - remove top note one-above-the-other of DIFFERENT COLORS with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
+                                    Plugin.LogDebug($"Beat Sage 3 - remove top note one-above-the-other of DIFFERENT COLORS with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
                                 }
                             }
                         }
@@ -263,14 +227,14 @@ namespace AutoBS
                             {
                                 // Remove the bomb note (1st note)
                                 indicesToRemove.Add(i);
-                                Plugin.Log.Info($"Beat Sage 1 - remove bomb overlapping a 2nd bomb/note at {currentNote.time:F}/{nextNote.time:F}");
+                                Plugin.LogDebug($"Beat Sage 1 - remove bomb overlapping a 2nd bomb/note at {currentNote.time:F}/{nextNote.time:F}");
                             }
                             else
                             {
                                 // remove the 2nd note whether a bomb or not
                                 indicesToRemove.Add(j);
                                 j++; //since j is removed, skip it in the next iteration
-                                Plugin.Log.Info($"Beat Sage 2 - remove type: {nextNote.gameplayType} overlapping a note at {currentNote.time:F}/{nextNote.time:F}");
+                                Plugin.LogDebug($"Beat Sage 2 - remove type: {nextNote.gameplayType} overlapping a note at {currentNote.time:F}/{nextNote.time:F}");
                             }
                         }
                     }
@@ -281,7 +245,7 @@ namespace AutoBS
 
             if (indicesToRemove.Count == 0)
             {
-                Plugin.Log.Info($"[BeatSageCleanUp] - No notes to clean!!!!!! - Remaining notes: {notes.Count}");
+                Plugin.LogDebug($"[BeatSageCleanUp] - No notes to clean!!!!!! - Remaining notes: {notes.Count}");
             }
             else
             {
@@ -306,10 +270,7 @@ namespace AutoBS
 
                 notes = eData.ColorNotes.ToList(); // do this since notes have been changed above
 
-                Plugin.Log.Info($"[BeatSageCleanUp] - Removed {indicesToRemove.Count} - Remaining notes: {notes.Count}");
-
-                //ScoreSubmission.DisableSubmission("Beat Sage Cleaner");
-                //ScoreSubmissionDisableText = "Beat Sage Cleaner";// removed notes");
+                Plugin.Log.Info($"[BeatSageCleanUp] - Notes Removed {indicesToRemove.Count} - Remaining notes: {notes.Count}");
             }
                 
             return eData;
@@ -320,7 +281,7 @@ namespace AutoBS
         #region Adjust Walls
         private static EditableCBD wallsAdjustment(EditableCBD eData)
         {
-            Plugin.Log.Info($"[BeatSageCleanUp] Adjusting Walls in Beat Sage Map!");
+            Plugin.LogDebug($"[BeatSageCleanUp] Adjusting Walls in Beat Sage Map!");
             List<EObstacleData> obs = eData.Obstacles.ToList();
             List<ENoteData> notes = eData.ColorNotes.ToList();
             //Plugin.Log.Info($"[BeatSageCleanUp] Found {obs.Count} obstacles and {notes.Count} notes in Beat Sage Map!");
@@ -374,10 +335,6 @@ namespace AutoBS
                     }
                     else if (note.time > startTime + duration + 5f) // not sure why but need a large buffer like 2 to 5 sec here to prevent missing some walls with this break.
                     {
-                        //customObstacle = CustomObstacle.Create(startTime,
-                        //    lineIndex, ob.lineLayer, duration, ob.width, ob.height,
-                        //    new CustomData(), false);
-                        //finalWalls.Add(customObstacle);
                         break;
                     }
                     //if (startTime > 171f && startTime < 174f)
@@ -401,11 +358,7 @@ namespace AutoBS
 
                                 //Plugin.Log.Info(
                                 //    $"--- {obCnt} Beat Sage Map NEW START TIME - wall: {oldStartTime:F} dur: {duration:F} had a note too close to the beginning of a wall. note: {note.time:F} and will cut beginning of the wall to start at: {startTime:F}");
-                                //v1.34
-                                //customObstacle = CustomObstacle.Create(startTime,
-                                //   lineIndex, ob.lineLayer, duration, ob.width, ob.height,
-                                //    new CustomData(), false);
-                                //v1.39
+
                                 customObstacle = EObstacleData.Create(startTime,
                                     line, ob.layer, duration, ob.width, ob.height
                                  );
@@ -570,22 +523,9 @@ namespace AutoBS
 
                 if (!isLeanWall && !isCrouchWall && duration > minWallDuration)
                 {
-                    //if (ob is EObstacleData customObstacle1)
-                    //{
-                    // Create a CustomObstacle.Create with adjusted time/duration and copy customData from the original
-                    //EObstacleData adjustedObstacle = CustomObstacle.Create(newStartTime, newLineIndex, ob.lineLayer, newDuration, ob.width, ob.height, customObstacle1.customData, customObstacle1.version2_6_0AndEarlier);
-                    //data.allBeatmapDataItems.Remove(ob);
-                    //if (ob.time > 60f && ob.time < 61f)
-                    //    Plugin.Log.Info($"MISTAKE1 Time: {ob.time:F} dur: {ob.duration:F} i: {ob.line} l: {(int)ob.lineLayer} w: {ob.width} h: {ob.height}");
                     if (customObstacle != null)
                         finalWalls.Add(customObstacle);
 
-                    //if (!deleteMe)
-                    //    data.AddBeatmapObjectDataInOrder(adjustedObstacle);
-                    //adjustedObstacles.Add(adjustedObstacle);
-
-                    //prevObs = customObstacle;
-                    //}
                     continue; // Non-crouch/lean walls are just passed through
                 }
 
@@ -611,37 +551,15 @@ namespace AutoBS
                 // Skip adding this wall if the adjusted duration is 0, effectively deleting it
                 if (duration <= minWallDuration)
                 {
-                    //deleteMe = true;
-
                     //Plugin.Log.Info($"--- {obCnt} Beat Sage Map DELETED WALL -   wall: {startTime:F} duration: {duration:F} a crouch or lean wall that is too close to another at time. New duration would be too short!!!!");
                     break;
                     // This wall is skipped because its adjusted duration is invalid
                 }
-
-                // Ensure obstacle is of type EObstacleData before casting
-                //if (ob is EObstacleData customObstacle2)
-                //{
-                // Create a CustomObstacle.Create with adjusted time/duration and copy customData from the original
-                //EObstacleData adjustedObstacle = CustomObstacle.Create(newStartTime, newLineIndex, ob.lineLayer, newDuration, ob.width, ob.height, customObstacle2.customData, customObstacle2.version2_6_0AndEarlier);
-
-                //if (deleteMe)
-                //    data.allBeatmapDataItems.Remove(ob);
-
-                //if (!deleteMe)
-                //   data.AddBeatmapObjectDataInOrder(adjustedObstacle);
-                //adjustedObstacles.Add(adjustedObstacle);
-                //if (ob.time > 60f && ob.time < 61f)
-                //    Plugin.Log.Info($"MISTAKE2 Time: {ob.time:F} dur: {ob.duration:F} i: {ob.line} l: {(int)ob.lineLayer} w: {ob.width} h: {ob.height}");
                 if (customObstacle != null)
                     finalWalls.Add(customObstacle);
 
                 if (isCrouchWall || isLeanWall)
                     prevLeanOrCrouchWall = customObstacle;
-                //}
-                //else
-                //{
-                //    Plugin.Log.Info($"Beat Sage Cleaner Error - Obstacles not of type Custom Data!"); 
-                //}
             }
 
             finalWalls.Sort((a, b) => a.time.CompareTo(b.time));
@@ -683,16 +601,13 @@ namespace AutoBS
                 float minPauseSeconds = 6f, // if user sets to 0 , then disable
                 int maxStragglers = 4)
             {
-                Plugin.Log.Info($"[BeatSage-StrayNoteCleaner] Called! bpm: {bpm} minPauseSeconds: {minPauseSeconds} maxStragglers: {maxStragglers} Note Count: {eData.ColorNotes?.Count}");
+                Plugin.LogDebug($"[BeatSage-StrayNoteCleaner] Called! bpm: {bpm} minPauseSeconds: {minPauseSeconds} maxStragglers: {maxStragglers} Note Count: {eData.ColorNotes?.Count}");
                 if (minPauseSeconds == 0 || eData == null || eData.ColorNotes == null || eData.ColorNotes.Count == 0)
                 {
                     return 0;
                 }
 
                 bps = bpm / 60f;
-
-                // Convert 10s (or whatever) to beats
-                //float pauseBeats = (bpm > 0f) ? (minPauseSeconds * bpm / 60f) : 999999f;
 
                 // Work on a sorted copy (by time), then remove from the original list by reference
                 var notes = eData.ColorNotes.OrderBy(n => n.time).ToList();
@@ -784,7 +699,7 @@ namespace AutoBS
                 {
                     float segStartBeat = toRemove.Min(n => n.time);
                     float segEndBeat = toRemove.Max(n => n.time);
-                    Plugin.Log.Info($"[BeatSage-StrayNoteCleaner] Removed {removed} note(s) at {segStartBeat / bps:F3}–{segEndBeat / bps:F3}");
+                    //Plugin.Log.Info($"[BeatSage-StrayNoteCleaner] Removed {removed} note(s) at {segStartBeat / bps:F3}–{segEndBeat / bps:F3}");
                 }
                 return removed;
             }

@@ -12,7 +12,7 @@ using System.Linq;
 
 namespace AutoBS.Patches
 {
-    // Postfix MAIN CODE!!!! generates map changes and alters the beat map data such as rotation events...
+    // Postfix MAIN CODE!!!! generates map changes and alters the beat map data such as rotation events and arcs and chains...
     // runs after SetContent & TransitionPatcher & BeatmapDataLoader.LoadBeatmapDataAsync
     // This runs automatically after user hits Play
     [HarmonyPatch(typeof(BeatmapDataTransformHelper), "CreateTransformedBeatmapData")]

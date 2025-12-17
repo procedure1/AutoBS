@@ -67,11 +67,11 @@
     <Compile Include="Plugin.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SoundChanger.cs" />
+    <Compile Include="UNUSED_SoundChanger.cs" />
     <Compile Include="UI\GameplaySetupView.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="WallGenerator.cs" />
-    <Compile Include="WallTimeOverlayDebug.cs" />
+    <Compile Include="UNUSED_WallTimeOverlayDebug.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="manifest.json" />

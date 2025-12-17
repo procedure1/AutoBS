@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 
 namespace AutoBS
 {
-    // Add Directional Markers to Menu Environment
+    // Add Directional Markers to Menu Environment so player can easily face the menus
     public class GlassEnvironmentFinder : MonoBehaviour
     {
         public static GlassEnvironmentFinder Instance { get; private set; }
@@ -29,17 +29,17 @@ namespace AutoBS
 
         private void Start()
         {
-            Plugin.Log.Info("[GlassEnvironmentFinder] Start method called. Will try to add directional markers for players to know what direction to face.");
+            Plugin.LogDebug("[GlassEnvironmentFinder] Start method called. Will try to add directional markers for players to know what direction to face.");
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            Plugin.Log.Info($"[GlassEnvironmentFinder] {scene.name} checking environment to add markers potentially if its a 360 environment...");
+            Plugin.LogDebug($"[GlassEnvironmentFinder] {scene.name} checking environment to add markers potentially if its a 360 environment...");
 
             if (scene.name.Contains("GlassDesertEnvironment"))
             {
-                Plugin.Log.Info($"{scene.name} scene loaded.");
+                Plugin.LogDebug($"{scene.name} scene loaded.");
                 GameObject environment = FindEnvironment(scene);
                 if (environment != null)
                 {
@@ -48,14 +48,14 @@ namespace AutoBS
                 }
                 else
                 {
-                    Plugin.Log.Info("[GlassEnvironmentFinder] Environment within GlassDesertEnvironment not found.");
+                    Plugin.LogDebug("[GlassEnvironmentFinder] Environment within GlassDesertEnvironment not found.");
                 }
             }
             else if (scene.name.Contains("Environment"))
             {
                 if (menuMarkersAdded)
                 {
-                    Plugin.Log.Info($"[GlassEnvironmentFinder] Removing markers since scene is: {scene.name}.");
+                    Plugin.LogDebug($"[GlassEnvironmentFinder] Removing markers since scene is: {scene.name}.");
                     RemoveMarkers();
                 }
             }
@@ -69,7 +69,7 @@ namespace AutoBS
                 {
                     if (obj.name.EndsWith("Environment"))
                     {
-                        Plugin.Log.Info($"[GlassEnvironmentFinder] {obj.name} found in scene: {scene.name}");
+                        Plugin.LogDebug($"[GlassEnvironmentFinder] {obj.name} found in scene: {scene.name}");
                         return obj;
                     }
                 }
@@ -88,7 +88,7 @@ namespace AutoBS
             }
             markers.Clear();
             menuMarkersAdded = false;
-            Plugin.Log.Info("[GlassEnvironmentFinder] Direction markers removed.");
+            Plugin.LogDebug("[GlassEnvironmentFinder] Direction markers removed.");
         }
 
         public void AddMarker(GameObject marker)
@@ -114,7 +114,7 @@ namespace AutoBS
         {
             if (GlassEnvironmentFinder.Instance.menuMarkersAdded)
             {
-                Plugin.Log.Info("[AddDirectionalMarkersToMenu] Markers already exist. Skipping creation.");
+                Plugin.LogDebug("[AddDirectionalMarkersToMenu] Markers already exist. Skipping creation.");
                 return;
             }
 
@@ -141,7 +141,7 @@ namespace AutoBS
 
                         if (noteArrow == null || noteArrowGlow == null)
                         {
-                            Plugin.Log.Error("[AddDirectionalMarkersToMenu] NoteArrow or NoteArrowGlow not found.No directional markers added!!!");
+                            Plugin.LogDebug("[AddDirectionalMarkersToMenu] NoteArrow or NoteArrowGlow not found.No directional markers added!!!");
                             //AddDirectionMarkerSpheresToMenu(root);
                             return;
                         }
@@ -149,7 +149,7 @@ namespace AutoBS
                 }
             }
 
-            Plugin.Log.Info("[AddDirectionalMarkersToMenu] Adding direction markers to Menu...");
+            Plugin.LogDebug("[AddDirectionalMarkersToMenu] Adding direction markers to Menu...");
 
             float radius = 4.2f; // Radial distance of 4.2m
             float height = 1.3f; // Height off the ground floor
@@ -192,7 +192,7 @@ namespace AutoBS
             }
 
             GlassEnvironmentFinder.Instance.menuMarkersAdded = true;
-            Plugin.Log.Info("[AddDirectionalMarkersToMenu] Direction markers added.");
+            Plugin.LogDebug("[AddDirectionalMarkersToMenu] Direction markers added.");
         }
 
         private static Vector3 CalculatePosition(float angle, float radius, float height)
@@ -204,15 +204,16 @@ namespace AutoBS
         }
 
         // spheres
+        /*
         public static void AddDirectionMarkerSpheresToMenu(GameObject root)
         {
             if (GlassEnvironmentFinder.Instance.menuMarkersAdded)
             {
-                Plugin.Log.Info("[AddDirectionalMarkersToMenu] Sphere Markers already exist. Skipping creation.");
+                Plugin.LogDebug("[AddDirectionalMarkersToMenu] Sphere Markers already exist. Skipping creation.");
                 return;
             }
 
-            Plugin.Log.Info("[AddDirectionalMarkersToMenu] Adding sphere direction markers to Menu...");
+            Plugin.LogDebug("[AddDirectionalMarkersToMenu] Adding sphere direction markers to Menu...");
 
             float radius = 4.2f; // Radial distance of 4m
             float height = 1.3f; // Height off the ground floor
@@ -243,11 +244,12 @@ namespace AutoBS
                 renderer.material = material;
 
 
-                Plugin.Log.Info($"[AddDirectionalMarkersToMenu] Sphere Marker created at position {position} with rotation {rotation} and scale {scale}");
+                Plugin.LogDebug($"[AddDirectionalMarkersToMenu] Sphere Marker created at position {position} with rotation {rotation} and scale {scale}");
             }
 
             GlassEnvironmentFinder.Instance.menuMarkersAdded = true;
-            Plugin.Log.Info("[AddDirectionalMarkersToMenu] Sphere Direction markers added.");
+            Plugin.LogDebug("[AddDirectionalMarkersToMenu] Sphere Direction markers added.");
         }
+        */
     }
 }

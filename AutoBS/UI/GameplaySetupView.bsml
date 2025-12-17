@@ -162,16 +162,6 @@
             interactable="~EnablerAutoNjsFixer"
             hover-hint="Default: Maintain Speed. Use MAINTAIN SPEED to keep the same perceived note speed intended by the map while letting you change the note spawn distance. Use SET SPEED to set your desired note speed. It's difficult to see notes coming in 360 with short note spawn distances."
           />
-          <!--<vertical pad-left="2" pad-top="2">
-            <horizontal spacing="4">
-              <text text="Original Note Speed:" />
-              <text text="~OriginalNJS" />
-            </horizontal>
-            <horizontal spacing="4">
-              <text text="Original Spawn Distance:" />
-              <text text="~OriginalJD" />
-            </horizontal>
-          </vertical>-->
 
           <slider-setting text="Note Speed" apply-on-change="true" value="DesiredNJS" bind-value="true" fontSize="3"  show-buttons="true" increment="1" min="0" max="60" formatter="SpeedFormatter" font-color='~FontColorDesiredNJS' interactable="~EnablerDesiredNJS" hover-hint="Default: 10. The map's note speed is overridden with this value. 0 will revert to the map's original speed. Scoring will be disabled for speeds set lower than the original." rich-text='true'></slider-setting>
           <slider-setting text="Note Spawn Distance" apply-on-change="true" value="DesiredJD" bind-value="true" fontSize="3"  show-buttons="true" increment="1" min="0" max="32" formatter="DistanceFormatter" font-color='~FontColorAutoNjsFixer' interactable="~EnablerAutoNjsFixer" hover-hint="Default: 30. Overrides the map's note spawn distance with this value. 0 will revert to use the map's original distance. It's difficult to see notes coming in 360 with short note spawn distances." rich-text='true'></slider-setting>

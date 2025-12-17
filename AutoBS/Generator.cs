@@ -1,17 +1,9 @@
-﻿using AutoBS.Patches; // BW FINAL 4/26/2024
-using BeatmapSaveDataVersion2_6_0AndEarlier;
+﻿using AutoBS.Patches;
 using CustomJSONData.CustomBeatmap;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using UnityEngine;
-using UnityEngine.Profiling;
-using UnityEngine.UI;
-using static NoteData;
-using static SliderController.Pool;
-//using Newtonsoft.Json;//BW added to work with JSON files - rt click solution explorer and manage NuGet packages
-//using System.IO;//BW for file writing
 
 namespace AutoBS
 {
@@ -120,7 +112,6 @@ namespace AutoBS
 
         public static List<TimeGap> gaps = new List<TimeGap>();
 
-        //v1.39
         public static Version version = new Version(2, 6, 0);
 
         private static int Floor(float f)
@@ -144,74 +135,26 @@ namespace AutoBS
             bool isEnabledWalls = Utils.IsEnabledWalls();
             
             bool isEnabledRotations = Utils.IsEnabledRotations(); // only Gen 360!
-            /*
-            var booster = new UNUSED_RotationBooster
-            {
-                Enabled = Config.Instance.AddExtraRotation,
-                // optional: tune from Config
-                WindowSize = 12,
-                TargetAbsPerWindow = 60,
-                BoostLimitMin = (int)Config.Instance.RotationGroupLimit - 4,
-                BoostLimitMax = (int)Config.Instance.RotationGroupLimit + 4,
-                RestLenMin = (int)Config.Instance.RotationGroupSize / 2,
-                RestLenMax = (int)Config.Instance.RotationGroupSize
-            };
-            booster.ResetForNewMap();
-            */
-
-            //EnableSpin = Config.Instance.EnableSpin;
-
-            //Plugin.Log.Info($"SongName: {LevelUpdatePatcher.SongName} - Difficulty: {LevelUpdatePatcher.Difficulty}");
-            //Plugin.Log.Info($"PBD:  {PreferredBarDuration}");
-            //Plugin.Log.Info($"RotationGroupLimit:  {Config.Instance.RotationGroupLimit} RotationGroupSize: {Config.Instance.RotationGroupSize}"); 
-            //Plugin.Log.Info(" ");
-
-            // Find the MultiplierSet based on the RotationAngleMultiplier
-            //MultiplierSet selectedMultiplierSet = multiplierSets.FirstOrDefault(ms => ms.Multiplier == RotationAngleMultiplier);
-
-            //Plugin.Log.Info($" -- 1 First Note: {bmData.allBeatmapDataItems.OfType<ENoteData>().ToList()[0].time:F}");
-
-            //CustomBeatmapData data = (CustomBeatmapData)bmData.GetCopy(); //v1.40 this will not work now since i changed bmData to CustomBeatmapData.
-            //CustomBeatmapData data = DeepCopyCustomBeatmapData(eData); //v1.40 need to test if copying enough custom data!!!!
-
-            //Plugin.Log.Info($" -- 2 First Note: {data.allBeatmapDataItems.OfType<ENoteData>().ToList()[0].time:F}");
-
-            //LinkedList<BeatmapDataItem> dataItems = data.allBeatmapDataItems;
-
+            
             int originalWallCount = eData.Obstacles.Count;
-            Plugin.Log.Info($"[Generator] Original Wall Count: {originalWallCount}");
-
-            /*
-            foreach (ObstacleData obs in dataItems.OfType<ObstacleData>())
-            {
-                Plugin.Log.Info($"Test for Walls: {obs.time:F} i: {obs.lineIndex} l: {(int)obs.lineLayer} d: {obs.duration} w: {obs.width} h: {obs.height}");
-            }
-            */
-
-            //List<CustomSliderData> sliders = dataItems.OfType<CustomSliderData>().ToList();//Where((e) => e.sliderType == SliderData.Type.Normal).ToList();//get arcs and chains (original or added by arcitect)
+            
+            Plugin.LogDebug($"[Generator] Original Wall Count: {originalWallCount}");
 
             if (isEnabledWalls && (!Config.Instance.AllowCrouchWalls || !Config.Instance.AllowLeanWalls) || isEnabledWalls || Utils.IsEnabledArcs() || Utils.IsEnabledChains() || Config.Instance.Enable360fyer)// || Config.Instance.ShowGenerated90)
                 WallGenerator.ResetWalls(eData); // reset for each song so variables clear out - do this even if wall generator is off since need to change walls for chains and rotations etc
 
-            //List<SliderData> burstSliders = dataItems.OfType<SliderData>().Where((e) => e.sliderType == SliderData.Type.Burst).ToList();//get original arcs
-
-            //decides if there are at least 12 custom obstacles with _position
-            //bool containsCustomWalls = dataItems.Count((e) => e is CustomObstacleData d && (d.customData?.ContainsKey("_position") ?? false)) > 12;
-            //Plugin.Log.Info($"Contains custom walls: {containsCustomWalls}");
             int wallGenCount = 0;
-            // Amount of rotation events emitted
-            int eventCount = 0;
-            // Current rotation
-            int totalRotation = 0;
-            // Moments where a wall should be cut
+            int eventCount = 0; // Amount of rotation events emitted
+            int totalRotation = 0; // Current rotation
 
             /// <summary>
-            /// Rotation events by time and rotation step -2, -1, 0, 1, 2
+            /// Rotation events by time and rotation step -2, -1, 0, 1, 2. 
+            /// Moments where a wall should be cut
             /// </summary>
             List<(float time, int rotationSteps)> wallCutMoments = new List<(float, int)>();
             List<ERotationEventData> allRotations = eData.RotationEvents.Count == 0 ? new List<ERotationEventData>() : eData.RotationEvents; // added for nonGen360 maps
 
-            Plugin.Log.Info($"0 Rotation List (original) Count: {allRotations.Count}");
+            Plugin.LogDebug($"0 Rotation List (original) Count: {allRotations.Count}");
             /*
             foreach (var rot in allRotations)
             {
@@ -219,8 +162,8 @@ namespace AutoBS
                     Plugin.Log.Info($"0 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
             }
             */
-            // Previous spin direction, false is left, true is right
-            bool previousDirectionPositive = true;
+            
+            bool previousDirectionPositive = true; // Previous spin direction, false is left, true is right
 
             //BOOST Lighting Events
             int boostIteration = 0; // Counter for tracking iterations
@@ -253,15 +196,9 @@ namespace AutoBS
 
             int pairStreakRemaining = 0; // remaining mirrored-pair ties in current streak
             int pairStreakSign = +1; // +1 right, -1 left
-            //bool pairStreakInit = false;
-
-
-
-
-
 
             // --- Massive Streak Detection Setup ---
-            var flexibleRotations = new List<bool>();                     // parallel to allRotations
+            var flexibleRotations = new List<bool>();             // parallel to allRotations
             var massiveStreaks = new List<(int start, int end)>();// inclusive indices
             int DetectThreshold = 30; // how many same direction rotations to consider a "massive streak"
 
@@ -287,22 +224,12 @@ namespace AutoBS
                     int start = curRunStart;
                     int end = Math.Max(start, endExclusive - 1);
                     massiveStreaks.Add((start, end));
-                    Plugin.Log.Info($"[MassiveStreak] Added streak: {start}–{end} (len={end - start + 1})");
+                    Plugin.LogDebug($"[MassiveStreak] Added streak: {start}–{end} (len={end - start + 1})");
                 }
                 curRunStart = -1; curRunLen = 0; curRunSign = 0;
             }
 
-
             // ------------------------------------------
-
-
-
-
-
-
-
-
-
 
             int minRotationStep = (int)Config.Instance.MinRotationSize / 15;
             int maxRotationStep = (int)Config.Instance.MaxRotationSize / 15;
@@ -318,7 +245,7 @@ namespace AutoBS
             if (Config.Instance.ReduceRotationForHighSpeedHighDensityMaps && notespersecond > Config.Instance.HighDensityThreshold && njs > Config.Instance.HighSpeedThreshold)
             {
                 maxRotationStep = minRotationStep = 1;
-                Plugin.Log.Info($"[Generator] High Speed NJS: {njs} / High Density NPS: {notespersecond} map detected. Setting maxRotationStep and minRotationStep to 1.");
+                Plugin.LogDebug($"[Generator] High Speed NJS: {njs} / High Density NPS: {notespersecond} map detected. Setting maxRotationStep and minRotationStep to 1.");
             }
 
             //Each rotation is 15 degree increments so 24 positive rotations is 360. Negative numbers rotate to the left, positive to the right
@@ -348,34 +275,7 @@ namespace AutoBS
                     totalRotation += rotationStep;
                     //Plugin.Log.Info($"totalRotation: {totalRotation} at time: {time}.");
                 }
-                /*
-                //decided to add some rotations if they accumulate to 0 during an arc. so call Arcitect.ArcFixForNonGen360(sliders, data) instead of using this section;
-                //works by breaking out of the rotate() method to avoid creating a rotation event if there is a slider present)
-                if (Config.Instance.ArcFixFull)
-                {
-
-                    foreach (SliderData slider in sliders)
-                    {
-                        //if (slider.sliderType == SliderData.Type.Normal)
-                        //    Plugin.Log.Info($"Found a normal slider!"); //no sliders are found on maps that had them in the first place
-
-                        if (time < slider.time - .001f)//if rotation time is at least .001s less than slider.time (so definitely less)
-                        {
-                            break;//if the rotation is before a slider, it will be before all the remaining sliders too so can break from the foreach // lastRotationBeforeSlider = amount;//get the last rotation before or at the head of the slider
-                        }
-                        else if (time <= slider.tailTime + .001f)//can be a tiny bit .001s past the tailTime
-                        {
-                            //Plugin.Log.Info($"----- ARC FIX: Cancelled Rotation time: {time} amount: {amount * 15f}. During Slider time: {slider.time:F} type: {slider.sliderType} tailTime: {slider.tailTime}.");
-
-                            return;//exit rotate() and thus cancel the rotation
-
-                            //Plugin.Log.Info($"--- lastRotationBeforeSlider: {lastRotationBeforeSlider}. During Slider found rotation at: {ro.time:F} amount: {ro.rotation} -- # of rotations inside so far: {sliderRotations.Count}");
-
-                        }
-
-                    }
-                }
-                */
+                
                 if (minRotationStep == 2)
                 {
                     if (rotationStep == 1)
@@ -396,7 +296,7 @@ namespace AutoBS
                             rotationStep = (match.accumRotation - accumRotation) / 15;
                             accumRotation = match.accumRotation;
 
-                            Plugin.Log.Info($"[Rotate] --- Found arcTailNote so setting it's rotation to match arcHeadNote at time: {match.arcHeadNote.time:F}.");
+                            Plugin.LogDebug($"[Rotate] --- Found arcTailNote so setting it's rotation to match arcHeadNote at time: {match.arcHeadNote.time:F}.");
                         }
 
                     }
@@ -411,7 +311,6 @@ namespace AutoBS
                 previousDirectionPositive = rotationStep > 0;
                 
                 eventCount++;
-                //wallCutMoments.Add((time, rotationStep));
 
                 allRotations.Add(ERotationEventData.CreateInOrder(note.time, rotationStep * 15));
 
@@ -425,24 +324,8 @@ namespace AutoBS
                         //Plugin.Log.Info($"[Rotate] --- Adding arcHeadNote to list for later processing with tail note time: {note.headNoteArc.tailNote.time:F}.");
                     }
                 }
-                //Plugin.Log.Info($"[Rotate] Rotation added: time: {allRotations.Last().time:F} rotation: {allRotations.Last().rotation} accumRotation: {allRotations.Last().accumRotation}");
-
-                //BW Discord help said to change InsertBeatmapEventData to InsertBeatmapEventDataInOrder which allowed content to be stored to data.
-                //data.InsertBeatmapEventDataInOrder(new SpawnRotationBeatmapEventData(time, moment, rotationStep * 15.0f));// * RotationAngleMultiplier));//discord suggestion
-
-                //Plugin.Log.Info($"Rotate Event --- Time: {time:F}, Rotation: {rotationStep * 15} -- Total Rotation: {totalRotation * 15}");
-
-
-                //Plugin.Log.Info("{");
-                //Plugin.Log.Info($"\t_time: {time}");
-                //Plugin.Log.Info($"\t_type: {(int)moment+13}");
-                //Log.Info($"\t_value: {amount * 15.0f}");
-                //Plugin.Log.Info("},");
             }
             #endregion
-
-
-
 
             float beatDuration = 60f / bpm;
 
@@ -458,18 +341,20 @@ namespace AutoBS
                 barLength *= 2f;
             }
 
-            //Plugin.Log.Info($"beatDuration: {beatDuration} barLength: {barLength}");
-            //Plugin.Log.Info($"PreferredBarDuration: {PreferredBarDuration} * RotationSpeedMultiplier: {RotationSpeedMultiplier} = {PreferredBarDuration/RotationSpeedMultiplier}");
-            //Plugin.Log.Info($"RotationAngleMultiplier: {RotationAngleMultiplier}");
+            //Plugin.LogDebug($"beatDuration: {beatDuration} barLength: {barLength}");
+            //Plugin.LogDebug($"PreferredBarDuration: {PreferredBarDuration} * RotationSpeedMultiplier: {RotationSpeedMultiplier} = {PreferredBarDuration/RotationSpeedMultiplier}");
+            //Plugin.LogDebug($"RotationAngleMultiplier: {RotationAngleMultiplier}");
 
             //All in seconds
             List<ENoteData> notesAndBombs = eData.ColorNotes;
-            Plugin.Log.Info($"[Generator] Notes Count: {notesAndBombs.Count}"); // BW added to see how many notes are in the map
+            
+            Plugin.LogDebug($"[Generator] Notes Count: {notesAndBombs.Count}"); // BW added to see how many notes are in the map
+            
             notesAndBombs.AddRange(eData.BombNotes);//List<ENoteData> notes = data.GetBeatmapDataItems<ENoteData>(0).ToList(); // NOTES CONTAINS NOTES AND BOMBS
 
             notesAndBombs.Sort((a, b) => a.time.CompareTo(b.time));
 
-            Plugin.Log.Info($"[Generator] Notes Count after adding bombs: {notesAndBombs.Count}"); 
+            Plugin.LogDebug($"[Generator] Notes Count after adding bombs: {notesAndBombs.Count}"); 
             /*
             foreach (var n in notesAndBombs)
             {
@@ -480,22 +365,11 @@ namespace AutoBS
             List<ENoteData> notesInBar = new List<ENoteData>(); // CONTAINS NOTES AND BOMBS
             List<ENoteData> notesInBarBeat = new List<ENoteData>(); // CONTAINS NOTES AND BOMBS
 
-            // Moved to Patcher to avoid chains having improperly placed segments
-            /*
-            //Should remove notes first before figuring out rotations etc which are based on notes
-            if (StandardLevelDetailViewPatch.BeatSage && Config.Instance.CleanBeatSage)
-                BeatSageCleanUp.Clean(data);//(notes, obstacles) = BeatSageCleanUp.Clean(data);
-
-            // Moved to Patcher
-            if ((sliders.Count == 0 && Config.Instance.EnableArcs) || (burstSliders.Count == 0 && Config.Instance.EnableChains))
-                sliders = Arcitect.CreateSliders(data, notes, sliders, burstSliders);//update data and update sliders list for arcfix later
-            */
-
             // Align bars to first note, the first note (almost always) identifies the start of the first bar
             float firstBeatmapNoteTime = notesAndBombs[0].time;
 
 #if DEBUG
-				Plugin.Log.Info($"Setup bpm={bpm} beatDuration={beatDuration} barLength={barLength} firstNoteTime={firstBeatmapNoteTime} firstnoteGameplayType={eData.ColorNotes[0].gameplayType} firstnoteColorType={eData.ColorNotes[0].colorType}");
+			Plugin.Log.Info($"Setup bpm={bpm} beatDuration={beatDuration} barLength={barLength} firstNoteTime={firstBeatmapNoteTime} firstnoteGameplayType={eData.ColorNotes[0].gameplayType} firstnoteColorType={eData.ColorNotes[0].colorType}");
 #endif
             // get all left and all right notes (color indenpendent)
             var notesBySideLeft = new List<ENoteData>();
@@ -525,12 +399,12 @@ namespace AutoBS
             }
 
 
-            Stopwatch stopwatch = new Stopwatch();
+            //Stopwatch stopwatch = new Stopwatch();
 
 
             #region Main Loop
 
-            stopwatch.Restart();
+            //stopwatch.Restart();
 
             for (int i = 0; i < notesAndBombs.Count;)
             {
@@ -582,10 +456,6 @@ namespace AutoBS
                 if (barDivider <= 0)
                     continue;
 
-#if DEBUG
-					//StringBuilder builder = new StringBuilder();
-#endif
-
                 // Iterate all the notes in the current bar in barDivider pieces (bar is split in barDivider pieces)
                 float dividedBarLength = barLength / barDivider;
                 for (int j = 0, k = 0; j < barDivider && k < notesInBar.Count; j++)
@@ -599,18 +469,8 @@ namespace AutoBS
                          k++)
                     {
                         notesInBarBeat.Add(notesInBar[k]);
-                        //if (notes[i].time > 148f && notes[i].time < 155f)
-                        //    Plugin.Log.Info($"notesInBarBeat {k} --- Time: {notesInBar[k].time:F} Index: {notesInBar[k].lineIndex} CutDirection: {notesInBar[k].cutDirection}");
                     }
 
-                    //if (notes[i].time > 148f && notes[i].time < 155f)
-                    //    Plugin.Log.Info($"notesInBarBeat count: {notesInBarBeat.Count}");
-#if DEBUG
-						// Debug purpose
-						//if (j != 0)
-						//	builder.Append(',');
-						//builder.Append(notesInBarBeat.Count);
-#endif
 
                     if (notesInBarBeat.Count == 0)
                         continue;
@@ -654,9 +514,8 @@ namespace AutoBS
                                 rotationCount = 3;
                             else if
                                 (timeDiff >=
-                                 barLength8thRound) //barLength / 8)BW ---- This is the place where exe vs plugin maps will differ due to rounding between the 2 applications. i added rounding to 4 digits in order to match the output between the 2
+                                 barLength8thRound) //barLength / 8 - This is the place where exe vs plugin maps will differ due to rounding between the 2 applications. i added rounding to 4 digits in order to match the output between the 2
                                 rotationCount = 2;
-
                         }
                     }
 
@@ -673,7 +532,7 @@ namespace AutoBS
                     }
                     else
                     {
-                        int desiredSign = 0;   // ✅ initialize to something safe
+                        int desiredSign = 0;   // initialize to something safe
 
                         bool handledByPairLogic = false;
 
@@ -734,11 +593,6 @@ namespace AutoBS
                             previousDirectionPositive = rotationStep > 0;
                     }
 
-
-
-
-
-
                     if (isEnabledRotations)
                     {
                         //Plugin.Log.Info($"Rotation will be--------------: {rotation *15}");
@@ -764,7 +618,7 @@ namespace AutoBS
                         #region AddExtraRotations
 
                         //############################################################################
-                        //BW had to add more rotations directly in the main loop. tried it outside this main loop. the problem with being outside the loop is you cannot decide if a map is really low on rotations until after the map is finished.
+                        //had to add more rotations directly in the main loop. tried it outside this main loop. the problem with being outside the loop is you cannot decide if a map is really low on rotations until after the map is finished.
                         //add more rotation to maps without much rotation. If there are few rotations, look for directionless notes up/down/dot/bomb and make their rotation direction the same as the previous direction so that there will be increased totalRotation.
                         //Once rotation steps pass the RotationGroupLimit, make this inactive. Stay inactive for RotationGroupSize number of rotations and if there are few rotations while off, activate this again.
 
@@ -802,10 +656,8 @@ namespace AutoBS
 
                                     //Plugin.Log.Info($"[AddExtraRotation] Change to NOT ACTIVE since passed the limit!!! RotationGroupLimit: {RotationGroupLimit}\t totalRotationsGroup: {totalRotationsGroup}");
 
-                                    offSetR =
-                                        r; //need this since when passes the limit, r may be close or equal to being a multiple of RotationGroupSize. that means it could be active soon again. so need to offset r so it will stay off for RotationGroupSize rotations.(r - offSetR) will be 0 on first rotation...
+                                    offSetR = r; //need this since when passes the limit, r may be close or equal to being a multiple of RotationGroupSize. that means it could be active soon again. so need to offset r so it will stay off for RotationGroupSize rotations.(r - offSetR) will be 0 on first rotation...
                                 }
-
                             }
                             else //inactive
                             {
@@ -828,13 +680,11 @@ namespace AutoBS
 
                                         if (alternateParams)
                                         {
-                                            RotationGroupLimit +=
-                                                4; //change the limit size for variety //could not alter RotationGroupSize since causing looping problem
+                                            RotationGroupLimit += 4; //change the limit size for variety //could not alter RotationGroupSize since causing looping problem
                                         }
                                         else
                                         {
-                                            RotationGroupLimit -=
-                                                4; //change the limit size for variety //could not alter RotationGroupSize since causing looping problem
+                                            RotationGroupLimit -= 4; //change the limit size for variety //could not alter RotationGroupSize since causing looping problem
                                         }
 
                                         alternateParams =
@@ -854,18 +704,6 @@ namespace AutoBS
                                 prevRotationPositive = false;
 
                         }
-                        /*
-                        else if (Config.Instance.AddExtraRotation && Config.Instance.AddExtraRotationV2)
-                        {
-                            // 2) If you want to pause boosting near arcs/per-object rotations, gate it:
-                            //bool inArcWindow = ArcCovers(note.time) || PerObjectRotationNearby(note.time);
-                            //bool eligibleWindow = true;// !inArcWindow;
-
-                            // 3) Let the booster optionally nudge the *sign* / magnitude for directionless notes:
-                            booster.MaybeBoost(lastNote, ref rotationStep);
-                        }
-                        */
-                        //############################################################################
 
                         #endregion
 
@@ -882,55 +720,8 @@ namespace AutoBS
                         //Or a value of 3 but only if afterLastNote.time - lastNote.time >= barLength. This means a full bar of time with no notes in between.
                         //In most maps, rotationStep = 3 is unlikely unless there are big gaps between note groups, like in slower maps or maps with intentional large gaps.
 
-
-                        /*
-                        if (rotationStep > 0 && sameDirectionStreak >= 0)
-                            sameDirectionStreak++;
-                        else if (rotationStep < 0 && sameDirectionStreak <= 0)
-                            sameDirectionStreak--;
-                        else if (rotationStep > 0)
-                            sameDirectionStreak = 1;
-                        else if (rotationStep < 0)
-                            sameDirectionStreak = -1;
-                        else sameDirectionStreak = 0;
-
-                        if (Math.Abs(sameDirectionStreak) >= maxSameDirectionStreak && //too many in same direction
-                           (lastNote.cutDirection == NoteCutDirection.Up ||
-                            lastNote.cutDirection == NoteCutDirection.Down ||
-                            lastNote.cutDirection == NoteCutDirection.Any ||
-                            lastNote.cutDirection == NoteCutDirection.None)) //only change rotation if using a non-directional note. if remove this will allow a lot more rotations
-                        {
-                            Plugin.Log.Info($"[Generator] Same Direction Streak: {sameDirectionStreak} (Max: {maxSameDirectionStreak})");
-
-                            rotationStep *= -1; //reverse direction
-                            if (rotationStep >= 0)
-                                sameDirectionStreak = 1;
-                            else if (rotationStep <= 0)
-                                sameDirectionStreak = -1;
-                            if (r % 3 == 0 && maxSameDirectionStreak <= Config.Instance.MaxSameDirectionStreak + 5) maxSameDirectionStreak += 5;
-                            else if (r % 5 == 0 && maxSameDirectionStreak > Config.Instance.MaxSameDirectionStreak - 5) maxSameDirectionStreak -= 5;
-                            else maxSameDirectionStreak = Config.Instance.MaxSameDirectionStreak;
-                        }
-                        */
-
-
-
-                        
-
-
-
-
-
-
                         Rotate(lastNote, rotationStep); //lastNote.time, rotationStep);
 
-                        /*
-                        if (Config.Instance.AddExtraRotation && Config.Instance.AddExtraRotationV2)
-                        {
-                            // 5) Tell the booster what actually happened so it can update its window/net drift:
-                            booster.TrackApplied(rotationStep);
-                        }
-                        */
                         r++;
 
                         // --- Streak detector driven by emitted events ---
@@ -963,22 +754,17 @@ namespace AutoBS
                                 curRunLen = 1;
                             }
 
-                            // optional debug every N events
-                            //if ((newIdx < 5) || (newIdx % 50 == 0))
-                            //    Plugin.Log.Info($"[MassiveStreakDbg]  note Idx={newIdx}, time={allRotations[newIdx].time:F}, deg={emittedDeg}, flex={eventFlex[newIdx]}");
-
                             lastProcessedEvtIdx = newIdx;
                         }
 
                     }
-
 
                     //Plugin.Log.Info($"Total Rotations: {totalRotation*15} Time: {lastNote.time:F} Rotation: {rotation*15}");
 
 
                     #region Boost Lighting
                     // Works on standard and 360 gen and non-gen maps
-                    //Creates a boost lighting event. if ON, will set color left to boost color left new color etc. Will only boost a color scheme that has boost colors set so works primarily with COLORS > OVERRIDE DEFAULT COLORS. Or an authors color scheme must have boost colors set (that will probably never happen since they will have boost colors set if they use boost events).
+                    // Creates a boost lighting event. if ON, will set color left to boost color left new color etc. Will only boost a color scheme that has boost colors set so works primarily with COLORS > OVERRIDE DEFAULT COLORS. Or an authors color scheme must have boost colors set (that will probably never happen since they will have boost colors set if they use boost events).
 
                     if (Config.Instance.BoostLighting && !TransitionPatcher.MapAlreadyUsesEnvColorBoost)
                     {
@@ -996,71 +782,6 @@ namespace AutoBS
                         if (boostIteration == 33) { boostIteration = 0; }
                     }
                     #endregion
-
-                    //This is not good. It creates a combination of left and right notes makeing them often swing in the same direction consecutively.
-                    #region OneSaber UNUSED
-                    /*
-                    if (OnlyOneSaber)
-                    {
-                        foreach (NoteData nd in notesInBarBeat)
-                        {
-                            if (LeftHandedOneSaber)
-                            {
-                                if (nd.colorType == (rotation > 0 ? ColorType.ColorA : ColorType.ColorB)) // If rotation is positive (> 0), it returns ColorType.ColorA otherwise ColorType.ColorB. remove the note if it matches that color since may be hard to hit
-                                {
-                                    // Remove note
-                                    dataItems.Remove(nd);
-                                }
-                                else
-                                {
-                                    // mirror right hand note to ColorA
-                                    if (nd.colorType == ColorType.ColorB)
-                                    {
-                                        nd.Mirror(data.numberOfLines);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if (nd.colorType == (rotation < 0 ? ColorType.ColorB : ColorType.ColorA)) // If rotation is negative (< 0), it returns ColorType.ColorB otherwise ColorType.ColorA. remove the note if it matches that color since may be hard to hit
-                                {
-                                    // Remove note
-                                    dataItems.Remove(nd);
-                                }
-                                else
-                                {
-                                    // mirror left hand note to ColorA
-                                    if (nd.colorType == ColorType.ColorA)
-                                    {
-                                        nd.Mirror(data.numberOfLines);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    */
-                    #endregion
-
-                    /*
-                    if (notes[i].time > 148f && notes[i].time < 155f)
-                    {
-                        foreach (NoteData note in notesInBar)
-                        {
-                            Plugin.Log.Info(
-                                $"Final notesInBar Note: {note.time} {note.lineIndex} {note.cutDirection} ");
-                        }
-
-                        foreach (NoteData note in notesInBarBeat)
-                        {
-                            Plugin.Log.Info(
-                                $"Final notesInBarBeat Note: {note.time} {note.lineIndex} {note.cutDirection} ");
-                        }
-
-                        Plugin.Log.Info(
-                            $"Walltime: {currentBarBeatStart} ");
-                    }
-
-                    */
 
                     if (isEnabledWalls && originalWallCount < 5000)// && !BeatmapDataTransformHelperPatcher.NoodleProblemNotes && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles)
                     {
@@ -1091,139 +812,16 @@ namespace AutoBS
 #if DEBUG
 					//Plugin.Log.Info($"[{currentBarStart + firstBeatmapNoteTime}({(currentBarStart + firstBeatmapNoteTime) / beatDuration}) -> {currentBarEnd + firstBeatmapNoteTime}({(currentBarEnd + firstBeatmapNoteTime) / beatDuration})] count={notesInBar.Count} segments={builder} barDiviver={barDivider}");
 #endif
-            }//End main for loop over all notes---------------------------------------------------------------
+            }
+            //End main for loop over all notes
+
+            // -----------------------------------------------------------------------------------------------
 
             CloseSameDirectionStreak(allRotations.Count); // close trailing run safely
-            Plugin.Log.Info($"[MassiveStreak] Total detected streaks: {massiveStreaks.Count}");
 
+            Plugin.LogDebug($"[MassiveStreak] Total detected streaks: {massiveStreaks.Count}");
 
-
-            //AddRotationsIntoMassiveStreak(allRotations, flexibleRotations, massiveStreaks);
-
-
-
-            // CreateArcTailNoteRotations(); // Testing doing all arc work with in ArcFix() instead of here
-
-
-            // REMOVE!!!!????? not needed?
-            /*
-            void CreateArcTailNoteRotations() //If an arc head note has a rotation, make the arc tail note have the same rotation as the head note. not all tail notes get a rotation event typically since rotation events are only created for the last note in a group of notes
-            {   
-                
-                //foreach (var rot in allRotations)
-                //{
-                //    Plugin.Log.Info($"allRotations - Time: {rot.time:F} - Rotation: {rot.rotation} - Accum Rotation: {rot.accumRotation}");
-                //}
-                
-
-                Plugin.Log.Info($"[RotTail] Start ----------------------");
-
-                // if arcsAlreadyProcessed are the same references that are in eData.Arcs
-                //var processed = new HashSet<ESliderData>(arcsAlreadyProcessed); // reference-based
-                //var potentialArcsToProcess = eData.Arcs
-                //    .Where(a => !processed.Contains(a))
-                //    .OrderBy(a => a.time)
-                //    .ToList();
-                // Plugin.Log.Info($"[RotTail] Found {potentialArcsToProcess.Count} arcs with tailNotes that may need rotation events added (removed {processed.Count} already processed arcs).");
-
-                // Pre-group rotation events by rounded time
-                var sameTimeLookup = allRotations
-                     .GroupBy(ev => MathF.Round(ev.time, 3))
-                     .ToDictionary(g => g.Key, g => g.First()); // ensure only one event per key
-
-                // Extract a time array for fast binary search on "previous event"
-                var rotTimes = allRotations.Select(ev => ev.time).ToArray();
-
-                int FindPrevEventIndex(float t)
-                {
-                    // returns index of the last event with time < t (with EPS)
-                    int lo = 0, hi = rotTimes.Length - 1, ans = -1;
-                    while (lo <= hi)
-                    {
-                        int mid = (lo + hi) >> 1;
-                        if (rotTimes[mid] <= t - 0.001f) { ans = mid; lo = mid + 1; }
-                        else hi = mid - 1;
-                    }
-                    return ans; // -1 means "none before t"
-                }
-
-                int GetPrevAccum(float t)
-                {
-                    int idx = FindPrevEventIndex(t);
-                    return idx >= 0 ? allRotations[idx].accumRotation : 0;
-                }
-
-                int count = 0;
-
-                // Now check arcs
-                foreach (var arc in eData.Arcs)
-                {
-                    float tailTime = arc.tailTime;
-                    float tailKey = MathF.Round(tailTime, 3);
-
-                    if (sameTimeLookup.TryGetValue(tailKey, out var existingTail))
-                    {
-                        Plugin.Log.Info($"[RotTail] --- Found rotation on arc tailNote at {tailTime:F3}s → delta:{existingTail.rotation}, accum:{existingTail.accumRotation} so don't need to add a new rotation.");
-                        continue; // do not modify if one already exists
-                    }
-
-                    float headTime = arc.time;
-                    float headKey = MathF.Round(headTime, 3);
-
-                    int? desiredAccum = null;
-
-                    if (sameTimeLookup.TryGetValue(headKey, out var existingHead))
-                    {
-                        Plugin.Log.Info($"[RotTail] - Found rotation on arc headNote at {headTime:F3}s → delta:{existingHead.rotation}, accum:{existingHead.accumRotation} so use it fix tailNote rotation at {arc.tailTime:F}.");
-                        desiredAccum = existingHead.accumRotation;
-                    }
-                    else
-                    {
-                        // Accumulation just before the head time
-                        desiredAccum = GetPrevAccum(headTime);
-                    }
-
-                    // prev accum just BEFORE the TAIL time
-                    int? prevAccumBeforeTail = GetPrevAccum(tailTime);
-
-                    if (desiredAccum == null || prevAccumBeforeTail == null)
-                    {
-                        Plugin.Log.Warn($"[RotTail] Cannot determine desired or previous accumulation for arc tailNote at {tailTime:F3}s, skipping.");
-                        continue;
-                    }
-
-                    // delta needed at tail to reach desired accum
-                    int newDelta = desiredAccum.Value - prevAccumBeforeTail.Value;
-
-                    // Construct explicitly (don’t use CreateInOrder here)
-                    var newEvt = new ERotationEventData
-                    {
-                        time = tailTime,
-                        rotation = newDelta,
-                        accumRotation = prevAccumBeforeTail.Value + newDelta
-                    };
-                    allRotations.Add(newEvt);
-                    // Keep the single-key invariant up-to-date for subsequent iterations
-                    sameTimeLookup[tailKey] = newEvt;
-                    count++;
-
-                    Plugin.Log.Info($"[RotTail] {count} Inserted new rotation event for arc tailNote at: {newEvt.time:F}s → delta:{newEvt.rotation} accum: {newEvt.accumRotation}, prevAccum:{prevAccumBeforeTail}, desiredAccum:{desiredAccum} (from arc head at: {arc.time:F}");
-                }
-
-                allRotations = allRotations.OrderBy(ev => ev.time).ToList();
-
-                // Recompute accumRotation for all events since we may have inserted new ones in the middle (this is needed)
-                int prevRot = 0;
-                foreach (var rot in allRotations)
-                {
-                    rot.accumRotation = prevRot + rot.rotation;
-                    prevRot = rot.accumRotation;
-                }
-
-                Plugin.Log.Info($"[RotTail] Finished processing arcs tails, total new rotation events added: {count} for a full total of {allRotations.Count} --------------- ");
-            }
-            */
-            Plugin.Log.Info($"1 Rotation List (after main loop) Count: {allRotations.Count}");
+            Plugin.LogDebug($"1 Rotation List (after main loop) Count: {allRotations.Count}");
 
             (float accumRot, float time) high = (0,0);
             (float accumRot, float time) low = (0, 0);
@@ -1239,83 +837,28 @@ namespace AutoBS
                 //if (rot.time < 20)
                 //    Plugin.Log.Info($"2 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
             }
-            Plugin.Log.Info($"2 Rotation Events - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360} - Largest Neg Rot: {low.accumRot} Time: {low.time:F} - Largest Pos Rot: {high.accumRot} Time: {high.time:F} - Final Rotation: {endRot}");
+            Plugin.LogDebug($"2 Rotation Events - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360} - Largest Neg Rot: {low.accumRot} Time: {low.time:F} - Largest Pos Rot: {high.accumRot} Time: {high.time:F} - Final Rotation: {endRot}");
 
-            Plugin.Log.Info(
-                $" ------- Main Loop time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F} Called WallGenerator {wallGenCount} times. Wall Count: {eData.Obstacles.Count}");
-            stopwatch.Stop();
+            //Plugin.LogDebug($" ------- Main Loop time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F} Called WallGenerator {wallGenCount} times. Wall Count: {eData.Obstacles.Count}");
+            
+            //stopwatch.Stop();
 
             #endregion
-
-
-            /*
-            // Remove bombs from walls
-            // Do this before add tons of extension walls. Test if can add this somewhere else where a loop is already being done such as when add the wall in the first place --- also doesn't check for bombs on the other side of walls -
-            foreach (ObstacleData obs in data.allBeatmapDataItems.OfType<ObstacleData>())
-            {
-                if (bomb.time >= obs.time + WallGenerator.WallFrontCut &&
-                    bomb.time <= obs.time + obs.duration + WallGenerator.WallBackCut)
-                {
-                    if ((bomb.lineIndex >= obs.lineIndex && bomb.lineIndex <= obs.lineIndex + obs.width)
-                        && (bomb.noteLineLayer >= obs.lineLayer)) // may not work for mapping extension lineIndex and width test!
-                    {
-                        dataItems.Remove(bomb);
-                        //Plugin.Log.Info($"Remove Bomb: {nd.time:F}");
-                    }
-                }
-            }
-            */
-            //List<(float time, int rotation)> finalRotations = allRotations.ToList(); // is a reference if don't use ToList()
-
-            //FIX!!!!!!!!!!!!!!!!!!!!!!!!!
-            //if (allRotations.Count > 0)//FIX!!!!! not using the in-memory 360fyer map. its using the standard map. && TransitionPatcher.characteristicSerializedName == "Generated360Degree")
-            //{
-            //    eData.RotationEvents = allRotations;
-            //    Plugin.Log.Info($"Rotation Count after add allRotations (with count: {allRotations.Count()}): {eData.RotationEvents.Count}");
-            //}
-            // otherwise the map was a non-gen 360 or 90 map with its own rotations so don't replace them.
 
             #region Optimize FOV
 
             bool wallsAdded = originalWallCount <= 5000 && ( WallGenerator._generatedStandardWalls.Count > 0 || WallGenerator._generatedExtensionWalls.Count > 0);
-            Plugin.Log.Info($"WallGenerator._generatedStandardWalls: {WallGenerator._generatedStandardWalls.Count} WallGenerator._generatedExtensionWalls: {WallGenerator._generatedExtensionWalls.Count}");
+            Plugin.LogDebug($"WallGenerator._generatedStandardWalls: {WallGenerator._generatedStandardWalls.Count} WallGenerator._generatedExtensionWalls: {WallGenerator._generatedExtensionWalls.Count}");
 
             if (Utils.IsEnabledFOV(wallsAdded) && allRotations.Count > 0) // use this for nonGen360 maps with wall gen since old 360fyer generated maps have wild rotations that cause walls to reverse through the frame. this will not help some walls blocking player vision that are built into 360fyer old generated output
             {
-                //if (allRotations.Count == 0 &&
-                //    (TransitionPatcher.characteristicSerializedName == "360Degree" || TransitionPatcher.characteristicSerializedName == "90Degree")) // if no rotations, then must be nonGen360 map so need to populate finalRotations
-               // {
-
-
-                    //v1.34
-                    /*
-                    float prevRotate = 0;
-                    foreach (var rotation in data.allBeatmapDataItems.OfType<SpawnRotationBeatmapEventData>().ToList())
-                    {
-                        int rot = (int)((rotation.rotation - prevRotate));
-                        finalRotations.Add((rotation.time, rot));
-                        prevRotate = rotation.rotation;
-                        //Plugin.Log.Info($"finalRotations - time: {rotation.time} rotation: {rot}");
-                    }*/
-                    //v1.39
-                    /*
-                    foreach (var rotation in data.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Where(e => e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15).ToList())
-                    {
-                        int rot = SpawnRotationValueToDegrees(rotation.value);
-                        finalRotations.Add((rotation.time, rot));
-                        //Plugin.Log.Info($"finalRotations - time: {rotation.time} rotation: {rot}");
-                    }
-                    */
-                    //finalRotations = eData.RotationEvents.ToList(); 
-                //}
-                
                 allRotations.Sort((a, b) => a.time.CompareTo(b.time)); // Sort the rotations by time
 
                 OptimizeRotationsToFOV optimize = new OptimizeRotationsToFOV(
                     allRotations,
                     Config.Instance.TimeWindow,
                     Config.Instance.FOV
-                ); // Create an instance of BeatMapModifier - wallCutMoments has all the rotation events
+                );
                 
 
                 allRotations = optimize.FOVFix(); // Call the ModifyRotations method to adjust the rotations and get the modified list
@@ -1329,12 +872,9 @@ namespace AutoBS
 
                 if (!Config.Instance.Wireless360 && optimize.RotationsWereAdjusted)
                     needsRotationLimitAdjustment = true;
-
-                //if (TransitionPatcher.characteristicSerializedName == "360Degree" || TransitionPatcher.characteristicSerializedName == "90Degree")
-                //    optimize.UpdateBeatmapDataWithRotations(data);
             }
             
-            Plugin.Log.Info($"3 Rotation List (after FOV)  Count: {allRotations.Count}");
+            Plugin.LogDebug($"3 Rotation List (after FOV)  Count: {allRotations.Count}");
             /*
             foreach (var rot in allRotations)
             {
@@ -1349,15 +889,13 @@ namespace AutoBS
                 allRotations.Count() > 0 &&
                 TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
             {
-                //1.40
-                //CustomBeatmapData temp = new CustomBeatmapData(4, new CustomData(), new CustomData(), new CustomData(), new Version(2, 6, 0)); // i added this without really thinking if i needed to use data instead of temp
                 allRotations = Arcitect.ArcFix(allRotations, eData); // this is for Gen 360 only -- Clearing the list is not needed according to AI. nonGen maps use arcFix() from HarmonyPatches.cs
 
                 if (!Config.Instance.Wireless360)
                     needsRotationLimitAdjustment = true;
             }
             else
-                Plugin.Log.Info($"ArcFix not enabled or not applicable. Starting Game Mode: {TransitionPatcher.SelectedSerializedName} - Characteristic: {TransitionPatcher.SelectedSerializedName}");
+                Plugin.LogDebug($"ArcFix not enabled or not applicable. Starting Game Mode: {TransitionPatcher.SelectedSerializedName} - Characteristic: {TransitionPatcher.SelectedSerializedName}");
 
 
             if (isEnabledRotations)
@@ -1367,7 +905,7 @@ namespace AutoBS
 
                 if (needsRotationLimitAdjustment)
                 {
-                    Plugin.Log.Info($"Rotation limits were adjusted.");
+                    Plugin.LogDebug($"Rotation limits were adjusted.");
                     allRotations = AdjustRotationsToLimit(allRotations);
                 }
             }
@@ -1375,7 +913,7 @@ namespace AutoBS
             allRotations.Sort((a, b) => a.time.CompareTo(b.time));
             allRotations = ERotationEventData.RecalculateAccumulatedRotations(allRotations);
 
-            Plugin.Log.Info($"3 Rotation List (after ArcFix)  Count: {allRotations.Count} (has accurate accum)");
+            Plugin.LogDebug($"3 Rotation List (after ArcFix)  Count: {allRotations.Count} (has accurate accum)");
             /*
             foreach (var rot in allRotations)
             {
@@ -1397,11 +935,10 @@ namespace AutoBS
 
             #region Wall Generator
 
-            //Plugin.Log.Info($"Utils.IsEnabledExtensionWalls(): {Utils.IsEnabledExtensionWalls()} EnableMappingExtensionsWallsGenerator: {Config.Instance.EnableMappingExtensionsWallsGenerator} originalWallCount: {originalWallCount}");
             //outside the loop. so not using wallTime and not on the beat
             if (Utils.IsEnabledExtensionWalls() && Config.Instance.EnableMappingExtensionsWallsGenerator && originalWallCount < 5000)// && !BeatmapDataTransformHelperPatcher.NoodleProblemNotes && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles) // turn off automated extended walls for maps already using mapping extensions
             {
-                stopwatch.Restart();
+                //stopwatch.Restart();
 
                 if (wallCutMoments.Count > 0)
                     gaps = FindGapsUsingRotations(wallCutMoments, 2.0f);
@@ -1415,9 +952,8 @@ namespace AutoBS
                 WallGenerator.MegaWalls(gaps);
 
 
-                Plugin.Log.Info(
-                    $" ------- Create Particle & Floor Walls Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}");
-                stopwatch.Stop();
+                //Plugin.LogDebug($" ------- Create Particle & Floor Walls Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}");
+                //stopwatch.Stop();
             }
 
             if (originalWallCount < 5000)
@@ -1433,19 +969,19 @@ namespace AutoBS
                 }
                 else
                 {
-                    Plugin.Log.Info($"LeanCrouchWallRemoval() NOT CALLED!!");
+                    Plugin.LogDebug($"LeanCrouchWallRemoval() NOT CALLED!!");
                 }
 
                 eData.RotationEvents = WallGenerator.RemoveCrouchWallRotations(eData.RotationEvents);
 
 
-                stopwatch.Restart();
+                //stopwatch.Restart();
 
                 if (Utils.IsEnabledChains())// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))
                     WallGenerator.MoveWallsBlockingChainTail(eData);
                 else
                 {
-                    Plugin.Log.Info(
+                    Plugin.LogDebug(
                         $"MoveWallsBlockingChainTail() NOT CALLED!!");
                 }
 
@@ -1453,12 +989,11 @@ namespace AutoBS
                     WallGenerator.MoveWallsBlockingArc(eData);
                 else
                 {
-                    Plugin.Log.Info(
+                    Plugin.LogDebug(
                         $"MoveWallsBlockingArc() NOT CALLED!!");
                 }
 
-                Plugin.Log.Info(
-                    $" ------- MoveWallsBlockingChainTail() & MoveWallsBlockingArc() time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}");
+                //Plugin.LogDebug($" ------- MoveWallsBlockingChainTail() & MoveWallsBlockingArc() time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}");
 
 
                 if (isEnabledWalls && !TransitionPatcher.MapAlreadyUsesMappingExtensions && Config.Instance.EnableMappingExtensionsWallsGenerator)
@@ -1467,25 +1002,12 @@ namespace AutoBS
                 if (TransitionPatcher.SelectedSerializedName == "360Degree" || TransitionPatcher.SelectedSerializedName == "90Degree")
                 {
                     List<(float time, int rotationSteps)> wallCutMoments2 = new List<(float, int)>();
-                    //v1.34
-                    /*
-                    float previousRotation = 0;
-                    foreach (var rotation in data.allBeatmapDataItems.OfType<SpawnRotationBeatmapEventData>().ToList())
-                    {
-                        int rot = (int)((rotation.rotation - previousRotation) / 15);
-                        wallCutMoments2.Add((rotation.time, rot));
-                        previousRotation = rotation.rotation;
-                        //Plugin.Log.Info($"wallCutMoments2 - time: {rotation.time} rotation: {rot}");
-                    }*/
+
                     foreach (var rotation in eData.RotationEvents)
                     {
                         wallCutMoments2.Add((rotation.time, SpawnRotationDegreesToSteps(rotation.rotation)));
                         //Plugin.Log.Info($"wallCutMoments2 - time: {rotation.time} rotation: {(int)(rotation.floatValue)}");
                     }
-
-                    //Plugin.Log.Info($" ------- WallRemovalForRotations for nonGen360/90 maps Rotation Count: {wallCutMoments2.Count} 1st rotation: {wallCutMoments2[0].Item1} - {wallCutMoments2[0].Item2} ");
-
-                    //WallGenerator.WallRemovalForRotations(wallCutMoments2);
                 }
                 else if (wallCutMoments.Count > 0)
                 {
@@ -1497,7 +1019,6 @@ namespace AutoBS
                     //WallGenerator.WallRemovalForRotations(wallCutMoments);
                 }
 
-                //if (Config.Instance.EnableWallGenerator)
                 WallGenerator.FinalizeWallsToMap(eData);
             }
             else
@@ -1515,7 +1036,7 @@ namespace AutoBS
             eData.ColorNotes.RemoveAll(b => bombsToRemove.Contains(b)); // remove bombs
             eData.ColorNotes = eData.ColorNotes.OrderBy(n => n.time).ToList();
 
-            Plugin.Log.Info($" --- Remaining Walls --- {eData.Obstacles.Count()}");
+            Plugin.LogDebug($" --- Remaining Walls --- {eData.Obstacles.Count()}");
 
             #endregion
 
@@ -1554,7 +1075,6 @@ namespace AutoBS
                                 rotsToRemove.Add(rotEvt);
 
                                 //Plugin.Log.Info($"Removed bomb {bomb.time:F2}, and rotation at {rotEvt.time:F2} (rot={rotAmount})");
-
                                 break;
                             }
                         }
@@ -1572,115 +1092,43 @@ namespace AutoBS
                 }
 
                 eData.RotationEvents = ERotationEventData.RecalculateAccumulatedRotations(eData.RotationEvents);
-
-                //old working but doesn't remove rotations as well
-                /*
-                for (int i = eData.BombNotes.Count - 1; i >= 0; i--)
-                {
-                    var bomb = eData.BombNotes[i];
-                    foreach ((float cutTime, int cutAmount) in wallCutMoments)
-                    {
-                        if (bomb.time >= cutTime - WallGenerator.WallFrontCut &&
-                            bomb.time < cutTime + WallGenerator.WallBackCut)
-                        {
-                            if ((bomb.line <= 2 && cutAmount < 0) || (bomb.line >= 1 && cutAmount > 0))
-                            {
-                                eData.BombNotes.RemoveAt(i);
-                                //Plugin.Log.Info($"Remove Bomb: {bomb.time:F}");
-                                break; // break inner foreach to avoid using removed bomb
-                            }
-                        }
-                    }
-                }
-                */
             }
 
             #endregion
 
-            //Plugin.Log.Info($"Emitted {eventCount} rotation events");
-            //Plugin.Log.Info($"LimitRotations: {LimitRotations}");
-            //Plugin.Log.Info($"BottleneckRotations: {BottleneckRotations}");
-
-            //v1.34
-            //int rotationEventsCount = data.allBeatmapDataItems.OfType<SpawnRotationBeatmapEventData>().Count();
-            //v1.39
-            //int rotationEventsCount = eData.RotationEvents.Count();
-
-            //int obstaclesCount = data.allBeatmapDataItems.OfType<ObstacleData>().Count();
-
-            Plugin.Log.Info($"Rotation Events Count: {eData.RotationEvents.Count()}");
-            //Plugin.Log.Info($"obstaclesCount: {obstaclesCount}");
-
-            //if (LevelUpdatePatcher.BeatSage)
-            //    BeatSageCleanUp(notes, new List<ObstacleData>(dataItems.OfType<ObstacleData>()));
-            /*
-            #region LightAutoMapper
-
-            if (Utils.IsEnabledLighting() && Config.Instance.EnableLightAutoMapper)
-            {
-                stopwatch.Restart();
-
-                LightAutoMapper.Start(data);
-
-                Plugin.Log.Info(
-                $" ------- LightAutoMapper time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}");
-                stopwatch.Stop();
-            }
-
-            #endregion
-            */
-
-            /*
-            foreach (var light in data.allBeatmapDataItems.OfType<BasicBeatmapEventData>())
-            {
-                Plugin.Log.Info($"Final Light Events: _time: {light.time:F}, _type: {light.basicBeatmapEventType}, _value: {light.value}");
-            }
-
-            float prevRot = 0;
-            foreach (var rotation in data.allBeatmapDataItems.OfType<SpawnRotationBeatmapEventData>())
-            {
-                Plugin.Log.Info($"Final Rotations: time: {rotation.time:F} rotation: {rotation.rotation - prevRot} -- Total Rotation: {rotation.rotation}");
-                prevRot = rotation.rotation;
-            }
-           
-            foreach (var not in notesAndBombs)
-            {
-                if (not.time > 0 && not.time < 33)
-                    Plugin.Log.Info($"Final Notes: time: {not.time:F} dir: {not.cutDirection} index: {not.line} layer: {not.layer} color: {not.colorType}");
-            }
-             */
-
+            Plugin.Log.Info($"[Generator] Rotation Events Count: {eData.RotationEvents.Count()}");
+            
             bool beatSageMapNotAltered = (TransitionPatcher.IsBeatSageMap && !BeatSageCleanUp.DisableScoreSubmission) || !TransitionPatcher.IsBeatSageMap;
-            Plugin.Log.Info($"[Generator] 1 beatSageMapNotAltered: {beatSageMapNotAltered}.");
+            Plugin.LogDebug($"[Generator] 1 beatSageMapNotAltered: {beatSageMapNotAltered}.");
             
             bool arcsEnabled = Utils.IsEnabledArcs();
             bool arcsNotAdded = (arcsEnabled && TransitionPatcher.MapAlreadyUsesArcs) || !arcsEnabled;
-            Plugin.Log.Info($"[Generator] 2 arcsNotAdded: {arcsNotAdded}.");
+            Plugin.LogDebug($"[Generator] 2 arcsNotAdded: {arcsNotAdded}.");
 
             bool chainsEnabled = Utils.IsEnabledChains();
             bool chainsNotAdded = (chainsEnabled && TransitionPatcher.MapAlreadyUsesChains) || !chainsEnabled;
-            Plugin.Log.Info($"[Generator] 3 chainsNotAdded: {chainsNotAdded}.");
+            Plugin.LogDebug($"[Generator] 3 chainsNotAdded: {chainsNotAdded}.");
 
             var rotAfter = eData.RotationEvents
                 .OrderBy(r => r.time)
                 .Select(r => (t: MathF.Round(r.time, 4), rot: r.rotation))
                 .ToList();
             bool rotationsNotchanged = originalRotations.Count == rotAfter.Count && originalRotations.SequenceEqual(rotAfter); //compares starting rotations to final rotations
-            Plugin.Log.Info($"[Generator] 4 rotationsNotchanged: {rotationsNotchanged} (if they exist).");
+            Plugin.LogDebug($"[Generator] 4 rotationsNotchanged: {rotationsNotchanged} (if they exist).");
 
             bool lightsNotAdded = (Utils.IsEnabledLighting() && !LightAutoMapper.LightEventsAdded) || !Utils.IsEnabledLighting();
-            Plugin.Log.Info($"[Generator] 5 lightsNotAdded: {lightsNotAdded}.");
+            Plugin.LogDebug($"[Generator] 5 lightsNotAdded: {lightsNotAdded}.");
 
             bool boostNotAdded = (Config.Instance.BoostLighting && eData.ColorBoostEvents.Count == 0) || TransitionPatcher.MapAlreadyUsesEnvColorBoost;
-            Plugin.Log.Info($"[Generator] 6 boostNotAdded: {boostNotAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {TransitionPatcher.MapAlreadyUsesEnvColorBoost}");
+            Plugin.LogDebug($"[Generator] 6 boostNotAdded: {boostNotAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {TransitionPatcher.MapAlreadyUsesEnvColorBoost}");
 
             bool wallsNotAdded = (Utils.IsEnabledWalls() && originalWallCount == eData.Obstacles.Count) || !Utils.IsEnabledWalls();
-            Plugin.Log.Info($"[Generator] 7 wallsNotAdded: {wallsNotAdded}.");
+            Plugin.LogDebug($"[Generator] 7 wallsNotAdded: {wallsNotAdded}.");
 
             if (beatSageMapNotAltered && arcsNotAdded && chainsNotAdded && rotationsNotchanged && lightsNotAdded && boostNotAdded && wallsNotAdded)
             {
                 OriginalMapAltered = false;
-                Plugin.Log.Info("[Generator] 8 Original map NOT altered! So original untouched map will be passed through!");
+                Plugin.Log.Info("[Generator] Original map NOT altered! So original untouched map will be passed through!");
                 if (eData.OriginalCBData != null)
                 {
                     // This is a real CustomJSON map → build CustomBeatmapData
@@ -1694,9 +1142,9 @@ namespace AutoBS
             else
                 OriginalMapAltered = true;
 
-            Plugin.Log.Info("[Generator] 8 Original map altered! Altered map will be passed through!");
+            Plugin.LogDebug("[Generator] Original map altered! Altered map will be passed through!");
 
-            Plugin.Log.Info($"[Generator] Starting Per Object Rotations after this moment:");
+            Plugin.LogDebug($"[Generator] Starting Per Object Rotations after this moment:");
             /*
             foreach (var rot in allRotations)
             {
@@ -1706,7 +1154,7 @@ namespace AutoBS
             */
             ConvertEditableCBD.ApplyPerObjectRotations(eData);
 
-            Plugin.Log.Info($"[Generator] EditableCBD map version: {eData.Version} - notes: {eData.ColorNotes.Count()} bombs: {eData.BombNotes.Count()} arcs: {eData.Arcs.Count()} chains: {eData.Chains.Count()} obstacles: {eData.Obstacles.Count()} events: {eData.BasicEvents.Count()} customEvents: {eData.CustomEvents.Count()}.");
+            Plugin.LogDebug($"[Generator] EditableCBD map version: {eData.Version} - notes: {eData.ColorNotes.Count()} bombs: {eData.BombNotes.Count()} arcs: {eData.Arcs.Count()} chains: {eData.Chains.Count()} obstacles: {eData.Obstacles.Count()} events: {eData.BasicEvents.Count()} customEvents: {eData.CustomEvents.Count()}.");
 
 
             if (eData.OriginalCBData != null)
@@ -1716,7 +1164,7 @@ namespace AutoBS
 
                 // (Optional but wise) sanitize numbers if you ever mix doubles/longs
                 // NormalizeCustomJson(cbd.customData); etc.
-                Plugin.Log.Info($"[Generator] Final Result CustomBeatmapData after Generator - notes: {cbd.allBeatmapDataItems.OfType<NoteData>().Count()} obstacles: {cbd.allBeatmapDataItems.OfType<ObstacleData>().Count()} basicEvents: {cbd.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Count()} customEvents: {cbd.allBeatmapDataItems.OfType<CustomEventData>().Count()}.");
+                Plugin.LogDebug($"[Generator] Final Result CustomBeatmapData after Generator - notes: {cbd.allBeatmapDataItems.OfType<NoteData>().Count()} obstacles: {cbd.allBeatmapDataItems.OfType<ObstacleData>().Count()} basicEvents: {cbd.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Count()} customEvents: {cbd.allBeatmapDataItems.OfType<CustomEventData>().Count()}.");
                 /*
                 foreach (var e in cbd.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>())
                 {
@@ -1734,7 +1182,7 @@ namespace AutoBS
             // Built-in / OST path → emit vanilla BeatmapData
             var bd = ConvertEditableCBD.ConvertVanilla(eData);
 
-            Plugin.Log.Info($"[Generator] Final Result BeatmapData after Generator - notes: {bd.allBeatmapDataItems.OfType<NoteData>().Count()} obstacles: {bd.allBeatmapDataItems.OfType<ObstacleData>().Count()} events: {bd.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Count()} customEvents: {bd.allBeatmapDataItems.OfType<CustomEventData>().Count()}.");
+            Plugin.LogDebug($"[Generator] Final Result BeatmapData after Generator - notes: {bd.allBeatmapDataItems.OfType<NoteData>().Count()} obstacles: {bd.allBeatmapDataItems.OfType<ObstacleData>().Count()} events: {bd.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Count()} customEvents: {bd.allBeatmapDataItems.OfType<CustomEventData>().Count()}.");
 
             return new GeneratorOutput { Vanilla = bd };
             
@@ -1943,7 +1391,7 @@ namespace AutoBS
                 default: return 1;//null; // Or throw, or clamp, as you see fit
             }
         }
-
+        /*
         public CustomBeatmapData DeepCopyCustomBeatmapData(CustomBeatmapData original) // not really tested to see if catches all custom data. probably not!!!
         {
             var copy = new CustomBeatmapData(original.numberOfLines, original.beatmapCustomData, original.levelCustomData, original.customData, original.version);
@@ -2015,164 +1463,9 @@ namespace AutoBS
 
             return copy;
         }
-        /*
-        public static Version VersionGetter (int majorVersion)
-        {
-            Version version = new Version(2, 6, 0);
-
-            if (majorVersion == 3)
-                version = new Version(majorVersion, 3, 0);
-            else if (majorVersion == 4)
-                version = new Version(majorVersion, 0, 0);
-            return version;
-        }
         */
-
-        /// <summary>
-        /// Adds rotation events into massive streaks of single direction rotations to break them up. Will alter the input list of rotations (allRotations)
-        /// </summary>
-        /// <param name="rots"></param>
-        /// <param name="flexibleRotations"></param>
-        /// <param name="massiveStreaks"></param>
-        /// <param name="minRun"></param>
-        /// <param name="maxRun"></param>
-        static void AddRotationsIntoMassiveStreak(
-            List<ERotationEventData> rots,
-            List<bool> flexibleRotations,
-            List<(int start, int end)> massiveStreaks,
-            int minRun = 2,
-            int maxRun = 12,
-            int minFlexiblePerSegment = 2   // NEW: ensure each segment has at least this many flexible events when possible
-)
-        {
-            if (rots == null || flexibleRotations == null || massiveStreaks == null) return;
-            if (rots.Count == 0 || flexibleRotations.Count != rots.Count) return;
-            if (minRun < 1) minRun = 1;
-            if (maxRun < minRun) maxRun = minRun;
-            if (minFlexiblePerSegment < 0) minFlexiblePerSegment = 0;
-
-            // deterministic "randomlike" generator
-            static uint LcgNext(ref uint s) { unchecked { s = 1664525u * s + 1013904223u; } return s; }
-            static int NextRunLen(ref uint s, int minR, int maxR)
-            {
-                uint span = (uint)(maxR - minR + 1);
-                uint n = LcgNext(ref s) % span;
-                return minR + (int)n;
-            }
-
-            foreach (var (start, end) in massiveStreaks)
-            {
-                if (start < 0 || end >= rots.Count || start > end) continue;
-
-                int origSign = Math.Sign(rots[start].rotation);
-                if (origSign == 0)
-                {
-                    for (int k = start; k <= end && origSign == 0; k++)
-                        origSign = Math.Sign(rots[k].rotation);
-                    if (origSign == 0) continue; // nothing to do
-                }
-
-                // Seed from stable streak properties (deterministic)
-                uint seed;
-                unchecked
-                {
-                    seed = 0x9E3779B9u;
-                    seed ^= (uint)start * 0x85EBCA6Bu;
-                    seed ^= (uint)end * 0xC2B2AE35u;
-                    seed ^= (uint)(Math.Abs(rots[start].rotation) + 1) * 0x27D4EB2Fu;
-                    seed ^= (uint)(Math.Abs(rots[end].rotation) + 3) * 0x165667B1u;
-                }
-
-                // 1) Build initial segments from deterministic run lengths (index space)
-                var segs = new List<(int a, int b)>();
-                {
-                    int segStart = start;
-                    while (segStart <= end)
-                    {
-                        int runLen = NextRunLen(ref seed, minRun, maxRun);
-                        int segEnd = Math.Min(end, segStart + runLen - 1);
-                        segs.Add((segStart, segEnd));
-                        segStart = segEnd + 1;
-                    }
-                }
-
-                // 2) Merge segments that have too few flexible events
-                if (minFlexiblePerSegment > 0 && segs.Count > 0)
-                {
-                    var merged = new List<(int a, int b)>();
-                    int idx = 0;
-                    while (idx < segs.Count)
-                    {
-                        int a = segs[idx].a;
-                        int b = segs[idx].b;
-
-                        // count flexible in [a..b]
-                        int flexHere = 0;
-                        for (int i = a; i <= b; i++)
-                            if (flexibleRotations[i]) flexHere++;
-
-                        // greedily merge forward until we hit the threshold (or run out)
-                        int j = idx + 1;
-                        while (flexHere < minFlexiblePerSegment && j < segs.Count)
-                        {
-                            int na = segs[j].a;
-                            int nb = segs[j].b;
-                            // extend current segment
-                            for (int i = na; i <= nb; i++)
-                                if (flexibleRotations[i]) flexHere++;
-                            b = nb;
-                            j++;
-                        }
-
-                        merged.Add((a, b));
-                        idx = j;
-                    }
-                    segs = merged;
-                }
-
-                // 3) Apply alternating signs per (possibly merged) segment
-                int totalChanged = 0;
-                Plugin.Log.Info($"[MassiveStreakDbg] --- Streak {start}-{end} len={(end - start + 1)}, origSign={(origSign > 0 ? "R" : "L")} --- start time: {rots[start].time} end time: {rots[end].time}");
-                for (int s = 0; s < segs.Count; s++)
-                {
-                    var (a, b) = segs[s];
-                    int desiredSign = (s % 2 == 0) ? origSign : -origSign;
-                    string dirLabel = desiredSign > 0 ? "RIGHT" : "LEFT";
-
-                    int flexCount = 0;
-                    int changedThisSeg = 0;
-
-                    for (int i = a; i <= b; i++)
-                    {
-                        if (!flexibleRotations[i]) continue;
-                        flexCount++;
-                        int mag = Math.Abs(rots[i].rotation);
-                        if (mag == 0) continue;
-                        rots[i].rotation = desiredSign * mag;
-                        changedThisSeg++;
-                    }
-
-                    totalChanged += changedThisSeg;
-                    int actualLen = b - a + 1;
-
-                    Plugin.Log.Info(
-                        $"[MassiveStreakDbg]   Segment {s:D2} {a}-{b} len={actualLen} dir={dirLabel} flex={flexCount} changed={changedThisSeg}");
-                }
-
-                int flips = Math.Max(0, segs.Count - 1);
-                Plugin.Log.Info($"[MassiveStreakDbg] >>> Finished streak {start}-{end}: segments={segs.Count}, flips={flips}, changed={totalChanged}");
-            }
-        }
-
-
-
-
-
-
-
-
-
-    }//Public Class Generator
+    }
+    //END Public Class Generator
 
 
 
@@ -2196,26 +1489,5 @@ namespace AutoBS
             return time >= StartTime && time <= EndTime;
         }
     }
-
-
-
-
-
-
-    //these don't work
-    /*
-    public static class BeatmapDataItemExtensions
-    {
-        public static void UpdateTime(this BeatmapDataItem item, float newTime) // bw not working can't time on this according to AI
-        {
-            FieldHelper.Set(item, "<time>k__BackingField", newTime);
-        }
-        public static void UpdateLineIndex(this ObstacleData item, int newLineIndex) //bw not working can't set a private setter
-        {
-            //FieldHelper.SetPropertyWithPrivateSetter(item, nameof(ObstacleData.lineIndex), newLineIndex);
-            FieldHelper.SetBackingField(item, "<lineIndex>k__BackingField", newLineIndex);
-        }
-    }
-    */
 }
 

@@ -33,7 +33,7 @@ namespace AutoBS
         public int line { get; set; }
         public int layer { get; set; } // Now int, not NoteLineLayer
         public NoteCutDirection cutDirection { get; set; }
-        public int rotation { get; set; } = 0; //accumulated rotation
+        public int rotation { get; set; } = 0; //accumulated rotation as held by customNoteData
 
         public ESliderData headNoteArc { get; set; } = null; // For arc sliders, helps keep track of the head note
         public ESliderData tailNoteArc { get; set; } = null;
@@ -115,7 +115,6 @@ namespace AutoBS
                 customData = new CustomData()
             };
         }
-        // In ENoteData.cs
         public CustomNoteData ToCustomNoteData(Version version)
         {
 
@@ -130,12 +129,12 @@ namespace AutoBS
                 scoringType: this.scoringType,
                 colorType: this.colorType,
                 cutDirection: this.cutDirection,
-                timeToNextColorNote: 0f, // Set as needed, or add to ENoteData
-                timeToPrevColorNote: 0f, // Set as needed, or add to ENoteData
-                flipLineIndex: this.line, // Set as needed, or add to ENoteData
-                flipYSide: 0f, // Set as needed, or add to ENoteData
-                cutDirectionAngleOffset: 0f, // Set as needed, or add to ENoteData
-                cutSfxVolumeMultiplier: 1f, // Set as needed, or add to ENoteData
+                timeToNextColorNote: 0f,
+                timeToPrevColorNote: 0f,
+                flipLineIndex: this.line,
+                flipYSide: 0f,
+                cutDirectionAngleOffset: 0f,
+                cutSfxVolumeMultiplier: 1f, 
                 customData: this.customData ?? new CustomData(),
                 version: version
             );
@@ -257,10 +256,10 @@ namespace AutoBS
         {
             return new CustomObstacleData(
                 time: this.time,
-                startBeat: this.beat,     // or actual beat if you track it
+                startBeat: this.beat,    
                 duration: this.duration,
-                endBeat: this.endBeat, // or however you calculate it
-                rotation: this.rotation,              // use actual if you track rotation for obstacles
+                endBeat: this.endBeat, 
+                rotation: this.rotation, 
                 lineIndex: this.line,
                 lineLayer: (NoteLineLayer)this.layer,
                 width: this.width,
@@ -273,10 +272,10 @@ namespace AutoBS
         {
             return new ObstacleData(
                 time: this.time,
-                startBeat: this.beat,     // or actual beat if you track it
+                startBeat: this.beat,    
                 duration: this.duration,
-                endBeat: this.endBeat, // or however you calculate it
-                rotation: this.rotation,              // use actual if you track rotation for obstacles
+                endBeat: this.endBeat, 
+                rotation: this.rotation,        
                 lineIndex: this.line,
                 lineLayer: (NoteLineLayer)this.layer,
                 width: this.width,
@@ -531,7 +530,7 @@ namespace AutoBS
                 colorType: this.colorType,
                 hasHeadNote: this.hasHeadNote,
                 headTime: this.time,
-                headBeat: beatValue, // or provide actual beat if tracked separately
+                headBeat: beatValue,
                 headRotation: this.rotation,
                 headLineIndex: this.line,
                 headLineLayer: (NoteLineLayer)this.layer,
@@ -818,7 +817,7 @@ namespace AutoBS
         {
             return new CustomBasicBeatmapEventData(
                 time: this.time,
-                basicBeatmapEventType: this.basicBeatmapEventType, //(BasicBeatmapEventType)this.eventType,
+                basicBeatmapEventType: this.basicBeatmapEventType, 
                 value: this.value,
                 floatValue: this.floatValue,
                 customData: this.customData ?? new CustomData(),
@@ -829,7 +828,7 @@ namespace AutoBS
         {
             return new BasicBeatmapEventData(
                 time: this.time,
-                basicBeatmapEventType: this.basicBeatmapEventType, //(BasicBeatmapEventType)this.eventType,
+                basicBeatmapEventType: this.basicBeatmapEventType, 
                 value: this.value,
                 floatValue: this.floatValue
             );
@@ -958,38 +957,12 @@ namespace AutoBS
                 .Select(n => new ENoteData(n))   // ← no overrides either
                 .ToList();
 
-            /* Testing if above version helps v4 maps with chains have correct head size
-            // Notes
-            ColorNotes = original.allBeatmapDataItems
-             .OfType<NoteData>()
-             .Where(n => n.cutDirection != NoteCutDirection.None)
-             .OrderBy(n => n.time)
-             .Select(n => new ENoteData(n)
-             {
-                 gameplayType = NoteData.GameplayType.Normal,
-                 scoringType  = NoteData.ScoringType.Normal
-             })
-             .ToList();
-
-            BombNotes = original.allBeatmapDataItems
-                .OfType<NoteData>()
-                .Where(n => n.cutDirection == NoteCutDirection.None)
-                .OrderBy(n => n.time)
-                .Select(n => new ENoteData(n)
-                {
-                    gameplayType = NoteData.GameplayType.Bomb,
-                    scoringType  = NoteData.ScoringType.NoScore,
-                    colorType    = ColorType.None,
-                })
-                .ToList();
-            */
             Obstacles = original.allBeatmapDataItems
                 .OfType<ObstacleData>()
                 .OrderBy(o => o.time)
                 .Select(o => new EObstacleData(o))
                 .ToList();
 
-            // Sliders
             Arcs = original.allBeatmapDataItems
                 .OfType<SliderData>()
                 .Where(s => s.sliderType == SliderData.Type.Normal)
@@ -1038,7 +1011,6 @@ namespace AutoBS
             if (RotationEvents.Count == 0)
                 RotationEvents = BuildInlineRotations(ColorNotes, BombNotes, Obstacles, Arcs, Chains);
 
-            // Basic events
             BasicEvents = original.allBeatmapDataItems
                 .OfType<BasicBeatmapEventData>()
                 .Where(e => e.basicBeatmapEventType != BasicBeatmapEventType.Event14 && e.basicBeatmapEventType != BasicBeatmapEventType.Event15 && e.basicBeatmapEventType != BasicBeatmapEventType.Event5)
@@ -1046,7 +1018,6 @@ namespace AutoBS
                 .Select(e => new EBasicEventData(e))
                 .ToList();
 
-            // Color Boost Events
             ColorBoostEvents = original.allBeatmapDataItems
                 .OfType<ColorBoostBeatmapEventData>()
                 .Select(e => new EColorBoostEvent(e))
@@ -1069,6 +1040,7 @@ namespace AutoBS
         public EditableCBD(CustomBeatmapData original)
         {
             OriginalCBData = original; // keep a copy of the original data for the final conversion back to CustomBeatmapData since waypoints, etc are not needed to be used or altered in EditableCBD
+            
             BeatmapCustomData = original.beatmapCustomData ?? new CustomData();
             LevelCustomData = original.levelCustomData ?? new CustomData();
             CustomData = original.customData ?? new CustomData();
@@ -1142,7 +1114,7 @@ namespace AutoBS
                         ));
                         //Plugin.Log.Info($"Rot time: {re.beat} rot: {delta} accum: {accum}");
                     }
-                    Plugin.Log.Info($"[EditableCBD] v3: Loaded {RotationEvents.Count} rotation events from V3RotationRegistry.");
+                    Plugin.LogDebug($"[EditableCBD] v3: Loaded {RotationEvents.Count} rotation events from V3RotationRegistry.");
                 }
                 else
                 {
@@ -1220,22 +1192,6 @@ namespace AutoBS
                     .ToList();
 
             LinkArcEndpointsToNotes();
-
-            /*
-            foreach (var note in ColorNotes)
-            {
-                if (note.time > 23f && note.time < 27)
-                    Plugin.Log.Info($"[EditableCBD] Note @{note.time:F2}s, line {note.line}, layer {note.layer}, cutDirection {note.cutDirection}, rotation {note.rotation}");
-
-            }
-            Plugin.Log.Info($"[ConvertEditableCBD] bombs Count: {BombNotes.Count}");
-            foreach (var bomb in BombNotes)
-            {
-                if (bomb.time > 23f && bomb.time < 27)
-                    Plugin.Log.Info($"[EditableCBD] bomb @{bomb.time:F2}s, line {bomb.line}, layer {bomb.layer}, cutDirection {bomb.cutDirection}, rotation {bomb.rotation}");
-
-            }
-            */
         }
 
 
@@ -1352,9 +1308,6 @@ namespace AutoBS
             // From obstacles
             foreach (var o in obstacles) // decided that even though obstcles have inline rotation, just better to stick to all important notes
             {
-                //if (o.rotation != prevRotation)
-                //    rotations.Add(new ERotationEventData(o.time, (int)o.rotation));
-                //prevRotation = o.rotation;
                 o.rotation = 0;
             }
             foreach (var a in arcs) // haven't thought this through, but for consistency, reset arc inline rotations too and hope that notes are all that matters
@@ -1366,15 +1319,7 @@ namespace AutoBS
                 c.rotation = 0; c.tailRotation = 0;
             }
 
-            //rotations = ERotationEventData.RecalculateAccumulatedRotations(rotations);
-            /*
-            foreach (var rot in rotations)
-            {
-                Plugin.Log.Info($"[EditableCBD][BuildInlineRotations] rotation time:{rot.time:F} rot: {rot.rotation} accumRotation {rot.accumRotation}");
-            }
-            */
-
-            Plugin.Log.Info($"[BuildInlineRotations] {rotations.Count} rotationEvents created from per object rotations.");
+            Plugin.LogDebug($"[BuildInlineRotations] {rotations.Count} rotationEvents created from per object rotations.");
 
             return rotations;// returns reference so  //MergeAndDedupeRotations(rotations);
         }
@@ -1489,62 +1434,6 @@ namespace AutoBS
     {
         public static CustomBeatmapData Convert(EditableCBD eData)
         {
-            /*
-            // --------------------------------------------------------------------
-            // Emit v2/3-style rotation basic events (14 / 15) for JSON output only. Not needed in-game since per object rotation is set. v3 still has legacy 14/15 rotation events inside of basic data so it works for v3 JSON output
-            // --------------------------------------------------------------------
-            if ((Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls || 
-                 Config.Instance.OutputV3JsonToSongFolder) &&
-                eData.RotationEvents != null &&
-                eData.RotationEvents.Count > 0)
-            {
-                
-                int v2orv3 = 0;
-                if (Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls)
-                    v2orv3 = 2;
-                if (Config.Instance.OutputV3JsonToSongFolder)
-                    v2orv3 = 3;
-                //Plugin.Log.Info($"[ConvertEditableCBD] Injecting rotation events for JSON File Output v{v2orv3} ...");
-
-                int GetValue(int delta)
-                {
-                    if (v2orv3 == 2)
-                        return Generator.SpawnRotationDegreesToValue(delta);
-                    else // v3
-                        return delta;
-                }
-
-                // Choose early vs late event type based on your RotationModeLate flag -- this chooses LATE but it doesn't work for final output. must be EARLY!!!
-                //var rotEventType = Config.Instance.RotationModeLate
-                //   ? BasicBeatmapEventType.Event15  // late
-                //   : BasicBeatmapEventType.Event14; // early
-
-                //eData.RotationEvents = ERotationEventData.RecalculateAccumulatedRotations(eData.RotationEvents);
-
-                foreach (var rot in eData.RotationEvents) //delta and accumRotation are setup from within ApplyPerObjectRotations
-                {
-                    int delta = rot.rotation;
-                    if (delta == 0)
-                        continue; // skip zero-rotation events
-                    // Map your ERotationEventData -> EBasicEventData
-                    // You can decide whether you want delta or accumulated in value.
-                    // For debugging it's usually nice to see the *accumulated* lane:
-                    //int value = GetValue(delta);
-
-                    // This doesn't work in-game and so has no effect in-game! this is just for outputting JSON .dat files.
-                    var ev = EBasicEventData.Create(
-                        time: rot.time,
-                        basicBeatmapEventType: BasicBeatmapEventType.Event14, // rotEventType, ********* THIS MUST BE EARLY (14) TO WORK PROPERLY for output JSON maps using CustomBeatmapDataConverter.ToJsonStringFile
-                        value: GetValue(delta)
-                    );
-
-                    eData.BasicEvents.Add(ev);
-                    //Plugin.Log.Debug($"[ConvertEditableCBD] Injected rotation event @{ev.time:F2}s type:{ev.basicBeatmapEventType} value:{ev.value} -- FROM: rot.Rotation: {delta} rot.accum: {rot.accumRotation}");
-                }
-                
-                //Plugin.Log.Info($"[ConvertEditableCBD] Injected for JSON File Output - {eData.RotationEvents.Count} rotation events as {(Config.Instance.RotationModeLate ? "late (15)" : "early (14)")} basic events.");
-            }
-            */
             var newData = new CustomBeatmapData(
                 numberOfLines: 4, // Standard; parameterize if you support others
                 beatmapCustomData: eData.BeatmapCustomData ?? new CustomData(),
@@ -1641,12 +1530,10 @@ namespace AutoBS
 
             newData.ProcessAndSortBeatmapData();
 
-            Plugin.Log.Info($"[ConvertEditableCBD] -> CustomBeatmapData: " +
+            Plugin.LogDebug($"[ConvertEditableCBD] -> CustomBeatmapData: " +
                                      $"{newData.beatmapObjectDatas.Count} objects, " +
                                      $"{newData.beatmapEventDatas.Count} events, " +
                                      $"{newData.customEventDatas.Count} customEvents");
-
-
             return newData;
         }
 
@@ -1701,75 +1588,10 @@ namespace AutoBS
         /// </summary>
         public static void ApplyPerObjectRotations(EditableCBD eData)
         {
-            Plugin.Log.Info("[RotationApplier] ---------- Starting per-object rotation application");
+            Plugin.LogDebug("[RotationApplier] ---------- Starting per-object rotation application");
+
             if (eData.ColorNotes.Count == 0 || eData.RotationEvents.Count == 0)
                 return;
-            /*
-            if (eData.RotationEvents.Count == 0 && eData.OriginalCBData != null)
-            {
-
-                Plugin.Log.Info($"[RotationRebuild] 0 eData.RotationEvents. This may be a non-gen 360 map. Look for rotation events in OriginalCBData.");
-
-                int majorVersion = eData.OriginalCBData.version.Major;
-                if (majorVersion == 3)
-                {
-                    // Rebuild from v3 RotationEventData if available
-                    var v3RotEvents = eData.OriginalCBData.allBeatmapDataItems
-                        .OfType<RotationEventData>()
-                        .ToList();
-
-                    if (v3RotEvents.Count > 0)
-                    {
-                        // v3: RotationEventData has explicit execution time
-                        eData.RotationEvents = v3RotEvents
-                            .Select(e => new ERotationEventData(
-                                e.beat,
-                                (int)e.rotation))
-                            .OrderBy(e => e.time)
-                            .ToList();
-                    }
-
-                    Plugin.Log.Info($"[RotationRebuild] Rebuilt {eData.RotationEvents.Count} rotation events from v3 RotationEventData.");
-                }
-                else if (majorVersion == 2)
-                {
-                    // v2 legacy: rotations stored as basic events with type 14/15
-                    var v2RotEvents = eData.OriginalCBData.allBeatmapDataItems
-                        .OfType<BasicBeatmapEventData>()
-                        .Where(e =>
-                            e.basicBeatmapEventType == BasicBeatmapEventType.Event14 ||   // early rotation
-                            e.basicBeatmapEventType == BasicBeatmapEventType.Event15)     // late rotation
-                        .ToList();
-
-                    if (v2RotEvents.Count > 0)
-                    {
-                        eData.RotationEvents = v2RotEvents
-                            .Select(e => new ERotationEventData(
-                                e.time,                                                      // beat/time
-                                e.value,    // NOTE: if your v2 convention is "value * 15°", change to e.value * 15
-                                e.basicBeatmapEventType == BasicBeatmapEventType.Event14
-                                    ? 0    // early
-                                    : 1,   // late
-                                new CustomData()))
-                            .OrderBy(e => e.time)
-                            .ToList();
-
-                        Plugin.Log.Info($"[RotationRebuild] Rebuilt {eData.RotationEvents.Count} rotation events.");
-                    }
-
-
-
-                    if (eData.RotationEvents.Count == 0)
-                    {
-                        Plugin.Log.Info("[RotationApplier] No rotation events; skipping rotation application.");
-                        return;
-                    }
-                }
-
-            }
-            */
-
-
 
             // 1) Sort your raw rotation events by time
             eData.RotationEvents = eData.RotationEvents
@@ -1828,54 +1650,9 @@ namespace AutoBS
                 int desiredAccum = arc.headNote != null
                     ? arc.headNote.rotation
                     : GetAccumRotationAt(arc.time);
-                //int tailRot = arc.tailNote != null
-                //    ? arc.tailNote.rotation
-                //    : GetRotationAt(arc.tailTime);
-
-                //tailRot = headRot; // if tail rotation matches head rotation, use head rotation
 
                 arc.rotation     = desiredAccum;
                 arc.tailRotation = desiredAccum;// tailRot;
-
-                //bool tailRotationCorrected = false;
-                
-                /*
-                int tailAccumBefore = (arc.tailNote != null)
-                    ? arc.tailNote.rotation
-                    : GetAccumRotationAt(arc.tailTime - EPS);
-                
-                if (tailAccumBefore != desiredAccum)
-                {
-                    //tailRotationCorrected = true;
-
-                    int deltaRot = desiredAccum - tailAccumBefore;
-
-                    if (deltaRot != 0)
-                    {
-                        // If another override exists at the exact same time, merge to avoid duplicates
-                        var existing = arcTailAccumRotationOverride
-                            .FirstOrDefault(e => Math.Abs(e.time - arc.tailTime) < EPS);
-
-                        if (existing != null)
-                        {
-                            existing.rotation += deltaRot;       // keep direction sum
-                            existing.accumRotation = desiredAccum;   // latest target (for logging)
-                        }
-                        else
-                        {
-                            // rotation = delta (direction), accumRotation = target accum (optional but handy)
-                            arcTailAccumRotationOverride.Add(
-                                new ERotationEventData(arc.tailTime, deltaRot, desiredAccum)
-                            );
-                        }
-
-                        //Plugin.Log.Info($"[RotationApplier] Arc @{arc.time:F2}s tail {arc.tailTime:F2}: " +$"pre={tailAccumBefore}, delta={deltaRot:+#;-#;0}, target={desiredAccum}");
-                    }
-                }
-                */
-
-                //if ((arc.headNote != null && desiredAccum != arc.headNote.rotation) || (arc.tailNote != null && desiredAccum != arc.tailNote.rotation))
-                //    Plugin.Log.Warn($"[RotationApplier] Arc @{arc.time:F2}s tail {arc.tailTime:F2}: headAccum={desiredAccum}, headAccumBefore={arc.headNote.rotation} tailAccumBefore={arc.tailNote.rotation} -- Tail Rotation Corrected!");
 
                 if (arc.headNote != null) arc.headNote.rotation = desiredAccum;
                 if (arc.tailNote != null) arc.tailNote.rotation = desiredAccum;// tailRot;
@@ -1889,10 +1666,6 @@ namespace AutoBS
                 int headRot = chain.headNote != null
                     ? chain.headNote.rotation
                     : GetAccumRotationAt(chain.time);
-                //int tailRot = GetAccumRotationAt(chain.tailTime);
-
-                // maybe its ok to allow rotation during chain but logs show it may never happen anyway probably because the head to tail time period is too short
-                //if (tailRotationMatchesHeadRotation) tailRot = headRot; // if tail rotation matches head rotation, use head rotation
 
                 chain.rotation = headRot;
                 chain.tailRotation = headRot;// tailRot; // this is giving different rotations to tails! seems to work fine anyway
@@ -1905,7 +1678,6 @@ namespace AutoBS
             // 4) Apply to all obstacles
             (bool noodleProblemNotes, bool noodleProblemObstacles) = EditableCBD.TestForNoodleCustomData(eData);
 
-            // After you've finished adjusting notes/arcs/chains
             var noteAndBombKeyframes = eData.ColorNotes
                 .OrderBy(n => n.time)
                 .Select(n => (time: n.time, rot: n.rotation))
@@ -1922,35 +1694,6 @@ namespace AutoBS
                 .OrderBy(x => x.time)
                 .ToList();
 
-            // Build a normalized rotation event list from *final* note/bomb rotations. this is a set of Early Events that should work well with the convert method to create a JSON .dat file later
-
-            //if (Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls || Config.Instance.OutputV3JsonToSongFolder)
-            //    RebuildRotationEventsFromKeyframes();
-
-            /*
-            void RebuildRotationEventsFromKeyframes()
-            {
-                var rebuilt = new List<ERotationEventData>();
-
-                int prevAccum = 0;
-                foreach (var k in noteAndBombKeyframes)
-                {
-                    int delta = k.rot - prevAccum;
-                    if (delta == 0)
-                        continue; // skip 0-delta events
-
-                    // accumRotation here is simply k.rot (the new cumulative value)
-                    rebuilt.Add(new ERotationEventData(k.time, delta, k.rot));
-                    prevAccum = k.rot;
-                }
-
-                //eData.RotationEventsMatchEarlyPerObject = rebuilt;
-
-                // Debug (optional):
-                // foreach (var ev in rebuilt.TakeWhile(ev => ev.time < 20f))
-                //     Plugin.Log.Info($"[RotationApplier] Rebuilt rotEvt @ {ev.time:F3}s: Δ={ev.rotation}, accum={ev.accumRotation}");
-            }
-            */
             const float TOL = 0.0005f;
 
             int GetLogicalRotationFromNotes(float t)
@@ -1989,9 +1732,6 @@ namespace AutoBS
                     // If both rotations are same, treat whole span as flat
                     if (k0.rot == k1.rot)
                         return k0.rot;
-
-                    // If you ever want interpolation between different angles, you could add it here.
-                    // For now, just stick with k0.rot to keep behavior simple.
                 }
 
                 return k0.rot;
@@ -2007,19 +1747,10 @@ namespace AutoBS
 
                 eData.Obstacles = ApplyWallVisionBlockingFix(eData); // will alter eData by reference
             }
-
-            //if (Config.Instance.OutputV2JsonToSongFolderNoArcsNoChainsNoMappingExtensionWalls || Config.Instance.OutputV3JsonToSongFolder)
-            //    eData.RotationEventsMatchEarlyPerObject = BuildEarlyRotationEventsFromPerObjectRotations(eData);
-
-            //else
-            //{
-            //    Plugin.Log.Warn("[RotationApplier] Skipping Wall Rotation Application and Wall Vision Blocking Fix due to Noodle customData on obstacles!");
-            //}
-
-            //Plugin.Log.Info("[RotationApplier] Finished per-object rotation application");
         }
 
-        // Not used currently. i made this list to prevent arcs and walls from have rotation problems in JSON output files. but it turns out the the origianl rotation events list is best.
+        // Not used. i made this list to prevent arcs and walls from having rotation problems in JSON output files. but it turns out the the origianl rotation events list is best.
+        /*
         /// <summary>
         /// Builds a new rotation events list based on the actual per-object rotations.
         /// This list accurately represents "early" rotation events for JSON export,
@@ -2085,7 +1816,7 @@ namespace AutoBS
 
             return rotationEvents;
         }
-
+        
         /// <summary>
         /// Ensures that at each arc tail time, the accumulated rotation matches the head rotation.
         /// If rotations occurred between head and tail, adds a corrective event at the tail time.
@@ -2179,9 +1910,10 @@ namespace AutoBS
 
             return events;
         }
-
+        */
+        /*
         /// <summary>
-        /// When arc tail rotation overrides exist where I had to force the tail to match the head, apply them to the rotation events list
+        /// UNUSED When arc tail rotation overrides exist where I had to force the tail to match the head, apply them to the rotation events list. strangely this didn't help.
         /// </summary>
         /// <param name="rotations"></param>
         /// <param name="arcTailAccumRotationOverride"></param>
@@ -2233,652 +1965,11 @@ namespace AutoBS
 
             return accumulated;
         } 
+        */
 
 
 
-
-        // WallRemovalForRotations() new version
-        // works but as RotationSpeedMultiplier increases this doesn't account for it.
-        static List<EObstacleData> ApplyWallVisionBlockingFixOLD(EditableCBD eData)  // WallRemovalForRotations() new version works except for NetZero and NoRestrictions in ArcFix
-        {
-            var rotationEvents = eData.RotationEvents;
-            var obstacles = eData.Obstacles;
-            bool rotationEventsSubsetUsed = false;
-
-            float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
-            float jd = TransitionPatcher.FinalJumpDistance;
-
-            if (njs <= 0 || jd <= 0)
-            {
-                Plugin.Log.Error("[WallBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, skipping wall blocking fix.");
-                return obstacles;
-            }
-
-            float wallTravelTime = jd / njs;
-
-            Plugin.Log.Info($"[WallBlockingFix] Total Obstacles: {obstacles.Count} NJD={jd:F2}, NJS={njs:F2}, wallTravelTime={wallTravelTime:F2}");
-
-            var rotations = rotationEvents.OrderBy(evt => evt.time).ToList(); //checked accumulted is accurate here
-
-            int GetAccumRotationAt(float t)
-            {
-                // faster binary search
-                int lo = 0, hi = rotations.Count - 1, ans = -1;
-                while (lo <= hi)
-                {
-                    int mid = (lo + hi) >> 1;
-                    if (rotations[mid].time <= t)
-                    {
-                        ans = mid;
-                        lo = mid + 1;
-                    }
-                    else hi = mid - 1;
-                }
-                return ans >= 0 ? rotations[ans].accumRotation : 0;
-            }
-
-            int RotationForSegmentStart(EObstacleData obs, float segStart)
-                => rotationEventsSubsetUsed ? obs.rotation : GetAccumRotationAt(segStart);
-
-            // Returns true if a rotation (direction) would block this wall (by line).
-            //bool WouldBlock(int lineIndex, int direction) =>
-            //    (lineIndex < 2 && direction < 0) || (lineIndex > 1 && direction > 0);
-            bool WouldBlock(int lineIndex, int direction, float obsTime, float rotTime)
-            {
-                //if (obsTime > 0 && obsTime < 16)  Plugin.Log.Info($"[WallBlockingFix] --- WouldBlock check: obs time: {obsTime} lineIndex={lineIndex}, direction={direction} at time: {rotTime}");
-
-                if (lineIndex < 2 && direction < 0)
-                {
-                    //if (obsTime > 0 && obsTime < 16)  Plugin.Log.Info($"[WallBlockingFix] ----- Blocked (left wall with left turn)");
-                    return true;
-                }
-                if (lineIndex > 1 && direction > 0)
-                {
-                    //if (obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix] ----- Blocked (right wall with right turn)");
-                    return true;
-                }
-                //if (obsTime > 0 && obsTime < 16)  Plugin.Log.Info($"[WallBlockingFix] ----- Not blocked");
-                return false;
-            }
-
-            var kept = new List<EObstacleData>();
-            int obsIdx = 0;
-            bool boostedWalls = Config.Instance.AllowV2BoostedWalls;
-
-            foreach (var obs in obstacles)
-            {
-                if (WallGenerator._originalWalls.Contains(obs) && WallGenerator.IsCustomNoodleWall(obs))
-                    continue;
-
-                float obsTime = obs.time;
-                int line = obs.line;
-                int layer = obs.layer;
-                float dur = obs.duration;
-
-                if (line < 0) line = Math.Abs(obs.line + obs.width); // right edge of left wall
-
-                // If high wall: keep as-is, skip splitting/removal
-                bool canSkip = false;
-                if (layer > 11000) canSkip = true; // high walls can skip
-                else if (layer > 10 && layer < 1000) canSkip = true; //floor walls can skip
-
-                int absLine = Math.Abs(line);
-                // If short distant wall: keep as-is, skip splitting/removal, but really long distant walls can esp block vision
-
-                //BW disabled this to test
-                //if (absLine > 16000 && dur < .1f) canSkip = true; // far away and short
-                //else if (absLine > 15 && absLine < 1000 && dur < .1f) canSkip = true; // far away and short
-
-                //don't use line here must use obs.line
-                if (layer == 2 && obs.line == 0 && obs.width > 2) canSkip = true; //crouch wall so rotation does not matter
-
-                if (dur < 0 && boostedWalls) canSkip = true; // boosted walls on v2 maps use negative duration to make super fast walls. these will get removed if not skipped
-
-                if (canSkip)
-                {
-                    kept.Add(obs);
-                    //if (obsTime > 0 && obsTime < 16)
-                    //    Plugin.Log.Info($"[WallBlockingFix]   (SKIP) Keeping wall as-is: time={obsTime:F2}, dur={obs.duration:F2}, rot={obs.rotation} line: {obs.line} layer: {obs.layer} width: {obs.width} height: {obs.height}");
-                    obsIdx++;
-                    continue; // skip the splitting/removal logic for this wall
-                }
-                //*** OLD
-                float visibleStart = obsTime;// + .01f; // the smaller this is, the closer to the exact start of the wall. adding a little bit may make a tiny wall but will create small walls that block vision. minwallduration is .001
-                float visibleEnd = obs.endTime + wallTravelTime/3f; // best /10 allows vision blocking walls. /4 still has questionable walls, /2 cuts too many i think
-                //if (obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix] Obstacle {obsIdx}: start={obsTime:F2}, dur={obs.duration:F2}, rot={obs.rotation}, visibleStart= {visibleStart} visibleEnd={visibleEnd:F2}, line={obs.line}, layer={obs.layer}, width={obs.width}, height={obs.height}");
-
-                // Find all blocking rotations within the visible window
-                var blockEvents = rotations //newRotationEvents
-                    .Where(dt => dt.time >= visibleStart && dt.time <= visibleEnd && WouldBlock(obs.line, dt.rotation, obsTime, dt.time))
-                    .Select(dt => dt.time)
-                    .OrderBy(t => t)
-                    .ToList();
-
-                //if (blockEvents.Count > 0 && obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix] ------ has {blockEvents.Count} blocking rotations at times: {string.Join(", ", blockEvents.Select(t => t.ToString("F2")))}");
-
-                float segStart = obsTime;
-                float segEnd = obs.endTime;
-                int segmentCount = 0;
-
-                // Go through each blocking event and split at the *time when the block reaches the player*
-                foreach (var blockTime in blockEvents)
-                {
-                    // The time when the block rotation hits the player
-                    float cutTime = blockTime - wallTravelTime/3f; // or /2 works too. doesn't work with just blockTime
-                    //***
-                    if (cutTime > segStart)
-                    {
-                        segmentCount++;
-                        float duration = Math.Min(segEnd, cutTime) - segStart;
-                        if (duration >= 0.001f) // ignore tiny negative/zero segments
-                        {
-                            var segment = EObstacleData.Create(
-                                segStart,
-                                obs.line,
-                                obs.layer,
-                                duration,
-                                obs.width,
-                                obs.height,
-                                RotationForSegmentStart(obs, segStart) // ← use wall’s own rotation in pass 2 when a subset of rotation events is used since without a full set the GetAccumRotationAt() would be wrong
-                            );
-                            kept.Add(segment);
-                            //if (obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix]   Segment {segmentCount}: time={segment.time:F2}, dur={segment.duration:F2}, rot={segment.rotation} line: {segment.line} layer: {segment.layer} width: {segment.width} height: {segment.height}");
-                        }
-                    }
-                    // Now skip the rest of the wall (delete the rest after the block)
-                    segStart = Math.Max(segStart, Math.Min(segEnd, cutTime));
-                    segEnd = segStart; // This ensures the next 'if (segEnd > segStart)' does not create another segment
-                    break; // Only keep the part before the first block, then stop
-                }
-
-                // Add final segment if any left
-                if (segEnd > segStart)
-                {
-                    float duration = segEnd - segStart;
-                    if (duration >= 0.001f)
-                    {
-                        segmentCount++;
-                        var segment = EObstacleData.Create(
-                            segStart,
-                            obs.line,
-                            obs.layer,
-                            duration,
-                            obs.width,
-                            obs.height,
-                            RotationForSegmentStart(obs, segStart) // ← use wall’s own rotation in pass 2 when a subset of rotation events is used since without a full set the GetAccumRotationAt() would be wrong
-                        );
-                        kept.Add(segment);
-                        //if (obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix]   Segment {segmentCount}: time={segment.time:F2}, dur={segment.duration:F2}, rot={segment.rotation} line: {segment.line} layer: {segment.layer} width: {segment.width} height: {segment.height} -----------");
-                    }
-                }
-
-                //if (segmentCount > 0 && obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix] -------- Kept {segmentCount} part(s) of the original wall.");
-                //else if (segmentCount == 0 && obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix] -------- No parts of the original wall were kept, it was fully blocked by rotations.");
-                obsIdx++;
-            }
-            Plugin.Log.Info($"[WallBlockingFix] Total output obstacles: {kept.Count} kept out of {obstacles.Count}");
-            obstacles = kept;
-
-            return obstacles;
-        }
-
-        static List<EObstacleData> ApplyWallVisionBlockingFixOLDBAD(EditableCBD eData)  // NOTES PENETRATING WALLS with/without override. OLD version but using gaze points for per object rotation information instead of rotationEvents
-        {
-            //var rotationEvents = eData.RotationEvents;
-            var obstacles = eData.Obstacles;
-            bool rotationEventsSubsetUsed = false;
-
-            float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
-            float jd = TransitionPatcher.FinalJumpDistance;
-
-            if (njs <= 0 || jd <= 0)
-            {
-                Plugin.Log.Error("[WallBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, skipping wall blocking fix.");
-                return obstacles;
-            }
-
-            float wallTravelTime = jd / njs;
-
-            Plugin.Log.Info($"[WallBlockingFix] Total Obstacles: {obstacles.Count} NJD={jd:F2}, NJS={njs:F2}, wallTravelTime={wallTravelTime:F2}");
-
-            //var rotations = rotationEvents.OrderBy(evt => evt.time).ToList(); //checked accumulted is accurate here
-
-            var gazePoints = new List<ENoteData>();
-
-            // Always include real color notes
-            if (eData.ColorNotes != null)
-                gazePoints.AddRange(eData.ColorNotes);
-
-            if (eData.BombNotes != null)
-                gazePoints.AddRange(eData.BombNotes);
-
-            // turn chain tails into notes for gaze point checking
-            if (eData.Chains != null)
-            {
-                foreach (var chain in eData.Chains)
-                {
-                    gazePoints.Add(ENoteData.Create(chain.tailTime, ColorType.None, chain.tailLine, chain.tailLayer, NoteCutDirection.Any, chain.tailRotation)); //chain.tailRotation is different than heads in some cases even on short chains.
-                    //Plugin.Log.Info($"[WallBlockingFix] Added chain tail as gaze point. HEAD - time={chain.time:F2}, line={chain.line}, layer={chain.layer}, rot={chain.rotation} TAIL - time={chain.tailTime:F2}, line={chain.tailLine}, layer={chain.tailLayer}, rot={chain.rotation}");
-                }
-            }
-
-            Plugin.Log.Info($"[WallBlockingFix] Gaze Points: ColorNotes={eData.ColorNotes?.Count ?? 0}, BombNotes={eData.BombNotes?.Count ?? 0}");//, ChainTails={chainTails?.Count ?? 0}");
-
-            // (OPTIONAL) Include bombs if you also want to prevent walls from hiding bombs
-            // gazePoints.AddRange(eData.BombNotes);
-
-            // Sort them by time to speed up lookup
-            gazePoints = gazePoints.OrderBy(n => n.time).ToList();
-
-            int GetAccumRotationAt(float t)
-            {
-                // faster binary search
-                int lo = 0, hi = gazePoints.Count - 1, ans = -1;
-                while (lo <= hi)
-                {
-                    int mid = (lo + hi) >> 1;
-                    if (gazePoints[mid].time <= t)
-                    {
-                        ans = mid;
-                        lo = mid + 1;
-                    }
-                    else hi = mid - 1;
-                }
-                return ans >= 0 ? gazePoints[ans].rotation : 0;
-            }
-
-            int RotationForSegmentStart(EObstacleData obs, float segStart)
-                => rotationEventsSubsetUsed ? obs.rotation : GetAccumRotationAt(segStart);
-
-            // Returns true if a rotation (direction) would block this wall (by line).
-            //bool WouldBlock(int lineIndex, int direction) =>
-            //    (lineIndex < 2 && direction < 0) || (lineIndex > 1 && direction > 0);
-            bool WouldBlock(int lineIndex, int direction, float obsTime, float rotTime)
-            {
-                //if (obsTime > 0 && obsTime < 16)  Plugin.Log.Info($"[WallBlockingFix] --- WouldBlock check: obs time: {obsTime} lineIndex={lineIndex}, direction={direction} at time: {rotTime}");
-
-                if (lineIndex < 2 && direction < 0)
-                {
-                    //if (obsTime > 0 && obsTime < 16)  Plugin.Log.Info($"[WallBlockingFix] ----- Blocked (left wall with left turn)");
-                    return true;
-                }
-                if (lineIndex > 1 && direction > 0)
-                {
-                    //if (obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix] ----- Blocked (right wall with right turn)");
-                    return true;
-                }
-                //if (obsTime > 0 && obsTime < 16)  Plugin.Log.Info($"[WallBlockingFix] ----- Not blocked");
-                return false;
-            }
-
-            var kept = new List<EObstacleData>();
-            int obsIdx = 0;
-            bool boostedWalls = Config.Instance.AllowV2BoostedWalls;
-
-            foreach (var obs in obstacles)
-            {
-                if (WallGenerator._originalWalls.Contains(obs) && WallGenerator.IsCustomNoodleWall(obs))
-                    continue;
-
-                float obsTime = obs.time;
-                int line = obs.line;
-                int layer = obs.layer;
-                float dur = obs.duration;
-
-                if (line < 0) line = Math.Abs(obs.line + obs.width); // right edge of left wall
-
-                // If high wall: keep as-is, skip splitting/removal
-                bool canSkip = false;
-                if (layer > 11000) canSkip = true; // high walls can skip
-                else if (layer > 10 && layer < 1000) canSkip = true; //floor walls can skip
-
-                int absLine = Math.Abs(line);
-                // If short distant wall: keep as-is, skip splitting/removal, but really long distant walls can esp block vision
-
-                //BW disabled this to test
-                //if (absLine > 16000 && dur < .1f) canSkip = true; // far away and short
-                //else if (absLine > 15 && absLine < 1000 && dur < .1f) canSkip = true; // far away and short
-
-                //don't use line here must use obs.line
-                if (layer == 2 && obs.line == 0 && obs.width > 2) canSkip = true; //crouch wall so rotation does not matter
-
-                if (dur < 0 && boostedWalls) canSkip = true; // boosted walls on v2 maps use negative duration to make super fast walls. these will get removed if not skipped
-
-                if (canSkip)
-                {
-                    kept.Add(obs);
-                    //if (obsTime > 0 && obsTime < 16)
-                    //    Plugin.Log.Info($"[WallBlockingFix]   (SKIP) Keeping wall as-is: time={obsTime:F2}, dur={obs.duration:F2}, rot={obs.rotation} line: {obs.line} layer: {obs.layer} width: {obs.width} height: {obs.height}");
-                    obsIdx++;
-                    continue; // skip the splitting/removal logic for this wall
-                }
-                //*** OLD
-                float visibleStart = obsTime;// + .01f; // the smaller this is, the closer to the exact start of the wall. adding a little bit may make a tiny wall but will create small walls that block vision. minwallduration is .001
-                float visibleEnd = obs.endTime + wallTravelTime / 3f; // best /10 allows vision blocking walls. /4 still has questionable walls, /2 cuts too many i think
-                //if (obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix] Obstacle {obsIdx}: start={obsTime:F2}, dur={obs.duration:F2}, rot={obs.rotation}, visibleStart= {visibleStart} visibleEnd={visibleEnd:F2}, line={obs.line}, layer={obs.layer}, width={obs.width}, height={obs.height}");
-
-                // Find all blocking rotations within the visible window
-                var blockEvents = gazePoints //newRotationEvents
-                    .Where(dt => dt.time >= visibleStart && dt.time <= visibleEnd && WouldBlock(obs.line, dt.rotation, obsTime, dt.time))
-                    .Select(dt => dt.time)
-                    .OrderBy(t => t)
-                    .ToList();
-
-                //if (blockEvents.Count > 0 && obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix] ------ has {blockEvents.Count} blocking rotations at times: {string.Join(", ", blockEvents.Select(t => t.ToString("F2")))}");
-
-                float segStart = obsTime;
-                float segEnd = obs.endTime;
-                int segmentCount = 0;
-
-                // Go through each blocking event and split at the *time when the block reaches the player*
-                foreach (var blockTime in blockEvents)
-                {
-                    // The time when the block rotation hits the player
-                    float cutTime = blockTime - wallTravelTime / 3f; // or /2 works too. doesn't work with just blockTime
-                    //***
-                    if (cutTime > segStart)
-                    {
-                        segmentCount++;
-                        float duration = Math.Min(segEnd, cutTime) - segStart;
-                        if (duration >= 0.001f) // ignore tiny negative/zero segments
-                        {
-                            var segment = EObstacleData.Create(
-                                segStart,
-                                obs.line,
-                                obs.layer,
-                                duration,
-                                obs.width,
-                                obs.height,
-                                RotationForSegmentStart(obs, segStart) // ← use wall’s own rotation in pass 2 when a subset of rotation events is used since without a full set the GetAccumRotationAt() would be wrong
-                            );
-                            kept.Add(segment);
-                            //if (obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix]   Segment {segmentCount}: time={segment.time:F2}, dur={segment.duration:F2}, rot={segment.rotation} line: {segment.line} layer: {segment.layer} width: {segment.width} height: {segment.height}");
-                        }
-                    }
-                    // Now skip the rest of the wall (delete the rest after the block)
-                    segStart = Math.Max(segStart, Math.Min(segEnd, cutTime));
-                    segEnd = segStart; // This ensures the next 'if (segEnd > segStart)' does not create another segment
-                    break; // Only keep the part before the first block, then stop
-                }
-
-                // Add final segment if any left
-                if (segEnd > segStart)
-                {
-                    float duration = segEnd - segStart;
-                    if (duration >= 0.001f)
-                    {
-                        segmentCount++;
-                        var segment = EObstacleData.Create(
-                            segStart,
-                            obs.line,
-                            obs.layer,
-                            duration,
-                            obs.width,
-                            obs.height,
-                            RotationForSegmentStart(obs, segStart) // ← use wall’s own rotation in pass 2 when a subset of rotation events is used since without a full set the GetAccumRotationAt() would be wrong
-                        );
-                        kept.Add(segment);
-                        //if (obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix]   Segment {segmentCount}: time={segment.time:F2}, dur={segment.duration:F2}, rot={segment.rotation} line: {segment.line} layer: {segment.layer} width: {segment.width} height: {segment.height} -----------");
-                    }
-                }
-
-                //if (segmentCount > 0 && obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix] -------- Kept {segmentCount} part(s) of the original wall.");
-                //else if (segmentCount == 0 && obsTime > 0 && obsTime < 16) Plugin.Log.Info($"[WallBlockingFix] -------- No parts of the original wall were kept, it was fully blocked by rotations.");
-                obsIdx++;
-            }
-            Plugin.Log.Info($"[WallBlockingFix] Total output obstacles: {kept.Count} kept out of {obstacles.Count}");
-            obstacles = kept;
-
-            return obstacles;
-        }
-
-
-        static List<EObstacleData> ApplyWallVisionBlockingFixNew(EditableCBD eData) // works mostly for NetZero and NoRestrictions but removing too many walls
-        {
-            float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
-            float jd = TransitionPatcher.FinalJumpDistance;
-
-            if (njs <= 0 || jd <= 0)
-            {
-                Plugin.Log.Error("[WallBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, skipping wall blocking fix.");
-                return eData.Obstacles;
-            }
-
-            float wallTravelTime = jd / njs;
-
-            var obstacles = eData.Obstacles ?? new List<EObstacleData>();
-
-            var gazePoints = new List<ENoteData>();
-
-            // Always include real color notes
-            if (eData.ColorNotes != null)
-                gazePoints.AddRange(eData.ColorNotes);
-
-            if (eData.BombNotes != null)
-                gazePoints.AddRange(eData.BombNotes);
-
-            // turn chain tails into notes for gaze point checking
-            if (eData.Chains != null)
-            {
-                foreach (var chain in eData.Chains)
-                {
-                    gazePoints.Add(ENoteData.Create(chain.tailTime, ColorType.None, chain.tailLine, chain.tailLayer, NoteCutDirection.Any, chain.tailRotation)); //chain.tailRotation is different than heads in some cases even on short chains.
-                    //Plugin.Log.Info($"[WallBlockingFix] Added chain tail as gaze point. HEAD - time={chain.time:F2}, line={chain.line}, layer={chain.layer}, rot={chain.rotation} TAIL - time={chain.tailTime:F2}, line={chain.tailLine}, layer={chain.tailLayer}, rot={chain.rotation}");
-                }
-            }
-
-            Plugin.Log.Info($"[WallBlockingFix] Gaze Points: ColorNotes={eData.ColorNotes?.Count ?? 0}, BombNotes={eData.BombNotes?.Count ?? 0}");//, ChainTails={chainTails?.Count ?? 0}");
-
-            // (OPTIONAL) Include bombs if you also want to prevent walls from hiding bombs
-            // gazePoints.AddRange(eData.BombNotes);
-
-            // Sort them by time to speed up lookup
-            gazePoints = gazePoints.OrderBy(n => n.time).ToList();
-
-            Plugin.Log.Info($"[WallBlockingFix] Total Obstacles: {obstacles.Count} NJD={jd:F2}, NJS={njs:F2}, wallTravelTime={wallTravelTime:F2}");
-
-            // Debug window
-            const float DBG_START = 0;
-            const float DBG_END = 30f;
-
-            /*
-            // Log notes in debug window
-            foreach (var n in gazePoints)
-            {
-                if (n.time >= DBG_START && n.time <= DBG_END)
-                {
-                    Plugin.Log.Info(
-                        $"[WallFixDBG][NOTE] t={n.time:F3}, line={n.line}, layer={n.layer}, " +
-                        $"rot={n.rotation}, color: {n.colorType}");
-                }
-            }
-            */
-            bool IsRightSide(int line) => line > 1; // 2,3
-            bool IsLeftSide(int line) => line < 2; // 0,1
-
-            var kept = new List<EObstacleData>();
-            bool boostedWalls = Config.Instance.AllowV2BoostedWalls;
-
-            const float MAX_EXTENSION = 2f;// 3f;
-
-            foreach (var obs in obstacles)
-            {
-                float obsTime = obs.time;
-                int line = obs.line;
-                int layer = obs.layer;
-                float dur = obs.duration;
-
-                bool debug = false;// obsTime >= DBG_START && obsTime <= DBG_END;
-
-                // Skip noodle originals, as before
-                if (WallGenerator._originalWalls.Contains(obs) && WallGenerator.IsCustomNoodleWall(obs))
-                    continue;
-
-                // Side classification for occlusion logic
-                bool wallRight = IsRightSide(line);
-                bool wallLeft = IsLeftSide(line);
-
-                // ---------- skip rules (same as your original) ----------
-                bool canSkip = false;
-                if (layer > 11000) canSkip = true; // high walls
-                else if (layer > 10 && layer < 1000) canSkip = true; // floor walls
-
-                int absLine = Math.Abs(line);
-                // optional far-wall rules you had commented out
-                //if (absLine > 16000 && dur < .1f) canSkip = true;
-                //else if (absLine > 15 && absLine < 1000 && dur < .1f) canSkip = true;
-
-                if (layer == 2 && obs.line == 0 && obs.width > 2) canSkip = true; // crouch wall
-
-                if (dur < 0 && boostedWalls) canSkip = true; // boosted v2 walls
-
-                // Visible window
-                float visibleStart = obsTime - .05f;// this extra .002 catches window panes from crossing
-                float maxVisibleEnd = obs.endTime + wallTravelTime * MAX_EXTENSION; // for long arcs, can see a arcline pass through a wall even though the tail note is way later than the end of the wall.
-
-                if (debug)
-                {
-                    Plugin.Log.Info(
-                        $"[WallFixDBG][WALL] Wall t={obs.time:F3}→{obs.endTime:F3}, " +
-                        $"line={obs.line}, layer={obs.layer}, dur={obs.duration:F3}, w={obs.width}, h={obs.height}, " +
-                        $"visible=[{visibleStart:F3}, worstCase {maxVisibleEnd:F3}], rot={obs.rotation}");
-                }
-
-                if (canSkip)
-                {
-                    if (debug)
-                    {
-                        Plugin.Log.Info("[WallFixDBG][WALL]   -> SKIP (high/floor/crouch/boosted)");
-                    }
-                    kept.Add(obs);
-                    continue;
-                }
-
-                // ---------- Find earliest note that this wall will block ----------
-                float? blockTime = null;
-                ENoteData blockNote = null;
-
-                
-                float extensionForDelta = MAX_EXTENSION;
-
-                float visionBlockingWallRemovalMult = Config.Instance.VisionBlockingWallRemovalMult;
-
-                int wallRot = obs.rotation;
-                int absDelta = 0;
-
-                foreach (var n in gazePoints)
-                {
-                    if (n.time < visibleStart) continue;
-                    if (n.time > maxVisibleEnd) break;
-
-                    // Must be on same side as wall to be blockable
-                    //bool noteRight = IsRightSide(n.line);
-                    //bool noteLeft = IsLeftSide(n.line);
-
-                    //if (wallRight && !noteRight) continue;
-                    //if (wallLeft && !noteLeft) continue;
-
-                    int noteRot = n.rotation;
-                    int delta = noteRot - wallRot;
-                    absDelta = Math.Abs(delta);
-
-                    // Must be turning TOWARD the wall side
-                    bool blocks = false;
-                    if (wallRight && delta > 0) blocks = true;   // rightward turn
-                    if (wallLeft && delta < 0) blocks = true;   // leftward turn
-
-                    if (!blocks) continue;
-                    if (absDelta < 15) continue;
-
-                    // Per-angle extension:
-                    //  |delta| = 15  → 1.5
-                    //  |delta| = 30  → 3.0
-                    if (absDelta == 15) extensionForDelta = MAX_EXTENSION/2f;
-                    else extensionForDelta = MAX_EXTENSION;
-
-
-                    float visibleEnd = obs.endTime + wallTravelTime * extensionForDelta;
-
-                    // If this note is too far in the future for its angle, skip it
-                    if (n.time > visibleEnd) continue;
-
-                    // This is the first note (in time) that actually blocks this wall
-                    blockTime = n.time;
-                    blockNote = n;
-                    break;
-                }
-
-                if (debug)
-                {
-                    if (blockTime.HasValue)
-                    {
-                        Plugin.Log.Info(
-                            $"[WallFixDBG][BLOCK] wallRot={wallRot}, blockTime={blockTime.Value:F3}, " +
-                            $"blockNote t={blockNote.time:F3}, line={blockNote.line}, layer={blockNote.layer}, rot={blockNote.rotation} - extensionForDelta={extensionForDelta}");
-                    }
-                    else
-                    {
-                        Plugin.Log.Info("[WallFixDBG][BLOCK] NO BLOCKING NOTE for this wall");
-                    }
-                }
-
-                // ---------- Apply block result ----------
-                if (!blockTime.HasValue)
-                {
-                    // No note on that side whose rotation is same/further toward that side
-                    kept.Add(obs);
-                    continue;
-                }
-
-                // If angle is bigger, cut earlier (more lead time)
-                float multiplier = (absDelta > 15) ? visionBlockingWallRemovalMult : visionBlockingWallRemovalMult / 2f;//.8 & .4 were letting some through
-                float leadTime = wallTravelTime * multiplier;
-
-                float cutTime = blockTime.Value - leadTime; // Convert note time into wall cut time (~when the note is at player)
-
-                if (cutTime <= obs.time + 0.001f)
-                {
-                    // Entire wall happens while player is already looking along that lane -> drop it
-                    if (debug)
-                    {
-                        Plugin.Log.Info(
-                            $"[WallFixDBG][REMOVE] FULL remove wall t={obs.time:F3} " +
-                            $"due to note t={blockNote.time:F3}, wallRot={wallRot}, noteRot={blockNote.rotation}, absDelta={absDelta}");
-                    }
-                    continue;
-                }
-
-                float newDur = Math.Min(obs.endTime, cutTime) - obs.time;
-
-                if (newDur >= 0.001f)
-                {
-                    var segment = EObstacleData.Create(
-                        obs.time,
-                        obs.line,
-                        obs.layer,
-                        newDur,
-                        obs.width,
-                        obs.height,
-                        obs.rotation  // keep original wall lane
-                    );
-                    kept.Add(segment);
-
-                    if (debug)
-                    {
-                        Plugin.Log.Info(
-                            $"[WallFixDBG][TRUNCATE] wall {obs.time:F3}→{obs.endTime:F3} " +
-                            $"cut to {obs.time:F3}→{(obs.time + newDur):F3} " +
-                            $"by note t={blockNote.time:F3}, wallRot={wallRot}, noteRot={blockNote.rotation}, cutTime={cutTime:F3}");
-                    }
-                }
-            }
-
-            Plugin.Log.Info($"[WallBlockingFix] Total output obstacles: {kept.Count} kept out of {obstacles.Count}");
-            eData.Obstacles = kept;
-            return kept;
-        }
-
-
+        // This is the new WallRemovalForRotations() 
         static List<EObstacleData> ApplyWallVisionBlockingFix(EditableCBD eData) // COMBO Method seems to allow more walls on both sides during turns 
         {
             
@@ -2901,12 +1992,12 @@ namespace AutoBS
 
             if (njs <= 0 || jd <= 0)
             {
-                Plugin.Log.Error("[WallBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, skipping wall blocking fix.");
+                Plugin.LogDebug("[WallBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, skipping wall blocking fix.");
                 return obstacles;
             }
 
             float wallTravelTime = jd / njs;
-            Plugin.Log.Info($"[WallBlockingFix] Total Obstacles: {obstacles.Count} NJD={jd:F2}, NJS={njs:F2}, wallTravelTime={wallTravelTime:F2}");
+            Plugin.LogDebug($"[WallBlockingFix] Total Obstacles: {obstacles.Count} NJD={jd:F2}, NJS={njs:F2}, wallTravelTime={wallTravelTime:F2}");
 
             // --- Common rotation helpers related to rotationEvents (from style1) ------------------------
 
@@ -2963,7 +2054,7 @@ namespace AutoBS
             }
 
             gazePoints = gazePoints.OrderBy(n => n.time).ToList();
-            Plugin.Log.Info($"[WallBlockingFix] Gaze Points: ColorNotes={eData.ColorNotes?.Count ?? 0}, BombNotes={eData.BombNotes?.Count ?? 0}");
+            Plugin.LogDebug($"[WallBlockingFix] Gaze Points: ColorNotes={eData.ColorNotes?.Count ?? 0}, BombNotes={eData.BombNotes?.Count ?? 0}");
 
             // --- Arc overlap helper ----------------------------------------
 
@@ -3212,288 +2303,7 @@ namespace AutoBS
                 kept.AddRange(pieces);
             }
 
-            Plugin.Log.Info($"[WallBlockingFix] Total output obstacles: {kept.Count} kept out of {obstacles.Count}");
-            eData.Obstacles = kept;
-            return kept;
-        }
-
-        static List<EObstacleData> ApplyWallVisionBlockingFixComboV2BAD(EditableCBD eData) // COMBO Method v2 no rotationEvents used, only note-based orientation but crossing vision
-        {
-            var obstacles = eData.Obstacles ?? new List<EObstacleData>();
-            var arcs = eData.Arcs ?? new List<ESliderData>();
-
-            float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
-            float jd = TransitionPatcher.FinalJumpDistance;
-            if (njs <= 0 || jd <= 0) return obstacles;
-
-            float wallTravelTime = jd / njs;
-
-            //----------------------------------------------------------------------
-            // 1. BUILD NOTE-BASED ORIENTATION CURVE
-            //----------------------------------------------------------------------
-
-            List<(float time, int rot)> frames = new List<(float time, int rot)>();
-
-            void AddFrame(float t, int r)
-            {
-                frames.Add((t, r));
-            }
-
-            // Color notes
-            foreach (var n in eData.ColorNotes)
-                AddFrame(n.time, n.rotation);
-
-            // Bombs
-            foreach (var b in eData.BombNotes)
-                AddFrame(b.time, b.rotation);
-
-            // Chains
-            foreach (var c in eData.Chains)
-            {
-                if ((c.tailTime - c.time) > 0.05f) // must be a long chain
-                    AddFrame(c.tailTime, c.rotation); // use head rotation for tail
-            }
-
-            // Sort & collapse duplicates
-            frames = frames
-                .OrderBy(f => f.time)
-                .GroupBy(f => f.time)
-                .Select(g => (g.Key, g.First().rot))
-                .ToList();
-
-            var gazePoints = frames
-                .Select(f => new { time = f.time, rot = f.rot })
-                .ToList();
-
-            //----------------------------------------------------------------------
-            // 2. ORIENTATION LOOKUP FROM NOTE FRAMES
-            //----------------------------------------------------------------------
-
-            const float TOL = 0.0005f;
-
-            int GetOrientationAt(float t)
-            {
-                if (frames.Count == 0) return 0;
-
-                // Before first
-                if (t <= frames[0].time + TOL)
-                    return frames[0].rot;
-
-                // After last
-                if (t >= frames[^1].time - TOL)
-                    return frames[^1].rot;
-
-                // Binary search: last frame ≤ t
-                int lo = 0, hi = frames.Count - 1, idx = 0;
-                while (lo <= hi)
-                {
-                    int mid = (lo + hi) >> 1;
-                    if (frames[mid].time <= t + TOL)
-                    {
-                        idx = mid;
-                        lo = mid + 1;
-                    }
-                    else hi = mid - 1;
-                }
-
-                // If next frame has same rotation, treat interval as flat
-                if (idx < frames.Count - 1 && frames[idx].rot == frames[idx + 1].rot)
-                    return frames[idx].rot;
-
-                return frames[idx].rot;
-            }
-
-            //----------------------------------------------------------------------
-            // 4. ARC OVERLAP CHECK
-            //----------------------------------------------------------------------
-
-            bool IsObstacleInArcWindow(EObstacleData obs)
-            {
-                float oStart = obs.time;
-                float oEnd = obs.endTime;
-
-                foreach (var arc in arcs)
-                {
-                    float aStart = arc.time;
-                    float aEnd = arc.tailTime;
-
-                    if (oEnd >= aStart && oStart <= aEnd)
-                        return true;
-                }
-                return false;
-            }
-
-            //----------------------------------------------------------------------
-            // 5. HELPERS
-            //----------------------------------------------------------------------
-
-            bool IsRightSide(int line) => line > 1;
-            bool IsLeftSide(int line) => line < 2;
-
-            bool WouldBlock(int wallLine, int deltaRot)
-            {
-                if (wallLine < 2 && deltaRot < 0) return true; // left wall blocks on CCW
-                if (wallLine > 1 && deltaRot > 0) return true; // right wall blocks on CW
-                return false;
-            }
-
-            //----------------------------------------------------------------------
-            // 6. OLD LOGIC (rewritten for note-based orientation) // allows more wall on both sides of a turn but doesn't work well during arcs
-            //----------------------------------------------------------------------
-
-            List<EObstacleData> ApplyStyle1ForWall(EObstacleData obs) 
-            {
-                var result = new List<EObstacleData>();
-
-                float obsStart = obs.time;
-                float obsEnd = obs.endTime;
-
-                float mult = Config.Instance.VisionBlockingWallRemovalMult;
-                float normalized = mult / 0.9f;
-                float lead = (wallTravelTime / 3f) * normalized;
-
-                // Scan gaze points for rotation conflicts
-                var blockTimes =
-                    gazePoints
-                    .Where(g =>
-                        g.time >= obsStart &&
-                        g.time <= obsEnd + lead &&
-                        WouldBlock(obs.line, g.rot - obs.rotation))
-                    .Select(g => g.time)
-                    .ToList();
-
-                float segStart = obsStart;
-                float segEnd = obsEnd;
-
-                if (blockTimes.Count > 0)
-                {
-                    float blockTime = blockTimes[0];
-                    float cutTime = blockTime - lead;
-
-                    if (cutTime > segStart)
-                    {
-                        float duration = Math.Min(segEnd, cutTime) - segStart;
-                        if (duration >= 0.001f)
-                        {
-                            result.Add(EObstacleData.Create(
-                                segStart, obs.line, obs.layer, duration,
-                                obs.width, obs.height, obs.rotation
-                            ));
-                        }
-                    }
-                    return result; // rest removed
-                }
-
-                // No block → keep whole
-                result.Add(obs);
-                return result;
-            }
-
-            //----------------------------------------------------------------------
-            // 7. NEW LOGIC (same as before but uses orientation from notes) // works well during arcs but removes more walls
-            //----------------------------------------------------------------------
-
-            List<EObstacleData> ApplyStyle2ForWall(EObstacleData obs)
-            {
-                var result = new List<EObstacleData>();
-
-                float obsStart = obs.time;
-                float obsEnd = obs.endTime;
-
-                float visibleStart = obsStart - 0.05f;
-                float maxVisibleEnd = obsEnd + wallTravelTime * 2f;
-
-                bool wallRight = IsRightSide(obs.line);
-                bool wallLeft = IsLeftSide(obs.line);
-
-                float? blockTime = null;
-                int absDelta = 0;
-
-                foreach (var g in gazePoints)
-                {
-                    if (g.time < visibleStart) continue;
-                    if (g.time > maxVisibleEnd) break;
-
-                    int delta = g.rot - obs.rotation;
-                    absDelta = Math.Abs(delta);
-
-                    bool blocks =
-                        (wallRight && delta > 0) ||
-                        (wallLeft && delta < 0);
-
-                    if (!blocks || absDelta < 15) continue;
-
-                    float visibleEnd = obsEnd + wallTravelTime * (absDelta == 15 ? 1f : 2f);
-                    if (g.time > visibleEnd) continue;
-
-                    blockTime = g.time;
-                    break;
-                }
-
-                if (!blockTime.HasValue)
-                {
-                    result.Add(obs);
-                    return result;
-                }
-
-                float mult = Config.Instance.VisionBlockingWallRemovalMult;
-                if (absDelta == 15) mult /= 2f;
-
-                float cut = blockTime.Value - wallTravelTime * mult;
-
-                if (cut <= obsStart + 0.001f)
-                    return result; // whole removed
-
-                float dur = Math.Min(obsEnd, cut) - obsStart;
-                if (dur >= 0.001f)
-                    result.Add(EObstacleData.Create(
-                        obsStart, obs.line, obs.layer, dur,
-                        obs.width, obs.height, obs.rotation
-                    ));
-
-                return result;
-            }
-
-            //----------------------------------------------------------------------
-            // 8. MAIN LOOP
-            //----------------------------------------------------------------------
-
-            var kept = new List<EObstacleData>();
-            bool boostedWalls = Config.Instance.AllowV2BoostedWalls;
-            var arcMode = Config.Instance.ArcRotationMode;
-
-            foreach (var obs in obstacles)
-            {
-                // Skip noodle custom walls
-                if (WallGenerator._originalWalls.Contains(obs) &&
-                    WallGenerator.IsCustomNoodleWall(obs))
-                {
-                    continue;
-                }
-
-                bool skip =
-                    (obs.layer > 11000) ||
-                    (obs.layer > 10 && obs.layer < 1000) ||
-                    (obs.layer == 2 && obs.line == 0 && obs.width > 2) ||
-                    (obs.duration < 0 && boostedWalls);
-
-                if (skip)
-                {
-                    kept.Add(obs);
-                    continue;
-                }
-
-                bool useNew =
-                    arcMode != Config.ArcRotationModeType.ForceZero &&
-                    IsObstacleInArcWindow(obs);
-
-                var pieces = useNew
-                    ? ApplyStyle2ForWall(obs)
-                    : ApplyStyle1ForWall(obs);
-
-                kept.AddRange(pieces);
-            }
-
+            Plugin.LogDebug($"[WallBlockingFix] Total output obstacles: {kept.Count} kept out of {obstacles.Count}");
             eData.Obstacles = kept;
             return kept;
         }
@@ -3505,7 +2315,7 @@ namespace AutoBS
             // Gather rotation events from eData
             if (eData?.RotationEvents != null)
             {
-                Plugin.Log.Info($" Total Rotation Events:  {eData.RotationEvents.Count} -----------------------------------------------------------");
+                Plugin.LogDebug($" Total Rotation Events:  {eData.RotationEvents.Count} -----------------------------------------------------------");
                 foreach (var rotEvent in eData.RotationEvents)
                 {
                     // rotEvent is (float time, int rotation)
@@ -3603,165 +2413,6 @@ namespace AutoBS
             }
         }
 
-
-        // decided to do this before convert to CustomBeatmapData
-        /*
-        public static CustomBeatmapData ApplyPerObjectRotations(
-                CustomBeatmapData originalData,
-                List<ERotationEventData> finalRotations)
-        {
-            // Defensive: ensure rotations are sorted
-            var sortedRotations = finalRotations.OrderBy(r => r.time).ToList();
-
-            // If no rotations, default everything to 0
-            if (sortedRotations.Count == 0)
-                return originalData;
-
-            var accumulatedRotations = new List<(float time, int totalRotation)>();
-            int runningRotation = 0;
-            foreach (var rot in sortedRotations)
-            {
-                runningRotation += rot.rotation; // accumulate
-                accumulatedRotations.Add((rot.time, runningRotation));
-            }
-
-
-            var newData = new CustomBeatmapData(originalData.numberOfLines, originalData.beatmapCustomData, originalData.levelCustomData, originalData.customData, originalData.version);
-
-            foreach (var item in originalData.allBeatmapDataItems)
-            {
-                float itemTime = item.time;
-                int rotation = 0;
-
-                // Find the latest accumulated rotation <= itemTime
-                for (int i = accumulatedRotations.Count - 1; i >= 0; i--)
-                {
-                    if (itemTime >= accumulatedRotations[i].time)
-                    {
-                        rotation = accumulatedRotations[i].totalRotation;
-                        break;
-                    }
-                }
-
-                if (item is CustomSliderData slider)
-                {
-                    CustomSliderData newSlider;
-                    if (slider.sliderType == CustomSliderData.Type.Normal)
-                    {
-                        newSlider = (CustomSliderData)CustomSliderData.CreateCustomSliderData(
-                            slider.colorType,
-                            slider.time,
-                            slider.beat,
-                            rotation, // use new rotation
-                            slider.headLineIndex,
-                            slider.headLineLayer,
-                            slider.headBeforeJumpLineLayer,
-                            slider.headControlPointLengthMultiplier,
-                            slider.headCutDirection,
-                            slider.tailTime,
-                            rotation, // head and tail must be on same rotation lane
-                            slider.tailLineIndex,
-                            slider.tailLineLayer,
-                            slider.tailBeforeJumpLineLayer,
-                            slider.tailControlPointLengthMultiplier,
-                            slider.tailCutDirection,
-                            slider.midAnchorMode,
-                            slider.customData,
-                            slider.version
-                        );
-                    }
-                    else
-                    {
-                        newSlider = (CustomSliderData)CustomSliderData.CreateCustomBurstSliderData(
-                            slider.colorType,
-                            slider.time,
-                            slider.beat,
-                            rotation, // use new rotation
-                            slider.headLineIndex,
-                            slider.headLineLayer,
-                            slider.headBeforeJumpLineLayer,
-                            slider.headCutDirection,
-                            slider.tailTime,
-                            rotation,
-                            slider.tailLineIndex,
-                            slider.tailLineLayer,
-                            slider.tailBeforeJumpLineLayer,
-                            slider.sliceCount,
-                            slider.squishAmount,
-                            slider.customData,
-                            slider.version
-                        );
-                    }
-
-                    newData.AddBeatmapObjectDataInOrder(newSlider);
-                }
-
-                // Branch by type (your data model may vary, pseudocode here)
-                else if (item is CustomNoteData note)
-                {
-
-                    // --- Arc tail/Note match logic ---
-                    int? arcTailRotation = null;
-                    foreach (var slide in originalData.allBeatmapDataItems.OfType<CustomSliderData>())
-                    {
-                        if (Math.Abs(slide.tailTime - note.time) < 0.001f)
-                        {
-                            arcTailRotation = slide.tailRotation; // Prefer the first match
-                            break;
-                        }
-                    }
-                    // If this note matches an arc tail, override the rotation:
-                    if (arcTailRotation.HasValue)
-                        rotation = arcTailRotation.Value;
-
-
-                    // Determine bomb or normal note
-                    CustomNoteData newNote;
-                    if (note.gameplayType == GameplayType.Bomb)
-                    {
-                        newNote = CustomNoteData.CreateCustomBombNoteData(
-                            note.time, note.beat, rotation, note.lineIndex, note.noteLineLayer, note.customData, note.version);
-                    }
-                    else
-                    {
-                        newNote = CustomNoteData.CreateCustomBasicNoteData(
-                            note.time, note.beat, rotation, note.lineIndex, note.noteLineLayer, note.colorType, note.cutDirection, note.customData, note.version);
-                    }
-                    newData.AddBeatmapObjectDataInOrder(newNote);
-                }
-                else if (item is CustomObstacleData obs)
-                {
-                    var newObs = new CustomObstacleData(
-                        obs.time, obs.beat, obs.endBeat, rotation,
-                        obs.lineIndex, obs.lineLayer, obs.duration, obs.width, obs.height,
-                        obs.customData, obs.version);
-                    newData.AddBeatmapObjectDataInOrder(newObs);
-                }
-
-                else if (item is BasicBeatmapEventData evt)
-                {
-                    // Only keep lighting events; you can fine-tune this filter if needed
-                    if (evt.basicBeatmapEventType != BasicBeatmapEventType.Event14 &&
-                        evt.basicBeatmapEventType != BasicBeatmapEventType.Event15)
-                    {
-                        newData.InsertBeatmapEventDataInOrder(evt);
-                    }
-
-                    // Omit rotation events on purpose
-                }
-                
-                //else
-                //{
-                //    // Keep other data types unchanged, if needed
-                //    newData.AddBeatmapObjectData(item);
-                //}
-                
-            }
-
-            return newData;
-        }
-
-        */
     }
 
 

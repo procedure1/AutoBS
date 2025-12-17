@@ -20,7 +20,7 @@ public class OptimizeRotationsToFOV
 
     public OptimizeRotationsToFOV(List<ERotationEventData> rots, float timeWindow, float FOV)//, EditableCBD eData)
     {
-        Plugin.Log.Info($"Optimizer FOV: {FOV} Time Window: {timeWindow}");
+        Plugin.LogDebug($"Optimizer FOV: {FOV} Time Window: {timeWindow}");
 
         //this.eData = eData;
         this.rotations = rots;
@@ -31,7 +31,6 @@ public class OptimizeRotationsToFOV
     public List<ERotationEventData> FOVFix()
     {
         // Work directly with the RotationEvents list in eData
-        //var rotations = eData.RotationEvents;
 
         for (int i = 0; i < rotations.Count; i++)
         {
@@ -46,7 +45,7 @@ public class OptimizeRotationsToFOV
             }
         }
 
-        Plugin.Log.Info($"Optimizer final rotation count: {rotations.Count}. Total Rotations Reduced: {rotationsReduced} Total Rotations Removed: {rotationsRemoved}");
+        Plugin.LogDebug($"[FOVFix] Optimizer final rotation count: {rotations.Count}. Total Rotations Reduced: {rotationsReduced} Total Rotations Removed: {rotationsRemoved}");
 
         if (rotationsReduced != 0 || rotationsRemoved != 0)
             RotationsWereAdjusted = true;

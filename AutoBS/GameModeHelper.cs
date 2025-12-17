@@ -53,55 +53,6 @@ namespace AutoBS
             FieldHelper.Set(customGameMode, "_requires360Movement", requires360Movement);
             FieldHelper.Set(customGameMode, "_numberOfColors", numberOfColors);
 
-            /*
-            // Logging the properties of the customGameMode object
-            Plugin.Log.Info("BW 2 GameModeHelper - Properties of customGameMode:");
-            Type customGameModeType = customGameMode.GetType();
-            foreach (FieldInfo field in customGameModeType.GetFields(BindingFlags.NonPublic | BindingFlags.Instance))
-            {
-                object value = field.GetValue(customGameMode);
-                Plugin.Log.Info($"{field.Name}: {value}");
-            }
-            */
-
-            /*
-            //BW--------try to see all data related to set---------------------------------------------------------------------
-            List<IDifficultyBeatmapSet> thesets = new List<IDifficultyBeatmapSet>();
-
-            Plugin.Log.Info("\nBW 3 NEW GameModeHelper GetCustomGameMode IDifficultyBeatmapSet get ALL:\n");
-
-            foreach (IDifficultyBeatmapSet theset in thesets)
-            {
-                Type setElementType = theset.GetType();
-                PropertyInfo[] setProperties = setElementType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-                foreach (PropertyInfo setProperty in setProperties)
-                {
-                    object setPropertyValue = setProperty.GetValue(theset);
-                    Plugin.Log.Info($"{setProperty.Name}: {setPropertyValue}");
-                }
-                Plugin.Log.Info("");
-
-                foreach (IDifficultyBeatmap difficultyBeatmap in theset.difficultyBeatmaps)
-                {
-                    Plugin.Log.Info("");
-                    Plugin.Log.Info($"Properties of difficultyBeatmap: ");
-                    Plugin.Log.Info("");
-                    Type difficultyBeatmapType = difficultyBeatmap.GetType();
-                    PropertyInfo[] difficultyBeatmapProperties = difficultyBeatmapType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-                    foreach (PropertyInfo difficultyBeatmapProperty in difficultyBeatmapProperties)
-                    {
-                        object difficultyBeatmapPropertyValue = difficultyBeatmapProperty.GetValue(difficultyBeatmap);
-                        Plugin.Log.Info($"{difficultyBeatmapProperty.Name}: {difficultyBeatmapPropertyValue}");
-                    }
-                    Plugin.Log.Info("");
-                }
-                Plugin.Log.Info("");
-            }
-            //BW------------------------------------------------------------------------------
-            */
-
             return customGameMode;
         }
 
@@ -111,7 +62,7 @@ namespace AutoBS
             CustomLevelLoader customLevelLoader = UnityEngine.Object.FindObjectOfType<CustomLevelLoader>();
             if (customLevelLoader == null)
             {
-                Plugin.Log.Info("customLevelLoader is null");
+                Plugin.Log.Warn("customLevelLoader is null");
                 return null;
             }
             BeatmapCharacteristicCollection defaultGameModes = FieldHelper.Get<BeatmapCharacteristicCollection>(customLevelLoader, "_beatmapCharacteristicCollection");
@@ -119,23 +70,7 @@ namespace AutoBS
             {
                 Plugin.Log.Warn("defaultGameModes is null");
             }
-            /*
-            // Logging the properties of each element in defaultGameModes
-            Plugin.Log.Info("BW 4 GameModeHelper - Properties of elements in defaultGameModes:");
-            foreach (BeatmapCharacteristicSO element in defaultGameModes.beatmapCharacteristics)
-            {
-                Type elementType = element.GetType();
-                PropertyInfo[] properties = elementType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-                Plugin.Log.Info($"Properties of {elementType.Name}:--------------------------");
-                foreach (PropertyInfo property in properties)
-                {
-                    object value = property.GetValue(element);
-                    Plugin.Log.Info($"{property.Name}: {value}");
-                }
-                Plugin.Log.Info(" ");
-            }
-            */
+            
             return defaultGameModes;
         }
 

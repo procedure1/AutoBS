@@ -29,12 +29,12 @@ namespace AutoBS
         {
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE || IsEnabledArcs() || IsEnabledChains() || IsEnabledWalls() || IsEnabledLighting() || IsEnabledAutoNjsFixer() || Config.Instance.EnableCleanBeatSage)
             {
-                Plugin.Log.Info("[Utils] General features enabled.");
+                Plugin.LogDebug("[Utils] General features enabled.");
                 return true;
             }
             else
             {
-                Plugin.Log.Info("[Utils] General features disabled.");
+                Plugin.LogDebug("[Utils] General features disabled.");
                 return false;
             }
         }
@@ -140,7 +140,6 @@ namespace AutoBS
         {
             if (TransitionPatcher.AutoNJSDisabledByConflictingMod) return false;
 
-            //if (HarmonyPatches.RequiresNoodle) return false;
             //Will need to check for various types of lighting despite this function (such as lightmapper, etc)
 
             string characteristic = TransitionPatcher.SelectedSerializedName;
@@ -150,7 +149,7 @@ namespace AutoBS
                 (!Config.Instance.EnableAutoNjsFixerStandard && characteristic != "Generated360Degree" &&
                   characteristic != "360Degree" && characteristic != "90Degree"))
             {
-                Plugin.Log.Info($"[IsEnabledAutoNjsFixer][AutoNjsFixer] disabled for charac: {characteristic}");
+                Plugin.LogDebug($"[IsEnabledAutoNjsFixer][AutoNjsFixer] disabled for charac: {characteristic}");
                 return false;
             }
             //Plugin.Log.Info($"Lighting enabled for standard:{Config.Instance.EnableLightingStandard} and charac: {characteristic}");

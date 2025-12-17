@@ -6,7 +6,7 @@ namespace AutoBS // required adding reference to UnityEngine.AudioModule
 {
 
     // USE THIS ONE!!!! WORKS!!! but prefer Verbose Volume
-    
+    /*
     public class SoundRemover // from sound replacer -- MADE THIS SINCE WAS NOT WORKING ON LEVEL CLEARED so just replaced all the sounds i wanted and can remove soundreplacer.dll
     {
         // Remove Level Cleared or Failed Audio
@@ -29,7 +29,12 @@ namespace AutoBS // required adding reference to UnityEngine.AudioModule
                 }
             }
         }
-        
+        */
+
+
+
+
+
         // Remove menu music
         /* Works but disabling
         [HarmonyPatch(typeof(SongPreviewPlayer), "Awake")]
@@ -54,21 +59,13 @@ namespace AutoBS // required adding reference to UnityEngine.AudioModule
         
         // Helper method to get an empty AudioClip
 
+        /*
         private static AudioClip GetEmptyClip()
         {
             return AudioClip.Create("Silence", 1, 1, 44100, false);
         }
-    }
-    
-
-
-
-
-
-
-
-
-
+        */
+    //}
 
     // UNUSED but works! but changes volume on all sounds
     /*
