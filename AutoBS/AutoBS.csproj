@@ -47,14 +47,12 @@
     <Compile Include="Arcitect.cs" />
     <Compile Include="AutoNjsFixer.cs" />
     <Compile Include="BeatSageCleanUp.cs" />
-    <Compile Include="UNUSED_BuiltInBeatmapLogger.cs" />
     <Compile Include="BuiltInMapJsonLoader.cs" />
     <Compile Include="JsonOutputConverter.cs" />
     <Compile Include="DataRegistry.cs" />
     <Compile Include="EditableBeatmapData.cs" />
     <Compile Include="ForceRequiredModActivation.cs" />
     <Compile Include="Patches\CreateTransformedBeatmapData.cs" />
-    <Compile Include="Patches\UNUSED_GetBeatmapStringAsync_Patch.cs" />
     <Compile Include="Patches\SetContent.cs" />
     <Compile Include="Patches\TransitionPatcher.cs" />
     <Compile Include="Patches\VariableMovementDataProvider.cs" />
@@ -62,8 +60,6 @@
     <Compile Include="FieldHelper.cs" />
     <Compile Include="GameModeHelper.cs" />
     <Compile Include="Generator.cs" />
-    <Compile Include="UI\NOT_USED_WallSettingsFlowCoordinator.cs" />
-    <Compile Include="UI\NOT_USED_WallSettingsViewController.cs" />
     <Compile Include="UNUSED_GLSConverter.cs" />
     <Compile Include="LightAutoMapper.cs" />
     <Compile Include="OptimizeRotationsToFOV.cs" />
@@ -85,7 +81,6 @@
     <None Include="Directory.Build.props" Condition="Exists('Directory.Build.props')" />
     <EmbeddedResource Include="UI\GameplaySetupView.bsml" />
     <None Include="packages.config" />
-    <EmbeddedResource Include="UI\NOT_USED_WallSettings.bsml" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />

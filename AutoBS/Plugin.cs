@@ -16,6 +16,7 @@ using System.Reflection;
 using BeatSaberMarkupLanguage.GameplaySetup;
 using UnityEngine.SceneManagement;
 using SongCore;
+using System.Diagnostics;
 
 namespace AutoBS
 {
@@ -50,8 +51,8 @@ namespace AutoBS
             harmony.PatchAll();
 
 
-            
-            //Disabled 
+
+            //Disabled Overlay numbers on notes and walls
             //Plugin.Log?.Info("[WallTimeOverlayDebug] OnApplicationStart()");
             //SceneManager.activeSceneChanged += OnActiveSceneChanged;
         }
@@ -59,9 +60,11 @@ namespace AutoBS
         // Only for adding text labels to walls/notes for debugging
         private GameObject _runner;
 
+        /*
+        // Overlay numbers on notes and walls
         private void OnActiveSceneChanged(Scene prev, Scene next)
         {
-            Debug.Log("[WallTimeOverlayDebug] activeSceneChanged → " + next.name);
+            UnityEngine.Debug.Log("[WallTimeOverlayDebug] activeSceneChanged → " + next.name);
 
             if (next.name.Contains("GameCore"))
             {
@@ -73,7 +76,7 @@ namespace AutoBS
                     // Use the new debug overlay class
                     _runner.AddComponent<WallTimeOverlayDebug>();
 
-                    Debug.Log("[WallTimeOverlayDebug] Runner created in GameCore");
+                    UnityEngine.Debug.Log("[WallTimeOverlayDebug] Runner created in GameCore");
                 }
             }
             else
@@ -82,9 +85,19 @@ namespace AutoBS
                 {
                     UnityEngine.Object.Destroy(_runner);
                     _runner = null;
-                    Debug.Log("[WallTimeOverlayDebug] Runner destroyed (left GameCore)");
+                    UnityEngine.Debug.Log("[WallTimeOverlayDebug] Runner destroyed (left GameCore)");
                 }
             }
+        }
+        */
+
+        // ======================================================
+        // Debug-only logging (compiled out in Release builds)
+        // ======================================================
+        [Conditional("DEBUG")]
+        public static void LogDebug(string message)
+        {
+            Log.Info($"[DEBUG] {message}");
         }
 
 

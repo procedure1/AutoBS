@@ -266,7 +266,7 @@ By default, the `TurnOffJSONDatOutputAfterOneMapPlay` config setting is set to `
 
 v4 output will create beatmap, lightshow, and audioData files.
 
-For v4 output, you must also set the `OutputV4JsonSongSampleRate` config setting. This is the sample rate of the audio file for the song. It will default to `44100`. The map will be out-of-sync if this is not correct. Most songs are `44100` or `48000`.
+For v4 output, you must also set the `OutputV4JsonSongSampleRate` config setting. This is the sample rate of the audio file for the song. It will default to `44100`. The map will be out-of-sync if this is not correct. Most songs are `44100` or `48000`. (In Windows, right click the song, choose PROPERTIES>DETAILS.)
 
 ***
 

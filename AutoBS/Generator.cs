@@ -495,7 +495,7 @@ namespace AutoBS
             float firstBeatmapNoteTime = notesAndBombs[0].time;
 
 #if DEBUG
-				Plugin.Log.Info($"Setup bpm={bpm} beatDuration={beatDuration} barLength={barLength} firstNoteTime={firstBeatmapNoteTime} firstnoteGameplayType={notes[0].gameplayType} firstnoteColorType={notes[0].colorType}");
+				Plugin.Log.Info($"Setup bpm={bpm} beatDuration={beatDuration} barLength={barLength} firstNoteTime={firstBeatmapNoteTime} firstnoteGameplayType={eData.ColorNotes[0].gameplayType} firstnoteColorType={eData.ColorNotes[0].colorType}");
 #endif
             // get all left and all right notes (color indenpendent)
             var notesBySideLeft = new List<ENoteData>();

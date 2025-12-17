@@ -273,9 +273,9 @@ namespace AutoBS
         public virtual bool EnableAutoNjsFixerNonGen360 { get; set; } = false;
         public virtual bool EnableAutoNjsFixerStandard { get; set; } = false;
 
-        public virtual bool EnabledInPractice { get; set; } = false; // if > 0, forces NJS to this value
-        public virtual float DesiredNJS { get; set; } = 10f;
-        public virtual float DesiredJD  { get; set; } = 30f;
+        public virtual bool EnabledInPractice { get; set; } = false; 
+        public virtual float DesiredNJS { get; set; } = 10f; // if > 0 use this value
+        public virtual float DesiredJD  { get; set; } = 30f; // if > 0 use this value
         public enum AutoNjsFixerModeType { MaintainNoteSpeed, ForceNJS } // bpm is required for maintain speed mode
         public virtual AutoNjsFixerModeType AutoNjsFixerMode { get; set; } = AutoNjsFixerModeType.MaintainNoteSpeed;
 

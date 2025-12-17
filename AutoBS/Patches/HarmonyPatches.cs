@@ -4,36 +4,15 @@ using BS_Utils.Gameplay;//BW added to Disable Score submission https://github.co
 using CustomJSONData.CustomBeatmap;
 using HarmonyLib;
 using HMUI;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using SongCore;
-using SongCore.UI;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using Zenject;
-using static IPA.Logging.Logger;
-using static NoteData;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolTip;
 using TMPro;
-
-
-
-
 
 namespace AutoBS.Patches
 {
-
     #region Prefix - Bright Lasers
     //Taken from Technicolor mod - needs no other code except the BSML & Config. without this, rotating lasers are very dull
     [HarmonyPatch]
@@ -90,16 +69,13 @@ namespace AutoBS.Patches
     #endregion
 
     #region Prefix - BeatmapObjectSpawnMovementData -  BigLasers
-    //BW 5th item that runs. JDFixer uses this method so that the user can update the MaxJNS over and over. i tried it in LevelUpdatePatcher. it works but can only be updated before play song one time https://github.com/zeph-yr/JDFixer/blob/b51c659def0e9cefb9e0893b19647bb9d97ee9ae/StandardLevelDetailViewPatch.cs
-    //note jump offset determines how far away notes spawn from you. A negative modifier means notes will spawn closer to you, and a positive modifier means notes will spawn further away
-
+    
+    // JDFixer uses this method so that the user can update the MaxJNS over and over. i tried it in LevelUpdatePatcher. it works but can only be updated before play song one time https://github.com/zeph-yr/JDFixer/blob/b51c659def0e9cefb9e0893b19647bb9d97ee9ae/StandardLevelDetailViewPatch.cs
+    // note jump offset determines how far away notes spawn from you. A negative modifier means notes will spawn closer to you, and a positive modifier means notes will spawn further away
     [HarmonyPatch(typeof(BeatmapObjectSpawnMovementData), nameof(BeatmapObjectSpawnMovementData.Init))]
     [HarmonyPatch(new Type[] { typeof(int), typeof(IJumpOffsetYProvider), typeof(Vector3) })]
     internal class SpawnMovementDataUpdatePatch
     {
-        //private static bool OriginalValuesSet = false; // Flag to ensure original values are only stored once
-        //public static float OriginalNJS; // Store the original startNoteJumpMovementSpeed
-        //public static float OriginalNJO;
         internal static void Prefix(int noteLinesCount, IJumpOffsetYProvider jumpOffsetYProvider, Vector3 rightVec)
         {
             if (!Config.Instance.EnablePlugin) return;
@@ -107,13 +83,10 @@ namespace AutoBS.Patches
 
             if (Config.Instance.BigLasers &&
                 (TransitionPatcher.SelectedSerializedName == "Generated360Degree" ||
-                 TransitionPatcher.SelectedSerializedName == "Generated90Degree" ||
                  TransitionPatcher.SelectedSerializedName == "360Degree" ||
-                 TransitionPatcher.SelectedSerializedName == "90Degree")) // only do this for gen 360 or else it will do this for all maps
+                 TransitionPatcher.SelectedSerializedName == "90Degree")) // only do this for 360 or else it will do this for all maps
             {
                 BigLasers();
-                //BigLasers myOtherInstance = new BigLasers();
-                // myOtherInstance.Big();
             }
 
         }
@@ -125,15 +98,11 @@ namespace AutoBS.Patches
             //Environment>TopLaser>BoxLight, Environment>DownLaser>BoxLight, Environment/RotatingLaser/Pair/BaseR or BaseL/Laser/BoxLight
             ParametricBoxController[] boxControllers = GameObject.FindObjectsOfType<ParametricBoxController>();
 
-            // Modify the ParametricBoxController properties of all BoxLights
             int i = 1;
             foreach (ParametricBoxController boxController in boxControllers)
             {
                 Transform parentTransform = boxController.gameObject.transform.parent;//scale gameObject parent
                 Vector3 currentScale = parentTransform.localScale;
-
-                //if (i == 1)//so doesn't reappear several times
-                //    Plugin.Log.Info($"BoxLights Scaled");
 
                 switch (parentTransform.name)
                 {
@@ -164,19 +133,11 @@ namespace AutoBS.Patches
     }
     #endregion
 
-
     #region Prefix - BeatmapDataLoader.LoadBeatmapDataAsync - adds the beatmapData (IReadonlyBeatmapData)
 
     // This works great, but required mods like Noodle and Chroma will not activate on the gen 360 map. It uses a unique BeatmapKey so scoring works.
-    // If want required mods to work, Do not prefix BeatmapDataLoader.LoadBeatmapDataAsync to feed your own BeatmapKey. There is no way to force activate the mods like i do for Mapping extensions which has its own built in method for that.
-    // since that shortcut bypasses parts of the normal pipeline that Heck/NE/Chroma expect to hook (esp.their CustomDataManager.DeserializeObjects path). Remove that prefix.Let the loader run naturally so requirements get detected and those mods attach.
-    // -----------
-    // If not worried about required mods working in gen 360, then this is a great way to inject your custom data and have song core see it as a new different map with a different beatmapKey
-    // MUST USE THIS! Otherwise will get a NULL for the beatmapData when CreateTransformedBeatmapData is called on gen360 since there is no beatmapData yet without this.
-    // Short-circuit the loader - load custom data for a gen360 map. 
     // Set Content only creates metaData for the map, not the actual notes and obstacles.
     // this adds the beatmapData (IReadonlyBeatmapData) with actual notes etc to the map and hands it off to CreateTransformedBeatmapData
-
     [HarmonyPatch(typeof(BeatmapDataLoader), nameof(BeatmapDataLoader.LoadBeatmapDataAsync))]
     static class Patch_BeatmapDataLoader_LoadAsync
     {
@@ -188,7 +149,7 @@ namespace AutoBS.Patches
             bool loadingForDesignatedEnvironment,
             IEnvironmentInfo targetEnvironmentInfo,
             IEnvironmentInfo originalEnvironmentInfo,
-            object beatmapLevelDataVersion,    // catch the real BeatmapLevelDataVersion
+            object beatmapLevelDataVersion,
             GameplayModifiers gameplayModifiers,
             PlayerSpecificSettings playerSpecificSettings,
             bool enableBeatmapDataCaching,
@@ -197,38 +158,31 @@ namespace AutoBS.Patches
             if (!Config.Instance.EnablePlugin) return true;
             if (!Utils.IsEnabledForGeneralFeatures()) return true;
 
-            if (!loadingForDesignatedEnvironment)
+            if (!loadingForDesignatedEnvironment) // run the original for previews etc. this prevents it from running multiple times on the same difficulty
             {
-                Plugin.Log.Info("[LoadBeatmapDataAsync] Skipping non-designated environment load.");
-                return true; // run the original for previews etc. this prevents it from running multiple times on the same difficulty
+                Plugin.LogDebug("[LoadBeatmapDataAsync] Skipping non-designated environment load.");
+                return true; 
             }
 
-            Plugin.Log.Info($"[LoadBeatmapDataAsync] Called for ID: {beatmapKey.levelId} Difficulty: {beatmapKey.difficulty} Characteristic: {beatmapKey.beatmapCharacteristic.serializedName}.");
+            Plugin.LogDebug($"[LoadBeatmapDataAsync] Called for ID: {beatmapKey.levelId} Difficulty: {beatmapKey.difficulty} Characteristic: {beatmapKey.beatmapCharacteristic.serializedName}.");
 
-            // This is called multiple times so I use this limit to only the difficulty the user selected to play.
-            if (!TransitionPatcher.UserSelectedMapToInject)//beatmapKey.beatmapCharacteristic.serializedName != "Generated360Degree")
+            
+            if (!TransitionPatcher.UserSelectedMapToInject) // This is called multiple times so I use this limit to only the difficulty the user selected to play.
             {
-                Plugin.Log.Info($"[LoadBeatmapDataAsync] Not a Generated360Degree map, skipping custom data loading.");
-                return true; // if NOT gen360 then original method runs unmodified (true)
+                Plugin.LogDebug($"[LoadBeatmapDataAsync] Not a Generated360Degree map, skipping custom data loading.");
+                return true; 
             }
-
-            // Use your custom data (from a static or recently generated variable)
 
             IReadonlyBeatmapData cbd = BeatmapDataRegistry.beatmapDataByKey[beatmapKey] as IReadonlyBeatmapData;
 
-                //if (HarmonyPatches.cjBeatmapData != null)
-                //if (saveData != null)
             if (cbd != null)
             {
-                Plugin.Log.Info($"[LoadBeatmapDataAsync] Custom Level - Using cjBeatmapData for {beatmapKey.beatmapCharacteristic.serializedName} requires360Movement: {beatmapKey.beatmapCharacteristic.requires360Movement} containsRotationEvents: {beatmapKey.beatmapCharacteristic.containsRotationEvents}.");
-                Plugin.Log.Info($"[LoadBeatmapDataAsync] Custom Level - Retrieved BeatmapData from JSON - notes: {cbd.allBeatmapDataItems.OfType<NoteData>().Count()} obstacles: {cbd.allBeatmapDataItems.OfType<ObstacleData>().Count()} events: {cbd.allBeatmapDataItems.OfType<EventData>().Count()} bpm change events: {cbd.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}.");
+                Plugin.LogDebug($"[LoadBeatmapDataAsync] Custom Level - Using cjBeatmapData for {beatmapKey.beatmapCharacteristic.serializedName} requires360Movement: {beatmapKey.beatmapCharacteristic.requires360Movement} containsRotationEvents: {beatmapKey.beatmapCharacteristic.containsRotationEvents}.");
+                Plugin.LogDebug($"[LoadBeatmapDataAsync] Custom Level - Retrieved BeatmapData from JSON - notes: {cbd.allBeatmapDataItems.OfType<NoteData>().Count()} obstacles: {cbd.allBeatmapDataItems.OfType<ObstacleData>().Count()} events: {cbd.allBeatmapDataItems.OfType<EventData>().Count()} bpm change events: {cbd.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}.");
 
-                //IReadonlyBeatmapData cjBeatmapData = SetContent.ProduceSimpleCJD(saveData);
-                //__result = Task.FromResult(cjBeatmapData);
                 __result = Task.FromResult(cbd);
                 return false;
             }
-
 
             Plugin.Log.Error($"[LoadBeatmapDataAsync] cjBeatmapData is NULL for {beatmapKey.beatmapCharacteristic.serializedName} requires360Movement: {beatmapKey.beatmapCharacteristic.requires360Movement} containsRotationEvents: {beatmapKey.beatmapCharacteristic.containsRotationEvents} {beatmapKey.levelId} {beatmapKey.difficulty}.");
 
@@ -252,7 +206,7 @@ namespace AutoBS.Patches
             var levelField = typeof(StandardLevelDetailView).GetField("_beatmapLevel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var level = (BeatmapLevel)levelField.GetValue(__instance);
 
-            Plugin.Log.Info($"[SetContentForBeatmapData] Called for level: {level?.levelID}");
+            Plugin.LogDebug($"[SetContentForBeatmapData] Called for level: {level?.levelID}");
 
             if (level == null)
                 return true; // fallback to vanilla
@@ -267,89 +221,45 @@ namespace AutoBS.Patches
             var selectedCharacteristic = charCtrl.selectedBeatmapCharacteristic;
             var selectedDifficulty = diffCtrl.selectedDifficulty;
 
-            // Build BeatmapKey for lookup
             var key = new BeatmapKey(level.levelID, selectedCharacteristic, selectedDifficulty);
 
-            // Check if this is a Gen360 or custom-injected difficulty
-            // (Update this condition to fit your naming for generated gamemodes)
             if (selectedCharacteristic.serializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
             {
                 // Try to get stats from your registry
-                var stats = MenuDataRegistry.GetStatsForKey(key); // <-- Implement this method
+                var stats = MenuDataRegistry.GetStatsForKey(key);
 
                 if (stats != null)
                 {
                     // Set UI with your stats
-                    // Access _levelParamsPanel and _levelParamsPanelCanvasGroup
                     var panelField = typeof(StandardLevelDetailView).GetField("_levelParamsPanel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                     var canvasGroupField = typeof(StandardLevelDetailView).GetField("_levelParamsPanelCanvasGroup", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
                     var panel = (LevelParamsPanel)panelField.GetValue(__instance);
                     var canvasGroup = (CanvasGroup)canvasGroupField.GetValue(__instance);
 
-                    // Un-fade the panel
-                    canvasGroup.alpha = 1f;
+                    canvasGroup.alpha = 1f; // Un-fade the panel
 
-                    // Set values (assuming your stats object has these fields)
                     panel.notesCount = stats.notesCount;
                     panel.obstaclesCount = stats.obstaclesCount;
                     panel.bombsCount = stats.bombsCount;
-                    panel.notesPerSecond = stats.notesPerSecond; // Or compute notes/sec
+                    panel.notesPerSecond = stats.notesPerSecond;
 
-                    Plugin.Log.Info($"[SetContentForBeatmapData] Updated UI for Gen360 - Notes: {stats.notesCount}, Obstacles: {stats.obstaclesCount}, Bombs: {stats.bombsCount}, NPS: {stats.notesPerSecond}");
+                    Plugin.LogDebug($"[SetContentForBeatmapData] Updated UI for Gen360 - Notes: {stats.notesCount}, Obstacles: {stats.obstaclesCount}, Bombs: {stats.bombsCount}, NPS: {stats.notesPerSecond}");
 
-                    // Optional: update additional UI text if needed, e.g. set NPS text label
-                    // (depends on your LevelParamsPanel fields)
-
-                    // Prevent vanilla from overwriting your stats/UI
-                    return false;
+                    return false; // Prevent vanilla from overwriting your stats/UI
                 }
                 // If not found, let vanilla run and fallback to normal
             }
 
-            Plugin.Log.Info("[SetContentForBeatmapData] Not a Gen360 map or stats not found, using vanilla UI.");
+            Plugin.LogDebug("[SetContentForBeatmapData] Not a Gen360 map or stats not found, using vanilla UI.");
 
-            // Not Gen360: let vanilla code handle everything else
-            return true;
-        }
-    }
-    /*
-    // this patch is a 2nd SetContentForBeatmapData patch and for this current version of the mod, it ends up blocking the menu stats from appearing.
-    #region 3 Prefix - Patch_StandardLevelDetailView_ForceRecalc
-    //v1.40
-    // Force the menu stats‐panel to recalculate from JSON
-    // By default the detail‐view will only use the built‐in precalculated data(and you’ve been returning a blank placeholder for your 360 characteristic). The easiest hack is to short‐circuit always go into the JSON‐recalculate path:
-    [HarmonyPatch(typeof(StandardLevelDetailView))]
-    [HarmonyPatch("SetContentForBeatmapData", MethodType.Normal)]
-    static class Patch_StandardLevelDetailView_ForceRecalc
-    {
-        // Cache the MethodInfos so we only look them up once
-        static readonly MethodInfo ClearContentMI = typeof(StandardLevelDetailView)
-            .GetMethod("ClearContent", BindingFlags.Instance | BindingFlags.NonPublic);
-        static readonly MethodInfo CalcContentMI = typeof(StandardLevelDetailView)
-            .GetMethod("CalculateAndSetContent", BindingFlags.Instance | BindingFlags.NonPublic);
-
-        static bool Prefix(StandardLevelDetailView __instance)
-        {
-            Plugin.Log.Info("[SetContentForBeatmapData] Force Recalc on menu stats called.");
-            // 1) Call ClearContent()
-            ClearContentMI.Invoke(__instance, null);
-            // 2) Call CalculateAndSetContent()
-            CalcContentMI.Invoke(__instance, null);
-            // 3) Skip the original SetContentForBeatmapData entirely
-            return false;
+            return true; // Not Gen360: let vanilla code handle everything else
         }
     }
     #endregion
-    */
 
-
-
-    #endregion
-
-
+    #region Prefix & Postfix - BS-Utils Patch score submission bug
     // Patch BS_Utils score submission disabled banner to show only one line instead of multiple lines and to fix problem of 1st run not showing disabled mod reason
-
     [HarmonyPatch(typeof(ResultsViewController), "SetDataToUI")]
     [HarmonyAfter("com.kyle1413.BeatSaber.BS-Utils")] // run after BS_Utils
     static class ResultsViewController_SetDataToUI_Fix
@@ -417,7 +327,7 @@ namespace AutoBS.Patches
                     rt.anchoredPosition = new Vector2(0f, -30f);
                 }
 
-                Plugin.Log.Info("[ScoreGate] Created results label");
+                Plugin.LogDebug("[ScoreGate] Created results label");
             }
 
             // Write a single, clean line every time (no stacking).
@@ -427,6 +337,9 @@ namespace AutoBS.Patches
             label.gameObject.SetActive(true);
         }
     }
+    #endregion
+
+    #region ScoreGate - Enable/Disable Scoring
     //Clear your flag when you return to menu so it doesn’t carry over
     [HarmonyPatch(typeof(MainFlowCoordinator), "DidActivate")]
     static class ScoreGate_ClearOnMenu
@@ -436,12 +349,11 @@ namespace AutoBS.Patches
             if (!Config.Instance.EnablePlugin) return;
             if (!Utils.IsEnabledForGeneralFeatures()) return;
 
-            Plugin.Log.Info("[ScoreGate] Clearing on MainFlowCoordinator.DidActivate");
+            Plugin.LogDebug("[ScoreGate] Clearing on MainFlowCoordinator.DidActivate");
             ScoreGate.Clear();
         }
 
     }
-
 
     public static class ScoreGate
     {
@@ -459,8 +371,5 @@ namespace AutoBS.Patches
             ReasonThisRun = "";
         }
     }
-
-    // Gets User selected difficulty when a user changes the difficulty in the menu. Otherwise, SetContent will have the default difficulty when a new song is selected.
-    //[HarmonyPatch(typeof(StandardLevelDetailView), "HandleBeatmapDifficultySegmentedControlControllerDidSelectDifficulty")]
-
+    #endregion
 }
