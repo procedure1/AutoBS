@@ -1372,7 +1372,7 @@ namespace AutoBS
 
             if (TransitionPatcher.RequiresNoodle) // this happens long after TransitionPatcher.BeatmapPatcher
             {
-                Plugin.Log.Info("Checking for Noodle Problem Attributes...");
+                Plugin.LogDebug("[TestForNoodleCustomData] Checking for Noodle Problem Attributes...");
                 // Define the set of gameplay-affecting attributes
                 HashSet<string> problemAttributes = new HashSet<string>
                 {
@@ -1410,11 +1410,11 @@ namespace AutoBS
 
                 if (NoodleProblemNotes || NoodleProblemObstacles)
                 {
-                    Plugin.Log.Info($"TestForNoodleCustomData: Contains Noodle Problem Attributes: eNotes: {noteProblemCount} eObs: {obstacleProblemCount}! (This stops counting at 11.) (out of eNotes: {eData.ColorNotes.Count} and eObs: {eData.Obstacles.Count})!");
+                    Plugin.LogDebug($"[TestForNoodleCustomData] Contains Noodle Problem Attributes: eNotes: {noteProblemCount} eObs: {obstacleProblemCount}! (This stops counting at 11.) (out of eNotes: {eData.ColorNotes.Count} and eObs: {eData.Obstacles.Count})!");
                 }
                 else
                 {
-                    Plugin.Log.Info($"TestForNoodleCustomData: No Noodle Problem Attributes Found (out of eNotes: {eData.ColorNotes.Count} and eObs: {eData.Obstacles.Count})!");
+                    Plugin.LogDebug($"[TestForNoodleCustomData] No Noodle Problem Attributes Found (out of eNotes: {eData.ColorNotes.Count} and eObs: {eData.Obstacles.Count})!");
                 }
 
             }

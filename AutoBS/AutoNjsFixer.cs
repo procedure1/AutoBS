@@ -43,8 +43,8 @@ namespace AutoBS
             finalNJS = finalNJS > 0 ? finalNJS : originalNJS; // user sets desiredNJS to 0 then use originalNJS
             finalJD = desiredJD > 0 ? desiredJD : originalJD;
 
-            string mode = "Force NJS";
-            if (maintainVelocity) mode = "Maintain Velocity";
+            string mode = "Set Note Speed";
+            if (maintainVelocity) mode = "Maintain Perceived Speed";
             Plugin.Log.Info($"[AutoNjsFixer] originalNJS: {originalNJS}, originalJD: {originalJD} => finalNJS: {finalNJS}, finalJD: {finalJD} (mode: {mode})");
 
             return (finalNJS, finalJD, originalJD);

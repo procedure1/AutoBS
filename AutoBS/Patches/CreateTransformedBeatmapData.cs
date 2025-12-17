@@ -70,7 +70,7 @@ namespace AutoBS.Patches
                          $"{bm.obstaclesCount} obstacles, " +
                          $"{bm.allBeatmapDataItems.OfType<SliderData>().Where((e) => e.sliderType == SliderData.Type.Normal).Count()} Arcs, " +
                          $"{bm.allBeatmapDataItems.OfType<SliderData>().Where((e) => e.sliderType == SliderData.Type.Burst).Count()} Chains, " +
-                         $" No 'Rotation Events' are available for v4, " +
+                         //$" No 'Rotation Events' are available for v4, " +
                          $"{bm.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Count()} Basic Events, " +
                          $"{bm.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Where((e) => e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15).Count()} Basic Rotation Events, " +
                          $"{bm.allBeatmapDataItems.OfType<EventData>().Count()} Events, " +
@@ -184,7 +184,7 @@ namespace AutoBS.Patches
                 {
                     __result = outp.Custom!;
 
-                    Plugin.Log.Info($"[CreateTransformedBeatmapData] eData -> Final CustomBeatmapData v{TransitionPatcher.CurrentBeatmapVersion}: " +
+                    Plugin.Log.Info($"[CreateTransformedBeatmapData] Final CustomBeatmapData: " +
                          $"{__result.cuttableNotesCount} notes, " +
                          $"{__result.bombsCount} bombs, " +
                          $"{__result.obstaclesCount} obstacles, " +
@@ -193,7 +193,8 @@ namespace AutoBS.Patches
                          $"{__result.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Count()} Basic Events, " +
                          $"{__result.allBeatmapDataItems.OfType<CustomEventData>().Count()} Events, " +
                          $"{__result.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()} Color Boosts, " +
-                         $"{__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()} Bpm Change Events");
+                         $"{__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()} Bpm Change Events, " +
+                         $"{eData.RotationEvents.Count} Rotation Events (in-line per object)");
                     // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
                     JsonOutputConverter.ToJsonFile(__result as CustomBeatmapData, eData);
@@ -203,7 +204,7 @@ namespace AutoBS.Patches
                 {
                     __result = outp.Vanilla!;
                     
-                    Plugin.Log.Info($"[CreateTransformedBeatmapData] eData -> Final Vanilla BeatmapData v{TransitionPatcher.CurrentBeatmapVersion}: " +
+                    Plugin.Log.Info($"[CreateTransformedBeatmapData] Final Vanilla BeatmapData v{TransitionPatcher.CurrentBeatmapVersion}: " +
                          $"{__result.cuttableNotesCount} notes, " +
                          $"{__result.bombsCount} bombs, " +
                          $"{__result.obstaclesCount} obstacles, " +
@@ -213,7 +214,8 @@ namespace AutoBS.Patches
                          $"{__result.allBeatmapDataItems.OfType<EventData>().Count()} Events, " +
                          $"{__result.allBeatmapDataItems.OfType<ColorBoostBeatmapEventData>().Count()} Color Boosts, " +
                          $"{__result.allBeatmapDataItems.OfType<BpmChangeEventData>().Count()} Bpm Change Events, " +
-                         $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
+                         $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events, " +
+                         $"{eData.RotationEvents.Count} Rotation Events (in-line per object)");
                 }
                 
                 Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");

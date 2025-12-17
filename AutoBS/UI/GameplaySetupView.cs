@@ -123,7 +123,7 @@ namespace AutoBS.UI
             get => Config.Instance.EnablePlugin;
             set
             {
-                Plugin.Log.Info($"[EnablePlugin] Setter called with value: {value}");
+                Plugin.LogDebug($"[EnablePlugin] Setter called with value: {value}");
                 Config.Instance.EnablePlugin = value;
                 UpdateRotationSettingsUI();
                 UpdateArcsUI(); 

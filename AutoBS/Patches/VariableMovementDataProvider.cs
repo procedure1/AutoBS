@@ -65,11 +65,11 @@ namespace AutoBS.Patches
 
             if (maintainVelocity)
             {
-                Plugin.Log.Info($"[VariableMovementDataProvider][AutoNjsFixer] MAINTAIN PERCEIVED VELOCITY MODE: NJS:{noteJumpMovementSpeed:F2} JD:{TransitionPatcher.FinalJumpDistance:F2} -- (original NJS: {originalNJS})");
+                Plugin.LogDebug($"[VariableMovementDataProvider][AutoNjsFixer] MAINTAIN PERCEIVED SPEED MODE: NJS:{noteJumpMovementSpeed:F2} JD:{TransitionPatcher.FinalJumpDistance:F2} -- (original NJS: {originalNJS})");
             }
             else
             {
-                Plugin.Log.Info($"[VariableMovementDataProvider][AutoNjsFixer] FORCE NJS MODE: NJS:{noteJumpMovementSpeed} JD:{TransitionPatcher.FinalJumpDistance} -- (original NJS: {originalNJS}) ");
+                Plugin.LogDebug($"[VariableMovementDataProvider][AutoNjsFixer] SET NOTE SPEED MODE: NJS:{noteJumpMovementSpeed} JD:{TransitionPatcher.FinalJumpDistance} -- (original NJS: {originalNJS}) ");
             }
         }
     }

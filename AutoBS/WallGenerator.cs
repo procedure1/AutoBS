@@ -977,7 +977,7 @@ namespace AutoBS
                     // Use a modulus to pseudo-randomly determine pause duration
                     time += 1 + (int)(time) % 7; // Pause for 1 to 9 seconds
                 }
-                Plugin.Log.Info($"[WallGenerator] Wall particle Count: {_particleWalls.Count}");
+                Plugin.LogDebug($"[WallGenerator] Wall particle Count: {_particleWalls.Count}");
             }
             //return (leftParticles, rightParticles);
         }
@@ -1171,7 +1171,7 @@ namespace AutoBS
                     // Use a modulus to pseudo-randomly determine pause duration
                     time += 1 + (int)(time) % 7; // Pause for 1 to 7 seconds
                 }
-                Plugin.Log.Info($"[WallGenerator] Wall floors Count: {_floorWalls.Count}");
+                Plugin.LogDebug($"[WallGenerator] Wall floors Count: {_floorWalls.Count}");
             }
         }
 

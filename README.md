@@ -238,7 +238,7 @@ NOTE: The JSON config file has a `StandardLevelWallMultiplier` that reduces wall
 
 ## JSON Beatmap File Output
 
-You can output a generated map to a JSON beatmap file. This file will contain all standard and all generated features including 360 rotation events, arcs, chains, lighting events, and walls (and attempts customData but not really tested). The output file can be in v2, v3, or v4 format (no matter what the starting format was). The output file will be placed in the same folder as the original beatmap.
+You can output a generated map to a JSON beatmap file. This file will contain all standard and all generated features including 360 rotation events, arcs, chains, lighting events, and walls (and attempts customData but not really tested). The output file can be in v2, v3, or v4 format (no matter what the starting format was). The output file(s) will be placed in the same folder as the original beatmap. 
 
 NOTE: v2 maps will not have arcs, chains or `Mapping Extensions` walls added.
 
@@ -247,6 +247,8 @@ NOTE: v3 maps may need some cleanup due to some vision blocking walls around arc
 NOTE: v4 will be the most exact match to the in-game generated map. 
 
 NOTE: v4 doesn't really support customData so all customData will be lost (for Noodle etc). `Mapping Extensions` precision placement does still function.
+
+NOTE: This generator does not output an `info.dat` file. So you will need to make your own. FYI, `info` v2.1.0 handles v2 and v3 maps. `info` v4.1.0 files can handle v2, v3, and v4 maps. You can look at `PnfrlEnm`'s `Ascension to Heaven` to see a v4.1.0 info file.
 
 To enable JSON file output, edit the `Beat Saber/UserData/AutoBS.json` config file in Notepad or other text editor. The last 5 settings in the config file are the ones to edit. 
 

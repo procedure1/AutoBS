@@ -194,10 +194,10 @@ namespace AutoBS
 
             int accumRotation = 0;
 
+
+            // --- Massive Streak Detection Setup - based on emitted rotation events ---
             int pairStreakRemaining = 0; // remaining mirrored-pair ties in current streak
             int pairStreakSign = +1; // +1 right, -1 left
-
-            // --- Massive Streak Detection Setup ---
             var flexibleRotations = new List<bool>();             // parallel to allRotations
             var massiveStreaks = new List<(int start, int end)>();// inclusive indices
             int DetectThreshold = 30; // how many same direction rotations to consider a "massive streak"
@@ -205,7 +205,7 @@ namespace AutoBS
             int curRunStart = -1, curRunLen = 0, curRunSign = 0;
             int lastProcessedEvtIdx = -1;
 
-            // Notes that can have their rotation direction changed without impacting gameplay
+            // Massive Streak Detection - Notes that can have their rotation direction changed without impacting gameplay
             bool IsFlexible(ENoteData n)
             {
                 if (n?.tailNoteArc != null || n?.headNoteArc != null) return false;
@@ -224,7 +224,7 @@ namespace AutoBS
                     int start = curRunStart;
                     int end = Math.Max(start, endExclusive - 1);
                     massiveStreaks.Add((start, end));
-                    Plugin.LogDebug($"[MassiveStreak] Added streak: {start}–{end} (len={end - start + 1})");
+                    Plugin.LogDebug($"[Generator][MassiveStreak] Added streak: {start}–{end} (len={end - start + 1})");
                 }
                 curRunStart = -1; curRunLen = 0; curRunSign = 0;
             }
@@ -576,7 +576,6 @@ namespace AutoBS
 
                         if (!handledByPairLogic)
                         {
-                            // --- ORIGINAL tie behavior unchanged ---
                             if (totalRotation >= BottleneckRotations)
                                 desiredSign = -1;
                             else if (totalRotation <= -BottleneckRotations)
@@ -586,8 +585,6 @@ namespace AutoBS
                         }
 
                         rotationStep = desiredSign * rotationCount;
-
-                        // keep your existing limit clamps here (unchanged)
 
                         if (rotationStep != 0)
                             previousDirectionPositive = rotationStep > 0;
@@ -724,7 +721,7 @@ namespace AutoBS
 
                         r++;
 
-                        // --- Streak detector driven by emitted events ---
+                        // --- Massive Streak detector driven by emitted events ---
                         int newIdx = allRotations.Count - 1;
                         if (newIdx > lastProcessedEvtIdx) // means Rotate() actually emitted an event (rotationStep != 0 *and* not clamped to 0)
                         {
@@ -819,9 +816,9 @@ namespace AutoBS
 
             CloseSameDirectionStreak(allRotations.Count); // close trailing run safely
 
-            Plugin.LogDebug($"[MassiveStreak] Total detected streaks: {massiveStreaks.Count}");
+            Plugin.LogDebug($"[Generator][MassiveStreak] Total detected streaks: {massiveStreaks.Count}");
 
-            Plugin.LogDebug($"1 Rotation List (after main loop) Count: {allRotations.Count}");
+            Plugin.LogDebug($"[Generator] 1 Rotation List (after main loop) Count: {allRotations.Count}");
 
             (float accumRot, float time) high = (0,0);
             (float accumRot, float time) low = (0, 0);
@@ -1096,7 +1093,7 @@ namespace AutoBS
 
             #endregion
 
-            Plugin.Log.Info($"[Generator] Rotation Events Count: {eData.RotationEvents.Count()}");
+            Plugin.LogDebug($"[Generator] Rotation Events Count: {eData.RotationEvents.Count()}");
             
             bool beatSageMapNotAltered = (TransitionPatcher.IsBeatSageMap && !BeatSageCleanUp.DisableScoreSubmission) || !TransitionPatcher.IsBeatSageMap;
             Plugin.LogDebug($"[Generator] 1 beatSageMapNotAltered: {beatSageMapNotAltered}.");

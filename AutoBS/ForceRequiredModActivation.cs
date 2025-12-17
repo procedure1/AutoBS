@@ -85,7 +85,7 @@ namespace AutoBS
             if (!__result && TransitionPatcher.RequiresChroma)
             {
                 __result = true;
-                Plugin.Log.Info("[ForceActivate] Forcing Chroma Active (detected Chroma content in generated data).");
+                Plugin.LogDebug("[ForceActivate] Forcing Chroma Active (detected Chroma content in generated data).");
             }
         }
 
@@ -94,7 +94,7 @@ namespace AutoBS
             if (!__result && TransitionPatcher.RequiresNoodle)
             {
                 __result = true;
-                Plugin.Log.Info("[ForceActivate] Forcing Noodle Extensions Active (detected NE content in generated data).");
+                Plugin.LogDebug("[ForceActivate] Forcing Noodle Extensions Active (detected NE content in generated data).");
             }
         }
 
