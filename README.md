@@ -7,7 +7,7 @@ A Beat Saber mod to automatically generate 360 degree maps from standard maps, a
 
 NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. See below.
 
-The orginal 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
+The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time.
 
 This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without `Automapper` lights. So I attempted to make 360 a bit flashier. `Boost lighting events` add more color to maps that don't have them. `Automapper` lights power larger and brighter lasers. If you hate it, disable it :) As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps.
