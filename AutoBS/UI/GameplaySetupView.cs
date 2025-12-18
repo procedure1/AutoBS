@@ -56,7 +56,7 @@ namespace AutoBS.UI
         {
             yield return null; // Wait one frame
             _pendingRefresh = null;
-            Plugin.Log.Info("[GameplaySetupView] Deferred refresh executing");
+            Plugin.LogDebug("[GameplaySetupView] Deferred refresh executing");
             RefreshAllUI();
         }
 

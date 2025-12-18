@@ -980,11 +980,11 @@ namespace AutoBS.Patches
        
         private static void LogAllGameObjects(GameObject parent)
         {
-            Plugin.Log.Info("Logging all root and child GameObjects:");
+            Plugin.LogDebug("Logging all root and child GameObjects:");
 
             foreach (GameObject root in parent.scene.GetRootGameObjects())
             {
-                Plugin.Log.Info($"Root GameObject: {root.name}");
+                Plugin.LogDebug($"Root GameObject: {root.name}");
                 LogChildGameObjects(root.transform, "--");
             }
         }
@@ -993,7 +993,7 @@ namespace AutoBS.Patches
         {
             foreach (Transform child in parentTransform)
             {
-                Plugin.Log.Info($"{indent} Child GameObject: {child.gameObject.name}");
+                Plugin.LogDebug($"{indent} Child GameObject: {child.gameObject.name}");
                 LogChildGameObjects(child, indent + "--");
             }
         }

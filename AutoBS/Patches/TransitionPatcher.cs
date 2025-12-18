@@ -398,7 +398,7 @@ namespace AutoBS.Patches
         {
             try
             {
-                Plugin.Log.Info($"[LogSongCoreForKey] Selected BeatmapKey → {key.levelId}, {key.beatmapCharacteristic.serializedName}, {key.difficulty}");
+                Plugin.LogDebug($"[LogSongCoreForKey] Selected BeatmapKey → {key.levelId}, {key.beatmapCharacteristic.serializedName}, {key.difficulty}");
 
                 // Hash → SongCore extras
                 var hash = SongCore.Collections.GetCustomLevelHash(key.levelId);
@@ -424,13 +424,13 @@ namespace AutoBS.Patches
                 var sugg = dd.additionalDifficultyData?._suggestions ?? Array.Empty<string>();
                 var warn = dd.additionalDifficultyData?._warnings ?? Array.Empty<string>();
 
-                Plugin.Log.Info($"[LogSongCoreForKey] Requirements[{reqs.Length}]: {string.Join(", ", reqs)}");
-                Plugin.Log.Info($"[LogSongCoreForKey] Suggestions[{sugg.Length}]: {string.Join(", ", sugg)}");
-                Plugin.Log.Info($"[LogSongCoreForKey] Warnings[{warn.Length}]: {string.Join(", ", warn)}");
+                Plugin.LogDebug($"[LogSongCoreForKey] Requirements[{reqs.Length}]: {string.Join(", ", reqs)}");
+                Plugin.LogDebug($"[LogSongCoreForKey] Suggestions[{sugg.Length}]: {string.Join(", ", sugg)}");
+                Plugin.LogDebug($"[LogSongCoreForKey] Warnings[{warn.Length}]: {string.Join(", ", warn)}");
 
                 // Show color scheme presence too (helps with Chroma diagnostics)
                 if (extras._colorSchemes != null)
-                    Plugin.Log.Info($"[LogSongCoreForKey] SongData._colorSchemes length: {extras._colorSchemes.Length}");
+                    Plugin.LogDebug($"[LogSongCoreForKey] SongData._colorSchemes length: {extras._colorSchemes.Length}");
             }
             catch (Exception ex)
             {

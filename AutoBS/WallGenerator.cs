@@ -1726,7 +1726,7 @@ namespace AutoBS
                 {
                     if (stopwatch.ElapsedMilliseconds >= Config.Instance.MaxWaitTime * 1000)
                     {
-                        Plugin.Log.Info($"[RemoveIntersectingWalls] End ------- WARNING -- TOOK TOO LONG so had to prematurely terminate!");
+                        Plugin.LogDebug($"[RemoveIntersectingWalls] End ------- WARNING -- TOOK TOO LONG so had to prematurely terminate!");
                         break;
                     }
 

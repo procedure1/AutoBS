@@ -290,7 +290,7 @@ namespace AutoBS.Patches
             if (!Utils.IsEnabledForGeneralFeatures()) return;
 
             // Debug: confirm gate state at render time
-            Plugin.Log.Info($"[ScoreGate] Results UI: IsDisabled={ScoreGate.IsDisabledThisRun} Reason='{ScoreGate.ReasonThisRun}'");
+            Plugin.Log.Info($"[ScoreGate] Map Results: IsDisabled={ScoreGate.IsDisabledThisRun} Reason='{ScoreGate.ReasonThisRun}'");
 
             // If not disabled this run, hide (or remove) our label if present and bail.
             var host = ____clearedBannerGo.activeInHierarchy ? ____clearedBannerGo : ____failedBannerGo;

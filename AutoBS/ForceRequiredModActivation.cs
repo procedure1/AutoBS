@@ -24,7 +24,7 @@ namespace AutoBS
         static void PatchChromaCondition(Harmony h)
         {
             var t = AccessTools.TypeByName("Chroma.Modules.FeaturesModule");
-            if (t == null) { Plugin.Log.Warn("[ForceActivate] Chroma FeaturesModule not found."); return; }
+            if (t == null) { Plugin.LogDebug("[ForceActivate] Chroma FeaturesModule not found."); return; }
 
             // Chroma has 2 Condition variants across versions:
             //   private bool Condition(Capabilities capabilities)
@@ -35,7 +35,7 @@ namespace AutoBS
 
             if (targets.Length == 0)
             {
-                Plugin.Log.Warn("[ForceActivate] Chroma Condition() not found.");
+                Plugin.LogDebug("[ForceActivate] Chroma Condition() not found.");
                 return;
             }
 

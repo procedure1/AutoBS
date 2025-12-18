@@ -2375,7 +2375,7 @@ namespace AutoBS
                             var rot = (ERotationEventData)entry.item;
                             int deltaRot = rot.rotation;
                             runningTotalRotation += deltaRot;
-                            Plugin.Log.Info($" - RotEvent - Time: {rot.time:F2}  Tot Rot: {(int)runningTotalRotation} ---------------------");//  (Δ Rotation: {(int)deltaRot}) -------------");
+                            Plugin.LogDebug($" - RotEvent - Time: {rot.time:F2}  Tot Rot: {(int)runningTotalRotation} ---------------------");//  (Δ Rotation: {(int)deltaRot}) -------------");
                             prevRotation = runningTotalRotation;
                             break;
                         }
@@ -2386,7 +2386,7 @@ namespace AutoBS
                             if (float.IsNaN(prevRotation) || totalRot != prevRotation)
                             {
                                 float deltaRot = float.IsNaN(prevRotation) ? 0 : totalRot - prevRotation;
-                                Plugin.Log.Info($"   Note     - Time: {note.time:F2}  Tot Rot: {(int)totalRot} color: {note.colorType} Line: {note.lineIndex}  Layer: {(int)note.noteLineLayer}");//  (Δ Rotation: {(int)deltaRot})");
+                                Plugin.LogDebug($"   Note     - Time: {note.time:F2}  Tot Rot: {(int)totalRot} color: {note.colorType} Line: {note.lineIndex}  Layer: {(int)note.noteLineLayer}");//  (Δ Rotation: {(int)deltaRot})");
                                 prevRotation = totalRot;
                             }
                             break;
@@ -2394,19 +2394,19 @@ namespace AutoBS
                     case "arc":
                         {
                             var arc = (CustomSliderData)entry.item;
-                            Plugin.Log.Info($"   Arc      - Time: {arc.time:F2}  Tot Rot: {arc.rotation} Line: {arc.headLineIndex}  Layer: {(int)arc.headLineLayer} --- Tail time: {arc.tailTime:F2}");//  Tot Rot: {arc.tailRotation}");
+                            Plugin.LogDebug($"   Arc      - Time: {arc.time:F2}  Tot Rot: {arc.rotation} Line: {arc.headLineIndex}  Layer: {(int)arc.headLineLayer} --- Tail time: {arc.tailTime:F2}");//  Tot Rot: {arc.tailRotation}");
                             break;
                         }
                     case "chain":
                         {
                             var chain = (CustomSliderData)entry.item;
-                            Plugin.Log.Info($"   Chain    - Time: {chain.time:F2}  Tot Rot: {chain.rotation} Line: {chain.headLineIndex}  Layer: {(int)chain.headLineLayer} --- Tail time: {chain.tailTime:F2}");//  Tot Rot: {arc.tailRotation}");
+                            Plugin.LogDebug($"   Chain    - Time: {chain.time:F2}  Tot Rot: {chain.rotation} Line: {chain.headLineIndex}  Layer: {(int)chain.headLineLayer} --- Tail time: {chain.tailTime:F2}");//  Tot Rot: {arc.tailRotation}");
                             break;
                         }
                     case "wall":
                         {
                             var wall = (CustomObstacleData)entry.item;
-                            Plugin.Log.Info($"   Wall     - Time: {wall.time:F2}  Tot Rot: {wall.rotation} Dur: {wall.duration:F2}  Line: {wall.lineIndex}  Layer: {(int)wall.lineLayer} Width: {wall.width} Height: {wall.height}"); //always logs 0!!!!!!!!!
+                            Plugin.LogDebug($"   Wall     - Time: {wall.time:F2}  Tot Rot: {wall.rotation} Dur: {wall.duration:F2}  Line: {wall.lineIndex}  Layer: {(int)wall.lineLayer} Width: {wall.width} Height: {wall.height}"); //always logs 0!!!!!!!!!
                             break;
                         }
                 }

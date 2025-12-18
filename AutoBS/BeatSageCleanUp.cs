@@ -44,7 +44,7 @@ namespace AutoBS
 
             List<int> indicesToRemove = new List<int>();
 
-            Plugin.Log.Info($"[BeatSageCleanUp] Studying {notes.Count} notes.");
+            Plugin.LogDebug($"[BeatSageCleanUp] Studying {notes.Count} notes.");
 
             for (int i = 0; i < notes.Count; i++)
             {
@@ -652,7 +652,7 @@ namespace AutoBS
 
                 } while (changed);
 
-                Plugin.Log.Info($"[BeatSage-StrayNoteCleaner] Notes Removed: {totalRemoved}.");
+                Plugin.Log.Info($"[BeatSageCleanUp][StrayNoteCleaner] Notes Removed: {totalRemoved}.");
                 return totalRemoved;
             }
 
