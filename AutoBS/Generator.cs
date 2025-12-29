@@ -763,7 +763,7 @@ namespace AutoBS
                     // Works on standard and 360 gen and non-gen maps
                     // Creates a boost lighting event. if ON, will set color left to boost color left new color etc. Will only boost a color scheme that has boost colors set so works primarily with COLORS > OVERRIDE DEFAULT COLORS. Or an authors color scheme must have boost colors set (that will probably never happen since they will have boost colors set if they use boost events).
 
-                    if (Config.Instance.BoostLighting && !TransitionPatcher.MapAlreadyUsesEnvColorBoost)
+                    if (Config.Instance.BoostLighting && !eData.MapAlreadyUsesEnvColorBoost)
                     {
                         boostIteration++;
                         if (boostIteration == 24 || boostIteration == 29)//33)//5 & 13 is good but frequent
@@ -1099,11 +1099,11 @@ namespace AutoBS
             Plugin.LogDebug($"[Generator] 1 beatSageMapNotAltered: {beatSageMapNotAltered}.");
             
             bool arcsEnabled = Utils.IsEnabledArcs();
-            bool arcsNotAdded = (arcsEnabled && TransitionPatcher.MapAlreadyUsesArcs) || !arcsEnabled;
+            bool arcsNotAdded = (arcsEnabled && eData.MapAlreadyUsesArcs) || !arcsEnabled;
             Plugin.LogDebug($"[Generator] 2 arcsNotAdded: {arcsNotAdded}.");
 
             bool chainsEnabled = Utils.IsEnabledChains();
-            bool chainsNotAdded = (chainsEnabled && TransitionPatcher.MapAlreadyUsesChains) || !chainsEnabled;
+            bool chainsNotAdded = (chainsEnabled && eData.MapAlreadyUsesChains) || !chainsEnabled;
             Plugin.LogDebug($"[Generator] 3 chainsNotAdded: {chainsNotAdded}.");
 
             var rotAfter = eData.RotationEvents
@@ -1116,8 +1116,8 @@ namespace AutoBS
             bool lightsNotAdded = (Utils.IsEnabledLighting() && !LightAutoMapper.LightEventsAdded) || !Utils.IsEnabledLighting();
             Plugin.LogDebug($"[Generator] 5 lightsNotAdded: {lightsNotAdded}.");
 
-            bool boostNotAdded = (Config.Instance.BoostLighting && eData.ColorBoostEvents.Count == 0) || TransitionPatcher.MapAlreadyUsesEnvColorBoost;
-            Plugin.LogDebug($"[Generator] 6 boostNotAdded: {boostNotAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {TransitionPatcher.MapAlreadyUsesEnvColorBoost}");
+            bool boostNotAdded = (Config.Instance.BoostLighting && eData.ColorBoostEvents.Count == 0) || eData.MapAlreadyUsesEnvColorBoost;
+            Plugin.LogDebug($"[Generator] 6 boostNotAdded: {boostNotAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {eData.MapAlreadyUsesEnvColorBoost}");
 
             bool wallsNotAdded = (Utils.IsEnabledWalls() && originalWallCount == eData.Obstacles.Count) || !Utils.IsEnabledWalls();
             Plugin.LogDebug($"[Generator] 7 wallsNotAdded: {wallsNotAdded}.");

@@ -45,7 +45,7 @@ namespace AutoBS.Patches
 
             if (beatmapData is CustomBeatmapData cbd) // custom map data
             {
-                RotationV3Registry.RotationEventsByKey.TryGetValue(TransitionPatcher.CurrentPlayKey, out var v3RotList);
+                RotationV3Registry.RotationEventsByKey.TryGetValue(TransitionPatcher.SelectedPlayKey, out var v3RotList);
 
                 Plugin.Log.Info($"[CreateTransformedBeatmapData] Retrieved CustomBeatmapData from JSON v{cbd.version.Major} (major version): " +
                         $"{cbd.cuttableNotesCount} notes, " +
@@ -64,7 +64,7 @@ namespace AutoBS.Patches
             }
             else if (beatmapData is BeatmapData bm) // built-in map data
             {
-                Plugin.Log.Info($"[CreateTransformedBeatmapData] Retrieved Vanilla BeatmapData from JSON v{TransitionPatcher.CurrentBeatmapVersion}: " +
+                Plugin.Log.Info($"[CreateTransformedBeatmapData] Retrieved Vanilla BeatmapData from JSON v{TransitionPatcher.SelectedBeatmapVersion}: " +
                          $"{bm.cuttableNotesCount} notes, " +
                          $"{bm.bombsCount} bombs, " +
                          $"{bm.obstaclesCount} obstacles, " +
@@ -79,7 +79,7 @@ namespace AutoBS.Patches
                          $"{bm.allBeatmapDataItems.OfType<BpmChangeEventData>().Count()} Bpm Change Events, " +
                          $"{bm.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
-                Version version = BeatmapDataRegistry.versionByKey.TryGetValue(TransitionPatcher.CurrentPlayKey, out Version foundVersion) ? foundVersion : new Version(4, 0, 0); // 1.40.8 firestarter song was 4.0.0
+                Version version = BeatmapVersionRegistry.versionByKey.TryGetValue(TransitionPatcher.SelectedPlayKey, out Version foundVersion) ? foundVersion : new Version(4, 0, 0); // 1.40.8 firestarter song was 4.0.0
                 eData = new EditableCBD(bm, version);
             }
 #if DEBUG
@@ -92,7 +92,7 @@ namespace AutoBS.Patches
 
             Plugin.LogDebug($"[CreateTransformedBeatmapData] Converted (Custom)BeatmapData to EditableCBD map version: {eData.Version.Major} - notes: {eData.ColorNotes.Count}, bombs: {eData.BombNotes.Count}, obstacles: {eData.Obstacles.Count}, arcs: {eData.Arcs.Count}, chains: {eData.Chains.Count}, rotations: {eData.RotationEvents.Count}, basic events: {eData.BasicEvents.Count}, customEvents: {eData.CustomEvents.Count}, color boosts: {eData.ColorBoostEvents.Count}.");
 
-            Plugin.LogDebug($"[CreateTransformedBeatmapData] Song Name: {SetContent.SongName} - v{TransitionPatcher.CurrentBeatmapVersion} - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty}  ----------------------------------------------------------------------------");
+            Plugin.LogDebug($"[CreateTransformedBeatmapData] Song Name: {SetContent.SongName} - v{TransitionPatcher.SelectedBeatmapVersion} - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty}  ----------------------------------------------------------------------------");
 
             (NoodleProblemNotes, NoodleProblemObstacles) = EditableCBD.TestForNoodleCustomData(eData); //Should remove notes and walls first before figuring out rotations etc which are based on notes
 
@@ -108,7 +108,7 @@ namespace AutoBS.Patches
                 {
                     Arcitect.CreateSliders(eData); //update data and update sliders list for arcfix later
 
-                    string disabledText = TransitionPatcher.DetermineScoreSubmissionReason(BeatSageCleanUp.DisableScoreSubmission, eData.Chains.Count);
+                    string disabledText = DetermineScoreSubmissionReason(BeatSageCleanUp.DisableScoreSubmission, eData.MapAlreadyUsesChains, eData.Chains.Count);
 
                     if (!string.IsNullOrEmpty(disabledText))
                     {
@@ -121,7 +121,7 @@ namespace AutoBS.Patches
                 }
 
                 if (Utils.IsEnabledArcs() && // go ahead and arc fix nonGen360 maps if arcs are enabled.
-                    !TransitionPatcher.MapAlreadyUsesArcs && // unless they already use arcs. if they exist in 360 then they are probably placed correctly.
+                    !eData.MapAlreadyUsesArcs && // unless they already use arcs. if they exist in 360 then they are probably placed correctly.
                     Config.Instance.ArcFixFull &&
                    (TransitionPatcher.SelectedSerializedName == "360Degree" || TransitionPatcher.SelectedSerializedName == "90Degree"))
                 {
@@ -204,7 +204,7 @@ namespace AutoBS.Patches
                 {
                     __result = outp.Vanilla!;
                     
-                    Plugin.Log.Info($"[CreateTransformedBeatmapData] Final Vanilla BeatmapData v{TransitionPatcher.CurrentBeatmapVersion}: " +
+                    Plugin.Log.Info($"[CreateTransformedBeatmapData] Final Vanilla BeatmapData v{TransitionPatcher.SelectedBeatmapVersion}: " +
                          $"{__result.cuttableNotesCount} notes, " +
                          $"{__result.bombsCount} bombs, " +
                          $"{__result.obstaclesCount} obstacles, " +
@@ -221,6 +221,50 @@ namespace AutoBS.Patches
                 Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");
             }
             //BeatmapLightingLogger.LogGLSLightingEvents(HarmonyPatches.CurrentBeatmapSaveData);
+        }
+
+        public static string DetermineScoreSubmissionReason(bool beatSageDisableScoreSubmission, bool mapAlreadyUsesChains, int chainsCount)
+        {
+            string str = "";
+
+            if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
+            {
+                if (Config.Instance.BasedOn != Config.Base.Standard)
+                {
+                    str = "Base Map Not Standard";
+                }
+                if (Config.Instance.RotationSpeedMultiplier < 0.3f)
+                {
+                    str += (str != "" ? ", " : "") + "Rotation Mult Low";
+                }
+                if (!Config.Instance.Wireless360 && Config.Instance.LimitRotations360 < 90)
+                {
+                    str += (str != "" ? ", " : "") + "Rotations Limited";
+                }
+            }
+
+            if (BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Standard &&
+                Utils.IsEnabledAutoNjsFixer() &&
+                !TransitionPatcher.AutoNJSDisabledByConflictingMod &&
+                TransitionPatcher.OriginalNoteJumpMovementSpeed > TransitionPatcher.FinalNoteJumpMovementSpeed)
+            {
+                str += (str != "" ? ", " : "") + "Auto NJS Fixer";
+            }
+
+            if (Utils.IsEnabledChains() && !mapAlreadyUsesChains && chainsCount > 0)
+            {
+                str += (str != "" ? ", " : "") + "Architect Chains";
+            }
+
+            if (Config.Instance.EnableCleanBeatSage && (SetContent.IsBeatSageMap || TransitionPatcher.IsBeatSageMap) && beatSageDisableScoreSubmission)
+            {
+                str += (str != "" ? ", " : "") + "Beat Sage Cleaner";
+            }
+
+            if (str != "")
+                str = "AutoBS—" + str; // prefix once
+
+            return str;
         }
     }
 }

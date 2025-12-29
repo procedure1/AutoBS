@@ -26,12 +26,12 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <Optimize>false</Optimize>
-    <OutputPath>D:\BSManager\BSInstances\1.40.8\Plugins\</OutputPath>
+    <OutputPath>D:\BSManager\BSInstances\1.42.0\Plugins\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <Optimize>true</Optimize>
-    <OutputPath>D:\BSManager\BSInstances\1.40.8\Plugins\</OutputPath>
+    <OutputPath>D:\BSManager\BSInstances\1.42.0\Plugins\</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>5</WarningLevel>
   </PropertyGroup>
@@ -47,7 +47,7 @@
     <Compile Include="Arcitect.cs" />
     <Compile Include="AutoNjsFixer.cs" />
     <Compile Include="BeatSageCleanUp.cs" />
-    <Compile Include="BuiltInMapJsonLoader.cs" />
+    <Compile Include="UNUSED_BuiltInMapJsonLoader.cs" />
     <Compile Include="JsonOutputConverter.cs" />
     <Compile Include="DataRegistry.cs" />
     <Compile Include="EditableBeatmapData.cs" />

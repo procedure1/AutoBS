@@ -16,7 +16,7 @@ Note: Vivify maps and many complex Noodle maps are currently incompatible and di
 
 [![showcase video](https://github.com/procedure1/AutoBS/blob/master/AutoBS-Big-Lasers-Big-Walls.gif)](https://www.youtube.com/watch?v=xUDdStGQwq0)
 ## Beat Saber PC Version
-v1.40.0 - v1.40.8
+v1.42
 
 ## Installation
 

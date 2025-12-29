@@ -933,6 +933,10 @@ namespace AutoBS
         public CustomData LevelCustomData { get; }
         public CustomData CustomData { get; }
         public Version Version { get; }
+        public bool MapAlreadyUsesEnvColorBoost { get; set; } = false;
+        public bool MapAlreadyUsesArcs { get; set; } = false;
+        public bool MapAlreadyUsesChains { get; set; } = false;
+        public bool MapAlreadyUsesRotations { get; set; } = false;
 
         // Creates an EditableCBD from a standard BeatmapData object!!!!!!!!!!!!!! v4 maps will come here too since CustomBeatmapData is not compatible with v4 maps
         public EditableCBD(BeatmapData original, Version version)
@@ -1024,14 +1028,26 @@ namespace AutoBS
                 .OrderBy(e => e.time)
                 .ToList();
 
-            if (ColorBoostEvents.Count == 0) TransitionPatcher.MapAlreadyUsesEnvColorBoost = false;
-            else TransitionPatcher.MapAlreadyUsesEnvColorBoost = true;
-
             CustomEvents = original.allBeatmapDataItems.
                 OfType<CustomEventData>()
                 .Select(e => new ECustomEventData(e))
                 .OrderBy(e => e.time)
                 .ToList();
+
+            //v1.42 not sure why but getting a color boost event false at time 0 when doesn't exist in the map. so check if more than 1 boost event to set the flag.
+            if (ColorBoostEvents.Count > 1) MapAlreadyUsesEnvColorBoost = true;
+            else MapAlreadyUsesEnvColorBoost = false;
+            
+            if (Arcs.Count > 0) MapAlreadyUsesArcs = true;
+            else MapAlreadyUsesArcs = false;
+
+            if (Chains.Count > 0) MapAlreadyUsesChains = true;
+            else MapAlreadyUsesChains = false;
+
+            if (RotationEvents.Count > 1) MapAlreadyUsesRotations = true;
+            else MapAlreadyUsesRotations = false;
+
+            Plugin.LogDebug($"[EditableCBD] MapAlreadyUsesEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, MapAlreadyUsesRotations: {MapAlreadyUsesRotations}");
 
             LinkArcEndpointsToNotes();
         }
@@ -1044,7 +1060,7 @@ namespace AutoBS
             BeatmapCustomData = original.beatmapCustomData ?? new CustomData();
             LevelCustomData = original.levelCustomData ?? new CustomData();
             CustomData = original.customData ?? new CustomData();
-            Version = TransitionPatcher.CurrentBeatmapVersion;
+            Version = TransitionPatcher.SelectedBeatmapVersion;
 
             ColorNotes = original.beatmapObjectDatas
                 .OfType<CustomNoteData>()
@@ -1085,7 +1101,7 @@ namespace AutoBS
             if (Version.Major == 3)
             {
                 // Try to look up v3 save-data rotations
-                if (RotationV3Registry.RotationEventsByKey.TryGetValue(TransitionPatcher.CurrentPlayKey, out var v3RotList)
+                if (RotationV3Registry.RotationEventsByKey.TryGetValue(TransitionPatcher.SelectedPlayKey, out var v3RotList)
                     && v3RotList != null && v3RotList.Count > 0)
                 {
                     // Build v3 rotations with accumRotation filled in
@@ -1183,10 +1199,22 @@ namespace AutoBS
                     .ToList();
             }
 
-            if (ColorBoostEvents.Count == 0) TransitionPatcher.MapAlreadyUsesEnvColorBoost = false;
-            else TransitionPatcher.MapAlreadyUsesEnvColorBoost = true;
+            //v1.42 not sure why but getting a color boost event false at time 0 when doesn't exist in the map. so check if more than 1 boost event to set the flag.
+            if (ColorBoostEvents.Count > 1) MapAlreadyUsesEnvColorBoost = true;
+            else MapAlreadyUsesEnvColorBoost = false;
 
-                CustomEvents = original.customEventDatas
+            if (Arcs.Count > 0) MapAlreadyUsesArcs = true;
+            else MapAlreadyUsesArcs = false;
+
+            if (Chains.Count > 0) MapAlreadyUsesChains = true;
+            else MapAlreadyUsesChains = false;
+
+            if (RotationEvents.Count > 1) MapAlreadyUsesRotations = true;
+            else MapAlreadyUsesRotations = false;
+
+            Plugin.LogDebug($"[EditableCBD] MapAlreadyUsesEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, MapAlreadyUsesRotations: {MapAlreadyUsesRotations}");
+
+            CustomEvents = original.customEventDatas
                     .Select(e => new ECustomEventData(e))
                     .OrderBy(e => e.time)
                     .ToList();

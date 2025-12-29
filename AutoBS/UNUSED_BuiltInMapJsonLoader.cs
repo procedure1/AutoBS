@@ -10,6 +10,8 @@ using UnityEngine;
 
 namespace AutoBS
 {
+    //v1.42 can't access built-in asset bundles anymore since says they are already loaded and we can't get access to the cached bundle 
+    /*
     // Used by SetContent to load Built-in vanilla json maps
     public static class BuiltInMapJsonLoader
     {
@@ -142,7 +144,7 @@ namespace AutoBS
                 if (p != null && p.PropertyType == typeof(string))
                     return p.GetValue(unityObj, null) as string;
             }
-            catch { /* ignore */ }
+            catch {  }
 
             // Some wrappers/exotics might expose "Name"
             try
@@ -151,7 +153,7 @@ namespace AutoBS
                 if (p != null && p.PropertyType == typeof(string))
                     return p.GetValue(unityObj, null) as string;
             }
-            catch { /* ignore */ }
+            catch {  }
 
             // Last resort: ToString() (often "TextAsset: foo" or just type name)
             try
@@ -166,7 +168,7 @@ namespace AutoBS
                     return s;
                 }
             }
-            catch { /* ignore */ }
+            catch {  }
 
             return null;
         }
@@ -394,5 +396,5 @@ namespace AutoBS
         }
 
     }
-
+    */
 }

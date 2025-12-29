@@ -27,13 +27,15 @@ namespace AutoBS
             return new Stats();
         }
     }
-    
+
+    //v1.42 could have done this for v1.40. Decide if need boosts when eData is generated and count how many env color boost events there are
+    /*
     public static class AlreadyUsingEnvColorBoostRegistry
     {
         public static Dictionary<BeatmapKey, bool> findByKey
             = new Dictionary<BeatmapKey, bool>();
     }
-
+    */
     public static class MapAlreadyUsesChainsRegistry
     {
         public static Dictionary<BeatmapKey, bool> findByKey
@@ -65,11 +67,12 @@ namespace AutoBS
             = new Dictionary<BeatmapKey, List<V3RotationRecord>>();
     }
 
-    public static class BeatmapDataRegistry
+    //v1.42 Don't need to store beatmapData now. BeatmapDataLoader.LoadBeatmapDataAsync now is able to load basedOn beatmapData
+    public static class BeatmapVersionRegistry
     {
         // Holds beatmapData for each generated Gen360 map
-        public static Dictionary<BeatmapKey, BeatmapData> beatmapDataByKey
-            = new Dictionary<BeatmapKey, BeatmapData>();
+        //public static Dictionary<BeatmapKey, BeatmapData> beatmapDataByKey
+        //    = new Dictionary<BeatmapKey, BeatmapData>();
         public static Dictionary<BeatmapKey, Version> versionByKey
             = new Dictionary<BeatmapKey, Version>();
     }
