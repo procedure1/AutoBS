@@ -1,7 +1,8 @@
 # AutoBS — Beat Saber Automation Mod
 # Featuring 360fyer, Arcitect Arc + Chain Maker, Auto Lights, Auto Walls, and Auto NJS Fixer
 
----
+## For Beat Saber PC Version v1.42
+
 
 A Beat Saber mod to automatically generate 360 degree maps from standard maps, and automatically add arcs, chains, lights and walls, and set note speed and spawn distance. Most features fully work on non-generated maps as well. So you can add arcs and walls etc to standard maps too.
 
@@ -15,8 +16,6 @@ This version has lots of customization and supports v3 and v4 maps. Much of the 
 Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
 [![showcase video](https://github.com/procedure1/AutoBS/blob/master/AutoBS-Big-Lasers-Big-Walls.gif)](https://www.youtube.com/watch?v=xUDdStGQwq0)
-## Beat Saber PC Version
-v1.42
 
 ## Installation
 
