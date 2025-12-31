@@ -140,7 +140,7 @@ namespace AutoBS.Patches
     // Set Content only creates metaData for the map, not the actual notes and obstacles.
     // this adds the beatmapData (IReadonlyBeatmapData) with actual notes etc to the map and hands it off to CreateTransformedBeatmapData
 
-    // v1.42 distinct BeatmapKey for scoring, but uses the basedOnKey to pass the original beatmapData to CreateTransformedBeatmapData. No longer need to send it stored beatmapData from a registry
+    // v1.42 distinct BeatmapKey for scoring, but uses the basedOnKey to pass the original beatmapData to CreateTransformedBeatmapData. No longer need to send it stored beatmapData from a registry. great for built-in since i can't get those maps anymore with my previous technique
     [HarmonyPatch(typeof(BeatmapDataLoader), nameof(BeatmapDataLoader.LoadBeatmapDataAsync))]
     static class Patch_BeatmapDataLoader_LoadAsync
     {

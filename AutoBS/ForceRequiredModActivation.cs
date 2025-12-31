@@ -1,4 +1,5 @@
 ﻿using AutoBS.Patches;
+using AutoBS.UI;
 using HarmonyLib;
 using IPA.Loader;
 using System;
@@ -56,14 +57,14 @@ namespace AutoBS
         static void PatchNoodleCondition(Harmony h)
         {
             var t = AccessTools.TypeByName("NoodleExtensions.FeaturesModule");
-            if (t == null) { Plugin.Log.Warn("[ForceActivate] Noodle FeaturesModule not found."); return; }
+            if (t == null) { Plugin.Log.Warn("[ForceActivate] Noodle Extensions FeaturesModule not found."); return; }
 
             // Noodle: private static bool Condition(Capabilities capabilities)
             var mi = t.GetMethods(BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
                       .FirstOrDefault(m => m.Name == "Condition");
             if (mi == null)
             {
-                Plugin.Log.Warn("[ForceActivate] Noodle Condition() not found.");
+                Plugin.Log.Warn("[ForceActivate] Noodle Extensions Condition() not found.");
                 return;
             }
 
@@ -104,9 +105,12 @@ namespace AutoBS
             if (!Config.Instance.EnablePlugin || !Utils.IsEnabledForGeneralFeatures())
                 return;
 
-            bool alreadyUsing = TransitionPatcher.MapAlreadyUsesMappingExtensions;
+            bool alreadyUsing = TransitionPatcher.RequiresMappingExtensions;
 
             //Plugin.Log.Warn($"Mapping Extensions test - IsEnabledExtensionWalls: {Utils.IsEnabledExtensionWalls()}, mapAlreadyUsesMappingExtensions: {mapAlreadyUsesMappingExtensions}");
+
+            if (!GameplaySetupView.IsMappingExtensionsInstalled)
+                Plugin.Log.Info("[ForceActivate] Mapping Extensions is NOT installed for Auto Walls.");
 
             if ((Utils.IsEnabledExtensionWalls() && !alreadyUsing) || alreadyUsing)
             {
@@ -118,7 +122,7 @@ namespace AutoBS
 
                 if (mappingExtensionsAssembly == null)
                 {
-                    //Plugin.Log.Warn("MappingExtensions assembly not found.");
+                    Plugin.Log.Warn("[ForceActivate] MappingExtensions assembly not found.");
                     return;
                 }
 
@@ -127,7 +131,7 @@ namespace AutoBS
 
                 if (pluginType == null)
                 {
-                    //Plugin.Log.Warn("Plugin class not found in MappingExtensions assembly.");
+                    Plugin.Log.Warn("[ForceActivate] Plugin class not found in MappingExtensions assembly.");
                     return;
                 }
 
@@ -143,7 +147,7 @@ namespace AutoBS
                 // Invoke the 'ForceActivateForSong' method
                 forceActivateForSongMethod.Invoke(null, null);
 
-                Plugin.Log.Info("[MappingExtensionsForceActivate] Mapping Extensions - ForceActivateForSong method invoked successfully.");
+                Plugin.Log.Info("[ForceActivate] Mapping Extensions - ForceActivateForSong method invoked successfully.");
                 //SongCore.Collections.RegisterCapability("Mapping Extensions");
             }
 

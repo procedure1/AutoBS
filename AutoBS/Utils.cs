@@ -116,7 +116,7 @@ namespace AutoBS
         {
             if (!IsEnabledWalls()) return false;
 
-            if (!GameplaySetupView.IsMappingExtensionsInstalled) return false;
+            if (GameplaySetupView.IsMappingExtensionsInstalled) return false; //fix!!!!!!!!!
 
             return true;
         }

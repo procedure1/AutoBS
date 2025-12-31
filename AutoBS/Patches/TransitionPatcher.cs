@@ -53,7 +53,6 @@ namespace AutoBS.Patches
         public static float bpm;
         public static float NotesPerSecond;
 
-        public static bool MapAlreadyUsesMappingExtensions = false; // used by generator360.cs to turn off automated extended walls for maps already using mapping extensions
 
         //v1.42 moved to EdibleCBD
         //public static bool MapAlreadyUsesEnvColorBoost = false;
@@ -62,6 +61,7 @@ namespace AutoBS.Patches
 
         public static bool IsBeatSageMap = false;
 
+        public static bool RequiresMappingExtensions = false; // used by generator360.cs to turn off automated extended walls for maps already using mapping extensions v1.42 rename
         public static bool RequiresNoodle = false;
         public static bool RequiresChroma = false;
         public static bool RequiresVivify = false;
@@ -137,11 +137,12 @@ namespace AutoBS.Patches
             // For noodle standard maps, need to do it this way. but this works for all maps so use this instead of the registry lookup. not checked in SetContent.
             if (isCustomLevel)
             {
+                RequiresMappingExtensions = CheckForExternalModRequirement(beatmapLevel, "Mapping Extensions");
                 RequiresNoodle = CheckForExternalModRequirement(beatmapLevel, "Noodle Extensions");
                 RequiresChroma = CheckForExternalModRequirement(beatmapLevel, "Chroma");
                 RequiresVivify = CheckForExternalModRequirement(beatmapLevel, "Vivify");
 
-                Plugin.LogDebug($"[TransitionPatcher] Requirements for this map: Noodle={RequiresNoodle}, Chroma={RequiresChroma}, Vivify={RequiresVivify}");
+                Plugin.LogDebug($"[TransitionPatcher] Requirements for this map: Mapping Extensions={RequiresMappingExtensions}, Noodle={RequiresNoodle}, Chroma={RequiresChroma}, Vivify={RequiresVivify}");
             }
 
             

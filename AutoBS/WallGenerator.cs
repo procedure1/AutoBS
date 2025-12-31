@@ -267,7 +267,7 @@ namespace AutoBS
             string generatedBigWall = "none"; // used to prevent bigWalls overlapping with columns of walls and rows of walls
             string generatedWall = "none";    // used to prevent standard walls overlapping with columns of walls and rows of walls
 
-            if (!Config.Instance.EnableStandardWalls && !Config.Instance.EnableBigWalls && Config.Instance.EnableMappingExtensionsWallsGenerator) // without standard and big walls, CreateExtensionWalls won't be called
+            if (!Config.Instance.EnableStandardWalls && !Config.Instance.EnableBigWalls) // without standard and big walls, CreateExtensionWalls won't be called
                 CreateExtensionWalls(i, wallTime, wallDuration, generatedWall, generatedBigWall);
 
             _divisorCounter++;
@@ -411,7 +411,7 @@ namespace AutoBS
                 }
 
                 EXT_WALLS:
-                if (Config.Instance.EnableMappingExtensionsWallsGenerator)
+                //if (Config.Instance.EnableMappingExtensionsWallsGenerator)
                 {
                     // Use original wallTime/wallDuration beat anchoring for extension walls;
                     // they no longer get unintentionally trimmed by the other side.
@@ -421,7 +421,7 @@ namespace AutoBS
             }
             //Plugin.Log.Info($"WallTime: {wallTime} GeneratedWall: {generatedWall} Time: Count: {genWallCount} - GenderatedBigWall: {generatedBigWall} Count: {genBigWallCount}");
 
-            if (Config.Instance.EnableMappingExtensionsWallsGenerator) // turn off automated extended walls for maps already using mapping extensions
+            //if (Config.Instance.EnableMappingExtensionsWallsGenerator) // turn off automated extended walls for maps already using mapping extensions
             {
                 CreateExtensionWalls(i, wallTime, wallDuration, generatedWall, generatedBigWall); // inside the main loop to use wallTime and wallDuration so its on the beat
                 //Plugin.Log.Info($"Map doesn't NOT already use Mapping Extensions");
@@ -441,7 +441,9 @@ namespace AutoBS
         // Caused by Window Panes and Floor Walls sometimes (360 or standard). couln't find any negative inputs from window panes anyway so stopped looking
         public static void CreateExtensionWalls(int i, float wallTime, float wallDuration, string alreadyHasGenWall, string alreadyHasBigWall) // big walls (not particle walls) - using walltime so on the beat
         {
-            if (!Utils.IsEnabledExtensionWalls()) return;
+            //v1.42 allow these walls without Mapping Extensions mod
+            bool isEnabledExtensionWalls = Utils.IsEnabledExtensionWalls();
+            //if (!Utils.IsEnabledExtensionWalls()) return;
 
             // give the appearance of randomness
             int[] hiLineLayer = { 10, 18, 20, 22 };// { 10, 20, 25, 30 }
@@ -551,6 +553,8 @@ namespace AutoBS
                             hiWidth1 = 4;
                         }
 
+                        if (!isEnabledExtensionWalls) hiLineIndx *= 3; // if Mapping Extensions not enabled, move walls further out since collide with standard walls otherwise
+
                         lineIndex = sign * hiLineIndx;
                         // high walls
                         customObsData = EObstacleData.Create(wallTime, lineIndex, hiLayer, duration, hiWidth1, height1);
@@ -612,17 +616,17 @@ namespace AutoBS
                 {
                     ColumnWalls(wallTime, alreadyHasBigWall, numberOfColumns, columnsLineIndexMult, alreadyHasExtendedWalls);
                 }
-                else if (Config.Instance.EnableRowWalls && hash % divisorRow == 0)
+                else if (isEnabledExtensionWalls && Config.Instance.EnableRowWalls && hash % divisorRow == 0)
                 {
                     RowWalls(wallTime, alreadyHasBigWall, numberOfColumns, alreadyHasExtendedWalls);
                 }
-                else if (Config.Instance.EnableTunnelWalls && !paneWallsHappening && hash % divisorTunnel == 0) // tunnel box walls surrounding the player
+                else if (isEnabledExtensionWalls && Config.Instance.EnableTunnelWalls && !paneWallsHappening && hash % divisorTunnel == 0) // tunnel box walls surrounding the player
                 {
                     TunnelWalls(wallTime, alreadyHasGenWall, alreadyHasBigWall, wallCount, numberOfColumns, durationMult);
                 }
                 else if (Config.Instance.EnableGridWalls && hash % divisorGrid == 0) // 14 grid walls parallel to player (not perpendicular which requires using time)
                 {
-                    GridWalls(wallTime, alreadyHasBigWall, gridWallWidth, gridWallHeight, numberOfColumns, alreadyHasExtendedWalls);
+                    GridWalls(wallTime, alreadyHasBigWall, gridWallWidth, gridWallHeight, numberOfColumns, alreadyHasExtendedWalls, isEnabledExtensionWalls);
                 }
                 else if (Config.Instance.EnableWindowPaneWalls && !tunnelWallsHappening && hash % divisorPane == 0) // window pane walls
                 {
@@ -691,68 +695,172 @@ namespace AutoBS
             }
         }
 
-        private static void GridWalls(float wallTime, string alreadyHasBigWall, int[] gridWallWidth,
-            int[] gridWallHeight, int numberOfColumns, string alreadyHasExtendedWalls)
+
+    private static void GridWalls(
+        float wallTime,
+        string alreadyHasBigWall,
+        int[] gridWallWidth,
+        int[] gridWallHeight,
+        int numberOfColumns,
+        string alreadyHasExtendedWalls,
+        bool isEnabledExtensionWalls,
+        int MaxLayer = 12) // Highest allowed layer when ME is OFF (0 or less = no cap)
+    {
+        // --- Helpers (kept local for readability) ---
+        static int ClampInt(int v, int min, int max) => v < min ? min : (v > max ? max : v);
+
+        // Converts ME-style integers (e.g., 6500) -> coarse units (e.g., 7)
+        static int QuantizeFromME(int vME) => (int)MathF.Round(vME / 1000f);
+
+        // Converts ME-style sizes (e.g., 2000) -> coarse size (e.g., 2)
+        static int SizeFromME(int sizeME) => Math.Max(1, (int)MathF.Round(sizeME / 1000f));
+
+        // --- Pick width/height pattern from arrays (these are ME-style values like 1000/2000/3000/4000) ---
+        int widthME = gridWallWidth[(int)wallTime % gridWallWidth.Length];
+        int heightME = gridWallHeight[(int)wallTime % gridWallHeight.Length];
+
+        // --- Spacing in ME space ---
+        // ME ON: keep original small precision gap
+        // ME OFF: use 1000 so that after quantization it becomes a gap of 1 unit
+        int gapME = isEnabledExtensionWalls ? 300 : 1000;
+
+        // --- Anchor positions (ME space) ---
+        int leftLineIndexME = (int)Config.Instance.GridWallsMinDistance * 1000 + 2500;
+        int rightLineIndexME = (int)Config.Instance.GridWallsMinDistance * 1000 + 4500;
+
+        int adjustLineIndexME = 0;
+        if (widthME > 2000)
+            adjustLineIndexME = 1000;
+
+        // --- Grid sizing (your existing logic) ---
+        float mult = 3;
+        if (GridWallsMultiplier > 1)
+            mult = 4 - GridWallsMultiplier;
+
+        int gridColumns = (int)(mult * (gridWallWide ? 3 : 1));
+        int gridRows = (int)(mult * (gridWallWide ? 1.5 : 5));
+        gridWallWide = !gridWallWide;
+
+        // --- RNG / time jitter ---
+        // Your previous code re-created Random() repeatedly; this can reduce randomness.
+        // This seed makes the jitter vary across different calls and cells, while staying stable enough for testing.
+        int baseSeed = unchecked((int)(wallTime * 1000f)) ^ (gridCount * 397);
+        System.Random rand = new System.Random(baseSeed);
+
+        // Wider time jitter in non-ME to reduce visible bunching/stacking
+        float timeJitter = isEnabledExtensionWalls ? 0.03f : 0.12f; // +/- seconds
+
+        for (int j = 0; j <= gridColumns; j++) // columns
         {
-            int width = gridWallWidth[(int)wallTime % gridWallWidth.Length];
-            int height1 = gridWallHeight[(int)wallTime % gridWallHeight.Length];
-
-            int leftLineIndex = (int)Config.Instance.GridWallsMinDistance * 1000 + 2500; //-3500 default
-            int rightLineIndex = (int)Config.Instance.GridWallsMinDistance * 1000 + 4500; //6500 default
-
-            int adjustLineIndex = 0;
-            if (width > 2000)
-                adjustLineIndex = 1000;
-
-            //int width = 3000; // 1000 = 0 and 2000 = 1!
-            //int height1 = 2500; // equivalent to 1
-            int gap = 300; // space between walls
-
-            // random duration (thickness) and wallTime
-            System.Random rand = new System.Random(); // Initialize the random number generator
-
-            //introduced this since must reduce the number of grid walls since slow the game down. so if this is called more frequenly, then make the cols/rows smaller
-            //problem is that at 1, it makes huge grids which is cool. at higher GridWallsMultiplier's, grids are quite small
-            float mult = 3; // at 1 or less
-            if (GridWallsMultiplier > 1)
-                mult = 4 - GridWallsMultiplier; // mult = 2 if GridWallsMultiplier = 2, mult = 1 if GridWallsMultiplier = 3
-
-            int gridColumns = (int)(mult * (gridWallWide ? 3   : 1)); // if wide grid walls then multiplier is 4 else it is 1
-            int gridRows    = (int)(mult * (gridWallWide ? 1.5 : 5)); // if wide grid walls then multiplier is 1.5 else it is 6
-            gridWallWide = !gridWallWide; // swap back and forth between wide and narrow
-
-            //Plugin.Log.Info($"Grid Walls - Time: {wallTime:F2} Cols: {gridColumns} Rows: {gridRows} based on GridWallsMultiplier: {Config.Instance.GridWallsMultiplier}");
-
-            for (int j = 0; j <= gridColumns; j++) // cols
+            for (int k = 0; k <= gridRows; k++) // rows
             {
-                for (int k = 0; k <= gridRows; k++) // rows
+                float randomDuration = 0.0001f + (float)(rand.NextDouble() * 0.002f);
+
+                float randomTimeOffset = (float)(rand.NextDouble() * (timeJitter * 2f)) - timeJitter;
+                float adjustedWallTime = wallTime + randomTimeOffset;
+
+                // --- Compute positions in ME space first (keeps the "ME look") ---
+                int xLeftME = -leftLineIndexME - (j * (widthME + gapME)) - adjustLineIndexME;
+                int xRightME = rightLineIndexME + (j * (widthME + gapME));
+
+                // Vertical position:
+                // - ME ON: keep original behavior (matches your working ME grids)
+                // - ME OFF: we compute Y directly in coarse units from the coarse height, to guarantee a gap of 1 layer
+                int yME = (k * heightME + gapME);
+
+                // =========================
+                // LEFT GRID WALL
+                // =========================
+                if (alreadyHasBigWall != "left" && alreadyHasExtendedWalls != "left")
                 {
-                    float randomDuration = .0001f + (float)(rand.NextDouble() * .002f); // Generate a random duration between 
-                    float randomTimeOffset = (float)(rand.NextDouble() * 0.06) - 0.03f; // Generate random time adjustment between -0.01 and +0.01
+                    int x, y, w, h;
 
-                    float adjustedWallTime = wallTime + randomTimeOffset; // Adjust wallTime by the random time offset
-
-                    if (alreadyHasBigWall != "left" && alreadyHasExtendedWalls != "left")
+                    if (isEnabledExtensionWalls)
                     {
-                        // Left grid wall placement with random duration and adjusted wall time
-                        EObstacleData customObsData = EObstacleData.Create(adjustedWallTime, -leftLineIndex - (j * (width + gap)) - adjustLineIndex, (k * (height1) + gap), randomDuration, width, height1);
-                        _generatedExtensionWalls.Add(customObsData);
-
-                        gridCount++;
+                        // Original ME behavior
+                        x = xLeftME;
+                        y = yME;
+                        w = widthME;
+                        h = heightME;
                     }
-                    if (alreadyHasBigWall != "right" && alreadyHasExtendedWalls != "right")
+                    else
                     {
-                        // Right grid wall placement with random duration and adjusted wall time
-                        EObstacleData customObsData = EObstacleData.Create(adjustedWallTime, rightLineIndex + (j * (width + gap)), (k * (height1) + gap), randomDuration, width, 2000);
-                        _generatedExtensionWalls.Add(customObsData);
+                        // Non-ME behavior:
+                        // Convert X to coarse lanes
+                        x = QuantizeFromME(xLeftME);
 
-                        gridCount++;
+                        // Convert sizes to coarse units and clamp as requested
+                        w = ClampInt(SizeFromME(widthME), 1, 3); // max width 3
+                        h = ClampInt(SizeFromME(heightME), 1, 2); // max height 2
+
+                        // Vertical stacking with a guaranteed 1-layer empty gap:
+                        // row start layers: 0, (h+1), 2*(h+1), ...
+                        int layerGap = 0;
+                        y = k * (h + layerGap);
+
+                        if (y > 6) h = 1; // above layer 6, reduce height to 1 since layers are weird up high
+
+                            // Apply MaxLayer as a STOP, not a clamp (prevents top-layer pile-ups)
+                            if (MaxLayer > 0 && y > MaxLayer)
+                            break; // k only increases, so we can stop making higher rows for this column
                     }
+
+                    Plugin.Log.Info(
+                        $"Grid Wall EXTENSION Lt: Time: {adjustedWallTime}, Index:{x}, Layer: {y}, Dur: {randomDuration}, Width: {w}, Height: {h}");
+
+                    EObstacleData leftObs = EObstacleData.Create(adjustedWallTime, x, y, randomDuration, w, h);
+                    _generatedExtensionWalls.Add(leftObs);
+                    gridCount++;
+                }
+
+                // =========================
+                // RIGHT GRID WALL
+                // =========================
+                if (alreadyHasBigWall != "right" && alreadyHasExtendedWalls != "right")
+                {
+                    int x, y, w, h;
+
+                    if (isEnabledExtensionWalls)
+                    {
+                        // Original ME behavior: right side uses height 2000
+                        x = xRightME;
+                        y = yME;
+                        w = widthME;
+                        h = 2000;
+                    }
+                    else
+                    {
+                        x = QuantizeFromME(xRightME);
+
+                        // Convert size and clamp width; height fixed to 2 in non-ME
+                        w = ClampInt(SizeFromME(widthME), 1, 3);
+                        h = 2;
+
+                        // Same vertical stacking rule; guarantees 1-layer gap
+                        y = k * (h + 1);
+
+                        if (y > 6) h = 1; // above layer 6, reduce height to 1 since layers are weird up high
+                        
+                        // Stop at MaxLayer
+                        if (MaxLayer > 0 && y > MaxLayer)
+                        break;
+                    }
+
+                    Plugin.Log.Info(
+                        $"Grid Wall EXTENSION Rt: Time: {adjustedWallTime}, Index:{x}, Layer: {y}, Dur: {randomDuration}, Width: {w}, Height: {h}");
+
+                    EObstacleData rightObs = EObstacleData.Create(adjustedWallTime, x, y, randomDuration, w, h);
+                    _generatedExtensionWalls.Add(rightObs);
+                    gridCount++;
                 }
             }
         }
+    }
 
-        private static void TunnelWalls(float wallTime, string alreadyHasGenWall, string alreadyHasBigWall,
+
+
+
+    private static void TunnelWalls(float wallTime, string alreadyHasGenWall, string alreadyHasBigWall,
             int wallCount, int numberOfColumns, int durationMult)
         {
             tunnelWallsHappening = true; // set to false at begin of main loop if time is already past the last tunnel wall
@@ -858,6 +966,13 @@ namespace AutoBS
 
             int windowPaneCount = Math.Max(numberOfColumns, 6);// * 2, 6);
 
+            string levelName = TransitionPatcher.SelectedSerializedName;
+
+            //v1.42 reduce for standard levels since makes so many repeating walls
+            if (levelName != GameModeHelper.GENERATED_90DEGREE_MODE && levelName != "360Degree" && levelName != "90Degree")
+                windowPaneCount /= 3;
+
+
             windowPaneTallToggle = (windowPaneTallToggle + 1) % 3; // 1 in 3 times
 
             if (windowPaneTallToggle == 0)
@@ -922,7 +1037,7 @@ namespace AutoBS
 
         public static void ParticleWalls(int repeatLimit = -1) // not using wallTime so not on the beat. if don't send in a repeatLimit, then will default to the user set ParticleWallsBatchSize
         {
-            if (Config.Instance.EnableParticleWalls && Config.Instance.EnableMappingExtensionsWallsGenerator)
+            if (Config.Instance.EnableParticleWalls)
             {
                 int divisorOne = Math.Max((int)Math.Round(3 / ParticleWallsMultiplier), 1); // Use Math.Round: Ensure that you round the result of your division to get meaningful divisors for the modulo operation.This avoids erroneous behavior from using floating-point division directly in integer contexts. Check for Zero Divisor: Ensure that the divisor does not round to zero, as dividing by zero will throw an exception.
                 int divisorTwo = Math.Max((int)Math.Round(5 / ParticleWallsMultiplier), 1);
@@ -1071,7 +1186,7 @@ namespace AutoBS
 
         public static void FloorWalls(List<TimeGap> gaps, int repeatLimit = -1) // not using wallTime so not on the beat
         {
-            if (Config.Instance.EnableFloorWalls && Config.Instance.EnableMappingExtensionsWallsGenerator)
+            if (Config.Instance.EnableFloorWalls)
             {
                 int divisorOne = Math.Max((int)Math.Round(4 / FloorWallsMultiplier), 1); // Use Math.Round: Ensure that you round the result of your division to get meaningful divisors for the modulo operation.This avoids erroneous behavior from using floating-point division directly in integer contexts. Check for Zero Divisor: Ensure that the divisor does not round to zero, as dividing by zero will throw an exception.
                 int divisorTwo = Math.Max((int)Math.Round(6 / FloorWallsMultiplier), 1);
@@ -1282,7 +1397,7 @@ namespace AutoBS
 
         }
 
-        public static void MegaWalls(List<TimeGap> gaps)
+        public static void MegaWalls(List<TimeGap> gaps) //without mapping extensions, height is restricted to 10 or less.
         {
             int divisor = 4;
 
@@ -1296,7 +1411,7 @@ namespace AutoBS
 
             //Plugin.Log.Info($"Mega Wall Gaps: {gaps.Count}");
 
-            if (!Config.Instance.EnableBigWalls || !Config.Instance.EnableMappingExtensionsWallsGenerator) return;
+            if (!Config.Instance.EnableBigWalls) return;
             if (gaps == null || gaps.Count == 0) return;
 
             // Deterministic RNG so the same seed yields the same mega walls for a given map.
@@ -1371,7 +1486,7 @@ namespace AutoBS
                 if (pairCount >= maxPairCount) break; // exit loop
             }
 
-            //Plugin.Log.Info($"Mega Wall Pairs: {pairCount} (Total walls: {pairCount * 2})");
+            Plugin.LogDebug($"[WallGenerator][MegaWalls] Mega Wall Pairs: {pairCount} (Total walls: {pairCount * 2})");
         }
 
 

@@ -97,7 +97,9 @@ namespace AutoBS
         public virtual bool EnableBigWalls { get; set; } = true;
         public virtual float StandardWallsMultiplier { get; set; } = 100; // 100% is max and can't be increased unlike the other multipliers
         public virtual float StandardWallsMinDistance { get; set; } = 0; // default 0 since comes into lanes 0 and 3
-        public virtual bool EnableMappingExtensionsWallsGenerator { get; set; } = true; // not set by user currently. set by whether mapping extensions mod is installed. // turns on/off all ext walls - BW add new decorative extension mapping walls. must install extension mapping to work
+        
+        //v1.42 never needed this
+        //public virtual bool EnableMappingExtensionsWallsGenerator { get; set; } = true; // not set by user currently. set by whether mapping extensions mod is installed. // turns on/off all ext walls - BW add new decorative extension mapping walls. must install extension mapping to work
         
         public virtual bool EnableDistantExtensionWalls { get; set; } = true; // -- i think i can delete this!!!!!!!!!!!!!!!!!!!!!!!
         public virtual float DistantExtensionWallsMultiplier { get; set; } = 2;

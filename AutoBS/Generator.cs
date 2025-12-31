@@ -932,22 +932,26 @@ namespace AutoBS
 
             #region Wall Generator
 
-            //outside the loop. so not using wallTime and not on the beat
-            if (Utils.IsEnabledExtensionWalls() && Config.Instance.EnableMappingExtensionsWallsGenerator && originalWallCount < 5000)// && !BeatmapDataTransformHelperPatcher.NoodleProblemNotes && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles) // turn off automated extended walls for maps already using mapping extensions
+            //1.42 moved this here so can add mega walls without ME
+            if (originalWallCount < 5000)
             {
-                //stopwatch.Restart();
-
                 if (wallCutMoments.Count > 0)
                     gaps = FindGapsUsingRotations(wallCutMoments, 2.0f);
                 else
                     gaps = FindGapsUsingNotes(eData.ColorNotes, 2.0f);
+            }
+
+            //outside the loop. so not using wallTime and not on the beat
+            if (Utils.IsEnabledExtensionWalls() && originalWallCount < 5000)// && !BeatmapDataTransformHelperPatcher.NoodleProblemNotes && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles) // turn off automated extended walls for maps already using mapping extensions
+            {
+                //stopwatch.Restart();
+
+                
 
                     //Plugin.Log.Info("Gaps: " + gaps.Count + " wallcutmoments: " + wallCutMoments.Count);
 
                 WallGenerator.ParticleWalls();
                 WallGenerator.FloorWalls(gaps);
-                WallGenerator.MegaWalls(gaps);
-
 
                 //Plugin.LogDebug($" ------- Create Particle & Floor Walls Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}");
                 //stopwatch.Stop();
@@ -955,6 +959,9 @@ namespace AutoBS
 
             if (originalWallCount < 5000)
             {
+                //v1.42 added mega walls outside of the extension walls since mega walls do not require ME (but height is severely restricted to about 8 or 10)
+                WallGenerator.MegaWalls(gaps);
+
                 WallGenerator.LogWallCount(eData);
 
                 //Plugin.Log.Info($" TransitionPatcher.startingGameMode: {TransitionPatcher.startingGameMode}, GameModeHelper.GENERATED_360DEGREE_MODE: {GameModeHelper.GENERATED_360DEGREE_MODE} AllowLeanWalls: {Config.Instance.AllowLeanWalls} AllowCrouchWalls: {Config.Instance.AllowCrouchWalls}");
@@ -992,8 +999,9 @@ namespace AutoBS
 
                 //Plugin.LogDebug($" ------- MoveWallsBlockingChainTail() & MoveWallsBlockingArc() time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}");
 
+                bool alreadyUsingME = TransitionPatcher.RequiresMappingExtensions;
 
-                if (isEnabledWalls && !TransitionPatcher.MapAlreadyUsesMappingExtensions && Config.Instance.EnableMappingExtensionsWallsGenerator)
+                if (isEnabledWalls && !alreadyUsingME)
                     WallGenerator.RemoveIntersectingWalls();
 
                 if (TransitionPatcher.SelectedSerializedName == "360Degree" || TransitionPatcher.SelectedSerializedName == "90Degree")
