@@ -76,7 +76,7 @@ namespace AutoBS
 
         private static List<EObstacleData> _floorWalls = new List<EObstacleData>();
 
-        private static List<EObstacleData> _allWalls = new List<EObstacleData>();
+        public static List<EObstacleData> _allWalls = new List<EObstacleData>();
 
         private static bool _allWallsContainsOriginalWalls = false;
         private static bool _allWallsContainsStandardWalls = false;
@@ -1521,8 +1521,9 @@ namespace AutoBS
 
         public static void LogWallCount(EditableCBD eData)
         {
+            int origWallsCount = _originalWalls.Count > 0 ? _originalWalls.Count : eData.Obstacles.Count; // if wall gen is off, then _original walls are never populated. // Github Issue #2 Walls gone when using autolights
             Plugin.LogDebug(
-                $"[WallGenerator] Walls Before Rotational Removal Tools - in eData: {eData.Obstacles.Count()} -- Original: {_originalWalls.Count} Standard: {_generatedStandardWalls.Count} Distant: {distantCount} Column: {columnCount} Row: {rowCount} Tunnel: {tunnelCount} Grid: {gridCount} Pane: {paneCount} Particle: {_particleWalls.Count} Floor: {_floorWalls.Count} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+                $"[WallGenerator] Walls Before Rotational Removal Tools - in eData: Total: {eData.Obstacles.Count()} -- Original: {origWallsCount} Standard: {_generatedStandardWalls.Count} Distant: {distantCount} Column: {columnCount} Row: {rowCount} Tunnel: {tunnelCount} Grid: {gridCount} Pane: {paneCount} Particle: {_particleWalls.Count} Floor: {_floorWalls.Count} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
         }
 
 
@@ -2109,6 +2110,11 @@ namespace AutoBS
         {
             //Stopwatch stopwatch = new Stopwatch();
             //stopwatch.Restart();
+            if (_originalWalls.Count == 0) // Github Issue #2 Walls gone when using autolights
+            {
+                _allWalls.AddRange(eData.Obstacles); // in case not already done
+                _allWallsContainsOriginalWalls = true;
+            }
 
             if (!_allWallsContainsOriginalWalls)
             {
@@ -2138,8 +2144,6 @@ namespace AutoBS
 
             _allWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
-            Plugin.LogDebug($"[FinalizeWallsToMap] _allWalls final count: {_allWalls.Count}");
-
             eData.Obstacles = _allWalls;
 
             Plugin.LogDebug($"[FinalizeWallsToMap] Walls Finalized Count: {eData.Obstacles.Count}");
@@ -2149,8 +2153,12 @@ namespace AutoBS
         }
         public static void FinalizeOriginalOnlyWallsToMap(EditableCBD eData)
         {
-            //Stopwatch stopwatch = new Stopwatch();
-            //stopwatch.Restart();
+            // Github Issue #2 Walls gone when using autolights
+            if (_originalWalls.Count == 0)
+            {
+                _allWalls.AddRange(eData.Obstacles); // in case not already done
+                _allWallsContainsOriginalWalls = true;
+            }
 
             if (!_allWallsContainsOriginalWalls)
             {
@@ -2164,9 +2172,6 @@ namespace AutoBS
             eData.Obstacles = _allWalls;
 
             Plugin.LogDebug($"[FinalizeWallsToMap] Walls Finalized Count: {eData.Obstacles.Count} (only original walls since walls count > 5000)");
-
-            //Plugin.Log.Info($" ------- Add all walls Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}.");
-            //stopwatch.Stop();
         }
 
         public static bool IsCustomNoodleWall(EObstacleData ob)

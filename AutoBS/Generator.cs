@@ -976,7 +976,8 @@ namespace AutoBS
                     Plugin.LogDebug($"LeanCrouchWallRemoval() NOT CALLED!!");
                 }
 
-                eData.RotationEvents = WallGenerator.RemoveCrouchWallRotations(eData.RotationEvents);
+                if (eData.RotationEvents.Count > 0)
+                    eData.RotationEvents = WallGenerator.RemoveCrouchWallRotations(eData.RotationEvents);
 
 
                 //stopwatch.Restart();
@@ -1024,12 +1025,13 @@ namespace AutoBS
                     //WallGenerator.WallRemovalForRotations(wallCutMoments);
                 }
 
-                WallGenerator.FinalizeWallsToMap(eData);
+                if (WallGenerator._allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
+                    WallGenerator.FinalizeWallsToMap(eData);
             }
-            else
-            {
+
+            if (WallGenerator._originalWalls.Count > 0 || WallGenerator._allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
                 WallGenerator.FinalizeOriginalOnlyWallsToMap(eData);
-            }
+
 
             List<ENoteData> bombsToRemove = new List<ENoteData>();
             foreach (var obj in eData.ColorNotes) // bombs get added to colorNotes for loop so need to remove them. this is still needed
