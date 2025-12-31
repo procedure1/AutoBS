@@ -3,7 +3,7 @@
   "id": "AutoBS",
   "name": "AutoBS",
   "author": "Procedure1",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A Beat Saber mod for auto rotations, arcs, chains, lighting, walls and more.",
   "gameVersion": "1.42.0",
   "dependsOn": {
