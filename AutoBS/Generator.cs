@@ -140,6 +140,9 @@ namespace AutoBS
             
             Plugin.LogDebug($"[Generator] Original Wall Count: {originalWallCount}");
 
+            WallGenerator._originalWalls.Clear();// Github Issue #2 Walls gone when using autolights
+            WallGenerator._allWalls.Clear();
+
             if (isEnabledWalls && (!Config.Instance.AllowCrouchWalls || !Config.Instance.AllowLeanWalls) || isEnabledWalls || Utils.IsEnabledArcs() || Utils.IsEnabledChains() || Config.Instance.Enable360fyer)// || Config.Instance.ShowGenerated90)
                 WallGenerator.ResetWalls(eData); // reset for each song so variables clear out - do this even if wall generator is off since need to change walls for chains and rotations etc
 
@@ -1020,8 +1023,7 @@ namespace AutoBS
                 if (WallGenerator._allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
                     WallGenerator.FinalizeWallsToMap(eData);
             }
-
-            if (WallGenerator._originalWalls.Count > 0 || WallGenerator._allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
+            else if (WallGenerator._originalWalls.Count > 0 || WallGenerator._allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
                 WallGenerator.FinalizeOriginalOnlyWallsToMap(eData);
 
 
