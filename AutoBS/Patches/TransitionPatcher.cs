@@ -170,7 +170,7 @@ namespace AutoBS.Patches
                 MapAlreadyUsesArcs          = MapAlreadyUsesArcsRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundArcs) ? foundArcs : false;
                 MapAlreadyUsesChains        = MapAlreadyUsesChainsRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundChains) ? foundChains : false;
 
-                CurrentBeatmapVersion = BeatmapDataRegistry.versionByKey[CurrentPlayKey];
+                CurrentBeatmapVersion = BeatmapDataRegistry.versionByKey.TryGetValue(CurrentPlayKey, out var ver) ? ver : new Version(0,0,0); // Github Issue #2 Walls gone when using autolights 
 
                 NotesPerSecond = NotesPerSecRegistry.findByKey.TryGetValue(CurrentPlayKey, out var nps) ? nps : 0f; // used by generator to reduce rotations for high density maps
                 Plugin.LogDebug($"[TransitionPatcher] Gen or BasedOn Map - Retrieved from Registries. AlreadyUsingEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, NotesPerSecond: {NotesPerSecond}");

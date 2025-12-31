@@ -20,6 +20,7 @@ namespace AutoBS
     using System.Linq;
     using System.Runtime.InteropServices.WindowsRuntime;
     using System.Text.Json.Serialization;
+    using UnityEngine.Assertions.Must;
     using UnityEngine.Profiling;
 
     // Define mutable equivalents for Custom* types
@@ -32,6 +33,8 @@ namespace AutoBS
         public ScoringType scoringType { get; set; }
         public int line { get; set; }
         public int layer { get; set; } // Now int, not NoteLineLayer
+        public int beforeJumpLayer { get; set; } // Github Issue #2 Walls gone when using autolights (and last notes of song have no animation bounce)
+
         public NoteCutDirection cutDirection { get; set; }
         public int rotation { get; set; } = 0; //accumulated rotation as held by customNoteData
 
@@ -50,6 +53,7 @@ namespace AutoBS
             scoringType = original.scoringType;
             line = original.lineIndex;
             layer = (int)original.noteLineLayer; // Cast to int
+            beforeJumpLayer = (int)original.beforeJumpNoteLineLayer;
             cutDirection = original.cutDirection;
             colorType = (ColorType)original.colorType;
             rotation = original.rotation;
@@ -62,6 +66,7 @@ namespace AutoBS
             scoringType = original.scoringType;
             line = original.lineIndex;
             layer = (int)original.noteLineLayer; // Cast to int
+            beforeJumpLayer = (int)original.beforeJumpNoteLineLayer;
             cutDirection = original.cutDirection;
             colorType = (ColorType)original.colorType;
             rotation = original.rotation;
@@ -105,6 +110,7 @@ namespace AutoBS
                 colorType = colorType,
                 line = line,
                 layer = layer,
+                beforeJumpLayer = 0, // animation seems always to come from 0 layer
                 cutDirection = cutDirection,
                 rotation = rotation,
                 headNoteArc = ArcHeadNote,
@@ -124,7 +130,7 @@ namespace AutoBS
                 rotation: this.rotation,
                 lineIndex: this.line,
                 noteLineLayer: (NoteLineLayer)this.layer,
-                beforeJumpNoteLineLayer: (NoteLineLayer)this.layer, // set to 0 or a valid layer if you don't track this
+                beforeJumpNoteLineLayer: (NoteLineLayer)this.beforeJumpLayer,
                 gameplayType: this.gameplayType,
                 scoringType: this.scoringType,
                 colorType: this.colorType,
