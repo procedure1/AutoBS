@@ -155,12 +155,18 @@ namespace AutoBS
                 data.allBeatmapDataItems.Remove(e);
             }
             */
-            
+
+            eData.BasicEventsChanged = false;
+
+            int lightCounter = 0;
             foreach (EBasicEventData light in v2lights)
             {
                 //Plugin.Log.Info($"[AutoLightMapper] Inserting event: Time={light.time:F3}, Type={(EventType)light.basicBeatmapEventType}, Value={(EventValue)light.value}, Brightness={light.floatValue:F2}");
                 eData.BasicEvents.Add(light);
+                lightCounter++;
             }
+
+            if (lightCounter > 0) eData.BasicEventsChanged = true;
 
             //return data;
         }
@@ -224,7 +230,7 @@ namespace AutoBS
             // --- NEW: Determine allowed special events based on environment ---
             string environmentName = TransitionPatcher.EnvironmentName != null ? TransitionPatcher.EnvironmentName : "Default";
             //Plugin.Log.Info($"[AutoLightMapper] Songname: {HarmonyPatches.SongName} --- Current environment name: {environmentName} -------------------");
-            Plugin.LogDebug($" -------------------");
+            //Plugin.LogDebug($" -------------------");
 
             List<EventType> allowedSpecialEventTypes = new List<EventType>();
             if (environmentName.IndexOf("Skrillex", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -1031,7 +1037,7 @@ namespace AutoBS
             if (lightEvents.Count > 0)
             {
                 LightEventsAdded = true;
-                Plugin.LogDebug($"[CreateLight] {lightEvents.Count} Light Events Added.");
+                Plugin.LogDebug($"[AutoLightMapper] {lightEvents.Count} Light Events Added.");
             }
 
             return lightEvents;

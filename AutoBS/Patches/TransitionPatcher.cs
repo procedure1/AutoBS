@@ -149,21 +149,19 @@ namespace AutoBS.Patches
 
             EnvironmentName = GetEnvironmentName(beatmapKey, beatmapLevel, overrideEnvironmentSettings);
 
-            IsBeatSageMap = false;
-
-
             // BOTH of these are done in SetContent now for gen360 and basedOn maps. so only need to do it here for nonGen non basedOn maps. so should restore autoNjs registry for those maps only and can also leave beat sage in setcontent
             var basic = beatmapLevel.GetDifficultyBeatmapData(SelectedCharacteristicSO, SelectedDifficulty);
-            if (basic != null)
+            if (basic != null) //mappers is always empty unless setContent for Gen360 added it.
             {
                 OriginalNoteJumpMovementSpeed = NoteJumpMovementSpeed(SelectedDifficulty, basic.noteJumpMovementSpeed);
                 NoteJumpOffset = basic.noteJumpStartBeatOffset;
                 float originalJD;
                 (FinalNoteJumpMovementSpeed, FinalJumpDistance, originalJD) = AutoNjsFixer.Fix(OriginalNoteJumpMovementSpeed, NoteJumpOffset, bpm);
                 Plugin.LogDebug($"[TransitionPatcher] BasicBeatmapData - Original NJS: {OriginalNoteJumpMovementSpeed} Original NJO: {NoteJumpOffset}, Original JD: {originalJD} -- AutoNjsFixer NJS: {FinalNoteJumpMovementSpeed}, AutoNjsFixer JD: {FinalJumpDistance}");
-                IsBeatSageMap = basic.mappers.Contains("Beat Sage");
-                Plugin.LogDebug($"[TransitionPatcher] BasicBeatmapData - Beat Sage Map: {IsBeatSageMap}");
+                //IsBeatSageMap = basic.mappers.Contains("Beat Sage"); // not available unless a Gen360 map where SetContent added it.
             }
+
+            IsBeatSageMap = SetContent.IsBeatSageMap;
 
             bool isBasedOn = SelectedSerializedName == basedOn;
             if (isGen360 || isBasedOn)
@@ -213,6 +211,12 @@ namespace AutoBS.Patches
                                         d._beatmapCharacteristicName == SelectedSerializedName &&
                                         d._difficulty == SelectedDifficulty);
 
+                string[] mappers = SelectedBeatmapLevel.allMappers ?? Array.Empty<string>(); //empty for vanilla but maybe newer songs have it
+                var contributorMappers = songCoreExtraData.contributors.Where(c => c._role?.ToLower() == "mapper").Select(c => c._name).ToArray();
+                if (contributorMappers.Length > 0) mappers = contributorMappers;
+
+                IsBeatSageMap = mappers.Contains("Beat Sage");
+
                 SetContent.SongFolderPath = SongFolderUtils.TryGetSongFolder(beatmapLevel.levelID);
                 
                 //v1.42
@@ -256,6 +260,8 @@ namespace AutoBS.Patches
 
                 Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map - Calculated NotesPerSecond: {NotesPerSecond} from {noteCount} notes over {songLength} seconds.");
             }
+
+            Plugin.LogDebug($"[TransitionPatcher] Beat Sage Map: {IsBeatSageMap}");
 
             SelectedBeatmapVersion = BeatmapVersionRegistry.versionByKey.TryGetValue(BasedOnKey, out var v) ? v : new Version(0, 0, 0);
             if (!isCustomLevel && SelectedBeatmapVersion.Major == 0)

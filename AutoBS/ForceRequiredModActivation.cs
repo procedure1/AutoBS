@@ -102,9 +102,6 @@ namespace AutoBS
         // Mapping Extension has its own built-in method to force activate it for a song
         public static void MappingExtensionsForceActivate()
         {
-            if (!Config.Instance.EnablePlugin || !Utils.IsEnabledForGeneralFeatures())
-                return;
-
             bool alreadyUsing = TransitionPatcher.RequiresMappingExtensions;
 
             //Plugin.Log.Warn($"Mapping Extensions test - IsEnabledExtensionWalls: {Utils.IsEnabledExtensionWalls()}, mapAlreadyUsesMappingExtensions: {mapAlreadyUsesMappingExtensions}");
@@ -112,7 +109,7 @@ namespace AutoBS
             if (!GameplaySetupView.IsMappingExtensionsInstalled)
                 Plugin.Log.Info("[ForceActivate] Mapping Extensions is NOT installed for Auto Walls.");
 
-            if ((Utils.IsEnabledExtensionWalls() && !alreadyUsing) || alreadyUsing)
+            if (Utils.IsEnabledExtensionWalls() || alreadyUsing)
             {
                 // Get all loaded assemblies
                 var assemblies = AppDomain.CurrentDomain.GetAssemblies();

@@ -13,6 +13,7 @@ using static UnityEngine.UI.Image;
 namespace AutoBS
 {
     using AutoBS.Patches;
+    using AutoBS.UI;
     using BeatmapSaveDataVersion4;
     using CustomJSONData.CustomBeatmap;
     using System;
@@ -305,9 +306,11 @@ namespace AutoBS
         public float tailTime { get; set; }
         public int tailLine { get; set; }
         public int tailLayer { get; set; }
-
         public int tailBeforeJumpLineLayer { get; set; }
         public NoteCutDirection tailCutDirection { get; set; }
+
+        public float headCutDirectionAngleOffset { get; set; } = 0f;
+        public float tailCutDirectionAngleOffset { get; set; } = 0f;
 
         public SliderMidAnchorMode sliderMidAnchorMode { get; set; } = SliderMidAnchorMode.Straight;
         public float headControlPointLengthMultiplier { get; set; } = 1f;
@@ -334,12 +337,12 @@ namespace AutoBS
             time = original.time;
             line = original.headLineIndex;
             layer = (int)original.headLineLayer;
-            headBeforeJumpLineLayer = (int)original.headLineLayer;
+            headBeforeJumpLineLayer = (int)original.headBeforeJumpLineLayer;
             cutDirection = original.headCutDirection;
             tailTime = original.tailTime;
             tailLine = original.tailLineIndex;
             tailLayer = (int)original.tailLineLayer;
-            tailBeforeJumpLineLayer = (int)original.tailLineLayer;
+            tailBeforeJumpLineLayer = (int)original.tailBeforeJumpLineLayer;
             tailCutDirection = original.tailCutDirection;
             sliderMidAnchorMode = original.midAnchorMode;
             headControlPointLengthMultiplier = original.headControlPointLengthMultiplier;
@@ -434,8 +437,8 @@ namespace AutoBS
                 sliderMidAnchorMode = sliderMidAnchorMode,
                 sliceCount = 0,
                 squishAmount = 1f,
-                hasHeadNote = true,
-                hasTailNote = true,
+                hasHeadNote = hasHeadNote,
+                hasTailNote = hasTailNote,
                 headNote = headNote,
                 tailNote = tailNote,
             };
@@ -506,19 +509,19 @@ namespace AutoBS
                 rotation: this.rotation,
                 headLineIndex: this.line,
                 headLineLayer: (NoteLineLayer)this.layer,
-                headBeforeJumpLineLayer: (NoteLineLayer)this.layer,
+                headBeforeJumpLineLayer: (NoteLineLayer)this.headBeforeJumpLineLayer,
                 headControlPointLengthMultiplier: this.headControlPointLengthMultiplier,
                 headCutDirection: this.cutDirection,
-                headCutDirectionAngleOffset: 0f, // use actual if you track it
+                headCutDirectionAngleOffset: headCutDirectionAngleOffset,
                 hasTailNote: this.hasTailNote,
                 tailTime: this.tailTime,
                 tailRotation: this.rotation, // same as head!!!!!!!!!!!!!!!!
                 tailLineIndex: this.tailLine,
                 tailLineLayer: (NoteLineLayer)this.tailLayer,
-                tailBeforeJumpLineLayer: (NoteLineLayer)this.tailLayer,
+                tailBeforeJumpLineLayer: (NoteLineLayer)this.tailBeforeJumpLineLayer,
                 tailControlPointLengthMultiplier: this.tailControlPointLengthMultiplier,
                 tailCutDirection: this.tailCutDirection,
-                tailCutDirectionAngleOffset: 0f, // use actual if you track it
+                tailCutDirectionAngleOffset: tailCutDirectionAngleOffset,
                 midAnchorMode: this.sliderMidAnchorMode,
                 sliceCount: this.sliceCount,
                 squishAmount: this.squishAmount,
@@ -543,7 +546,7 @@ namespace AutoBS
                 headBeforeJumpLineLayer: (NoteLineLayer)this.layer,
                 headControlPointLengthMultiplier: this.headControlPointLengthMultiplier,
                 headCutDirection: this.cutDirection,
-                headCutDirectionAngleOffset: 0f, // use actual if you track it
+                headCutDirectionAngleOffset: headCutDirectionAngleOffset,
                 hasTailNote: this.hasTailNote,
                 tailTime: this.tailTime,
                 tailRotation: this.rotation, // same as head!!!!!!!!!!!!!!!!
@@ -552,7 +555,7 @@ namespace AutoBS
                 tailBeforeJumpLineLayer: (NoteLineLayer)this.tailLayer,
                 tailControlPointLengthMultiplier: this.tailControlPointLengthMultiplier,
                 tailCutDirection: this.tailCutDirection,
-                tailCutDirectionAngleOffset: 0f, // use actual if you track it
+                tailCutDirectionAngleOffset: tailCutDirectionAngleOffset,
                 midAnchorMode: this.sliderMidAnchorMode,
                 sliceCount: this.sliceCount,
                 squishAmount: this.squishAmount
@@ -859,7 +862,14 @@ namespace AutoBS
         {
             time = original.time;
             boostColorsAreOn = original.boostColorsAreOn;
+
+            // Preserve customData when available
+            if (original is CustomColorBoostBeatmapEventData cb)
+                customData = cb.customData ?? new CustomData();
+            else
+                customData = new CustomData();
         }
+
         public static EColorBoostEvent Create(
             float time,
             bool boostOn,
@@ -924,15 +934,27 @@ namespace AutoBS
 
         public bool MapWasAltered { get; set; }
 
+        public bool RotationEventsChanged { get; set; } = false; // this will cause Color Notes, Bomb Notes, Arcs, and Chains to change since will add per object rotations
+        public bool ColorNotesChanged { get; set; } = false;
+        public bool BombNotesChanged { get; set; } = false;
+        public bool ObstaclesChanged { get; set; } = false;
+        public bool ArcsChanged { get; set; } = false;
+        public bool ChainsChanged { get; set; } = false;
+
+        public bool BasicEventsChanged { get; set; } = false;
+        public bool ColorBoostEventsChanged { get; set; } = false;
+        public bool CustomEventsChanged { get; set; } = false;
+
+
         public List<ENoteData> ColorNotes { get; set; }
-        public List<ENoteData> BombNotes { get; }
+        public List<ENoteData> BombNotes { get; set; }
         public List<EObstacleData> Obstacles { get; set; }
         public List<ESliderData> Arcs { get; set; }
         public List<ESliderData> Chains { get; set; }
         public List<ERotationEventData> RotationEvents { get; set; }
 
         //public List<ERotationEventData> RotationEventsMatchEarlyPerObject { get; set; } // this is created at the last step after assigning per object and is used to output rotation events for v2/3 JSON dat files. but this list casues more wall and arc rotaiton problems for json. best to use original rotation events
-        public List<EBasicEventData> BasicEvents { get; }
+        public List<EBasicEventData> BasicEvents { get; set; }
         public List<EColorBoostEvent> ColorBoostEvents { get; set; }
         public List <ECustomEventData> CustomEvents { get; set; }
         public CustomData BeatmapCustomData { get; }
@@ -943,6 +965,9 @@ namespace AutoBS
         public bool MapAlreadyUsesArcs { get; set; } = false;
         public bool MapAlreadyUsesChains { get; set; } = false;
         public bool MapAlreadyUsesRotations { get; set; } = false;
+        public int OriginalObstacleCount { get; set; } = 0;
+        public List<(float time, int rotationSteps)> WallCutMoments { get; set; }
+            = new List<(float time, int rotationSteps)>(); // Rotation cut moments for wall gap logic, filled by RotationGenerator.
 
         // Creates an EditableCBD from a standard BeatmapData object!!!!!!!!!!!!!! v4 maps will come here too since CustomBeatmapData is not compatible with v4 maps
         public EditableCBD(BeatmapData original, Version version)
@@ -1052,6 +1077,8 @@ namespace AutoBS
 
             if (RotationEvents.Count > 1) MapAlreadyUsesRotations = true;
             else MapAlreadyUsesRotations = false;
+
+            OriginalObstacleCount = Obstacles.Count;
 
             Plugin.LogDebug($"[EditableCBD] MapAlreadyUsesEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, MapAlreadyUsesRotations: {MapAlreadyUsesRotations}");
 
@@ -1217,6 +1244,8 @@ namespace AutoBS
 
             if (RotationEvents.Count > 1) MapAlreadyUsesRotations = true;
             else MapAlreadyUsesRotations = false;
+
+            OriginalObstacleCount = Obstacles.Count;
 
             Plugin.LogDebug($"[EditableCBD] MapAlreadyUsesEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, MapAlreadyUsesRotations: {MapAlreadyUsesRotations}");
 
@@ -1429,7 +1458,7 @@ namespace AutoBS
                         }
                     }
                 }
-                foreach (var wall in WallGenerator._originalWalls)
+                foreach (var wall in WallGenerator.originalWalls)
                 {
                     if (wall.customData?.Keys.Any(key => problemAttributes.Contains(key)) == true)
                     {
@@ -1479,26 +1508,77 @@ namespace AutoBS
             var allItems = new List<object>(capacity: 4096);
 
             // --- Your edited objects ---
-            allItems.AddRange(eData.ColorNotes.Select(n => (object)n.ToCustomNoteData(eData.Version)));
-            allItems.AddRange(eData.BombNotes.Select(n => (object)n.ToCustomNoteData(eData.Version)));
-            allItems.AddRange(eData.Obstacles.Select(o => (object)o.ToCustomObstacleData(eData.Version)));
-            allItems.AddRange(eData.Arcs.Select(a => (object)a.ToCustomSliderData(eData.Version)));
-            allItems.AddRange(eData.Chains.Select(c => (object)c.ToCustomSliderData(eData.Version)));
+            if (!eData.ColorNotesChanged)
+            {
+                allItems.AddRange(GetOriginalColorNotes(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Color Notes NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.ColorNotes.Select(n => (object)n.ToCustomNoteData(eData.Version)));
 
-            // --- Your rebuilt vanilla-style events (custom-capable) ---
-            allItems.AddRange(eData.BasicEvents.Select(ev => (object)ev.ToCustomBasicBeatmapEventData(eData.Version)));
-            allItems.AddRange(eData.ColorBoostEvents.Select(ev => (object)ev.ToCustomColorBoostBeatmapEventData(eData.Version)));
+            if (!eData.BombNotesChanged)
+            {
+                allItems.AddRange(GetOriginalBombNotes(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Bomb Notes NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.BombNotes.Select(n => (object)n.ToCustomNoteData(eData.Version)));
+
+            // Obstacles
+            if (!eData.ObstaclesChanged)
+            { 
+                allItems.AddRange(GetOriginalObstacles(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Obstacles NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.Obstacles.Select(o => (object)o.ToCustomObstacleData(eData.Version)));
+
+            // Arcs
+            if (!eData.ArcsChanged)
+            { 
+                allItems.AddRange(GetOriginalArcs(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Arcs NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.Arcs.Select(a => (object)a.ToCustomSliderData(eData.Version)));
+
+            // Chains
+            if (!eData.ChainsChanged)
+            { 
+                allItems.AddRange(GetOriginalChains(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Chains NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.Chains.Select(c => (object)c.ToCustomSliderData(eData.Version)));
+
+            // Basic events
+            if (!eData.BasicEventsChanged)
+            { 
+                allItems.AddRange(GetOriginalBasicEvents(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Basic Events NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.BasicEvents.Select(ev => (object)ev.ToCustomBasicBeatmapEventData(eData.Version)));
+
+            // Color boost events
+            if (!eData.ColorBoostEventsChanged)
+            { 
+                allItems.AddRange(GetOriginalColorBoostEvents(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Color Boosts NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.ColorBoostEvents.Select(ev => (object)ev.ToCustomColorBoostBeatmapEventData(eData.Version)));
 
             // --- Custom events: choose ONE source ---
-            if ((eData.CustomEvents?.Count ?? 0) > 0)
+            if (eData.CustomEventsChanged && (eData.CustomEvents?.Count ?? 0) > 0)
             {
                 allItems.AddRange(eData.CustomEvents.Select(cev => (object)cev.ToCustomEventData(eData.Version)));
             }
-            else if (eData.OriginalCBData?.customEventDatas is { } origCevs && origCevs.Count > 0)
+            else
             {
-                // Pass-through original custom events (already have non-null customData by design)
-                allItems.AddRange(origCevs);
+                allItems.AddRange(GetOriginalCustomEvents(eData));
             }
+
 
             // --- Pass-through everything else ONCE (skip types you rebuilt) ---
             if (eData.OriginalCBData != null)
@@ -1578,43 +1658,239 @@ namespace AutoBS
         /// <returns></returns>
         public static BeatmapData ConvertVanilla (EditableCBD eData) 
         {
+            if (eData.OriginalBData == null)
+                throw new InvalidOperationException("ConvertVanilla requires OriginalBData.");
+
             ESliderData.FixArcChainNoteScoring(eData);
             // numberOfLines: 4 for Standard; adjust if you support others
             var newData = new BeatmapData(4);
 
-            // 1) Objects (vanilla types)
-            foreach (var n in eData.ColorNotes) newData.AddBeatmapObjectDataInOrder(n.ToNoteData());
-            foreach (var n in eData.BombNotes) newData.AddBeatmapObjectDataInOrder(n.ToNoteData());
-            foreach (var o in eData.Obstacles) newData.AddBeatmapObjectDataInOrder(o.ToObstacleData());
-            foreach (var a in eData.Arcs) newData.AddBeatmapObjectDataInOrder(a.ToSliderData());
-            foreach (var c in eData.Chains) newData.AddBeatmapObjectDataInOrder(c.ToSliderData());
+            var allItems = new List<object>(capacity: 4096);
 
-            foreach (var e in eData.BasicEvents) newData.InsertBeatmapEventDataInOrder(e.ToBasicBeatmapEventData());
-            foreach (var b in eData.ColorBoostEvents) newData.InsertBeatmapEventDataInOrder(b.ToColorBoostBeatmapEventData());
+            // -------------------------
+            // 1) Objects (Notes/Bombs/Obstacles/Sliders)
+            // -------------------------
 
-            // --- Pass-through ALL other vanilla events you didn’t touch --- should send NJS events etc
-            if (eData.OriginalBData != null)
+            // Color notes
+            if (!eData.ColorNotesChanged)
+            { 
+                allItems.AddRange(GetOriginalColorNotes(eData)); // returns NoteData when OriginalBData exists
+                Plugin.LogDebug($"[ConvertEditableCBD] Color Notes NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.ColorNotes.Select(n => (object)n.ToNoteData()));
+
+            // Bomb notes
+            if (!eData.BombNotesChanged)
+            { 
+                allItems.AddRange(GetOriginalBombNotes(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Bomb Notes NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.BombNotes.Select(n => (object)n.ToNoteData()));
+
+            // Obstacles
+            if (!eData.ObstaclesChanged)
+            { 
+                allItems.AddRange(GetOriginalObstacles(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Obstacles NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.Obstacles.Select(o => (object)o.ToObstacleData()));
+
+            // Arcs (normal sliders)
+            if (!eData.ArcsChanged)
+            { 
+                allItems.AddRange(GetOriginalArcs(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Arcs NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.Arcs.Select(a => (object)a.ToSliderData()));
+
+            // Chains (burst sliders)
+            if (!eData.ChainsChanged)
+            { 
+                allItems.AddRange(GetOriginalChains(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Chains NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.Chains.Select(c => (object)c.ToSliderData()));
+
+            // -------------------------
+            // 2) Events (Basic + ColorBoost)
+            // -------------------------
+
+            if (!eData.BasicEventsChanged)
+            { 
+                allItems.AddRange(GetOriginalBasicEvents(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Basic Events NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.BasicEvents.Select(ev => (object)ev.ToBasicBeatmapEventData()));
+
+            if (!eData.ColorBoostEventsChanged)
+            { 
+                allItems.AddRange(GetOriginalColorBoostEvents(eData));
+                Plugin.LogDebug($"[ConvertEditableCBD] Color Boosts NOT ALTERED. Using original (if they exist).");
+            }
+            else
+                allItems.AddRange(eData.ColorBoostEvents.Select(ev => (object)ev.ToColorBoostBeatmapEventData()));
+
+
+            // -------------------------
+            // 3) Pass-through everything else (vanilla-only)
+            foreach (var item in eData.OriginalBData.allBeatmapDataItems)
             {
-                foreach (var item in eData.OriginalBData.allBeatmapDataItems)
-                {
-                    // Skip objects – you already recreated those
-                    if (item is NoteData || item is ObstacleData || item is SliderData || item is BurstSliderData)
-                        continue;
+                if (item is NoteData
+                 || item is ObstacleData
+                 || item is SliderData
+                 || item is BasicBeatmapEventData
+                 || item is ColorBoostBeatmapEventData)
+                    continue;
 
-                    // Skip the event types you explicitly rebuilt above to avoid duplicates
-                    if (item is BasicBeatmapEventData || item is ColorBoostBeatmapEventData)
-                        continue;
+                if (item is BeatmapEventData evt)
+                    allItems.Add(evt);
+            }
 
-                    // Keep everything else: rotations, BPM changes, NJS events, etc.
-                    if (item is BeatmapEventData evt)
-                        newData.InsertBeatmapEventDataInOrder(evt);
-                }
+            foreach (var item in allItems.OrderBy(i =>
+                i is BeatmapObjectData o ? o.time :
+                i is BeatmapEventData e ? e.time :
+                float.MaxValue))
+            {
+                if (item is BeatmapObjectData o)
+                    newData.AddBeatmapObjectDataInOrder(o);
+                else if (item is BeatmapEventData e)
+                    newData.InsertBeatmapEventDataInOrder(e);
             }
 
             newData.ProcessAndSortBeatmapData();
-
             return newData;
         }
+
+        // used to load original data when no changes made to that type
+        private static IEnumerable<object> GetOriginalColorNotes(EditableCBD eData)
+        {
+            if (eData.OriginalCBData != null)
+                return eData.OriginalCBData.beatmapObjectDatas
+                    .OfType<CustomNoteData>()
+                    .Where(n => n.cutDirection != NoteCutDirection.None)
+                    .Cast<object>();
+
+            if (eData.OriginalBData != null)
+                return eData.OriginalBData.allBeatmapDataItems
+                    .OfType<NoteData>()
+                    .Where(n => n.cutDirection != NoteCutDirection.None)
+                    .Cast<object>();
+
+            return Enumerable.Empty<object>();
+        }
+
+        private static IEnumerable<object> GetOriginalBombNotes(EditableCBD eData)
+        {
+            if (eData.OriginalCBData != null)
+                return eData.OriginalCBData.beatmapObjectDatas
+                    .OfType<CustomNoteData>()
+                    .Where(n => n.cutDirection == NoteCutDirection.None)
+                    .Cast<object>();
+
+            if (eData.OriginalBData != null)
+                return eData.OriginalBData.allBeatmapDataItems
+                    .OfType<NoteData>()
+                    .Where(n => n.cutDirection == NoteCutDirection.None)
+                    .Cast<object>();
+
+            return Enumerable.Empty<object>();
+        }
+
+        private static IEnumerable<object> GetOriginalObstacles(EditableCBD eData)
+        {
+            if (eData.OriginalCBData != null)
+                return eData.OriginalCBData.beatmapObjectDatas
+                    .OfType<CustomObstacleData>()
+                    .Cast<object>();
+
+            if (eData.OriginalBData != null)
+                return eData.OriginalBData.allBeatmapDataItems
+                    .OfType<ObstacleData>()
+                    .Cast<object>();
+
+            return Enumerable.Empty<object>();
+        }
+
+
+        private static IEnumerable<object> GetOriginalArcs(EditableCBD eData)
+        {
+            if (eData.OriginalCBData != null)
+                return eData.OriginalCBData.beatmapObjectDatas
+                    .OfType<CustomSliderData>()
+                    .Where(s => s.sliderType == SliderData.Type.Normal)
+                    .Cast<object>();
+
+            if (eData.OriginalBData != null)
+                return eData.OriginalBData.allBeatmapDataItems
+                    .OfType<SliderData>()
+                    .Where(s => s.sliderType == SliderData.Type.Normal)
+                    .Cast<object>();
+
+            return Enumerable.Empty<object>();
+        }
+
+        private static IEnumerable<object> GetOriginalChains(EditableCBD eData)
+        {
+            if (eData.OriginalCBData != null)
+                return eData.OriginalCBData.beatmapObjectDatas
+                    .OfType<CustomSliderData>()
+                    .Where(s => s.sliderType == SliderData.Type.Burst)
+                    .Cast<object>();
+
+            if (eData.OriginalBData != null)
+                return eData.OriginalBData.allBeatmapDataItems
+                    .OfType<SliderData>()
+                    .Where(s => s.sliderType == SliderData.Type.Burst)
+                    .Cast<object>();
+
+            return Enumerable.Empty<object>();
+        }
+
+        private static IEnumerable<object> GetOriginalBasicEvents(EditableCBD eData)
+        {
+            if (eData.OriginalCBData != null)
+                return eData.OriginalCBData.allBeatmapDataItems
+                    .OfType<CustomBasicBeatmapEventData>()
+                    .Cast<object>();
+
+            if (eData.OriginalBData != null)
+                return eData.OriginalBData.allBeatmapDataItems
+                    .OfType<BasicBeatmapEventData>()
+                    .Cast<object>();
+
+            return Enumerable.Empty<object>();
+        }
+
+        private static IEnumerable<object> GetOriginalColorBoostEvents(EditableCBD eData)
+        {
+            if (eData.OriginalCBData != null)
+                return eData.OriginalCBData.allBeatmapDataItems
+                    .OfType<ColorBoostBeatmapEventData>() // includes custom variant
+                    .Cast<object>();
+
+            if (eData.OriginalBData != null)
+                return eData.OriginalBData.allBeatmapDataItems
+                    .OfType<ColorBoostBeatmapEventData>()
+                    .Cast<object>();
+
+            return Enumerable.Empty<object>();
+        }
+
+
+        private static IEnumerable<object> GetOriginalCustomEvents(EditableCBD eData)
+        {
+            if (eData.OriginalCBData?.customEventDatas is { } orig && orig.Count > 0)
+                return orig.Cast<object>();
+
+            return Enumerable.Empty<object>();
+        }
+
 
         /// <summary>
         /// Updates all ENoteData, EObstacleData and ESliderData rotations in-place,
@@ -2304,7 +2580,7 @@ namespace AutoBS
             foreach (var obs in obstacles)
             {
                 // Skip noodle custom walls
-                if (WallGenerator._originalWalls.Contains(obs) && WallGenerator.IsCustomNoodleWall(obs))
+                if (WallGenerator.originalWalls.Contains(obs) && WallGenerator.IsCustomNoodleWall(obs))
                     continue;
 
                 float obsTime = obs.time;
@@ -2313,8 +2589,11 @@ namespace AutoBS
 
                 bool canSkip = false;
 
-                if (layer > 11000) canSkip = true;         // high walls
-                else if (layer > 10 && layer < 1000) canSkip = true; // floor walls
+                if (WallGenerator.ExtensionMappingWallsGenerated) // otherwise if ME is not used, then don't skip higher walls
+                {
+                    if (layer > 11000) canSkip = true;         // high walls
+                    else if (layer > 10 && layer < 1000) canSkip = true; // floor walls
+                }
 
                 if (layer == 2 && obs.line == 0 && obs.width > 2) canSkip = true; // crouch wall
                 if (dur < 0 && boostedWalls) canSkip = true;                       // boosted v2 walls

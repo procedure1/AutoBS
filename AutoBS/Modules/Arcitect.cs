@@ -112,6 +112,8 @@ namespace AutoBS
 
                 eData.Arcs = eData.Arcs.OrderBy(o => o.time).ToList(); // must do it this way with the =
 
+                if (eData.Arcs.Count > 0) eData.ArcsChanged = true;
+
                 arcs = eData.Arcs; // save arcs to static variable for chains to use
 
                 if (!Utils.IsEnabledWalls() || Utils.IsEnabledWalls() && (!Config.Instance.EnableStandardWalls || !Config.Instance.EnableBigWalls)) // this should be used whenever chains are added. but should be done after standard/big walls are added since those walls can block chain tails too
@@ -140,7 +142,11 @@ namespace AutoBS
 
                 eData.Chains = eData.Chains.OrderBy(o => o.time).ToList(); // sort chains by time
 
-                if (eData.Chains.Count > 0) ScoreSubmissionDisableText = "Architect Chains";
+                if (eData.Chains.Count > 0)
+                {
+                    ScoreSubmissionDisableText = "Architect Chains";
+                    eData.ChainsChanged = true;
+                }
 
                 if (!Utils.IsEnabledWalls() || Utils.IsEnabledWalls() && (!Config.Instance.EnableStandardWalls || !Config.Instance.EnableBigWalls)) // this should be used whenever chains are added. but should be done after standard/big walls are added since those walls can block chain tails too
                     WallGenerator.MoveWallsBlockingChainTail(eData);

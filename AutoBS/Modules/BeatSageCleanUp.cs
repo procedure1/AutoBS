@@ -270,6 +270,8 @@ namespace AutoBS
 
                 notes = eData.ColorNotes.ToList(); // do this since notes have been changed above
 
+                if (indicesToRemove.Count > 0) eData.ColorNotesChanged = true; else eData.ColorNotesChanged = false;
+
                 Plugin.Log.Info($"[BeatSageCleanUp] - Notes Removed {indicesToRemove.Count} - Remaining notes: {notes.Count}");
             }
                 

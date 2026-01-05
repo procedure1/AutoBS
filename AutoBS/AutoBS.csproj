@@ -44,9 +44,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AddDirectionalMarkersToMenu.cs" />
-    <Compile Include="Arcitect.cs" />
+    <Compile Include="Modules\Arcitect.cs" />
     <Compile Include="AutoNjsFixer.cs" />
-    <Compile Include="BeatSageCleanUp.cs" />
+    <Compile Include="Modules\BeatSageCleanUp.cs" />
+    <Compile Include="Modules\ColorBoostGenerator.cs" />
+    <Compile Include="Modules\GenerationPipeline.cs" />
+    <Compile Include="Modules\RotationGenerator.cs" />
     <Compile Include="UNUSED_BuiltInMapJsonLoader.cs" />
     <Compile Include="JsonOutputConverter.cs" />
     <Compile Include="DataRegistry.cs" />
@@ -61,7 +64,7 @@
     <Compile Include="GameModeHelper.cs" />
     <Compile Include="Generator.cs" />
     <Compile Include="UNUSED_GLSConverter.cs" />
-    <Compile Include="LightAutoMapper.cs" />
+    <Compile Include="Modules\LightAutoMapper.cs" />
     <Compile Include="OptimizeRotationsToFOV.cs" />
     <Compile Include="Patches\HarmonyPatches.cs" />
     <Compile Include="Plugin.cs" />
@@ -70,7 +73,7 @@
     <Compile Include="UNUSED_SoundChanger.cs" />
     <Compile Include="UI\GameplaySetupView.cs" />
     <Compile Include="Utils.cs" />
-    <Compile Include="WallGenerator.cs" />
+    <Compile Include="Modules\WallGenerator.cs" />
     <Compile Include="UNUSED_WallTimeOverlayDebug.cs" />
   </ItemGroup>
   <ItemGroup>

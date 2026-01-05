@@ -140,8 +140,8 @@ namespace AutoBS
             
             Plugin.LogDebug($"[Generator] Original Wall Count: {originalWallCount}");
 
-            WallGenerator._originalWalls.Clear();// Github Issue #2 Walls gone when using autolights
-            WallGenerator._allWalls.Clear();
+            WallGenerator.originalWalls.Clear();// Github Issue #2 Walls gone when using autolights
+            WallGenerator.allWalls.Clear();
 
             if (isEnabledWalls && (!Config.Instance.AllowCrouchWalls || !Config.Instance.AllowLeanWalls) || isEnabledWalls || Utils.IsEnabledArcs() || Utils.IsEnabledChains() || Config.Instance.Enable360fyer)// || Config.Instance.ShowGenerated90)
                 WallGenerator.ResetWalls(eData); // reset for each song so variables clear out - do this even if wall generator is off since need to change walls for chains and rotations etc
@@ -827,18 +827,20 @@ namespace AutoBS
             (float accumRot, float time) low = (0, 0);
             int endRot = 0;
 
-            foreach (var rot in allRotations)
+            if (allRotations.Count > 0)
             {
-                endRot = rot.accumRotation;
-                if (rot.accumRotation < low.accumRot)
-                    low = (rot.accumRotation, rot.time);
-                else if (rot.accumRotation > high.accumRot)
-                    high = (rot.accumRotation, rot.time);
-                //if (rot.time < 20)
-                //    Plugin.Log.Info($"2 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
+                foreach (var rot in allRotations)
+                {
+                    endRot = rot.accumRotation;
+                    if (rot.accumRotation < low.accumRot)
+                        low = (rot.accumRotation, rot.time);
+                    else if (rot.accumRotation > high.accumRot)
+                        high = (rot.accumRotation, rot.time);
+                    //if (rot.time < 20)
+                    //    Plugin.Log.Info($"2 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
+                }
+                Plugin.Log.Info($"[Generator] Rotation Events Count: {allRotations.Count} - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360} - Largest Neg Rot: {low.accumRot} Time: {low.time:F} - Largest Pos Rot: {high.accumRot} Time: {high.time:F} - Final Rotation: {endRot}");
             }
-            Plugin.LogDebug($"2 Rotation Events - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360} - Largest Neg Rot: {low.accumRot} Time: {low.time:F} - Largest Pos Rot: {high.accumRot} Time: {high.time:F} - Final Rotation: {endRot}");
-
             //Plugin.LogDebug($" ------- Main Loop time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F} Called WallGenerator {wallGenCount} times. Wall Count: {eData.Obstacles.Count}");
             
             //stopwatch.Stop();
@@ -847,8 +849,8 @@ namespace AutoBS
 
             #region Optimize FOV
 
-            bool wallsAdded = originalWallCount <= 5000 && ( WallGenerator._generatedStandardWalls.Count > 0 || WallGenerator._generatedExtensionWalls.Count > 0);
-            Plugin.LogDebug($"WallGenerator._generatedStandardWalls: {WallGenerator._generatedStandardWalls.Count} WallGenerator._generatedExtensionWalls: {WallGenerator._generatedExtensionWalls.Count}");
+            bool wallsAdded = originalWallCount <= 5000 && ( WallGenerator.generatedStandardWalls.Count > 0 || WallGenerator.generatedExtensionWalls.Count > 0);
+            Plugin.LogDebug($"WallGenerator._generatedStandardWalls: {WallGenerator.generatedStandardWalls.Count} WallGenerator._generatedExtensionWalls: {WallGenerator.generatedExtensionWalls.Count}");
 
             if (Utils.IsEnabledFOV(wallsAdded) && allRotations.Count > 0) // use this for nonGen360 maps with wall gen since old 360fyer generated maps have wild rotations that cause walls to reverse through the frame. this will not help some walls blocking player vision that are built into 360fyer old generated output
             {
@@ -1028,10 +1030,10 @@ namespace AutoBS
                     //WallGenerator.WallRemovalForRotations(wallCutMoments);
                 }
 
-                if (WallGenerator._allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
+                if (WallGenerator.allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
                     WallGenerator.FinalizeWallsToMap(eData);
             }
-            else if (WallGenerator._originalWalls.Count > 0 || WallGenerator._allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
+            else if (WallGenerator.originalWalls.Count > 0 || WallGenerator.allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
                 WallGenerator.FinalizeOriginalOnlyWallsToMap(eData);
 
 

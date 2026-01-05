@@ -1,25 +1,8 @@
 ﻿using AutoBS.Patches;
 using AutoBS.UI;
-using BeatmapSaveDataVersion2_6_0AndEarlier;
-using BeatmapSaveDataVersion3;
-using BGLib.UnityExtension;
-using BS_Utils.Gameplay;
-using CustomJSONData.CustomBeatmap;
-using IPA.Config.Stores.Converters;
 using IPA.Loader;
-using JetBrains.Annotations;
-using Newtonsoft.Json.Linq;
-using SongCore;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Reflection;
-using System.Threading;
-using UnityEngine;
-using static BeatSaberMarkupLanguage.Components.KEYBOARD;
 
 namespace AutoBS
 {
@@ -114,9 +97,12 @@ namespace AutoBS
         }
         public static bool IsEnabledExtensionWalls()
         {
+            Config Cfg = Config.Instance;
             if (!IsEnabledWalls()) return false;
-
-            if (GameplaySetupView.IsMappingExtensionsInstalled) return false; //fix!!!!!!!!!
+            if (!GameplaySetupView.IsMappingExtensionsInstalled) return false;
+            if (Cfg.EnableDistantExtensionWalls || Cfg.EnableColumnWalls || Cfg.EnableRowWalls || Cfg.EnableGridWalls || Cfg.EnableTunnelWalls || Cfg.EnableWindowPaneWalls || Cfg.EnableParticleWalls || Cfg.EnableFloorWalls)
+                return true;
+            
 
             return true;
         }
