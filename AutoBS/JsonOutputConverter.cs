@@ -305,7 +305,7 @@ namespace AutoBS
                     {
                         ["_time"] = R4(r.time * timeMult),
                         ["_type"] = 14, // you can later branch 14/15 if you add "late" info
-                        ["_value"] = Generator.SpawnRotationDegreesToValue(r.rotation),
+                        ["_value"] = RotationGenerator.SpawnRotationDegreesToValue(r.rotation),
                         //["_floatValue"] = 1f
                     };
 

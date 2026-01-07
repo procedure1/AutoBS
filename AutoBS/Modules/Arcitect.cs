@@ -116,8 +116,9 @@ namespace AutoBS
 
                 arcs = eData.Arcs; // save arcs to static variable for chains to use
 
-                if (!Utils.IsEnabledWalls() || Utils.IsEnabledWalls() && (!Config.Instance.EnableStandardWalls || !Config.Instance.EnableBigWalls)) // this should be used whenever chains are added. but should be done after standard/big walls are added since those walls can block chain tails too
-                    WallGenerator.MoveWallsBlockingArc(eData);
+                //bool moveWallsBlockingArc = false;
+                //if (!Utils.IsEnabledWalls() || Utils.IsEnabledWalls() && (!Config.Instance.EnableStandardWalls || !Config.Instance.EnableBigWalls)) // this should be used whenever chains are added. but should be done after standard/big walls are added since those walls can block chain tails too
+                //    moveWallsBlockingArc = WallGenerator.MoveWallsBlockingArc(eData);
             }
             else
             {
@@ -148,8 +149,8 @@ namespace AutoBS
                     eData.ChainsChanged = true;
                 }
 
-                if (!Utils.IsEnabledWalls() || Utils.IsEnabledWalls() && (!Config.Instance.EnableStandardWalls || !Config.Instance.EnableBigWalls)) // this should be used whenever chains are added. but should be done after standard/big walls are added since those walls can block chain tails too
-                    WallGenerator.MoveWallsBlockingChainTail(eData);
+                //if (!Utils.IsEnabledWalls() || Utils.IsEnabledWalls() && (!Config.Instance.EnableStandardWalls || !Config.Instance.EnableBigWalls)) // this should be used whenever chains are added. but should be done after standard/big walls are added since those walls can block chain tails too
+                //    WallGenerator.MoveWallsBlockingChainTail(eData);
             }
             else
             {

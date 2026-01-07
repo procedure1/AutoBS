@@ -40,8 +40,8 @@ namespace AutoBS.Patches
         public static BeatmapDifficulty SelectedDifficulty;
 
         public static string EnvironmentName;
-        public static ColorScheme theOverrideColorScheme;
-        public static CustomBeatmapData beatMapDataCBforColorScheme;
+        //public static ColorScheme theOverrideColorScheme;
+        //public static CustomBeatmapData beatMapDataCBforColorScheme;
 
         public static float OriginalNoteJumpMovementSpeed = 0;
         public static float FinalNoteJumpMovementSpeed = 0;
@@ -71,6 +71,8 @@ namespace AutoBS.Patches
 
         public static string ScoreSubmissionDisableText = "";
 
+        private static FieldInfo _colorSchemesSettingsField;
+
         //v1.42 parameter change
         static void Prefix(
             MenuTransitionsHelper __instance,
@@ -78,8 +80,8 @@ namespace AutoBS.Patches
             in BeatmapKey beatmapKey,
             BeatmapLevel beatmapLevel,
             OverrideEnvironmentSettings? overrideEnvironmentSettings,
-            ColorScheme? playerOverrideColorScheme,
-            bool playerOverrideLightshowColors,
+            ref ColorScheme? playerOverrideColorScheme, // so can override glass desert color scheme with built-in map color scheme
+            ref bool playerOverrideLightshowColors, // so can override glass desert color scheme with built-in map color scheme
             GameplayModifiers gameplayModifiers,
             PlayerSpecificSettings playerSpecificSettings,
             PracticeSettings? practiceSettings,
@@ -106,7 +108,8 @@ namespace AutoBS.Patches
             SelectedPlayKey = beatmapKey;
             bpm = beatmapLevel.beatsPerMinute;
 
-            if (SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
+            bool isGen360 = SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
+            if (isGen360)
             {
                 if (!SetContent.GeneratedToStandardKey.TryGetValue(beatmapKey.SerializedName(), out BasedOnKey))
                 {
@@ -128,7 +131,7 @@ namespace AutoBS.Patches
             Plugin.LogDebug(".");
             Plugin.LogDebug($"[TransitionPatcher] User selected:  {beatmapKey.beatmapCharacteristic.serializedName} {SelectedDifficulty} - ID: {beatmapKey.levelId} -------------------------------------"); // will be solo and standard, Generater360Degree, Generated90Degree, 360Degree, 90Degree, Lightshow, etc
 
-            bool isGen360 = SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
+            
             UserSelectedMapToInject = isGen360;
 
             // using generated beatmapkey. same levelId is fine between standard and gen 360, but changing the characteristic (Standard → Generated360Degree) makes it a distinct beatmap for scoring and most plugins.
@@ -150,35 +153,19 @@ namespace AutoBS.Patches
             EnvironmentName = GetEnvironmentName(beatmapKey, beatmapLevel, overrideEnvironmentSettings);
 
             // BOTH of these are done in SetContent now for gen360 and basedOn maps. so only need to do it here for nonGen non basedOn maps. so should restore autoNjs registry for those maps only and can also leave beat sage in setcontent
-            var basic = beatmapLevel.GetDifficultyBeatmapData(SelectedCharacteristicSO, SelectedDifficulty);
-            if (basic != null) //mappers is always empty unless setContent for Gen360 added it.
-            {
-                OriginalNoteJumpMovementSpeed = NoteJumpMovementSpeed(SelectedDifficulty, basic.noteJumpMovementSpeed);
-                NoteJumpOffset = basic.noteJumpStartBeatOffset;
-                float originalJD;
-                (FinalNoteJumpMovementSpeed, FinalJumpDistance, originalJD) = AutoNjsFixer.Fix(OriginalNoteJumpMovementSpeed, NoteJumpOffset, bpm);
-                Plugin.LogDebug($"[TransitionPatcher] BasicBeatmapData - Original NJS: {OriginalNoteJumpMovementSpeed} Original NJO: {NoteJumpOffset}, Original JD: {originalJD} -- AutoNjsFixer NJS: {FinalNoteJumpMovementSpeed}, AutoNjsFixer JD: {FinalJumpDistance}");
-                //IsBeatSageMap = basic.mappers.Contains("Beat Sage"); // not available unless a Gen360 map where SetContent added it.
-            }
+            //var basic = beatmapLevel.GetDifficultyBeatmapData(SelectedCharacteristicSO, SelectedDifficulty);
+            //if (basic != null) //mappers is always empty unless setContent for Gen360 added it.
+            //    Plugin.LogDebug($"[TransitionPatcher] BasicBeatmapData - Mappers: {string.Join(", ", basic.mappers)}, Lighters: {string.Join(", ", basic.lighters)}, Environment: {basic.environmentName}, BeatmapColorScheme: {basic.beatmapColorScheme}, Notes Count: {basic.notesCount}, Bombs Count: {basic.bombsCount}, cuttableNotes Count: {basic.cuttableObjectsCount}, Obstacles Count: {basic.obstaclesCount}");
 
             IsBeatSageMap = SetContent.IsBeatSageMap;
 
             bool isBasedOn = SelectedSerializedName == basedOn;
             if (isGen360 || isBasedOn)
             {
-                //v1.42 MapAlreadyUsesEnvColorBoost = AlreadyUsingEnvColorBoostRegistry.findByKey.TryGetValue(CurrentPlayKey, out var foundValue4) && foundValue4 == true;
-                //MapAlreadyUsesArcs          = MapAlreadyUsesArcsRegistry.findByKey.TryGetValue(SelectedPlayKey, out var foundArcs) ? foundArcs : false;
-                //MapAlreadyUsesChains        = MapAlreadyUsesChainsRegistry.findByKey.TryGetValue(SelectedPlayKey, out var foundChains) ? foundChains : false;
-
                 NotesPerSecond = NotesPerSecRegistry.findByKey.TryGetValue(BasedOnKey, out var nps) ? nps : 0f;
-
-                //Plugin.LogDebug($"[TransitionPatcher] Gen or BasedOn Map - Retrieved from Registries. AlreadyUsingEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, NotesPerSecond: {NotesPerSecond}");
             }
             else 
             {
-                //MapAlreadyUsesArcs   = false;
-                //MapAlreadyUsesChains = false;
-                //v1.42 MapAlreadyUsesEnvColorBoost = false;
                 NotesPerSecond = 0;
 
                 //v1.42
@@ -188,24 +175,6 @@ namespace AutoBS.Patches
                 
                 JObject beatmapObj = JObject.Parse(beatmapJson);
 
-                //v1.42 moved to EditableCBD
-                /*
-                bool hasNormalSliders = beatmapObj["sliders"] != null ? beatmapObj["sliders"].Count() > 0 : false; // v3 (v2 can have sliders but i've never seen them and they don't work)
-                bool hasArcs = beatmapObj["arcs"] != null ? beatmapObj["arcs"].Count() > 0 : false; //v4
-                if (hasNormalSliders || hasArcs)
-                {
-                    MapAlreadyUsesArcs = true;
-                    Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map - Detected Original Arcs in JSON. MapAlreadyUsesArcs");
-                }
-
-                bool hasBurstSliders = beatmapObj["burstSliders"] != null ? beatmapObj["burstSliders"].Count() > 0 : false; //v3 (v2 has no burst sliders only arcs)
-                bool hasChains = beatmapObj["chains"] != null ? beatmapObj["chains"].Count() > 0 : false; //v4
-                if (hasBurstSliders || hasChains)
-                {
-                    MapAlreadyUsesChains = true;
-                    Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map - Detected Original Chains in JSON. MapAlreadyUsesChains");
-                }
-                */
                 var songCoreExtraData = SongCoreBridge.TryGetSongCoreSongData(beatmapLevel);
                 var difficultyData = songCoreExtraData?._difficulties.FirstOrDefault(d =>
                                         d._beatmapCharacteristicName == SelectedSerializedName &&
@@ -219,39 +188,6 @@ namespace AutoBS.Patches
 
                 SetContent.SongFolderPath = SongFolderUtils.TryGetSongFolder(beatmapLevel.levelID);
                 
-                //v1.42
-                /*
-                if (songCoreExtraData != null && songCoreExtraData._difficulties != null && difficultyData != null &&
-                        (difficultyData._envColorLeftBoost != null || difficultyData._envColorRightBoost != null))
-                {
-                    MapAlreadyUsesEnvColorBoost = true;
-                    Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map - Detected Boosts in SongCore. AlreadyUsingEnvColorBoost");
-                }
-                else
-                {            
-                    int colorBoostCount = 0;
-                    
-                    var events = beatmapObj["_events"] as JArray; // v2 maps store all beatmap events in "_events"
-                    if (events != null)
-                        colorBoostCount = events.Where(e => (int?)e["_type"] == 5).Count(); // ColorBoost events are type 5 in v2
-
-                    int boosts = beatmapObj["colorBoostBeatmapEvents"] != null ? beatmapObj["colorBoostBeatmapEvents"].Count() : colorBoostCount;
-
-                    if (boosts == 0)
-                    {
-                        JObject lightShowObj = null;
-                        if (!string.IsNullOrWhiteSpace(lightShowJson))
-                        {
-                            lightShowObj = JObject.Parse(lightShowJson);
-                            MapAlreadyUsesEnvColorBoost = lightShowObj["colorBoostEvents"] != null ? lightShowObj["colorBoostEvents"].Count() > 0 : false; //v4
-                        }
-                    }
-                    else
-                        MapAlreadyUsesEnvColorBoost = true;
-
-                    Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map - Detecting in beatmapJson or lightShowJson. AlreadyUsingEnvColorBoost = {MapAlreadyUsesEnvColorBoost}");
-                }
-                */
                 float songLength = beatmapLevel.songDuration;
                 int _notesCount = beatmapObj["_notes"] != null ? beatmapObj["_notes"].Count() : 0; //2
                 int noteCount = beatmapObj["colorNotes"] != null ? beatmapObj["colorNotes"].Count() : _notesCount; //v3 or 4
@@ -267,13 +203,77 @@ namespace AutoBS.Patches
             if (!isCustomLevel && SelectedBeatmapVersion.Major == 0)
                 SelectedBeatmapVersion = new Version(4, 0, 0);
 
-            Plugin.LogDebug($"[TransitionPatcher] Map Version: v{SelectedBeatmapVersion}"); 
+            if (!isCustomLevel && isGen360)
+            {
+                // Compute the color scheme the ORIGINAL (BasedOn) map would have used
+                var originalEffective = ResolveEffectiveSchemeVanillaLevels(
+                    BasedOnKey,
+                    beatmapLevel,
+                    overrideEnvironmentSettings,
+                    playerOverrideColorScheme, //basic.beatmapColorScheme not working here. nor beatmapLevel.GetColorScheme()
+                    playerOverrideLightshowColors,
+                    environmentsListModel);
+
+                // Force Gen360 to use the original scheme for EVERYTHING, including environment/lightshow
+                playerOverrideColorScheme = originalEffective;
+                playerOverrideLightshowColors = true;   // without this, only the maps notes and walls color scheme is used, not the environment and boosts etc
+
+                Plugin.LogDebug($"[TransitionPatcher] Forcing Generated360Degree to use Vanilla BasedOn map's color scheme.");
+            }
+
+
+                Plugin.LogDebug($"[TransitionPatcher] Map Version: v{SelectedBeatmapVersion}"); 
 
             CheckConflictingMods();
 
             ForceActivatePatches.MappingExtensionsForceActivate();
 
         }
+
+        /// <summary>
+        /// Will Use the color scheme for Vanilla Built-in level and use if for Generated360Degree maps. if a player uses override color scheme then this is overridden. i think that only happens for vanilla maps
+        /// </summary>
+        private static ColorScheme ResolveEffectiveSchemeVanillaLevels(
+            BeatmapKey key,
+            BeatmapLevel level,
+            OverrideEnvironmentSettings? overrideEnvironmentSettings,
+            ColorScheme? playerOverrideColorScheme,
+            bool playerOverrideLightshowColors,
+            EnvironmentsListModel environmentsListModel)
+        {
+            // Beatmap override scheme for the ORIGINAL difficulty/characteristic
+            ColorScheme beatmapOverride = level.GetColorScheme(key.beatmapCharacteristic, key.difficulty);
+
+            // Environment resolution (copy of StandardLevelScenesTransitionSetupDataSO.GetEnvironmentInfo)
+            EnvironmentName envName = level.GetEnvironmentName(key.beatmapCharacteristic, key.difficulty);
+            EnvironmentInfoSO originalEnv = environmentsListModel.GetEnvironmentInfoBySerializedName(envName);
+            if (originalEnv == null)
+                throw new InvalidOperationException($"No environment '{envName}' for level '{level.levelID}'");
+
+            EnvironmentInfoSO targetEnv = originalEnv;
+            bool usingOverrideEnv = false;
+
+            if (overrideEnvironmentSettings != null && overrideEnvironmentSettings.overrideEnvironments)
+            {
+                var envType = key.beatmapCharacteristic.requires360Movement ? EnvironmentType.Circle : EnvironmentType.Normal;
+                var overrideEnv = overrideEnvironmentSettings.GetOverrideEnvironmentInfoForType(envType);
+                if (overrideEnv != null && overrideEnv.environmentName != originalEnv.environmentName)
+                {
+                    usingOverrideEnv = true;
+                    targetEnv = overrideEnv;
+                }
+            }
+
+            // Final scheme resolution (exact same resolver the game uses)
+            return ColorSchemeExtensions.ResolveColorScheme(
+                playerOverrideColorScheme,
+                playerOverrideLightshowColors,
+                beatmapOverride,
+                targetEnv.colorScheme.colorScheme,
+                !usingOverrideEnv);
+        }
+
+
 
         // Doesn't check if the mod itself is self-enabled. so JDFixer and NJSFixer may be disabled but will be considered enabled here.
         public static void CheckConflictingMods()

@@ -1,22 +1,10 @@
 ﻿using AutoBS.Patches;
 using AutoBS.UI;
 using BeatSaberMarkupLanguage.Animations.APNG.Chunks;
-using CustomJSONData.CustomBeatmap;
-using IPA.Config.Data;
-using Microsoft.Extensions.Primitives;
-using ModestTree;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Linq;
-using System.Reflection;
-using System.Security.Claims;
-using System.Security.Policy;
-using UnityEngine;
-using static BloomPrePassRenderDataSO;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 //using static HMUI.IconSegmentedControl;//v1.34
 
 namespace AutoBS
@@ -1545,7 +1533,7 @@ namespace AutoBS
         {
             int origWallsCount = originalWalls.Count > 0 ? originalWalls.Count : eData.Obstacles.Count; // if wall gen is off, then _original walls are never populated. // Github Issue #2 Walls gone when using autolights
             Plugin.LogDebug(
-                $"[WallGenerator] Walls Before Rotational Removal Tools - in eData: Total: {eData.Obstacles.Count()} -- Original: {origWallsCount} Standard: {generatedStandardWalls.Count} Distant: {distantCount} Column: {columnCount} Row: {rowCount} Tunnel: {tunnelCount} Grid: {gridCount} Pane: {paneCount} Particle: {particleWalls.Count} Floor: {floorWalls.Count} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+                $"[WallGenerator][LogWallCount] Walls Before Rotational Removal Tools - in eData: Total: {eData.Obstacles.Count()} -- Original: {origWallsCount} Standard: {generatedStandardWalls.Count} Distant: {distantCount} Column: {columnCount} Row: {rowCount} Tunnel: {tunnelCount} Grid: {gridCount} Pane: {paneCount} Particle: {particleWalls.Count} Floor: {floorWalls.Count} ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
         }
 
 
@@ -1555,19 +1543,14 @@ namespace AutoBS
         /// <summary>
         /// Removes Lean and Crouch Walls for Standard and 360/90 Degree Maps if EnableWallsGen... is enabled. Can turn off all walls individually and it still removes the lean and crouch walls
         /// </summary>
-        public static void LeanCrouchWallRemoval() // works with _originalWalls only. only will remove major lean walls that are covering 2 lineIndexes (0 and 1, or 2 and 3)
+        public static bool LeanCrouchWallRemoval() // works with _originalWalls only. only will remove major lean walls that are covering 2 lineIndexes (0 and 1, or 2 and 3)
         {
-            if (!Utils.IsEnabledWalls()) return;
-            if (originalWallCount > 5000) return;
-
             originalWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
             //BW noodle extensions causes BS crash in the section somewhere below. Could drill down and figure out why. Haven't figured out how to test for noodle extensions but noodle extension have custom walls that crash Beat Saber so BW added test for custom walls.
             Queue<EObstacleData> obs = new Queue<EObstacleData>(originalWalls); // since removing items
 
-            int count = 0;
-
-            Plugin.LogDebug($"[LeanCrouchWallRemoval] --- Original Wall Count: {obs.Count}");
+            int removedWallCount = 0;
 
             while (obs.Count > 0)
             {
@@ -1584,7 +1567,7 @@ namespace AutoBS
                     {
                         //Plugin.Log.Info($"Remove Lean Wall of width 1: Time: {ob.time:F} cutTime: {cutTime}");
                         originalWalls.Remove(ob);
-                        count++;
+                        removedWallCount++;
                         continue;
                     }
                     else if (!Config.Instance.AllowLeanWalls &&
@@ -1593,7 +1576,7 @@ namespace AutoBS
                     {
                         //Plugin.Log.Info($"Remove Lean Wall: Time: {ob.time } cutTime: {cutTime}");
                         originalWalls.Remove(ob);
-                        count++;
+                        removedWallCount++;
                         continue;
                     }
                     else if (!Config.Instance.AllowCrouchWalls &&
@@ -1601,7 +1584,7 @@ namespace AutoBS
                     {
                         //Plugin.Log.Info($"Remove Crouch Wall: Time: {ob.time:F} cutTime: {cutTime}");
                         originalWalls.Remove(ob);
-                        count++;
+                        removedWallCount++;
                         continue;
                     }
                 }
@@ -1612,10 +1595,15 @@ namespace AutoBS
 
             allWallsContainsOriginalWalls = true;
 
-            Plugin.LogDebug($"Lean Crouch Wall Removal End --- Original Standard Wall Count: {originalWalls.Count} - Walls Removed: {count} -- allWalls Count: {allWalls.Count}");
+            Plugin.LogDebug($"[LeanCrouchWallRemoval] End --- Original Standard Wall Count: {originalWalls.Count} - Walls Removed: {removedWallCount} -- allWalls Count: {allWalls.Count}");
+
+            if (removedWallCount > 0)
+                return true;
+            else
+                return false;
         }
         
-        public static void MoveWallsBlockingChainTail(EditableCBD eData) // works with _originalWalls and _generatedStandardWalls only
+        public static bool MoveWallsBlockingChainTail(EditableCBD eData) // works with _originalWalls and _generatedStandardWalls only
         {
             List<ESliderData> chains = eData.Chains;
             int rotationEventsCount = eData.RotationEvents.Count;
@@ -1661,7 +1649,9 @@ namespace AutoBS
 
             allWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
-            Plugin.LogDebug($"MoveWallsBlockingChainTail() ADJUSTING {allWalls.Count} Walls now for {chains.Count} chains.");
+            Plugin.LogDebug($"[MoveWallsBlockingChainTail] ADJUSTING {allWalls.Count} Walls now for {chains.Count} chains.");
+
+            int adjustedCount = 0;
 
             foreach (var ob in allWalls)
             {
@@ -1715,17 +1705,24 @@ namespace AutoBS
                     if (newLineIndex != chains[i].tailLine)
                     {
                         ob.line = newLineIndex;
+                        adjustedCount++;
 
-                        string rot = chainHasRotation.Count() > 0 ? $" - has rotation: {chainHasRotation[i].Item2}" : "";
+                        //string rot = chainHasRotation.Count() > 0 ? $" - has rotation: {chainHasRotation[i].Item2}" : "";
                         //Plugin.Log.Info($" -- Chain {i} ADJUSTED wall at time {ob.time:F} (dur: {ob.duration:F}) for chain at {chains[i].time:F}. Old lineIndex: {ob.lineIndex}, new: {newLineIndex} {rot}")
                     }
                 }
             }
+            Plugin.LogDebug($"[MoveWallsBlockingChainTail] ADJUSTED {adjustedCount} Walls.");
+
+            if (adjustedCount > 0)
+                return true;
+            else
+                return false;
         }
 
 
        
-        public static void MoveWallsBlockingArc(EditableCBD eData)
+        public static bool MoveWallsBlockingArc(EditableCBD eData)
         {
             // Retrieve all arcs (normal sliders) from the beatmap.
             // Here we assume that SliderData.Type.Normal represents an arc.
@@ -1746,8 +1743,9 @@ namespace AutoBS
             }
             allWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
-            Plugin.LogDebug($"MoveWallsBlockingArc() ADJUSTING {allWalls.Count} Walls now for {eData.Arcs.Count} arcs.");
+            Plugin.LogDebug($"[MoveWallsBlockingArc] ADJUSTING {allWalls.Count} Walls now for {eData.Arcs.Count} arcs.");
 
+            int adjustedWalls = 0;
             // Loop through each wall.
             foreach (var ob in allWalls)
             {
@@ -1796,12 +1794,17 @@ namespace AutoBS
                         if (newLineIndex != ob.line)
                         {
                             ob.line = newLineIndex;
-
+                            adjustedWalls++;
                             //Plugin.Log.Info($" -- {i} ADJUSTED a wall intersecting an arc. Wall time: {ob.time:F}, width: {ob.width} layer: {(int)ob.lineLayer} dur: {ob.duration:F}; Arc head time: {arcs[i].time:F} index: {arcs[i].headLineIndex}, tail time: {arcs[i].tailTime:F} index: {arcs[i].tailLine}. Wall old lineIndex: {ob.lineIndex}, new lineIndex: {newLineIndex}");
                         }
                     }
                 }
             }
+            Plugin.LogDebug($"[MoveWallsBlockingArc] ADJUSTED {adjustedWalls} Walls.");
+            if (adjustedWalls > 0)
+                return true;
+            else
+                return false;   
         }
 
         public static void RemoveIntersectingWalls() // works with _originalWalls, _generatedStandardWalls and _generatedExtensionWalls only. Added this since adding extension walls created tons of intersecting walls
@@ -1853,7 +1856,7 @@ namespace AutoBS
                 allWalls.Remove(obs);
             }
 
-            Plugin.LogDebug($"--- Remove Intersecting Walls --- Remaining Walls: {allWalls.Count} --- Total Removed: {obstaclesToDelete.Count}");
+            Plugin.LogDebug($"[RemoveIntersectingWalls] --- Remaining Walls: {allWalls.Count} --- Total Removed: {obstaclesToDelete.Count}");
 
             Plugin.LogDebug($" ------- Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}.");
             stopwatch.Stop();

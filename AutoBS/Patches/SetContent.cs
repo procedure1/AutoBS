@@ -627,11 +627,11 @@ namespace AutoBS.Patches
                         //v1.42 Full Basic data exists for built-in levels but not custom levels
                         var vanillaBasicData = level.GetDifficultyBeatmapData(BasedOnCharacteristicSO, difficulty);
 
-                        noteCount = vanillaBasicData.notesCount;
+                        noteCount = vanillaBasicData.notesCount; // only available for vanilla. 0 for custom maps
                         notesPerSecond = (songLength > 0f) ? (noteCount / songLength) : 0f;
-                        int cuttableObjectsCount = vanillaBasicData.cuttableObjectsCount;
-                        obstacleCount = vanillaBasicData.obstaclesCount;
-                        bombCount = vanillaBasicData.bombsCount;
+                        int cuttableObjectsCount = vanillaBasicData.cuttableObjectsCount; // only available for vanilla. 0 for custom maps
+                        obstacleCount = vanillaBasicData.obstaclesCount; // only available for vanilla. 0 for custom maps
+                        bombCount = vanillaBasicData.bombsCount; // only available for vanilla. 0 for custom maps
 
                         originalNJS = vanillaBasicData.noteJumpMovementSpeed;
                         originalNJO = vanillaBasicData.noteJumpStartBeatOffset;

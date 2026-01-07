@@ -7,12 +7,130 @@ using HMUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
 namespace AutoBS.Patches
 {
+    #region Prefix - BeatmapDataLoader.LoadBeatmapDataAsync - adds the beatmapData (IReadonlyBeatmapData)
+
+    // This works great, but required mods like Noodle and Chroma will not activate on the gen 360 map. It uses a unique BeatmapKey so scoring works.
+    // Set Content only creates metaData for the map, not the actual notes and obstacles.
+    // this adds the beatmapData (IReadonlyBeatmapData) with actual notes etc to the map and hands it off to CreateTransformedBeatmapData
+
+    // v1.42 distinct BeatmapKey for scoring, but uses the basedOnKey to pass the original beatmapData to CreateTransformedBeatmapData. No longer need to send it stored beatmapData from a registry. great for built-in since i can't get those maps anymore with my previous technique
+    [HarmonyPatch(typeof(BeatmapDataLoader), nameof(BeatmapDataLoader.LoadBeatmapDataAsync))]
+    static class Patch_BeatmapDataLoader_LoadAsync
+    {
+        [ThreadStatic] private static bool _reentry;
+
+        static bool Prefix(
+            BeatmapDataLoader __instance,
+            IBeatmapLevelData beatmapLevelData,
+            BeatmapKey beatmapKey,
+            float startBpm,
+            bool loadingForDesignatedEnvironment,
+            IEnvironmentInfo targetEnvironmentInfo,
+            IEnvironmentInfo originalEnvironmentInfo,
+            BeatmapLevelDataVersion beatmapLevelDataVersion,
+            GameplayModifiers gameplayModifiers,
+            PlayerSpecificSettings playerSpecificSettings,
+            bool enableBeatmapDataCaching,
+            ref Task<IReadonlyBeatmapData> __result)
+        {
+            if (!Config.Instance.EnablePlugin) return true;
+            if (!Utils.IsEnabledForGeneralFeatures()) return true;
+
+            // avoid previews etc
+            if (!loadingForDesignatedEnvironment)
+                return true;
+
+            // IMPORTANT: allow original method to run when we re-enter
+            if (_reentry)
+                return true;
+
+            // Only intercept generated modes
+            bool isGenerated =
+                beatmapKey.beatmapCharacteristic.serializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
+
+            if (!isGenerated || !TransitionPatcher.UserSelectedMapToInject)
+                return true;
+
+            // Map generated -> basedOn
+            if (!SetContent.GeneratedToStandardKey.TryGetValue(beatmapKey.SerializedName(), out var basedOnKey))
+            {
+                Plugin.Log.Error($"[LoadBeatmapDataAsync] Missing generated→standard mapping for {beatmapKey.SerializedName()}");
+                return true;
+            }
+
+            Plugin.LogDebug($"[LoadBeatmapDataAsync] Generated requested. Loading based-on: {basedOnKey.SerializedName()}");
+
+            _reentry = true;
+            try
+            {
+                // call the real method (we'll hit Prefix again, but _reentry makes it return true)
+                var baseTask = __instance.LoadBeatmapDataAsync(
+                    beatmapLevelData,
+                    basedOnKey,
+                    startBpm,
+                    loadingForDesignatedEnvironment,
+                    targetEnvironmentInfo,
+                    originalEnvironmentInfo,
+                    beatmapLevelDataVersion,
+                    gameplayModifiers,
+                    playerSpecificSettings,
+                    enableBeatmapDataCaching
+                );
+
+                __result = baseTask.ContinueWith<IReadonlyBeatmapData>(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        Plugin.Log.Error($"[LoadBeatmapDataAsync] Base load faulted for {basedOnKey.SerializedName()}: {t.Exception}");
+                        // rethrow the underlying exception so Beat Saber behaves normally
+                        throw t.Exception ?? new Exception("Base load faulted");
+                    }
+
+                    if (t.IsCanceled)
+                        throw new TaskCanceledException($"Base load canceled for {basedOnKey.SerializedName()}");
+
+                    var baseData = t.Result;
+                    if (baseData == null)
+                        return null;
+
+                    // Your transformation: take baseData (standard) and produce generated data
+                    var transformed = YourTransformPipeline(baseData, beatmapKey, basedOnKey, gameplayModifiers, playerSpecificSettings);
+
+                    return transformed ?? baseData;
+                }, TaskScheduler.Default);
+
+                return false; // we replaced the async result
+            }
+            finally
+            {
+                _reentry = false;
+            }
+        }
+
+        private static IReadonlyBeatmapData YourTransformPipeline(
+            IReadonlyBeatmapData baseData,
+            BeatmapKey generatedKey,
+            BeatmapKey basedOnKey,
+            GameplayModifiers gameplayModifiers,
+            PlayerSpecificSettings pss)
+        {
+            // implement: CreateTransformedBeatmapData / gen360 rotations / etc.
+            // MUST return IReadonlyBeatmapData.
+            return baseData;
+        }
+    }
+
+
+    #endregion
+
+
     #region Prefix - Bright Lasers
     //Taken from Technicolor mod - needs no other code except the BSML & Config. without this, rotating lasers are very dull
     [HarmonyPatch]
@@ -131,123 +249,6 @@ namespace AutoBS.Patches
             }
         }
     }
-    #endregion
-
-
-    #region Prefix - BeatmapDataLoader.LoadBeatmapDataAsync - adds the beatmapData (IReadonlyBeatmapData)
-
-    // This works great, but required mods like Noodle and Chroma will not activate on the gen 360 map. It uses a unique BeatmapKey so scoring works.
-    // Set Content only creates metaData for the map, not the actual notes and obstacles.
-    // this adds the beatmapData (IReadonlyBeatmapData) with actual notes etc to the map and hands it off to CreateTransformedBeatmapData
-
-    // v1.42 distinct BeatmapKey for scoring, but uses the basedOnKey to pass the original beatmapData to CreateTransformedBeatmapData. No longer need to send it stored beatmapData from a registry. great for built-in since i can't get those maps anymore with my previous technique
-    [HarmonyPatch(typeof(BeatmapDataLoader), nameof(BeatmapDataLoader.LoadBeatmapDataAsync))]
-    static class Patch_BeatmapDataLoader_LoadAsync
-    {
-        [ThreadStatic] private static bool _reentry;
-
-        static bool Prefix(
-            BeatmapDataLoader __instance,
-            IBeatmapLevelData beatmapLevelData,
-            BeatmapKey beatmapKey,
-            float startBpm,
-            bool loadingForDesignatedEnvironment,
-            IEnvironmentInfo targetEnvironmentInfo,
-            IEnvironmentInfo originalEnvironmentInfo,
-            BeatmapLevelDataVersion beatmapLevelDataVersion,
-            GameplayModifiers gameplayModifiers,
-            PlayerSpecificSettings playerSpecificSettings,
-            bool enableBeatmapDataCaching,
-            ref Task<IReadonlyBeatmapData> __result)
-        {
-            if (!Config.Instance.EnablePlugin) return true;
-            if (!Utils.IsEnabledForGeneralFeatures()) return true;
-
-            // avoid previews etc
-            if (!loadingForDesignatedEnvironment)
-                return true;
-
-            // IMPORTANT: allow original method to run when we re-enter
-            if (_reentry)
-                return true;
-
-            // Only intercept generated modes
-            bool isGenerated =
-                beatmapKey.beatmapCharacteristic.serializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
-
-            if (!isGenerated || !TransitionPatcher.UserSelectedMapToInject)
-                return true;
-
-            // Map generated -> basedOn
-            if (!SetContent.GeneratedToStandardKey.TryGetValue(beatmapKey.SerializedName(), out var basedOnKey))
-            {
-                Plugin.Log.Error($"[LoadBeatmapDataAsync] Missing generated→standard mapping for {beatmapKey.SerializedName()}");
-                return true;
-            }
-
-            Plugin.LogDebug($"[LoadBeatmapDataAsync] Generated requested. Loading based-on: {basedOnKey.SerializedName()}");
-
-            _reentry = true;
-            try
-            {
-                // call the real method (we'll hit Prefix again, but _reentry makes it return true)
-                var baseTask = __instance.LoadBeatmapDataAsync(
-                    beatmapLevelData,
-                    basedOnKey,
-                    startBpm,
-                    loadingForDesignatedEnvironment,
-                    targetEnvironmentInfo,
-                    originalEnvironmentInfo,
-                    beatmapLevelDataVersion,
-                    gameplayModifiers,
-                    playerSpecificSettings,
-                    enableBeatmapDataCaching
-                );
-
-                __result = baseTask.ContinueWith<IReadonlyBeatmapData>(t =>
-                {
-                    if (t.IsFaulted)
-                    {
-                        Plugin.Log.Error($"[LoadBeatmapDataAsync] Base load faulted for {basedOnKey.SerializedName()}: {t.Exception}");
-                        // rethrow the underlying exception so Beat Saber behaves normally
-                        throw t.Exception ?? new Exception("Base load faulted");
-                    }
-
-                    if (t.IsCanceled)
-                        throw new TaskCanceledException($"Base load canceled for {basedOnKey.SerializedName()}");
-
-                    var baseData = t.Result;
-                    if (baseData == null)
-                        return null;
-
-                    // Your transformation: take baseData (standard) and produce generated data
-                    var transformed = YourTransformPipeline(baseData, beatmapKey, basedOnKey, gameplayModifiers, playerSpecificSettings);
-
-                    return transformed ?? baseData;
-                }, TaskScheduler.Default);
-
-                return false; // we replaced the async result
-            }
-            finally
-            {
-                _reentry = false;
-            }
-        }
-
-        private static IReadonlyBeatmapData YourTransformPipeline(
-            IReadonlyBeatmapData baseData,
-            BeatmapKey generatedKey,
-            BeatmapKey basedOnKey,
-            GameplayModifiers gameplayModifiers,
-            PlayerSpecificSettings pss)
-        {
-            // implement: CreateTransformedBeatmapData / gen360 rotations / etc.
-            // MUST return IReadonlyBeatmapData.
-            return baseData;
-        }
-    }
-
-
     #endregion
 
     #region Prefix - SetContentForBeatmapData -- used to populate Gen 360 difficulties stats in the menu

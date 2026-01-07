@@ -38,23 +38,18 @@ namespace AutoBS
             eData.ObstaclesChanged = false;
             eData.ArcsChanged = false;
             eData.ChainsChanged = false;
-
             eData.BasicEventsChanged = false; 
             eData.ColorBoostEventsChanged = false;
 
-
             // ----- Run pipeline modules (mutates eData) -----
-            RunBeatSageCleanup(eData);
-            RunArchitect(eData);      
+            RunAutoNjsFixer(); // this one can be anywhere on the list
+            RunBeatSageCleanup(eData); // must be first since it may delete notes/walls
+            RunArcitect(eData); // best before rotations since i have some code to fix arcs with rotations in rotation generator. runs ArcFix for non-gen 360/90 maps
             RunLightAutoMapper(eData);
             RunColorBoostGenerator(eData);
-            RunRotationGenerator(eData);
+            RunRotationGenerator(eData); // runs ArcFix for gen 360 maps
             RunWallGenerator(eData);
-
             FinalNormalize(eData);
-
-
-            Plugin.LogDebug($"[PipelineResult] Rotation Events Count: {eData.RotationEvents.Count()}");
 
             bool beatSageMapNotAltered = (TransitionPatcher.IsBeatSageMap && !BeatSageCleanUp.DisableScoreSubmission) || !TransitionPatcher.IsBeatSageMap;
             Plugin.LogDebug($"[PipelineResult] 1 beatSageMapNotAltered: {beatSageMapNotAltered}.");
@@ -72,19 +67,33 @@ namespace AutoBS
                 .Select(r => (t: MathF.Round(r.time, 4), rot: r.rotation))
                 .ToList();
             bool rotationsNotchanged = originalRotations.Count == rotAfter.Count && originalRotations.SequenceEqual(rotAfter); //compares starting rotations to final rotations
-            Plugin.LogDebug($"[PipelineResult] 4 rotationsNotchanged: {rotationsNotchanged} (if they exist).");
+            Plugin.LogDebug($"[PipelineResult] 4 rotationsNotchanged: {rotationsNotchanged} Rotation Events Count: {eData.RotationEvents.Count()}.");
 
             bool lightsNotAdded = (Utils.IsEnabledLighting() && !LightAutoMapper.LightEventsAdded) || !Utils.IsEnabledLighting();
             Plugin.LogDebug($"[PipelineResult] 5 lightsNotAdded: {lightsNotAdded}.");
 
             bool boostNotAdded = (Config.Instance.BoostLighting && eData.ColorBoostEvents.Count == 0) || eData.MapAlreadyUsesEnvColorBoost;
-            Plugin.LogDebug($"[PipelineResult] 6 boostNotAdded: {boostNotAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {eData.MapAlreadyUsesEnvColorBoost}");
+            Plugin.LogDebug($"[PipelineResult] 6 boostNotAdded: {boostNotAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {eData.MapAlreadyUsesEnvColorBoost})");
 
             bool wallsNotAdded = (Utils.IsEnabledWalls() && originalWallCount == eData.Obstacles.Count) || !Utils.IsEnabledWalls();
-            Plugin.LogDebug($"[PipelineResult] 7 wallsNotAdded: {wallsNotAdded}.");
+            Plugin.LogDebug($"[PipelineResult] 7 wallsNotAdded: {wallsNotAdded} (Original Count: {originalWallCount} Final Count: {eData.Obstacles.Count}).");
 
-            if (beatSageMapNotAltered && arcsNotAdded && chainsNotAdded && rotationsNotchanged && lightsNotAdded && boostNotAdded && wallsNotAdded)
+            Plugin.LogDebug($"[PipelineResult] ColorNotesChanged: {eData.ColorNotesChanged}, BombNotesChanged: {eData.BombNotesChanged}, ObstaclesChanged: {eData.ObstaclesChanged}, ArcsChanged: {eData.ArcsChanged}, BasicEventsChanged: {eData.ArcsChanged}, ColorBoostEventsChanged: {eData.ColorBoostEventsChanged}, RotationEventsChanged: {eData.RotationEventsChanged}, CustomEventsChanged: {eData.CustomEventsChanged}");
+
+            if (eData.RotationEventsChanged) // this adds per object rotation to all objects so they are altered
             {
+                if (eData.ColorNotes.Count > 0)  eData.ColorNotesChanged = true;
+                if (eData.BombNotes.Count > 0)   eData.BombNotesChanged = true;
+                if (eData.Obstacles.Count > 0)   eData.ObstaclesChanged = true;
+                if (eData.Arcs.Count > 0)        eData.ArcsChanged = true;
+                if (eData.Chains.Count > 0)      eData.ChainsChanged = true;
+                if (eData.BasicEvents.Count > 0) eData.BasicEventsChanged = true; // added this since v2/v3 maps may have rotation events tied to basic events which are removed. but not sure if this is needed really
+            }
+
+            //if (beatSageMapNotAltered && arcsNotAdded && chainsNotAdded && rotationsNotchanged && lightsNotAdded && boostNotAdded && wallsNotAdded)
+            if (!eData.ColorNotesChanged && !eData.BombNotesChanged && !eData.ObstaclesChanged && !eData.ArcsChanged && !eData.ChainsChanged && !eData.BasicEventsChanged && !eData.ColorBoostEventsChanged && !eData.RotationEventsChanged && !eData.CustomEventsChanged)
+            {
+                Plugin.LogDebug("[PipelineResult] Original map NOT altered! Pass original customBeatmapData or beatmapData!");
                 return new PipelineResult
                 {
                     OriginalMapAltered = false,
@@ -94,9 +103,10 @@ namespace AutoBS
                 };
             }
 
-            Plugin.LogDebug("[PipelineResult] Original map altered! Altered map will be passed through!");
+            Plugin.LogDebug("[PipelineResult] Original map altered! New altered map will be used!");
 
             ConvertEditableCBD.ApplyPerObjectRotations(eData);
+            ConvertEditableCBD.ApplyWallVisionBlockingFix(eData); // will alter eData by reference
 
             return new PipelineResult
             {
@@ -105,6 +115,33 @@ namespace AutoBS
                 Custom   = (eData.OriginalCBData != null) ? ConvertEditableCBD.Convert(eData) : null,
                 Vanilla  = (eData.OriginalCBData == null) ? ConvertEditableCBD.ConvertVanilla(eData) : null
             };
+        }
+
+        private static void RunAutoNjsFixer()
+        {
+            var level = TransitionPatcher.SelectedBeatmapLevel;
+            var characteristic = TransitionPatcher.SelectedCharacteristicSO;
+            var difficulty = TransitionPatcher.SelectedDifficulty;
+
+            if (level == null || characteristic == null)
+                return;
+
+            var basic = level.GetDifficultyBeatmapData(characteristic, difficulty);
+            if (basic == null)
+                return;
+
+            float originalNjs = SetContent.NoteJumpMovementSpeed(difficulty, basic.noteJumpMovementSpeed);
+            float njo = basic.noteJumpStartBeatOffset;
+
+            (float fixedNjs, float fixedJd, float originalJd) = AutoNjsFixer.Fix(originalNjs, njo, TransitionPatcher.bpm);
+
+            TransitionPatcher.OriginalNoteJumpMovementSpeed = originalNjs;
+            TransitionPatcher.FinalNoteJumpMovementSpeed = fixedNjs;
+            TransitionPatcher.FinalJumpDistance = fixedJd;
+
+            Plugin.LogDebug(
+                $"[AutoNjs] Original NJS:{originalNjs} NJO:{njo}, Original JD:{originalJd} -> AutoNjsFixer NJS:{fixedNjs}, AutoNjsFixer JD:{fixedJd}"
+            );
         }
 
         private static void RunBeatSageCleanup(EditableCBD eData)
@@ -119,7 +156,7 @@ namespace AutoBS
             eData.Obstacles = eData.Obstacles.OrderBy(o => o.time).ToList();
         }
 
-        private static void RunArchitect(EditableCBD eData)
+        private static void RunArcitect(EditableCBD eData)
         {
             bool addArcs = Utils.IsEnabledArcs() && !eData.MapAlreadyUsesArcs;
             bool addChains = Utils.IsEnabledChains() && !eData.MapAlreadyUsesChains;
@@ -145,6 +182,24 @@ namespace AutoBS
                 var allRotations = eData.RotationEvents;
                 eData.RotationEvents = Arcitect.ArcFix(allRotations, eData);
             }
+
+            bool moveWallsBlockingArc = false;
+            bool moveWallsBlockingChainTail = false;
+
+            if (addArcs && eData.ArcsChanged)
+            {
+                if (!Utils.IsEnabledWalls())
+                    moveWallsBlockingArc = WallGenerator.MoveWallsBlockingArc(eData);
+            }
+
+            if (addChains && eData.ChainsChanged)
+            {
+                if (!Utils.IsEnabledWalls())
+                    moveWallsBlockingChainTail = WallGenerator.MoveWallsBlockingChainTail(eData);
+            }
+
+            if (moveWallsBlockingArc || moveWallsBlockingChainTail)
+                eData.ObstaclesChanged = true;
         }
 
         private static void RunLightAutoMapper(EditableCBD eData)
@@ -327,9 +382,15 @@ namespace AutoBS
                 List<TimeGap> gaps = new List<TimeGap>();
 
                 if (eData.WallCutMoments.Count > 0)
+                {
                     gaps = WallGenerator.FindGapsUsingRotations(eData.WallCutMoments, 2.0f);
+                    Plugin.LogDebug($"[FinalizeWallGeneration][FindGapsUsingRotations] using WallCutMoments found {gaps.Count} gaps to help set floor walls and mega walls.");
+                }
                 else
+                {
                     gaps = WallGenerator.FindGapsUsingNotes(eData.ColorNotes, 2.0f);
+                    Plugin.LogDebug($"[FinalizeWallGeneration][FindGapsUsingNotes] No WallCutMoments! With notes found {gaps.Count} gaps to help set floor walls and mega walls.");
+                }
 
 
                 //outside the loop. so not using wallTime and not on the beat
@@ -348,36 +409,37 @@ namespace AutoBS
 
                 //Plugin.Log.Info($" TransitionPatcher.startingGameMode: {TransitionPatcher.startingGameMode}, GameModeHelper.GENERATED_360DEGREE_MODE: {GameModeHelper.GENERATED_360DEGREE_MODE} AllowLeanWalls: {Config.Instance.AllowLeanWalls} AllowCrouchWalls: {Config.Instance.AllowCrouchWalls}");
 
+                bool leanCrouchWallRemoval = false;
+                bool moveWallsBlockingChainTail = false;
+                bool moveWallsBlockingArc = false;
+
                 if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE || // will remove 1 width lean walls from all gen maps even if user allows lean walls!!!!!!!!!!!!!!!
                     !Config.Instance.AllowLeanWalls || !Config.Instance.AllowCrouchWalls)
                 {
-                    WallGenerator.LeanCrouchWallRemoval();
+                    leanCrouchWallRemoval = WallGenerator.LeanCrouchWallRemoval();
                 }
                 else
                 {
-                    Plugin.LogDebug($"LeanCrouchWallRemoval() NOT CALLED!!");
+                    Plugin.LogDebug($"[LeanCrouchWallRemoval] NOT CALLED!!");
                 }
 
                 if (eData.RotationEvents.Count > 0)
                     eData.RotationEvents = WallGenerator.RemoveCrouchWallRotations(eData.RotationEvents);
 
-
-                //stopwatch.Restart();
-
                 if (Utils.IsEnabledChains())// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))
-                    WallGenerator.MoveWallsBlockingChainTail(eData);
+                    moveWallsBlockingChainTail = WallGenerator.MoveWallsBlockingChainTail(eData);
                 else
                 {
                     Plugin.LogDebug(
-                        $"MoveWallsBlockingChainTail() NOT CALLED!!");
+                        $"[MoveWallsBlockingChainTail] NOT CALLED!!");
                 }
 
                 if (Utils.IsEnabledArcs())// && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles)// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))
-                    WallGenerator.MoveWallsBlockingArc(eData);
+                    moveWallsBlockingArc = WallGenerator.MoveWallsBlockingArc(eData);
                 else
                 {
                     Plugin.LogDebug(
-                        $"MoveWallsBlockingArc() NOT CALLED!!");
+                        $"[MoveWallsBlockingArc] NOT CALLED!!");
                 }
 
                 //Plugin.LogDebug($" ------- MoveWallsBlockingChainTail() & MoveWallsBlockingArc() time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}");
@@ -394,10 +456,9 @@ namespace AutoBS
                 //    WallGenerator.FinalizeOriginalOnlyWallsToMap(eData);
 
                 eData.Obstacles = eData.Obstacles.OrderBy(o => o.time).ToList();
-
-                eData.ObstaclesChanged = false;
                 
-                if (eData.OriginalObstacleCount != eData.Obstacles.Count)
+
+                if (leanCrouchWallRemoval || moveWallsBlockingArc || moveWallsBlockingChainTail || eData.OriginalObstacleCount != eData.Obstacles.Count)
                     eData.ObstaclesChanged = true;
             }
 
@@ -413,21 +474,14 @@ namespace AutoBS
             eData.ColorNotes = eData.ColorNotes.OrderBy(n => n.time).ToList();
             eData.BombNotes = eData.BombNotes.OrderBy(n => n.time).ToList();
             eData.Obstacles = eData.Obstacles.OrderBy(o => o.time).ToList();
+
             eData.RotationEvents = eData.RotationEvents.OrderBy(r => r.time).ToList();
+            eData.RotationEvents = ERotationEventData.RecalculateAccumulatedRotations(eData.RotationEvents);
+
             eData.ColorBoostEvents = eData.ColorBoostEvents.OrderBy(b => b.time).ToList();
             eData.BasicEvents = eData.BasicEvents.OrderBy(e => e.time).ToList();
             eData.Arcs = eData.Arcs.OrderBy(a => a.time).ToList();
             eData.Chains = eData.Chains.OrderBy(c => c.time).ToList();
-
-            if (eData.RotationEventsChanged)
-            {
-                if (eData.ColorNotes.Count > 0) eData.ColorNotesChanged = true;
-                if (eData.BombNotes.Count > 0)  eData.BombNotesChanged = true;
-                if (eData.Obstacles.Count > 0)  eData.ObstaclesChanged = true;
-                if (eData.Arcs.Count > 0)       eData.ArcsChanged = true;
-                if (eData.Chains.Count > 0)     eData.ChainsChanged = true;
-                if (eData.BasicEvents.Count > 0)eData.BasicEventsChanged = true; // added this since v2/v3 maps may have rotation events tied to basic events which are removed. but not sure if this is needed really
-            }
         }
     }
 }

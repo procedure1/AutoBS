@@ -45,7 +45,7 @@
   <ItemGroup>
     <Compile Include="AddDirectionalMarkersToMenu.cs" />
     <Compile Include="Modules\Arcitect.cs" />
-    <Compile Include="AutoNjsFixer.cs" />
+    <Compile Include="Modules\AutoNjsFixer.cs" />
     <Compile Include="Modules\BeatSageCleanUp.cs" />
     <Compile Include="Modules\ColorBoostGenerator.cs" />
     <Compile Include="Modules\GenerationPipeline.cs" />
@@ -62,7 +62,6 @@
     <Compile Include="UNUSED_Environment360fyer.cs" />
     <Compile Include="FieldHelper.cs" />
     <Compile Include="GameModeHelper.cs" />
-    <Compile Include="Generator.cs" />
     <Compile Include="UNUSED_GLSConverter.cs" />
     <Compile Include="Modules\LightAutoMapper.cs" />
     <Compile Include="OptimizeRotationsToFOV.cs" />

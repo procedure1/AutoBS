@@ -1035,6 +1035,14 @@ namespace AutoBS.UI
             get => Config.Instance.BoostLighting;
             set => Config.Instance.BoostLighting = value;
         }
+        [UIValue("BoostLightingMultiplier")]
+        public float BoostLightingMultiplier
+        {
+            get => Config.Instance.BoostLightingMultiplier;
+            set => Config.Instance.BoostLightingMultiplier = value;
+        }
+
+
         [UIValue("EnableLightAutoMapper")]//Creates a boost lighting event. if ON, will set color left to boost color left new color etc. Will only boost a color scheme that has boost colors set so works primarily with COLORS > OVERRIDE DEFAULT COLORS. Or an authors color scheme must have boost colors set (that will probably never happen since they will have boost colors set if they use boost events).
         public bool EnableLightAutoMapper
         {

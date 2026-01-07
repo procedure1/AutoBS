@@ -57,8 +57,9 @@ namespace AutoBS
         public virtual float VisionBlockingWallRemovalMult { get; set; } = 1f; // increase to remove more vision blocking walls 
 
         public virtual bool ReduceRotationForHighSpeedHighDensityMaps { get; set; } = true; // reduce rotation amounts for maps with high BPM and high note density
-        public virtual float HighSpeedThreshold { get; set; } = 15f; // BPM above which rotation reduction can occur
-        public virtual float HighDensityThreshold { get; set; } = 5f; // notes per second above which rotation reduction can occur
+        public virtual float HighBPMThresholdForRotationReduction { get; set; } = 15f; // BPM above which rotation reduction can occur
+        public virtual float HighNoteDensityThresholdForRotationReduction { get; set; } = 5f; // notes per second above which rotation reduction can occur
+        public virtual int MassiveStreakNumberOfRotationsThreshold { get; set; } = 30; // how many same direction rotations to consider a "massive streak" that should be curtailed
 
         // ARCS
 
@@ -148,6 +149,9 @@ namespace AutoBS
         public virtual bool BrightLights { get; set; } = true;
         public virtual bool BoostLighting { get; set; } = true;
 
+        public virtual float BoostLightingMultiplier { get; set; } = 1;
+
+        public virtual int BoostLightingRandomSeed { get; set; } = 242;
 
         public virtual bool EnableLightAutoMapper { get; set; } = true;
 

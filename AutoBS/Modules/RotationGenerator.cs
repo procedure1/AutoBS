@@ -169,9 +169,9 @@ namespace AutoBS
             // --- Massive Streak Detection Setup - based on emitted rotation events ---
             int pairStreakRemaining = 0; // remaining mirrored-pair ties in current streak
             int pairStreakSign = +1; // +1 right, -1 left
-            var flexibleRotations = new List<bool>();             // parallel to allRotations
+            var flexibleRotations = new List<bool>();             // parallel to allRotations - list of moments that can go either direction
             var massiveStreaks = new List<(int start, int end)>();// inclusive indices
-            int DetectThreshold = 30; // how many same direction rotations to consider a "massive streak"
+            int DetectThreshold = Config.Instance.MassiveStreakNumberOfRotationsThreshold; // how many same direction rotations to consider a "massive streak"
 
             int curRunStart = -1, curRunLen = 0, curRunSign = 0;
             int lastProcessedEvtIdx = -1;
@@ -213,7 +213,7 @@ namespace AutoBS
             float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
 
             // high speed high density maps can have too many 30 degree rotations which seems excessive. 
-            if (Config.Instance.ReduceRotationForHighSpeedHighDensityMaps && notespersecond > Config.Instance.HighDensityThreshold && njs > Config.Instance.HighSpeedThreshold)
+            if (Config.Instance.ReduceRotationForHighSpeedHighDensityMaps && notespersecond > Config.Instance.HighNoteDensityThresholdForRotationReduction && njs > Config.Instance.HighBPMThresholdForRotationReduction)
             {
                 maxRotationStep = minRotationStep = 1;
                 Plugin.LogDebug($"[RotationGenerator] High Speed NJS: {njs} / High Density NPS: {notespersecond} map detected. Setting maxRotationStep and minRotationStep to 1.");
@@ -757,7 +757,7 @@ namespace AutoBS
                     //if (rot.time < 20)
                     //    Plugin.Log.Info($"2 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
                 }
-                Plugin.Log.Info($"[RotationGenerator] Rotation Events Count: {allRotations.Count} - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360} - Largest Neg Rot: {low.accumRot} Time: {low.time:F} - Largest Pos Rot: {high.accumRot} Time: {high.time:F} - Final Rotation: {endRot}");
+                Plugin.Log.Info($"[RotationGenerator] 2 Rotation Events Count: {allRotations.Count} - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360} - Largest Neg Rot: {low.accumRot} Time: {low.time:F} - Largest Pos Rot: {high.accumRot} Time: {high.time:F} - Final Rotation: {endRot}");
 
 
                 #endregion
@@ -791,7 +791,7 @@ namespace AutoBS
                         needsRotationLimitAdjustment = true;
                 }
 
-                Plugin.LogDebug($"3 Rotation List (after FOV)  Count: {allRotations.Count}");
+                Plugin.LogDebug($"[RotationGenerator] 3 Rotation List (after FOV)  Count: {allRotations.Count}");
                 /*
                 foreach (var rot in allRotations)
                 {
@@ -812,7 +812,7 @@ namespace AutoBS
                         needsRotationLimitAdjustment = true;
                 }
                 else
-                    Plugin.LogDebug($"ArcFix not enabled or not applicable. Starting Game Mode: {TransitionPatcher.SelectedSerializedName} - Characteristic: {TransitionPatcher.SelectedSerializedName}");
+                    Plugin.LogDebug($"[RotationGenerator] ArcFix not enabled or not applicable. Starting Game Mode: {TransitionPatcher.SelectedSerializedName} - Characteristic: {TransitionPatcher.SelectedSerializedName}");
 
 
                 //if (isEnabledRotations)
@@ -822,7 +822,7 @@ namespace AutoBS
 
                     if (needsRotationLimitAdjustment)
                     {
-                        Plugin.LogDebug($"Rotation limits were adjusted.");
+                        Plugin.LogDebug($"[RotationGenerator] Rotation limits were adjusted.");
                         allRotations = AdjustRotationsToLimit(allRotations);
                     }
                 }
@@ -830,7 +830,7 @@ namespace AutoBS
                 allRotations.Sort((a, b) => a.time.CompareTo(b.time));
                 allRotations = ERotationEventData.RecalculateAccumulatedRotations(allRotations);
 
-                Plugin.LogDebug($"3 Rotation List (after ArcFix)  Count: {allRotations.Count} (has accurate accum)");
+                Plugin.LogDebug($"[RotationGenerator] 4 Rotation List (after ArcFix)  Count: {allRotations.Count} (has accurate accum)");
                 /*
                 foreach (var rot in allRotations)
                 {
@@ -849,6 +849,7 @@ namespace AutoBS
                     eData.WallCutMoments.Add((rotation.time, SpawnRotationDegreesToSteps(rotation.rotation)));
                     //Plugin.Log.Info($"wallCutMoments - time: {rotation.time} rotation: {(int)(rotation.rotation )}");
                 }
+                Plugin.LogDebug($"[RotationGenerator] WallCutMoments generated with count: {eData.WallCutMoments.Count}");
 
                 List<ENoteData> bombsToRemove = new List<ENoteData>();
                 foreach (var obj in eData.ColorNotes) // bombs get added to colorNotes for loop so need to remove them. this is still needed
@@ -860,7 +861,7 @@ namespace AutoBS
                 eData.ColorNotes.RemoveAll(b => bombsToRemove.Contains(b)); // remove bombs
                 eData.ColorNotes = eData.ColorNotes.OrderBy(n => n.time).ToList();
 
-                Plugin.LogDebug($" --- Remaining Walls --- {eData.Obstacles.Count()}");
+                Plugin.LogDebug($"[RotationGenerator] --- Remaining Walls --- {eData.Obstacles.Count()}");
 
                 #region Remove Bombs when map turns (360/90)
 
@@ -930,9 +931,9 @@ namespace AutoBS
 
                 #endregion
 
-                Plugin.LogDebug($"[RotationGenerator] Rotation Events Count: {eData.RotationEvents.Count()}");
+                Plugin.LogDebug($"[RotationGenerator] 5 Rotation Events Count: {eData.RotationEvents.Count()}");
 
-                Plugin.LogDebug($"[RotationGenerator] Starting Per Object Rotations after this moment:");
+                //Plugin.LogDebug($"[RotationGenerator] Starting Per Object Rotations after this moment:");
                 /*
                 foreach (var rot in allRotations)
                 {
@@ -953,6 +954,8 @@ namespace AutoBS
 
                 int currentRotation = 0;
                 var adjustedRotations = new List<ERotationEventData>();
+
+                int flippedRotationCount = 0;
 
                 foreach (var rotation in rotations)
                 {
@@ -976,12 +979,15 @@ namespace AutoBS
                             currentRotation = proposedRotation;
                             var flipRot = ERotationEventData.Create(rotation.time, flippedRotation);
                             adjustedRotations.Add(flipRot);
+                            flippedRotationCount++;
                         }
                         // If flipping still goes out of bounds, skip the rotation (optional)
 
                     }
                 }
                 adjustedRotations.Sort((a, b) => a.time.CompareTo(b.time));
+
+                Plugin.LogDebug($"[AdjustRotationsToLimit] Flipped Rotation Count: {flippedRotationCount}");
 
                 return adjustedRotations;
             }
@@ -1065,6 +1071,26 @@ namespace AutoBS
                 //case 7: return 4f;
                 default: return 1;//null; // Or throw, or clamp, as you see fit
             }
+        }
+    }
+    /// <summary>
+    ///  Gaps between walls (times when there are no walls) for sky floor walls to be added.
+    ///  Added to detect gaps between walls (times when there are no walls) for sky floor walls to be added
+    /// </summary>
+    public class TimeGap // 
+    {
+        public float StartTime { get; }
+        public float EndTime { get; }
+
+        public TimeGap(float startTime, float endTime)
+        {
+            StartTime = startTime;
+            EndTime = endTime;
+        }
+
+        public bool WithinGap(float time)
+        {
+            return time >= StartTime && time <= EndTime;
         }
     }
 }

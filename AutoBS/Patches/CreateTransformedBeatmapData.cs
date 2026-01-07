@@ -4,11 +4,13 @@ using BeatmapSaveDataVersion4;
 using BS_Utils.Gameplay;
 using CustomJSONData.CustomBeatmap;
 using HarmonyLib;
+using SiraUtil.Zenject;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Linq;
+using static System.Windows.Forms.LinkLabel;
 
 namespace AutoBS.Patches
 {
@@ -56,11 +58,12 @@ namespace AutoBS.Patches
                         $"rotation events (v3 saveData): {v3RotList?.Count()}, " +
                         $"basic events: {cbd.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Count()}, " +
                         $"basic rotation events: {cbd.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Where((e) => e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15).Count()}, " +
-                        $"events: {cbd.allBeatmapDataItems.OfType<CustomEventData>().Count()} Events, " +
+                        $"events: {cbd.allBeatmapDataItems.OfType<CustomEventData>().Count()}, " +
                         $"color boosts: {cbd.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()}, " + //v2 basic events end up here somehow automatically
                         $"bpm events: {cbd.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}");
 
-                eData = new EditableCBD(cbd);
+                var cbdCopy = (CustomBeatmapData)cbd.GetCopy(); // need this so that original data is immutable. otherwise changes to eData will affect original data.
+                eData = new EditableCBD(cbdCopy);
             }
             else if (beatmapData is BeatmapData bm) // built-in map data
             {
@@ -79,7 +82,8 @@ namespace AutoBS.Patches
                          $"njs events: {bm.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()}");
 
                 Version version = BeatmapVersionRegistry.versionByKey.TryGetValue(TransitionPatcher.SelectedPlayKey, out Version foundVersion) ? foundVersion : new Version(4, 0, 0); // 1.40.8 firestarter song was 4.0.0
-                eData = new EditableCBD(bm, version);
+                var bmCopy = bm.GetCopy(); // need this so that original data is immutable. otherwise changes to eData will affect original data.
+                eData = new EditableCBD(bmCopy, version);
             }
 #if DEBUG
             foreach (var rot in eData.RotationEvents)
@@ -196,17 +200,19 @@ namespace AutoBS.Patches
                     //__result = outp.Custom!;
 
                     Plugin.Log.Info($"[CreateTransformedBeatmapData] Final CustomBeatmapData: " +
-                         $"{__result.cuttableNotesCount} notes, " +
-                         $"{__result.bombsCount} bombs, " +
-                         $"{__result.obstaclesCount} obstacles, " +
-                         $"{__result.allBeatmapDataItems.OfType<CustomSliderData>().Where((e) => e.sliderType == CustomSliderData.Type.Normal).Count()} Arcs, " +
-                         $"{__result.allBeatmapDataItems.OfType<CustomSliderData>().Where((e) => e.sliderType == CustomSliderData.Type.Burst).Count()} Chains, " +
-                         $"{__result.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Count()} Basic Events, " +
-                         $"{__result.allBeatmapDataItems.OfType<CustomEventData>().Count()} Events, " +
-                         $"{__result.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()} Color Boosts, " +
-                         $"{__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()} Bpm Change Events, " +
-                         $"{eData.RotationEvents.Count} Rotation Events (in-line per object)");
+                         $"notes: {__result.cuttableNotesCount}, " +
+                         $"bombs: {__result.bombsCount}, " +
+                         $"obstacles: {__result.obstaclesCount}, " +
+                         $"arcs: {__result.allBeatmapDataItems.OfType<CustomSliderData>().Where((e) => e.sliderType == CustomSliderData.Type.Normal).Count()}, " +
+                         $"chains: {__result.allBeatmapDataItems.OfType<CustomSliderData>().Where((e) => e.sliderType == CustomSliderData.Type.Burst).Count()}, " +
+                         $"basic events: {__result.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Count()}, " +
+                         $"events: {__result.allBeatmapDataItems.OfType<CustomEventData>().Count()}, " +
+                         $"color boosts: {__result.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()}, " +
+                         $"bpm events: {__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}, " +
+                         $"rotation events (in-line per object) {eData.RotationEvents.Count}" );
                     // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
+
+                    //ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData);
 
                     JsonOutputConverter.ToJsonFile(__result as CustomBeatmapData, eData);
 
@@ -216,20 +222,20 @@ namespace AutoBS.Patches
                     //__result = outp.Vanilla!;
                     
                     Plugin.Log.Info($"[CreateTransformedBeatmapData] Final Vanilla BeatmapData v{TransitionPatcher.SelectedBeatmapVersion}: " +
-                         $"{__result.cuttableNotesCount} notes, " +
-                         $"{__result.bombsCount} bombs, " +
-                         $"{__result.obstaclesCount} obstacles, " +
-                         $"{__result.allBeatmapDataItems.OfType<SliderData>().Where((e) => e.sliderType == SliderData.Type.Normal).Count()} Arcs, " +
-                         $"{__result.allBeatmapDataItems.OfType<SliderData>().Where((e) => e.sliderType == SliderData.Type.Burst).Count()} Chains, " +
-                         $"{__result.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Count()} Basic Events, " +
-                         $"{__result.allBeatmapDataItems.OfType<EventData>().Count()} Events, " +
-                         $"{__result.allBeatmapDataItems.OfType<ColorBoostBeatmapEventData>().Count()} Color Boosts, " +
-                         $"{__result.allBeatmapDataItems.OfType<BpmChangeEventData>().Count()} Bpm Change Events, " +
-                         $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events, " +
-                         $"{eData.RotationEvents.Count} Rotation Events (in-line per object)");
+                        $"notes: {__result.cuttableNotesCount}, " +
+                        $"bombs: {__result.bombsCount}, " +
+                        $"obstacles: {__result.obstaclesCount}, " +
+                        $"arcs: {__result.allBeatmapDataItems.OfType<SliderData>().Where((e) => e.sliderType == SliderData.Type.Normal).Count()}, " +
+                        $"chains: {__result.allBeatmapDataItems.OfType<SliderData>().Where((e) => e.sliderType == SliderData.Type.Burst).Count()}, " +
+                        $"basic events: {__result.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Count()}, " +
+                        $"events: {__result.allBeatmapDataItems.OfType<EventData>().Count()}, " +
+                        $"color boosts: {__result.allBeatmapDataItems.OfType<ColorBoostBeatmapEventData>().Count()}, " +
+                        $"bpm events: {__result.allBeatmapDataItems.OfType<BpmChangeEventData>().Count()}, " +
+                        $"njs events: {__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()}, " +
+                        $"rotation events (in -line per object): {eData.RotationEvents.Count}");
                 }
                 
-                Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");
+                //Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");
             }
             //BeatmapLightingLogger.LogGLSLightingEvents(HarmonyPatches.CurrentBeatmapSaveData);
         }
