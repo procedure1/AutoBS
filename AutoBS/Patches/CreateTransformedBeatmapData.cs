@@ -85,14 +85,15 @@ namespace AutoBS.Patches
                 var bmCopy = bm.GetCopy(); // need this so that original data is immutable. otherwise changes to eData will affect original data.
                 eData = new EditableCBD(bmCopy, version);
             }
+            /*
 #if DEBUG
             foreach (var rot in eData.RotationEvents)
             {
                 if (rot.time < 30)
-                    Plugin.LogDebug($"1 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
+                    Plugin.LogDebug($"Original Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
             }
 #endif
-
+            */
             Plugin.LogDebug($"[CreateTransformedBeatmapData] Converted (Custom)BeatmapData to EditableCBD map version: {eData.Version.Major} - notes: {eData.ColorNotes.Count}, bombs: {eData.BombNotes.Count}, obstacles: {eData.Obstacles.Count}, arcs: {eData.Arcs.Count}, chains: {eData.Chains.Count}, rotations: {eData.RotationEvents.Count}, basic events: {eData.BasicEvents.Count}, customEvents: {eData.CustomEvents.Count}, color boosts: {eData.ColorBoostEvents.Count}.");
 
             Plugin.LogDebug($"[CreateTransformedBeatmapData] Song Name: {SetContent.SongName} - v{TransitionPatcher.SelectedBeatmapVersion} - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty}  ----------------------------------------------------------------------------");
@@ -212,7 +213,7 @@ namespace AutoBS.Patches
                          $"rotation events (in-line per object) {eData.RotationEvents.Count}" );
                     // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
-                    //ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData);
+                    ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 0f, 100f);
 
                     JsonOutputConverter.ToJsonFile(__result as CustomBeatmapData, eData);
 

@@ -163,6 +163,7 @@ namespace AutoBS.Patches
             if (isGen360 || isBasedOn)
             {
                 NotesPerSecond = NotesPerSecRegistry.findByKey.TryGetValue(BasedOnKey, out var nps) ? nps : 0f;
+                SelectedBeatmapVersion = BeatmapVersionRegistry.versionByKey.TryGetValue(BasedOnKey, out var v) ? v : new Version(0, 0, 0);
             }
             else 
             {
@@ -194,12 +195,15 @@ namespace AutoBS.Patches
 
                 NotesPerSecond = (songLength > 0f) ? (noteCount / songLength) : 0f;
 
+                SelectedBeatmapVersion = version;
+
                 Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map - Calculated NotesPerSecond: {NotesPerSecond} from {noteCount} notes over {songLength} seconds.");
             }
 
             Plugin.LogDebug($"[TransitionPatcher] Beat Sage Map: {IsBeatSageMap}");
 
-            SelectedBeatmapVersion = BeatmapVersionRegistry.versionByKey.TryGetValue(BasedOnKey, out var v) ? v : new Version(0, 0, 0);
+            
+
             if (!isCustomLevel && SelectedBeatmapVersion.Major == 0)
                 SelectedBeatmapVersion = new Version(4, 0, 0);
 
@@ -222,7 +226,7 @@ namespace AutoBS.Patches
             }
 
 
-                Plugin.LogDebug($"[TransitionPatcher] Map Version: v{SelectedBeatmapVersion}"); 
+            Plugin.LogDebug($"[TransitionPatcher] Map Version: v{SelectedBeatmapVersion}"); 
 
             CheckConflictingMods();
 

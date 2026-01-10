@@ -42,7 +42,7 @@ namespace AutoBS
 
 
         // ROTATION
-        public virtual bool RotationModeLate { get; set; } = true; // late means rotations only occur on an object if the object is later than the rotation event time. early, means the rotation applies to any object on or after the rotation event time
+        //public virtual bool RotationModeLate { get; set; } = true; // late means rotations only occur on an object if the object is later than the rotation event time. early, means the rotation applies to any object on or after the rotation event time
         
         public virtual bool AddExtraRotation { get; set; } = true;//for periods of low rotation, will make sure rotations for direction-less notes move in same direction as last rotation so totalRotation will increase.
         public virtual float RotationGroupLimit { get; set; } = 10f;//If totalRotations are under this limit, will add more rotations - used by AddExtraRotation
