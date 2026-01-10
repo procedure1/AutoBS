@@ -60,7 +60,7 @@ namespace AutoBS
         {
             public float beat;
             public int rotation;
-            public int execution;
+            public int execution; // 0 early 1 late
         }
 
         public static readonly Dictionary<BeatmapKey, List<V3RotationRecord>> RotationEventsByKey

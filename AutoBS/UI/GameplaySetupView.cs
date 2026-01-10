@@ -976,6 +976,7 @@ namespace AutoBS.UI
         {
             bool isLightingEnabled = EnableLightingGenerator; // True if any lighting option is enabled
             bool isAutoMapperEnabled = Config.Instance.EnableLightAutoMapper; // Independent toggle
+            bool isBoostEnabled = Config.Instance.BoostLighting;
 
             EnablerLightingGenerator = isLightingEnabled;
             FontColorLightingGenerator = isLightingEnabled ? OnColor : OffColor;
@@ -984,12 +985,19 @@ namespace AutoBS.UI
             EnablerLightAutoMapper = isLightingEnabled && isAutoMapperEnabled;
             FontColorLightAutoMapper = EnablerLightAutoMapper ? OnColor : OffColor;
 
+            // Color Boost slider gate (new)
+            EnablerBoostLighting = isLightingEnabled && isBoostEnabled;
+            FontColorBoostLighting = EnablerBoostLighting ? OnColor : OffColor;
+
             SafeNotify(nameof(EnableLightingGenerator));
             SafeNotify(nameof(EnablerLightingGenerator));
             SafeNotify(nameof(FontColorLightingGenerator));
 
             SafeNotify(nameof(EnablerLightAutoMapper));
             SafeNotify(nameof(FontColorLightAutoMapper));
+
+            SafeNotify(nameof(EnablerBoostLighting));
+            SafeNotify(nameof(FontColorBoostLighting));
         }
 
         private void UpdateCleanBeatSageUI()
@@ -1033,7 +1041,12 @@ namespace AutoBS.UI
         public bool BoostLighting
         {
             get => Config.Instance.BoostLighting;
-            set => Config.Instance.BoostLighting = value;
+            set
+            {
+                Config.Instance.BoostLighting = value;
+                UpdateLightingGeneratorUI();
+                SafeNotify();
+            }
         }
         [UIValue("BoostLightingMultiplier")]
         public float BoostLightingMultiplier
@@ -1279,7 +1292,16 @@ namespace AutoBS.UI
                 SafeNotify(nameof(FontColorChains));
             }
         }
-       
+
+        [UIValue("EnablerBoostLighting")]
+        public bool EnablerBoostLighting
+        {
+            get => Config.Instance.EnablePlugin
+                   && EnablerLightingGenerator  // global lighting gate
+                   && Config.Instance.BoostLighting;
+            set { SafeNotify(); }
+        }
+
         [UIValue("EnablerWallGenerator")]
         public bool EnablerWallGenerator
         { get => Config.Instance.EnablePlugin && EnableWallGenerator ? true : false; set { SafeNotify(); } }
@@ -1389,6 +1411,13 @@ namespace AutoBS.UI
         [UIValue("FontColorChains")]
         public String FontColorChains
         { get => !Config.Instance.EnablePlugin ? OffColor : (EnablerChains ? OnColor : OffColor); set { SafeNotify(); } }
+
+        [UIValue("FontColorBoostLighting")]
+        public string FontColorBoostLighting
+        {
+            get => !Config.Instance.EnablePlugin ? OffColor : (EnablerBoostLighting ? OnColor : OffColor);
+            set { SafeNotify(); }
+        }
 
         [UIValue("FontColorWallGenerator")]
         public String FontColorWallGenerator

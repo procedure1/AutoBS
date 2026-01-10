@@ -1541,7 +1541,7 @@ namespace AutoBS
             // ---------------- CONFIG & SETUP ----------------
             const float TOL = 0.0005f;
 
-            bool rotationModeLate = Config.Instance.RotationModeLate;
+            bool rotationModeLate = eData.RotationModeLate;
 
             int allowedCumulativeRots = Config.Instance.ArcRotationMode == Config.ArcRotationModeType.ForceZero ? 0 : 15;
 

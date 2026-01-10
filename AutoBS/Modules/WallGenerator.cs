@@ -2018,7 +2018,7 @@ namespace AutoBS
             {
                 foreach (var ob in originalWalls) 
                 { 
-                    if (ob.line == 0 && ob.width > 2 && ob.layer == 2)
+                    if (ob.line == 0 && ob.width > 2 && ob.width < 1000 && ob.layer == 2)
                         crouchWalls.Add(ob); 
                 } 
             }
@@ -2028,7 +2028,11 @@ namespace AutoBS
                 return rotations;
             }
             else
+            {
                 Plugin.LogDebug($"[RemoveCrouchWallRotations] Crouch walls found: {crouchWalls.Count}.");
+                foreach (var ob in crouchWalls)
+                    Plugin.LogDebug($"[RemoveCrouchWallRotations] -- time: {ob.time:F} dur: {ob.duration:F} end: {(ob.time + ob.duration):F} -- x:{ob.line} y:{ob.layer} w: {ob.width} h:{ob.height}");
+            }
 
             // 1) Build + merge crouch intervals
             var intervals = MergeCrouchIntervals(crouchWalls);
@@ -2046,7 +2050,7 @@ namespace AutoBS
             // 3) Single pass: advance interval pointer as rotation time increases
             var remove = new bool[rotations.Count];
             int j = 0;
-            bool late = Config.Instance.RotationModeLate;
+
             const float EPS = 1e-4f;
 
             for (int k = 0; k < indexed.Length; k++)
@@ -2064,10 +2068,13 @@ namespace AutoBS
 
                 // We are within [start, end] window of interval j (considering EPS)
                 // Apply Late/Early rules:
-                bool inLate = (t > intervals[j].start + EPS) && (t < intervals[j].end - EPS);
+                //bool inLate  = (t > intervals[j].start + EPS) && (t < intervals[j].end - EPS);
                 bool inEarly = (t >= intervals[j].start - EPS) && (t <= intervals[j].end + EPS);
 
-                if ((late && inLate) || (!late && inEarly))
+                //if ((late && inLate) || (!late && inEarly))
+                //    remove[iOrig] = true;
+
+                if (inEarly)
                     remove[iOrig] = true;
             }
 
@@ -2079,7 +2086,7 @@ namespace AutoBS
                     result.Add(rotations[i]);
                 else
                 {
-                    Plugin.LogDebug($"[RemoveCrouchWallRotations] Removed Rotation at: {rotations[i].time:F}");
+                    Plugin.LogDebug($"[RemoveCrouchWallRotations] ---- Removed Rotation at: {rotations[i].time:F}");
                     count++;
                 }
 
@@ -2089,47 +2096,41 @@ namespace AutoBS
         }
 
         // Helper: merge [time, time+duration] of crouch walls into disjoint intervals
+        // finds all time ranges where the player is effectively crouching and returns the smallest possible set of continuous “no-rotation” windows.
         private static List<(float start, float end)> MergeCrouchIntervals(List<EObstacleData> crouchWalls)
         {
-            // Project to intervals
+            float prePad  = .3f; //seconds  // e.g. 0.10f-0.20f before and after crouch wall also remove rotations
+            float postPad = .3f;
+
             var arr = new (float s, float e)[crouchWalls.Count];
             for (int i = 0; i < crouchWalls.Count; i++)
             {
-                float s = crouchWalls[i].time;
-                float e = s + crouchWalls[i].duration;
-                if (e < s) { var tmp = s; s = e; e = tmp; } // just in case
+                float s = crouchWalls[i].time - prePad;
+                float e = crouchWalls[i].time + crouchWalls[i].duration + postPad;
+
+                if (e < s) { var tmp = s; s = e; e = tmp; }
                 arr[i] = (s, e);
             }
 
-            // Sort by start
             Array.Sort(arr, (a, b) => a.s.CompareTo(b.s));
 
-            // Linear merge
             var merged = new List<(float start, float end)>(arr.Length);
             const float EPS = 1e-4f;
 
             for (int i = 0; i < arr.Length; i++)
             {
-                if (merged.Count == 0)
-                {
-                    merged.Add((arr[i].s, arr[i].e));
-                    continue;
-                }
+                if (merged.Count == 0) { merged.Add((arr[i].s, arr[i].e)); continue; }
 
                 var last = merged[merged.Count - 1];
-                if (arr[i].s <= last.end + EPS) // overlaps/adjacent → extend
-                {
-                    float newEnd = (arr[i].e > last.end) ? arr[i].e : last.end;
-                    merged[merged.Count - 1] = (last.start, newEnd);
-                }
+                if (arr[i].s <= last.end + EPS)
+                    merged[merged.Count - 1] = (last.start, Math.Max(last.end, arr[i].e));
                 else
-                {
                     merged.Add((arr[i].s, arr[i].e));
-                }
             }
 
             return merged;
         }
+
 
         public static void FinalizeWallsToMap(EditableCBD eData)
         {

@@ -171,7 +171,7 @@ namespace AutoBS
             int pairStreakSign = +1; // +1 right, -1 left
             var flexibleRotations = new List<bool>();             // parallel to allRotations - list of moments that can go either direction
             var massiveStreaks = new List<(int start, int end)>();// inclusive indices
-            int DetectThreshold = Config.Instance.MassiveStreakNumberOfRotationsThreshold; // how many same direction rotations to consider a "massive streak"
+            int DetectThreshold = (int)Config.Instance.MassiveStreakNumberOfRotationsThreshold; // how many same direction rotations to consider a "massive streak"
 
             int curRunStart = -1, curRunLen = 0, curRunSign = 0;
             int lastProcessedEvtIdx = -1;
@@ -737,7 +737,7 @@ namespace AutoBS
 
             CloseSameDirectionStreak(allRotations.Count); // close trailing run safely
 
-            Plugin.LogDebug($"[RotationGenerator][MassiveStreak] Total detected streaks: {massiveStreaks.Count}");
+            Plugin.LogDebug($"[RotationGenerator][MassiveStreak] Total detected streaks: {massiveStreaks.Count} (using: MassiveStreakNumberOfRotationsThreshold: {Config.Instance.MassiveStreakNumberOfRotationsThreshold})");
 
             Plugin.LogDebug($"[RotationGenerator] 1 Rotation List (after main loop) Count: {allRotations.Count}");
 
