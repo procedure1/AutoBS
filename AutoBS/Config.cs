@@ -37,13 +37,18 @@ namespace AutoBS
         public virtual bool EnableLightingNonGen360 { get; set; } = true;
         public virtual bool EnableLightingStandard { get; set; } = false;
 
+        // ROTATION ---------------------------------
+
         public virtual bool Wireless360 { get; set; } = true; //This assumes the user doesn't want rotation limits and it sets LimitRotations to 999 and BottleneckRotations to 999. only for 360 not 90.
         public virtual float LimitRotations360 { get; set; } = 330;//changed this to Degrees. Previously Default 28 where 24 is 360 degree circle. designed to avoid riping a cable
 
+        // late means rotations only occur on an object if the object is later than the rotation event time. early, means the rotation applies to any object on or after the rotation event time. Will NOT override incoming 360 maps mode
+        public virtual bool RotationModeLate { get; set; } = true;  // used by Arc Fix(), Apply Per Object Rotations(), Apply Wall Vision Blocking Fix()
 
-        // ROTATION
-        //public virtual bool RotationModeLate { get; set; } = true; // late means rotations only occur on an object if the object is later than the rotation event time. early, means the rotation applies to any object on or after the rotation event time
-        
+        //public enum RotateMode { Early, Late }
+        //[UseConverter(typeof(EnumConverter<RotateMode>))]
+        //public virtual RotateMode RotationMode { get; set; } = RotateMode.Late;
+
         public virtual bool AddExtraRotation { get; set; } = true;//for periods of low rotation, will make sure rotations for direction-less notes move in same direction as last rotation so totalRotation will increase.
         public virtual float RotationGroupLimit { get; set; } = 10f;//If totalRotations are under this limit, will add more rotations - used by AddExtraRotation
         public virtual float RotationGroupSize { get; set; } = 12;//The number of rotations to remain inactive for adding rotations - used by AddExtraRotation
@@ -51,8 +56,8 @@ namespace AutoBS
         public virtual float RotationSpeedMultiplier { get; set; } = 1.0f;//BW This is a multiplier for PreferredBarDuration which has a default of 1.84f causes to emit more (smaller, closer-together) delta rotation events
         public virtual float MinRotationSize { get; set; } = 15f;//disallows single rotations smaller than this
         public virtual float MaxRotationSize { get; set; } = 30f;//disallows single rotations larger than this
-        public virtual float FOV { get; set; } = 80f;
-        public virtual float TimeWindow { get; set; } = 0.36f;
+        public virtual float FOV { get; set; } = 75f; //15 degree increments since 75 and 80 are the same.
+        public virtual float TimeWindow { get; set; } = 0.35f; // FOV time window
 
         public virtual float VisionBlockingWallRemovalMult { get; set; } = 1f; // increase to remove more vision blocking walls 
 
@@ -152,6 +157,9 @@ namespace AutoBS
         public virtual float BoostLightingMultiplier { get; set; } = 1;
 
         public virtual int BoostLightingRandomSeed { get; set; } = 242;
+
+        public virtual bool UseStrobes { get; set; } = false;
+        public virtual float StrobeMaxDuration { get; set; } = 5f; // seconds
 
         public virtual bool EnableLightAutoMapper { get; set; } = true;
 

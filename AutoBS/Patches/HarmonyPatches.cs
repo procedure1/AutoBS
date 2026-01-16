@@ -52,20 +52,19 @@ namespace AutoBS.Patches
                 return true;
 
             // Only intercept generated modes
-            bool isGenerated =
-                beatmapKey.beatmapCharacteristic.serializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
+            bool isGen360 = beatmapKey.beatmapCharacteristic.serializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
 
-            if (!isGenerated || !TransitionPatcher.UserSelectedMapToInject)
+            if (!isGen360)
                 return true;
 
             // Map generated -> basedOn
             if (!SetContent.GeneratedToStandardKey.TryGetValue(beatmapKey.SerializedName(), out var basedOnKey))
             {
-                Plugin.Log.Error($"[LoadBeatmapDataAsync] Missing generated→standard mapping for {beatmapKey.SerializedName()}");
+                Plugin.Log.Error($"[LoadBeatmapDataAsync] Missing generated→standard mapping for {beatmapKey.beatmapCharacteristic.serializedName} - {beatmapKey.difficulty}");
                 return true;
             }
 
-            Plugin.LogDebug($"[LoadBeatmapDataAsync] Generated requested. Loading based-on: {basedOnKey.SerializedName()}");
+            Plugin.LogDebug($"[LoadBeatmapDataAsync] Generated requested. Loading based-on: {basedOnKey.beatmapCharacteristic.serializedName} - {basedOnKey.difficulty}");
 
             _reentry = true;
             try
@@ -88,20 +87,20 @@ namespace AutoBS.Patches
                 {
                     if (t.IsFaulted)
                     {
-                        Plugin.Log.Error($"[LoadBeatmapDataAsync] Base load faulted for {basedOnKey.SerializedName()}: {t.Exception}");
+                        Plugin.Log.Error($"[LoadBeatmapDataAsync] Base load faulted for {basedOnKey.beatmapCharacteristic.serializedName} - {basedOnKey.difficulty}: {t.Exception}");
                         // rethrow the underlying exception so Beat Saber behaves normally
                         throw t.Exception ?? new Exception("Base load faulted");
                     }
 
                     if (t.IsCanceled)
-                        throw new TaskCanceledException($"Base load canceled for {basedOnKey.SerializedName()}");
+                        throw new TaskCanceledException($"Base load canceled for {basedOnKey.beatmapCharacteristic.serializedName} - {basedOnKey.difficulty}");
 
                     var baseData = t.Result;
                     if (baseData == null)
                         return null;
 
                     // Your transformation: take baseData (standard) and produce generated data
-                    var transformed = YourTransformPipeline(baseData, beatmapKey, basedOnKey, gameplayModifiers, playerSpecificSettings);
+                    var transformed = TransformPipeline(baseData, beatmapKey, basedOnKey, gameplayModifiers, playerSpecificSettings);
 
                     return transformed ?? baseData;
                 }, TaskScheduler.Default);
@@ -114,7 +113,7 @@ namespace AutoBS.Patches
             }
         }
 
-        private static IReadonlyBeatmapData YourTransformPipeline(
+        private static IReadonlyBeatmapData TransformPipeline(
             IReadonlyBeatmapData baseData,
             BeatmapKey generatedKey,
             BeatmapKey basedOnKey,

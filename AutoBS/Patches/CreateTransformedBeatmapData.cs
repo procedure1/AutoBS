@@ -49,6 +49,8 @@ namespace AutoBS.Patches
             {
                 RotationV3Registry.RotationEventsByKey.TryGetValue(TransitionPatcher.SelectedPlayKey, out var v3RotList);
 
+                int nativeBasicRotationV2EventsCount = cbd.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Where((e) => e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15).Count();
+
                 Plugin.Log.Info($"[CreateTransformedBeatmapData] Retrieved CustomBeatmapData from JSON v{cbd.version.Major} (major version): " +
                         $"notes: {cbd.cuttableNotesCount}, " +
                         $"bombs: {cbd.bombsCount} bombs, " +
@@ -57,13 +59,42 @@ namespace AutoBS.Patches
                         $"chains {cbd.allBeatmapDataItems.OfType<CustomSliderData>().Where((e) => e.sliderType == CustomSliderData.Type.Burst).Count()}, " +
                         $"rotation events (v3 saveData): {v3RotList?.Count()}, " +
                         $"basic events: {cbd.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Count()}, " +
-                        $"basic rotation events: {cbd.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Where((e) => e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15).Count()}, " +
+                        $"basic rotation events: {nativeBasicRotationV2EventsCount}, " +
                         $"events: {cbd.allBeatmapDataItems.OfType<CustomEventData>().Count()}, " +
                         $"color boosts: {cbd.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()}, " + //v2 basic events end up here somehow automatically
                         $"bpm events: {cbd.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}");
 
+                /*
+                #if DEBUG
+                if (nativeBasicRotationV2EventsCount > 0)
+                {
+                    int prevAccum = 0;
+                    Plugin.LogDebug("Original Native 360/90 Rotations Events:");
+                    foreach (var rot in cbd.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Where((e) => e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15))
+                    {
+                        int rotation = RotationGenerator.SpawnRotationValueToDegrees(rot.value);
+                        int accumRotation = rotation + prevAccum;
+                        prevAccum = accumRotation;
+                        Plugin.LogDebug($"Native v2 Rotation - Time: {rot.time:F} - Rotation: {rotation} - Total Rotation: {accumRotation}");
+                    }
+                }
+                #endif
+                */
+
+
                 var cbdCopy = (CustomBeatmapData)cbd.GetCopy(); // need this so that original data is immutable. otherwise changes to eData will affect original data.
                 eData = new EditableCBD(cbdCopy);
+
+                //ConvertEditableCBD.PerObjectRotationLog(cbd, eData, 30f, 60f);
+                /*
+                Plugin.LogDebug($"Original Native 360 Note Rotations:");
+                foreach (var note in cbd.allBeatmapDataItems
+                .OfType<NoteData>()
+                .Where(n => n.time >= 0f && n.time <= 60f))
+                {
+                    Plugin.LogDebug($"Note: {note.time:F} Rot: {note.rotation}");
+                }
+                */
             }
             else if (beatmapData is BeatmapData bm) // built-in map data
             {
@@ -154,7 +185,7 @@ namespace AutoBS.Patches
             //    Config.Instance.BoostLighting) || // Config.Instance.EnableLightAutoMapper)) || //Config.Instance.OnlyOneSaber ||
             //    TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE))
             {
-                Plugin.LogDebug($"[CreateTransformedBeatmapData] Pipeline Called. Generating map changes for {TransitionPatcher.SelectedSerializedName}...");
+                Plugin.LogDebug($"[ ] Pipeline Called. Generating map changes for {TransitionPatcher.SelectedSerializedName}...");
                 /*
                 Generator gen = new Generator
                 {
@@ -213,8 +244,16 @@ namespace AutoBS.Patches
                          $"rotation events (in-line per object) {eData.RotationEvents.Count}" );
                     // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
-                    ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 0f, 100f);
-
+                    //ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 30f, 60f);
+                    /*
+                    Plugin.LogDebug($"Final Note Rotations:");
+                    foreach (var note in __result.allBeatmapDataItems
+                    .OfType<NoteData>()
+                    .Where(n => n.time >= 0f && n.time <= 60f))
+                    {
+                        Plugin.LogDebug($"Note: {note.time:F} Rot: {note.rotation}");
+                    }
+                    */
                     JsonOutputConverter.ToJsonFile(__result as CustomBeatmapData, eData);
 
                 }

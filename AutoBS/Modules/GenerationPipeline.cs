@@ -51,6 +51,22 @@ namespace AutoBS
             RunWallGenerator(eData);
             FinalNormalize(eData);
 
+            (float accumRot, float time) high = (0, 0);
+            (float accumRot, float time) low = (0, 0);
+            int endRot = 0;
+            foreach (var rot in eData.RotationEvents)
+            {
+                endRot = rot.accumRotation;
+                if (rot.accumRotation < low.accumRot)
+                    low = (rot.accumRotation, rot.time);
+                else if (rot.accumRotation > high.accumRot)
+                    high = (rot.accumRotation, rot.time);
+                //if (rot.time < 20)
+                //    Plugin.Log.Info($"2 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
+            }
+            Plugin.Log.Info($"[PipelineResult] Rotation Count: {eData.RotationEvents.Count}, Largest '-' Rot: {low.accumRot} (time: {low.time:F}), Largest '+' Rot: {high.accumRot} (time: {high.time:F}), Final Rotation: {endRot}");
+
+
             bool beatSageMapNotAltered = (TransitionPatcher.IsBeatSageMap && !BeatSageCleanUp.DisableScoreSubmission) || !TransitionPatcher.IsBeatSageMap;
             Plugin.LogDebug($"[PipelineResult] 1 beatSageMapNotAltered: {beatSageMapNotAltered}.");
 
@@ -68,6 +84,7 @@ namespace AutoBS
                 .ToList();
             bool rotationsNotchanged = originalRotations.Count == rotAfter.Count && originalRotations.SequenceEqual(rotAfter); //compares starting rotations to final rotations
             Plugin.LogDebug($"[PipelineResult] 4 rotationsNotchanged: {rotationsNotchanged} Rotation Events Count: {eData.RotationEvents.Count()}.");
+            if (!rotationsNotchanged) eData.RotationEventsChanged = true;
 
             bool lightsNotAdded = (Utils.IsEnabledLighting() && !LightAutoMapper.LightEventsAdded) || !Utils.IsEnabledLighting();
             Plugin.LogDebug($"[PipelineResult] 5 lightsNotAdded: {lightsNotAdded}.");
@@ -77,6 +94,13 @@ namespace AutoBS
 
             bool wallsNotAdded = (Utils.IsEnabledWalls() && originalWallCount == eData.Obstacles.Count) || !Utils.IsEnabledWalls();
             Plugin.LogDebug($"[PipelineResult] 7 wallsNotAdded: {wallsNotAdded} (Original Count: {originalWallCount} Final Count: {eData.Obstacles.Count}).");
+
+            if (eData.IsNative360or90 && eData.RotationEventsChanged) // if rotations are altered, then original data with its per object rotations will change! (basic event data is turned into per object rotation)  
+            {
+                if (eData.ColorNotes.Count > 0) eData.ColorNotesChanged = true;
+                if (eData.BombNotes.Count > 0)  eData.BombNotesChanged = true;
+                if (eData.Obstacles.Count > 0)  eData.ObstaclesChanged = true;
+            }
 
             Plugin.LogDebug($"[PipelineResult] ColorNotesChanged: {eData.ColorNotesChanged}, BombNotesChanged: {eData.BombNotesChanged}, ObstaclesChanged: {eData.ObstaclesChanged}, ArcsChanged: {eData.ArcsChanged}, BasicEventsChanged: {eData.ArcsChanged}, ColorBoostEventsChanged: {eData.ColorBoostEventsChanged}, RotationEventsChanged: {eData.RotationEventsChanged}, CustomEventsChanged: {eData.CustomEventsChanged}");
 
@@ -423,8 +447,8 @@ namespace AutoBS
                     Plugin.LogDebug($"[LeanCrouchWallRemoval] NOT CALLED!!");
                 }
 
-                if (eData.RotationEvents.Count > 0)
-                    eData.RotationEvents = WallGenerator.RemoveCrouchWallRotations(eData.RotationEvents);
+                if (eData.RotationEvents.Count > 0 && !eData.IsNative360or90) // don't change the rotations of native 360/90 maps
+                    eData.RotationEvents = WallGenerator.RemoveCrouchWallRotations(eData);
 
                 if (Utils.IsEnabledChains())// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))
                     moveWallsBlockingChainTail = WallGenerator.MoveWallsBlockingChainTail(eData);
@@ -475,7 +499,6 @@ namespace AutoBS
             eData.BombNotes = eData.BombNotes.OrderBy(n => n.time).ToList();
             eData.Obstacles = eData.Obstacles.OrderBy(o => o.time).ToList();
 
-            eData.RotationEvents = eData.RotationEvents.OrderBy(r => r.time).ToList();
             eData.RotationEvents = ERotationEventData.RecalculateAccumulatedRotations(eData.RotationEvents);
 
             eData.ColorBoostEvents = eData.ColorBoostEvents.OrderBy(b => b.time).ToList();

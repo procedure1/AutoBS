@@ -1,9 +1,16 @@
 ﻿using AutoBS.Patches;
 using CustomJSONData.CustomBeatmap;
+using SiraUtil.Zenject;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Security.Policy;
+using static AutoBS.MenuDataRegistry;
+using static NoteData;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
+using static UnityEngine.EventSystems.EventTrigger;
 
 namespace AutoBS
 {
@@ -32,7 +39,7 @@ namespace AutoBS
 
         internal static void Generate(EditableCBD eData)
         {
-            Config cfg = Config.Instance;
+            //Config cfg = Config.Instance;
 
             /// <summary>
             /// The preferred bar duration in seconds. The generator will loop the song in bars. 
@@ -67,14 +74,15 @@ namespace AutoBS
             /// </summary>
             float SpinCooldown = 10f;
 
-            RotationSpeedMultiplier = (float)Math.Round(cfg.RotationSpeedMultiplier, 1);
+            RotationSpeedMultiplier = Config.Instance.RotationSpeedMultiplier;
+            //Plugin.LogDebug($"[RotationGenerator] Using RotationSpeedMultiplier={RotationSpeedMultiplier} for this run.");
 
 
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
             {
                 Plugin.LogDebug($"[RotationGenerator] Generating rotation events for {TransitionPatcher.SelectedSerializedName}...");
 
-                if (cfg.Wireless360)
+                if (Config.Instance.Wireless360)
                 {
                     LimitRotations = 99999;
                     BottleneckRotations = 99999;
@@ -82,7 +90,7 @@ namespace AutoBS
                 else
                 {
                     LimitRotations =
-                        (int)((cfg.LimitRotations360 / 360f / 2f) * (24f)); // / Config.Instance.RotationAngleMultiplier));//BW this convert the angle into LimitRotation units of 15 degree slices. Need to divide the Multiplier since it causes the angle to change from 15 degrees. this will keep the desired limit to work if a multiplier is added.
+                        (int)((Config.Instance.LimitRotations360 / 360f / 2f) * (24f)); // / Config.Instance.RotationAngleMultiplier));//BW this convert the angle into LimitRotation units of 15 degree slices. Need to divide the Multiplier since it causes the angle to change from 15 degrees. this will keep the desired limit to work if a multiplier is added.
                     BottleneckRotations = LimitRotations / 2;
                 }
             }
@@ -115,21 +123,11 @@ namespace AutoBS
 
             Plugin.LogDebug($"[RotationGenerator] Original Wall Count: {originalWallCount}");
 
-            //WallGenerator.originalWalls.Clear();// Github Issue #2 Walls gone when using autolights
-            //WallGenerator.allWalls.Clear();
+            #region Rotate
 
-            //if (isEnabledWalls && (!Config.Instance.AllowCrouchWalls || !Config.Instance.AllowLeanWalls) || isEnabledWalls || Utils.IsEnabledArcs() || Utils.IsEnabledChains() || Config.Instance.Enable360fyer)// || Config.Instance.ShowGenerated90)
-            //    WallGenerator.ResetWalls(eData); // reset for each song so variables clear out - do this even if wall generator is off since need to change walls for chains and rotations etc
-
-            //int wallGenCount = 0;
             int eventCount = 0; // Amount of rotation events emitted
             int totalRotation = 0; // Current rotation
 
-            /// <summary>
-            /// Rotation events by time and rotation step -2, -1, 0, 1, 2. 
-            /// Moments where a wall should be cut
-            /// </summary>
-            //List<(float time, int rotationSteps)> wallCutMoments = new List<(float, int)>();
             List<ERotationEventData> allRotations = eData.RotationEvents.Count == 0 ? new List<ERotationEventData>() : eData.RotationEvents; // added for nonGen360 maps
 
             Plugin.LogDebug($"0 Rotation List (original) Count: {allRotations.Count}");
@@ -143,10 +141,6 @@ namespace AutoBS
 
             bool previousDirectionPositive = true; // Previous spin direction, false is left, true is right
 
-            //BOOST Lighting Events
-            //int boostIteration = 0; // Counter for tracking iterations
-            //bool boostOn = true; // Initial boolean value
-
             //Add Extra Rotations
             int r = 1;
             int totalRotationsGroup = 0;
@@ -157,8 +151,6 @@ namespace AutoBS
             int RotationGroupSize = (int)Config.Instance.RotationGroupSize;
             bool alternateParams = false;
             int offSetR = 0;
-
-            #region Rotate
 
             List<(ENoteData arcHeadNote, int accumRotation)> arcHeadNoteRotation = new List<(ENoteData, int)>();
             var arcsAlreadyProcessed = new List<ESliderData>();
@@ -208,6 +200,8 @@ namespace AutoBS
             if (minRotationStep > maxRotationStep)
                 minRotationStep = maxRotationStep;
 
+            // changes the step size based on the minimum allowed. if 2 (30 deg) then step of 1 will be offset to 2 and step of 2 will be offset to 3 etc.
+            int rotationStepOffset = minRotationStep - 1;
 
             float notespersecond = TransitionPatcher.NotesPerSecond;
             float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
@@ -216,25 +210,34 @@ namespace AutoBS
             if (Config.Instance.ReduceRotationForHighSpeedHighDensityMaps && notespersecond > Config.Instance.HighNoteDensityThresholdForRotationReduction && njs > Config.Instance.HighBPMThresholdForRotationReduction)
             {
                 maxRotationStep = minRotationStep = 1;
+                rotationStepOffset = 0;
                 Plugin.LogDebug($"[RotationGenerator] High Speed NJS: {njs} / High Density NPS: {notespersecond} map detected. Setting maxRotationStep and minRotationStep to 1.");
             }
 
+            bool wireless360 = Config.Instance.Wireless360;
+            bool addExtraRotation = Config.Instance.AddExtraRotation;
+
             //Each rotation is 15 degree increments so 24 positive rotations is 360. Negative numbers rotate to the left, positive to the right
-            void Rotate(ENoteData note, int rotationStep, bool enableLimit = true) //amount is a rotation step (-3 to 3)
+            // ---------------------------------------------------------------------------------------------------------------------------------------------------------
+            void Rotate(ENoteData note, int rotationStep) //amount is a rotation step (-3 to 3)
             {
                 //Plugin.Log.Info($"Rotate() Called - time: {time:F} rotation: {rotationStep * 15}");
                 if (rotationStep == 0)//Allows 4*15=60 degree turn max and -60 degree min -- however amounts are never passed in higher than 3 or lower than -3. I in testing I only see 2 to -2
                     return;
 
-                if (minRotationStep > maxRotationStep)
-                    maxRotationStep = minRotationStep;
+                //Plugin.LogDebug($"[Rotate] ENTER t={note.time:F2} rawStep={rotationStep} " +$"minStep={minRotationStep} maxStep={maxRotationStep} totalRotation={totalRotation}");
+                /*
+                int sign =    Math.Sign(rotationStep);
+                int absStep = Math.Abs(rotationStep);
 
-                if (rotationStep < -maxRotationStep)
-                    rotationStep = -maxRotationStep;
-                if (rotationStep > maxRotationStep)
-                    rotationStep = maxRotationStep;
+                absStep += rotationStepOffset;
 
-                if (enableLimit)//always true unless you enableSpin in settings
+                // Normalize to the generator’s raw 1..4 range
+                absStep = Math.Clamp(absStep, minRotationStep, maxRotationStep);
+
+                rotationStep = sign * absStep;
+                */
+                if (!wireless360)//always true unless you enableSpin in settings
                 {
                     if (totalRotation + rotationStep > LimitRotations)
                         rotationStep = Math.Min(rotationStep, Math.Max(0, LimitRotations - totalRotation));
@@ -246,7 +249,7 @@ namespace AutoBS
                     totalRotation += rotationStep;
                     //Plugin.Log.Info($"totalRotation: {totalRotation} at time: {time}.");
                 }
-
+                /*
                 if (minRotationStep == 2)
                 {
                     if (rotationStep == 1)
@@ -254,7 +257,7 @@ namespace AutoBS
                     else if (rotationStep == -1)
                         rotationStep = -2;
                 }
-
+                */
                 bool matchArcHeadAndTailRotation = false;
 
                 if (matchArcHeadAndTailRotation)
@@ -292,10 +295,11 @@ namespace AutoBS
                     if (note.headNoteArc != null)
                     {
                         arcHeadNoteRotation.Add((note, accumRotation));
-                        //Plugin.Log.Info($"[Rotate] --- Adding arcHeadNote to list for later processing with tail note time: {note.headNoteArc.tailNote.time:F}.");
+                        Plugin.LogDebug($"[Rotate] --- Adding arcHeadNote to list for later processing with tail note time: {note.headNoteArc.tailNote.time:F}.");
                     }
                 }
             }
+            // ---------------------------------------------------------------------------------------------------------------------------------------------------------
             #endregion
 
             float beatDuration = 60f / TransitionPatcher.bpm;
@@ -342,18 +346,7 @@ namespace AutoBS
 #if DEBUG
             Plugin.Log.Info($"Setup bpm={TransitionPatcher.bpm} beatDuration={beatDuration} barLength={barLength} firstNoteTime={firstBeatmapNoteTime} firstnoteGameplayType={eData.ColorNotes[0].gameplayType} firstnoteColorType={eData.ColorNotes[0].colorType}");
 #endif
-            // get all left and all right notes (color indenpendent)
-            var notesBySideLeft = new List<ENoteData>();
-            var notesBySideRight = new List<ENoteData>();
-            foreach (var n in notesAndBombs)
-            {
-                if (n.line <= 1) notesBySideLeft.Add(n);   // columns 0 or 1
-                else if (n.line >= 2) notesBySideRight.Add(n); // columns 2 or 3
-            }
-
-
-            // Moving cursors (indexes) into those lists; start at 0.
-            int leftCur = 0, rightCur = 0;
+            
 
 
             static bool IsRightish(NoteCutDirection d) =>
@@ -369,10 +362,12 @@ namespace AutoBS
                 return 0; // Any/Up/Down -> neutral
             }
 
+            // Deterministic RNG based on song identity (or map seed)
+            int seed = TransitionPatcher.SelectedPlayKey.GetHashCode();
+            Random randStepSize = new Random(seed);
 
             //Stopwatch stopwatch = new Stopwatch();
-
-
+            int count1 = 0;  int count2 = 0; int count3 = 0; int count4 = 0;
             #region Main Loop
 
             //stopwatch.Restart();
@@ -434,10 +429,7 @@ namespace AutoBS
                     //if (notes[i].time > 148f && notes[i].time < 155f)
                     //    Plugin.Log.Info($"notesInBarBeat Loop ------------------------------------------");
                     notesInBarBeat.Clear();
-                    for (;
-                            k < notesInBar.Count && Floor((notesInBar[k].time - firstBeatmapNoteTime - currentBarStart) /
-                                                        dividedBarLength) == j;
-                            k++)
+                    for (; k < notesInBar.Count && Floor((notesInBar[k].time - firstBeatmapNoteTime - currentBarStart) /dividedBarLength) == j; k++)
                     {
                         notesInBarBeat.Add(notesInBar[k]);
                     }
@@ -454,6 +446,13 @@ namespace AutoBS
                     IEnumerable<ENoteData> lastNotes =
                         notesInBarBeat.Where((e) => Math.Abs(e.time - lastNote.time) < 0.005f);
 
+                    // new version removed bombs for detecting direction
+                    //IEnumerable<ENoteData> lastNotes =
+                    //    notesInBarBeat.Where(e =>
+                    //        Math.Abs(e.time - lastNote.time) < 0.005f
+                    //        && e.cutDirection != NoteCutDirection.None);
+
+
                     // Amount of notes pointing to the left/right
                     int leftCount = lastNotes.Count((e) =>
                         e.line <= 1 || e.cutDirection == NoteCutDirection.Left ||
@@ -466,12 +465,19 @@ namespace AutoBS
                     // added this to look ahead for wall generator to see if there is a note after the last note in this bar segment that may block a wall generation
                     ENoteData afterLastNote = (k < notesInBar.Count ? notesInBar[k] : i < notesAndBombs.Count ? notesAndBombs[i] : null);
 
+                    
                     // Determine amount to rotate at once
                     int rotationCount = 1;
+                    double timeDiff = 0;
+
+                    /*
+                    // OLD Version
                     if (afterLastNote != null)
                     {
+
+                        // old version
                         double barLength8thRound = Math.Round(barLength / 8, 4);
-                        double timeDiff = Math.Round(afterLastNote.time - lastNote.time, 4); //BW without any rounding or rounding to 5 or more digits still produces a different rotation between exe and plugin.
+                        timeDiff = Math.Round(afterLastNote.time - lastNote.time, 4); //BW without any rounding or rounding to 5 or more digits still produces a different rotation between exe and plugin.
 
                         //double epsilon = 0.00000001;
                         if (notesInBarBeat.Count >= 1)
@@ -484,6 +490,41 @@ namespace AutoBS
                                 rotationCount = 2;
                         }
                     }
+                    */
+                    
+                    if (afterLastNote != null)
+                    {
+                        timeDiff = afterLastNote.time - lastNote.time;
+                        double ratio = timeDiff / barLength;
+
+                        const double threshold2 = 0.125; // 1/8
+                        const double threshold3 = 0.5;   // existing 3-step threshold
+
+                        if (ratio >= threshold3)
+                            rotationCount = 3;
+                        else if (ratio >= threshold2)
+                            rotationCount = 2;
+                        else
+                            rotationCount = 1;
+
+                        if (rotationCount == 3 && maxRotationStep >= 4)
+                        {
+                            double extremeRatioFor4 =
+                                barDivider <= 2 ? 0.7 :   // sparse bar: slightly easier to get 4 (captures few 4's unless lower it)
+                                1f;                       // dense bar: need a very large gap (captures fewer 4's if raise it)
+
+                            if (ratio >= extremeRatioFor4)
+                                rotationCount = 4;
+                        }
+                    }
+
+                    // apply min/max mapping here
+                    rotationCount += rotationStepOffset;
+                    rotationCount = Math.Clamp(rotationCount, minRotationStep, maxRotationStep);
+
+                    if (rotationCount == 1) count1++; if (rotationCount == 2) count2++; if (rotationCount == 3) count3++; if (rotationCount == 4) count4++;
+                    //if (rotationCount == 3) Plugin.LogDebug($"[RotationGenerator]  Rotation 45deg: {lastNote.time:F} (attempt to add)");
+                    //if (rotationCount == 4) Plugin.LogDebug($"[RotationGenerator]  Rotation 60deg: {lastNote.time:F} (attempt to add)");
 
                     int rotationStep = 0;
                     if (leftCount > rightCount)
@@ -555,198 +596,223 @@ namespace AutoBS
                         if (rotationStep != 0)
                             previousDirectionPositive = rotationStep > 0;
                     }
+                        
+                    //In the middle of the range: rotations behave as your generator designs (gap-based sizes, 1–4).
+                    //Once you drift too far to one side(bottleneck): it shrinks same - direction steps to the minimum size, preventing big kicks at high angles.
+                    //near the configured hard limit: it turns same - direction steps into small opposite steps, gently bouncing the player back toward center instead of ever letting accumulated rotation run away.
+                    if (!wireless360) // would be disabled anyone for Wireless360 since limitRotations and BottleneckRotations are set to 9999
+                    { 
+                        if (totalRotation >= BottleneckRotations && rotationStep > 0)
+                        {
+                            // too far right → clamp to smallest allowed positive step
+                            if (rotationCount > minRotationStep)
+                                rotationCount = minRotationStep;
+                        }
+                        else if (totalRotation <= -BottleneckRotations && rotationStep < 0)
+                        {
+                            // too far left → clamp to smallest allowed negative step (magnitude)
+                            if (rotationCount > minRotationStep)
+                                rotationCount = minRotationStep;
+                        }
 
-                    if (isEnabledRotations)
+                        // Recompute rotationStep from (sign, magnitude) after bottleneck clamp
+                        int dirSign = Math.Sign(rotationStep);
+                        rotationStep = dirSign * rotationCount;
+
+                        // --- 2. Hard limit: when we are near the absolute limit, flip direction instead of pushing further ---
+
+                        if (totalRotation >= LimitRotations - minRotationStep && rotationStep > 0)
+                        {
+                            // too close to +Limit → force a turn in the opposite direction
+                            rotationStep = -Math.Abs(rotationStep);
+                        }
+                        else if (totalRotation <= -LimitRotations + minRotationStep && rotationStep < 0)
+                        {
+                            // too close to -Limit → force a turn in the opposite direction
+                            rotationStep = Math.Abs(rotationStep);
+                        }
+
+                        // Ensure rotationCount stays in sync with rotationStep magnitude
+                        rotationCount = Math.Abs(rotationStep);
+                    }
+                    #region AddExtraRotations
+
+                    //############################################################################
+                    //had to add more rotations directly in the main loop. tried it outside this main loop. the problem with being outside the loop is you cannot decide if a map is really low on rotations until after the map is finished.
+                    //add more rotation to maps without much rotation. If there are few rotations, look for directionless notes up/down/dot/bomb and make their rotation direction the same as the previous direction so that there will be increased totalRotation.
+                    //keeps same magnitude, but flips sign to keep same direction streak
+                    //Once rotation steps pass the RotationGroupLimit, make this inactive. Stay inactive for RotationGroupSize number of rotations and if there are few rotations while off, activate this again.
+                    if (addExtraRotation)// && !Config.Instance.AddExtraRotationV2)
                     {
-                        //Plugin.Log.Info($"Rotation will be--------------: {rotation *15}");
-
-                        if (totalRotation >= BottleneckRotations && rotationCount > 1)
+                        if (addMoreRotations) //this stays on until passes the rotation limit
                         {
-                            rotationCount = 1;
-                        }
-                        else if (totalRotation <= -BottleneckRotations && rotationCount < -1)
-                        {
-                            rotationCount = -1;
-                        }
-
-                        if (totalRotation >= LimitRotations - 1 && rotationCount > 0)
-                        {
-                            rotationCount = -rotationCount;
-                        }
-                        else if (totalRotation <= -LimitRotations + 1 && rotationCount < 0)
-                        {
-                            rotationCount = -rotationCount;
-                        }
-
-                        #region AddExtraRotations
-
-                        //############################################################################
-                        //had to add more rotations directly in the main loop. tried it outside this main loop. the problem with being outside the loop is you cannot decide if a map is really low on rotations until after the map is finished.
-                        //add more rotation to maps without much rotation. If there are few rotations, look for directionless notes up/down/dot/bomb and make their rotation direction the same as the previous direction so that there will be increased totalRotation.
-                        //Once rotation steps pass the RotationGroupLimit, make this inactive. Stay inactive for RotationGroupSize number of rotations and if there are few rotations while off, activate this again.
-
-
-                        if (Config.Instance.AddExtraRotation)// && !Config.Instance.AddExtraRotationV2)
-                        {
-                            if (addMoreRotations) //this stays on until passes the rotation limit
+                            if (Math.Abs(totalRotationsGroup) < Math.Abs(RotationGroupLimit))
                             {
-                                if (Math.Abs(totalRotationsGroup) < Math.Abs(RotationGroupLimit))
+                                if (lastNote.cutDirection == NoteCutDirection.Up ||
+                                    lastNote.cutDirection == NoteCutDirection.Down ||
+                                    lastNote.cutDirection == NoteCutDirection.Any ||
+                                    lastNote.cutDirection == NoteCutDirection.None) //only change rotation if using a non-directional note. if remove this will allow a lot more rotations
                                 {
-                                    if (lastNote.cutDirection == NoteCutDirection.Up ||
-                                        lastNote.cutDirection == NoteCutDirection.Down ||
-                                        lastNote.cutDirection == NoteCutDirection.Any ||
-                                        lastNote.cutDirection == NoteCutDirection.None) //only change rotation if using a non-directional note. if remove this will allow a lot more rotations
-                                    {
-                                        if (prevRotationPositive) //keep direction the same as the previous note
-                                            newRotation = Math.Abs(rotationStep);
-                                        else
-                                            newRotation = -Math.Abs(rotationStep);
+                                    if (prevRotationPositive) //keep direction the same as the previous note
+                                        newRotation = Math.Abs(rotationStep);
+                                    else
+                                        newRotation = -Math.Abs(rotationStep);
 
-                                        //if (newRotation != rotationStep)
-                                        //    Plugin.Log.Info($"[AddExtraRotation] lastNote time: {lastNote.time} r: {r} Old Rotation: {rotationStep} New Rotation: {newRotation}");// totalRotationsGroup: {totalRotationsGroup}");
+                                    //if (newRotation != rotationStep)
+                                    //    Plugin.LogDebug($"[AddExtraRotation] lastNote time: {lastNote.time} r: {r} Old Rotation: {rotationStep} New Rotation: {newRotation}");// totalRotationsGroup: {totalRotationsGroup}");
 
-                                        rotationStep = newRotation;
+                                    rotationStep = newRotation;
 
-                                        totalRotationsGroup += rotationStep;
-                                    }
-
+                                    totalRotationsGroup += rotationStep;
                                 }
-                                else //has now passed the rotation limit now
+
+                            }
+                            else //has now passed the rotation limit now
+                            {
+                                addMoreRotations = false;
+
+                                totalRotationsGroup = 0;
+
+                                //Plugin.Log.Info($"[AddExtraRotation] Change to NOT ACTIVE since passed the limit!!! RotationGroupLimit: {RotationGroupLimit}\t totalRotationsGroup: {totalRotationsGroup}");
+
+                                offSetR = r; //need this since when passes the limit, r may be close or equal to being a multiple of RotationGroupSize. that means it could be active soon again. so need to offset r so it will stay off for RotationGroupSize rotations.(r - offSetR) will be 0 on first rotation...
+                            }
+                        }
+                        else //inactive
+                        {
+                            totalRotationsGroup += rotationStep;
+
+                            if ((r - offSetR) % RotationGroupSize ==
+                                0) // after RotationGroupSize - offset number of iterations, this will check if rotations are over the limit
+                            {
+                                if (Math.Abs(totalRotationsGroup) >=
+                                    Math.Abs(
+                                        RotationGroupLimit)) //if the total rotations was over the limit, stay inactive
                                 {
                                     addMoreRotations = false;
 
-                                    totalRotationsGroup = 0;
-
-                                    //Plugin.Log.Info($"[AddExtraRotation] Change to NOT ACTIVE since passed the limit!!! RotationGroupLimit: {RotationGroupLimit}\t totalRotationsGroup: {totalRotationsGroup}");
-
-                                    offSetR = r; //need this since when passes the limit, r may be close or equal to being a multiple of RotationGroupSize. that means it could be active soon again. so need to offset r so it will stay off for RotationGroupSize rotations.(r - offSetR) will be 0 on first rotation...
+                                    //Plugin.Log.Info($"[AddExtraRotation] Continue to be NOT ACTIVE: Inactive rotations are over the limit so stay inactive for {RotationGroupSize} rotations. RotationGroupLimit: {RotationGroupLimit}\t RotationGroupSize set to: 0 ++++++++++++++++++++++++++++++++++++++++++++++++");
                                 }
-                            }
-                            else //inactive
-                            {
-                                totalRotationsGroup += rotationStep;
-
-                                if ((r - offSetR) % RotationGroupSize ==
-                                    0) // after RotationGroupSize - offset number of iterations, this will check if rotations are over the limit
+                                else //if the total rotations was under the limit, activate more rotations
                                 {
-                                    if (Math.Abs(totalRotationsGroup) >=
-                                        Math.Abs(
-                                            RotationGroupLimit)) //if the total rotations was over the limit, stay inactive
-                                    {
-                                        addMoreRotations = false;
+                                    addMoreRotations = true;
 
-                                        //Plugin.Log.Info($"[AddExtraRotation] Continue to be NOT ACTIVE: Inactive rotations are over the limit so stay inactive for {RotationGroupSize} rotations. RotationGroupLimit: {RotationGroupLimit}\t RotationGroupSize set to: 0 ++++++++++++++++++++++++++++++++++++++++++++++++");
+                                    if (alternateParams)
+                                    {
+                                        RotationGroupLimit += 4; //change the limit size for variety //could not alter RotationGroupSize since causing looping problem
                                     }
-                                    else //if the total rotations was under the limit, activate more rotations
+                                    else
                                     {
-                                        addMoreRotations = true;
-
-                                        if (alternateParams)
-                                        {
-                                            RotationGroupLimit += 4; //change the limit size for variety //could not alter RotationGroupSize since causing looping problem
-                                        }
-                                        else
-                                        {
-                                            RotationGroupLimit -= 4; //change the limit size for variety //could not alter RotationGroupSize since causing looping problem
-                                        }
-
-                                        alternateParams =
-                                            !alternateParams; // Toggles every other time addMoreRotations is true
-
-                                        //Plugin.Log.Info($"[AddExtraRotation] ACTIVE:     RotationGroupLimit: {RotationGroupLimit}\t RotationGroupSize: {RotationGroupSize}------------------------------------------------");
+                                        RotationGroupLimit -= 4; //change the limit size for variety //could not alter RotationGroupSize since causing looping problem
                                     }
 
-                                    totalRotationsGroup = 0;
+                                    alternateParams =
+                                        !alternateParams; // Toggles every other time addMoreRotations is true
 
+                                    //Plugin.Log.Info($"[AddExtraRotation] ACTIVE:     RotationGroupLimit: {RotationGroupLimit}\t RotationGroupSize: {RotationGroupSize}------------------------------------------------");
                                 }
+
+                                totalRotationsGroup = 0;
+
                             }
-
-                            if (rotationStep > 0)
-                                prevRotationPositive = true;
-                            else
-                                prevRotationPositive = false;
-
                         }
 
-                        #endregion
-
-                        //***********************************
-                        //Finally rotate - possible values here are -3,-2,-1,0,1,2,3 but in testing I only see -2 to 2
-                        //The condition for setting rotationCount to 3 is that timeDiff (the time difference between afterLastNote and lastNote) is greater than or equal to barLength. If your test data rarely or never satisfies this condition, you won't see rotation values of -3 or 3.
-                        //Similarly, the condition for setting rotationCount to 2 is that timeDiff is greater than or equal to barLength / 8. If this condition is rarely met in your test cases, it would explain why you mostly see rotation values of - 2, -1, 0, 1, or 2.
-
-                        //Plugin.Log.Info($"Rotate() r: {r}\t Time: {Math.Round(lastNote.time, 2).ToString("0.00")}\t Rotation Step:\t {rotation}\t lastNoteDir:\t {lastNote.cutDirection}\t totalRotation:\t {totalRotation}\t totalRotationsGroup:\t {totalRotationsGroup}");// Type: {(int)SpawnRotationBeatmapEventData.SpawnRotationEventType.Late}"); \t Beat: {lastNote.time * bpm / 60f}
-
-
-                        //RotationStep can get a value of 1 when notes are close together in a bar.
-                        //Or a value of 2 when there is A noticeable gap between notes but not a full bar.
-                        //Or a value of 3 but only if afterLastNote.time - lastNote.time >= barLength. This means a full bar of time with no notes in between.
-                        //In most maps, rotationStep = 3 is unlikely unless there are big gaps between note groups, like in slower maps or maps with intentional large gaps.
-
-                        Rotate(lastNote, rotationStep); //lastNote.time, rotationStep);
-
-                        r++;
-
-                        // --- Massive Streak detector driven by emitted events ---
-                        int newIdx = allRotations.Count - 1;
-                        if (newIdx > lastProcessedEvtIdx) // means Rotate() actually emitted an event (rotationStep != 0 *and* not clamped to 0)
-                        {
-                            // record flex flag aligned to each lastNote
-                            flexibleRotations.Add(IsFlexible(lastNote));
-
-                            // use the sign of the emitted EVENT (not rotationStep)
-                            int emittedDeg = allRotations[newIdx].rotation; // +/- 15, 30, ...
-                            int sgn = Math.Sign(emittedDeg);
-
-                            if (curRunLen == 0)
-                            {
-                                curRunStart = newIdx;
-                                curRunSign = sgn;
-                                curRunLen = 1;
-                            }
-                            else if (sgn == curRunSign)
-                            {
-                                curRunLen++;
-                            }
-                            else
-                            {
-                                // sign flipped → close previous run at newIdx (exclusive) and start a new one at newIdx
-                                CloseSameDirectionStreak(newIdx);
-                                curRunStart = newIdx;
-                                curRunSign = sgn;
-                                curRunLen = 1;
-                            }
-
-                            lastProcessedEvtIdx = newIdx;
-                        }
+                        if (rotationStep > 0)
+                            prevRotationPositive = true;
+                        else
+                            prevRotationPositive = false;
 
                     }
+
+                    #endregion
+
+                    //***********************************
+                    //Finally rotate - possible values here are -3,-2,-1,0,1,2,3 but in testing I only see -2 to 2
+                    //The condition for setting rotationCount to 3 is that timeDiff (the time difference between afterLastNote and lastNote) is greater than or equal to barLength. If your test data rarely or never satisfies this condition, you won't see rotation values of -3 or 3.
+                    //Similarly, the condition for setting rotationCount to 2 is that timeDiff is greater than or equal to barLength / 8. If this condition is rarely met in your test cases, it would explain why you mostly see rotation values of - 2, -1, 0, 1, or 2.
+
+                    //Plugin.Log.Info($"Rotate() r: {r}\t Time: {Math.Round(lastNote.time, 2).ToString("0.00")}\t Rotation Step:\t {rotation}\t lastNoteDir:\t {lastNote.cutDirection}\t totalRotation:\t {totalRotation}\t totalRotationsGroup:\t {totalRotationsGroup}");// Type: {(int)SpawnRotationBeatmapEventData.SpawnRotationEventType.Late}"); \t Beat: {lastNote.time * bpm / 60f}
+
+
+                    //RotationStep can get a value of 1 when notes are close together in a bar.
+                    //Or a value of 2 when there is A noticeable gap between notes but not a full bar.
+                    //Or a value of 3 but only if afterLastNote.time - lastNote.time >= barLength. This means a full bar of time with no notes in between.
+                    //In most maps, rotationStep = 3 is unlikely unless there are big gaps between note groups, like in slower maps or maps with intentional large gaps.
+
+                    //Plugin.LogDebug($"[PreRotate] t={lastNote.time:F2} step={rotationStep} count={rotationCount} " +$"timeDiff={timeDiff:F3} barLength={barLength:F3}");
+
+                    Rotate(lastNote, rotationStep); //lastNote.time, rotationStep);
+
+                    r++;
+
+                    // --- Massive Streak detector driven by emitted events ---
+                    int newIdx = allRotations.Count - 1;
+                    if (newIdx > lastProcessedEvtIdx) // means Rotate() actually emitted an event (rotationStep != 0 *and* not clamped to 0)
+                    {
+                        // record flex flag aligned to each lastNote
+                        flexibleRotations.Add(IsFlexible(lastNote));
+
+                        // use the sign of the emitted EVENT (not rotationStep)
+                        int emittedDeg = allRotations[newIdx].rotation; // +/- 15, 30, ...
+                        int sgn = Math.Sign(emittedDeg);
+
+                        if (curRunLen == 0)
+                        {
+                            curRunStart = newIdx;
+                            curRunSign = sgn;
+                            curRunLen = 1;
+                        }
+                        else if (sgn == curRunSign)
+                        {
+                            curRunLen++;
+                        }
+                        else
+                        {
+                            // sign flipped → close previous run at newIdx (exclusive) and start a new one at newIdx
+                            CloseSameDirectionStreak(newIdx);
+                            curRunStart = newIdx;
+                            curRunSign = sgn;
+                            curRunLen = 1;
+                        }
+
+                        lastProcessedEvtIdx = newIdx;
+                    }
+
+                    
 
                     //Plugin.LogDebug($"Total Rotations: {totalRotation*15} Time: {lastNote.time:F} Rotation: {rotation*15}");
 
 
-
-                    //Plugin.LogDebug($"[{currentBarBeatStart}] Rotate {rotation} (c={notesInBarBeat.Count},lc={leftCount},rc={rightCount},lastNotes={lastNotes.Count()},rotationTime={lastNote.time + 0.01f},afterLastNote={afterLastNote?.time:F},rotationCount={rotationCount})");
+                    //Plugin.LogDebug($"[{currentBarBeatStart}] rotationStep: {rotationStep} (notesInBarBeat={notesInBarBeat.Count},leftCount={leftCount},rightCount={rightCount},lastNotes={lastNotes.Count()},rotationTime={lastNote.time},afterLastNote={afterLastNote?.time:F},rotationCount={rotationCount})");
                 }
 
                 //Plugin.LogDebug($"[{currentBarStart + firstBeatmapNoteTime}({(currentBarStart + firstBeatmapNoteTime) / beatDuration}) -> {currentBarEnd + firstBeatmapNoteTime}({(currentBarEnd + firstBeatmapNoteTime) / beatDuration})] count={notesInBar.Count} segments={builder} barDiviver={barDivider}");
             }
             //End main for loop over all notes
 
+            Plugin.LogDebug($"[RotationGenerator] Rotation Events (after main loop) Count: {allRotations.Count} MinRotationStep: {minRotationStep} MaxRotationStep: {maxRotationStep} -- 15deg: {count1}, 30deg: {count2}, 45deg: {count3}, 60deg: {count4}");
+
             // -----------------------------------------------------------------------------------------------
+            #endregion
+
 
             CloseSameDirectionStreak(allRotations.Count); // close trailing run safely
 
             Plugin.LogDebug($"[RotationGenerator][MassiveStreak] Total detected streaks: {massiveStreaks.Count} (using: MassiveStreakNumberOfRotationsThreshold: {Config.Instance.MassiveStreakNumberOfRotationsThreshold})");
 
-            Plugin.LogDebug($"[RotationGenerator] 1 Rotation List (after main loop) Count: {allRotations.Count}");
-
-            (float accumRot, float time) high = (0, 0);
-            (float accumRot, float time) low = (0, 0);
-            int endRot = 0;
+            
 
             if (allRotations.Count > 0)
             {
+                allRotations = ERotationEventData.RecalculateAccumulatedRotations(allRotations);
+
+                #if DEBUG
+                (float accumRot, float time) high = (0, 0);
+                (float accumRot, float time) low = (0, 0);
+                int endRot = 0;
+
+                int d0 = 0;  int d15 = 0; int d30 = 0; int d45 = 0; int d60 = 0; int d75 = 0; int d90 = 0; int d120 = 0;
+
                 foreach (var rot in allRotations)
                 {
                     endRot = rot.accumRotation;
@@ -754,21 +820,107 @@ namespace AutoBS
                         low = (rot.accumRotation, rot.time);
                     else if (rot.accumRotation > high.accumRot)
                         high = (rot.accumRotation, rot.time);
+
+                    int ro = Math.Abs(rot.rotation);
+                    //if (ro == 0) d0++; if (ro == 15) d15++; if (ro == 30) d30++; if (ro == 45) d45++; if (ro == 60) d60++; if (ro == 75) d75++; if (ro == 90) d90++; if (ro == 120) d120++;
                     //if (rot.time < 20)
                     //    Plugin.Log.Info($"2 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
                 }
-                Plugin.Log.Info($"[RotationGenerator] 2 Rotation Events Count: {allRotations.Count} - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360} - Largest Neg Rot: {low.accumRot} Time: {low.time:F} - Largest Pos Rot: {high.accumRot} Time: {high.time:F} - Final Rotation: {endRot}");
+                Plugin.Log.Info($"[RotationGenerator] Rotation Count: {allRotations.Count}, Largest '-' Rot: {low.accumRot} (time: {low.time:F}), Largest '+' Rot: {high.accumRot} (time: {high.time:F}), Final Rotation: {endRot} --- Wireless360: {Config.Instance.Wireless360}, LimitRot: {Config.Instance.LimitRotations360}, AddExtraRot: {Config.Instance.AddExtraRotation}, RotSpeedMult: {RotationSpeedMultiplier}, MinRotSize: {Config.Instance.MinRotationSize}, MaxRotSize: {Config.Instance.MaxRotationSize}, FOV: {Config.Instance.FOV}, TimeWin: {Config.Instance.TimeWindow}");
+                //Plugin.LogDebug($"[RotationGenerator] Rotation Count: {allRotations.Count} -- 0deg: {d0} 15deg: {d15}, 30deg: {d30}, 45deg: {d45}, 60deg: {d60}, 75deg: {d75}, 90deg: {d90}, 120deg: {d120}");
+                #endif
+
+                #region Remove Bombs when map turns
+
+                // Remove bombs (just problematic ones) iterate backwards
+                // Build list that ties rotation events directly
+                var bombCutMoments = new List<(float time, int rotation, ERotationEventData evt)>();
+
+                for (int b = 0; b < allRotations.Count; b++)
+                {
+                    var rot = allRotations[b];
+                    bombCutMoments.Add((rot.time, rot.rotation, rot));
+                }
+
+
+                // Track which rotation events to remove
+                var rotsToRemove = new HashSet<ERotationEventData>();
+
+                int originalBombCount = eData.BombNotes.Count;
+                // remove bombs and their rotation events since leaving the rotation event that occurs after a long will will mean other wall will rotate and the player expects a note to come in that direction perhaps
+                for (int i = eData.BombNotes.Count - 1; i >= 0; i--)
+                {
+                    var bomb = eData.BombNotes[i];
+
+                    foreach (var (cutTime, rotAmount, rotEvt) in bombCutMoments)
+                    {
+                        if (bomb.time >= cutTime - WallGenerator.WallFrontCut &&
+                            bomb.time < cutTime + WallGenerator.WallBackCut)
+                        {
+                            if ((bomb.line < 2 && rotAmount < 0) || (bomb.line > 1 && rotAmount > 0))
+                            {
+                                eData.BombNotes.RemoveAt(i);
+                                rotsToRemove.Add(rotEvt);
+
+                                //Plugin.Log.Info($"Removed bomb {bomb.time:F2}, and rotation at {rotEvt.time:F2} (rot={rotAmount})");
+                                break;
+                            }
+                        }
+                    }
+                }
+                eData.BombNotesChanged = false;
+                int bombsRemoved = originalBombCount - eData.BombNotes.Count;
+
+                if (bombsRemoved > 0)
+                    eData.BombNotesChanged = true;
+
+                // Remove the marked rotation events
+                if (rotsToRemove.Count > 0)
+                {
+                    allRotations = allRotations
+                        .Where(p => !rotsToRemove.Contains(p))
+                        .OrderBy(p => p.time)
+                        .ToList();
+                }
+
+                if (bombsRemoved > 0 || rotsToRemove.Count > 0)
+                {
+                    Plugin.LogDebug($"[RotationGenerator] Removed {bombsRemoved} bombs due to conflicting rotations. Removed {rotsToRemove.Count} rotations since bomb is gone now. Final Rotation Count: {allRotations.Count}");
+                    eData.BombNotesChanged = true;
+                }
+
+
+                allRotations = ERotationEventData.RecalculateAccumulatedRotations(allRotations);
+
+                if (rotsToRemove.Count > 0)
+                {
+                    d0 = 0; d15 = 0; d30 = 0; d45 = 0; d60 = 0; d75 = 0; d90 = 0; d120 = 0;
+                    foreach (var rot in allRotations)
+                    {
+                        int ro = Math.Abs(rot.rotation);
+                        if (ro == 0) d0++; if (ro == 15) d15++; if (ro == 30) d30++; if (ro == 45) d45++; if (ro == 60) d60++; if (ro == 75) d75++; if (ro == 90) d90++; if (ro == 120) d120++;
+                    }
+                    Plugin.LogDebug($"[RotationGenerator] Rotation Count: {allRotations.Count} -- 0deg: {d0}, 15deg: {d15}, 30deg: {d30}, 45deg: {d45}, 60deg: {d60}, 75deg: {d75}, 90deg: {d90}, 120deg: {d120}");
+                }
+
+                eData.RotationEventsChanged = false;
+
+                if (originalRotations.Count != allRotations.Count)
+                    eData.RotationEventsChanged = true;
 
 
                 #endregion
+
 
                 #region Optimize FOV
 
                 //bool wallsAdded = originalWallCount <= 5000 && (WallGenerator._generatedStandardWalls.Count > 0 || WallGenerator._generatedExtensionWalls.Count > 0);
                 //Plugin.LogDebug($"WallGenerator._generatedStandardWalls: {WallGenerator._generatedStandardWalls.Count} WallGenerator._generatedExtensionWalls: {WallGenerator._generatedExtensionWalls.Count}");
 
-                if (Utils.IsEnabledFOV(Utils.IsEnabledWalls()) && allRotations.Count > 0) // use this for nonGen360 maps with wall gen since old 360fyer generated maps have wild rotations that cause walls to reverse through the frame. this will not help some walls blocking player vision that are built into 360fyer old generated output
+                if (Utils.IsEnabledFOV(Utils.IsEnabledWalls()) && allRotations.Count > 0 && Config.Instance.TimeWindow > 0) // use this for nonGen360 maps with wall gen since old 360fyer generated maps have wild rotations that cause walls to reverse through the frame. this will not help some walls blocking player vision that are built into 360fyer old generated output
                 {
+                    int prevRots = allRotations.Count;
+
                     allRotations.Sort((a, b) => a.time.CompareTo(b.time)); // Sort the rotations by time
 
                     OptimizeRotationsToFOV optimize = new OptimizeRotationsToFOV(
@@ -779,19 +931,26 @@ namespace AutoBS
 
 
                     allRotations = optimize.FOVFix(); // Call the ModifyRotations method to adjust the rotations and get the modified list
-                    allRotations.Sort((a, b) => a.time.CompareTo(b.time));
-                    int prevRot = 0;
-                    foreach (var rot in allRotations)
-                    {
-                        rot.accumRotation = prevRot + rot.rotation;
-                        prevRot = rot.accumRotation;
-                    }
+
+                    allRotations = ERotationEventData.RecalculateAccumulatedRotations(allRotations);
 
                     if (!Config.Instance.Wireless360 && optimize.RotationsWereAdjusted)
                         needsRotationLimitAdjustment = true;
+
+                    if (prevRots != allRotations.Count)
+                        eData.RotationEventsChanged = true;
                 }
 
                 Plugin.LogDebug($"[RotationGenerator] 3 Rotation List (after FOV)  Count: {allRotations.Count}");
+
+                d0 = 0; d15 = 0; d30 = 0; d45 = 0; d60 = 0; d75 = 0; d90 = 0; d120 = 0;
+                foreach (var rot in allRotations)
+                {
+                    int ro = Math.Abs(rot.rotation);
+                    if (ro == 0) d0++; if (ro == 15) d15++; if (ro == 30) d30++; if (ro == 45) d45++; if (ro == 60) d60++; if (ro == 75) d75++; if (ro == 90) d90++; if (ro == 120) d120++;
+                }
+                Plugin.LogDebug($"[RotationGenerator] Rotation Count: {allRotations.Count} -- 0deg: {d0}, 15deg: {d15}, 30deg: {d30}, 45deg: {d45}, 60deg: {d60}, 75deg: {d75}, 90deg: {d90}, 120deg: {d120}");
+
                 /*
                 foreach (var rot in allRotations)
                 {
@@ -801,33 +960,34 @@ namespace AutoBS
                 */
                 #endregion
 
-                if (Config.Instance.ArcFixFull &&
-                    //(!BeatmapDataTransformHelperPatcher.NoodleProblemObstacles || !BeatmapDataTransformHelperPatcher.NoodleProblemNotes) &&
-                    allRotations.Count() > 0 &&
-                    TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
+                if (Config.Instance.ArcFixFull)
                 {
+                    int prevRots = allRotations.Count;
+
                     allRotations = Arcitect.ArcFix(allRotations, eData); // this is for Gen 360 only -- Clearing the list is not needed according to AI. nonGen maps use arcFix() from HarmonyPatches.cs
 
                     if (!Config.Instance.Wireless360)
                         needsRotationLimitAdjustment = true;
+
+                    if (prevRots != allRotations.Count)
+                        eData.RotationEventsChanged = true;
                 }
                 else
                     Plugin.LogDebug($"[RotationGenerator] ArcFix not enabled or not applicable. Starting Game Mode: {TransitionPatcher.SelectedSerializedName} - Characteristic: {TransitionPatcher.SelectedSerializedName}");
 
 
-                //if (isEnabledRotations)
-                {
-                    if (!Config.Instance.Wireless360 && Config.Instance.MinRotationSize > 15)
-                        needsRotationLimitAdjustment = true;
+                if (!Config.Instance.Wireless360 && Config.Instance.MinRotationSize > 15)
+                    needsRotationLimitAdjustment = true;
 
-                    if (needsRotationLimitAdjustment)
-                    {
-                        Plugin.LogDebug($"[RotationGenerator] Rotation limits were adjusted.");
-                        allRotations = AdjustRotationsToLimit(allRotations);
-                    }
+                if (needsRotationLimitAdjustment)
+                {
+                    Plugin.LogDebug($"[RotationGenerator] Rotation limits were adjusted.");
+                    allRotations = AdjustRotationsToLimit(allRotations);
+
+                    eData.RotationEventsChanged = true;
                 }
 
-                allRotations.Sort((a, b) => a.time.CompareTo(b.time));
+
                 allRotations = ERotationEventData.RecalculateAccumulatedRotations(allRotations);
 
                 Plugin.LogDebug($"[RotationGenerator] 4 Rotation List (after ArcFix)  Count: {allRotations.Count} (has accurate accum)");
@@ -851,6 +1011,7 @@ namespace AutoBS
                 }
                 Plugin.LogDebug($"[RotationGenerator] WallCutMoments generated with count: {eData.WallCutMoments.Count}");
 
+                /*
                 List<ENoteData> bombsToRemove = new List<ENoteData>();
                 foreach (var obj in eData.ColorNotes) // bombs get added to colorNotes for loop so need to remove them. this is still needed
                 {
@@ -860,76 +1021,15 @@ namespace AutoBS
                 //Plugin.Log.Info($" --- Removing {bombsToRemove.Count()} Bombs --- ");
                 eData.ColorNotes.RemoveAll(b => bombsToRemove.Contains(b)); // remove bombs
                 eData.ColorNotes = eData.ColorNotes.OrderBy(n => n.time).ToList();
-
-                Plugin.LogDebug($"[RotationGenerator] --- Remaining Walls --- {eData.Obstacles.Count()}");
-
-                #region Remove Bombs when map turns (360/90)
-
-                //if (isEnabledRotations)
-                {
-                    // Remove bombs (just problematic ones) iterate backwards
-                    // Build list that ties rotation events directly
-                    var bombCutMoments = new List<(float time, int rotation, ERotationEventData evt)>();
-
-                    for (int b = 0; b < eData.RotationEvents.Count; b++)
-                    {
-                        var rot = eData.RotationEvents[b];
-                        bombCutMoments.Add((rot.time, rot.rotation, rot));
-                    }
+                */
 
 
-                    // Track which rotation events to remove
-                    var rotsToRemove = new HashSet<ERotationEventData>();
 
-                    int originalBombCount = eData.BombNotes.Count;
-                    // remove bombs and their rotation events since leaving the rotation event that occurs after a long will will mean other wall will rotate and the player expects a note to come in that direction perhaps
-                    for (int i = eData.BombNotes.Count - 1; i >= 0; i--)
-                    {
-                        var bomb = eData.BombNotes[i];
+                
+                // bomb removal was here
 
-                        foreach (var (cutTime, rotAmount, rotEvt) in bombCutMoments)
-                        {
-                            if (bomb.time >= cutTime - WallGenerator.WallFrontCut &&
-                                bomb.time < cutTime + WallGenerator.WallBackCut)
-                            {
-                                if ((bomb.line < 2 && rotAmount < 0) || (bomb.line > 1 && rotAmount > 0))
-                                {
-                                    eData.BombNotes.RemoveAt(i);
-                                    rotsToRemove.Add(rotEvt);
 
-                                    //Plugin.Log.Info($"Removed bomb {bomb.time:F2}, and rotation at {rotEvt.time:F2} (rot={rotAmount})");
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    eData.BombNotesChanged = false;
-                    int bombsRemoved = originalBombCount - eData.BombNotes.Count;
-                    if (bombsRemoved > 0)
-                    {
-                        Plugin.LogDebug($"[RotationGenerator] Removed {bombsRemoved} bombs due to conflicting rotations.");
-                        eData.BombNotesChanged = true;
-                    }
 
-                    // Remove the marked rotation events
-                    if (rotsToRemove.Count > 0)
-                    {
-                        eData.RotationEvents = eData.RotationEvents
-                            .Where(p => !rotsToRemove.Contains(p))
-                            .OrderBy(p => p.time)
-                            .ToList();
-
-                    }
-
-                    eData.RotationEvents = ERotationEventData.RecalculateAccumulatedRotations(eData.RotationEvents);
-
-                    eData.RotationEventsChanged = false;
-
-                    if (originalRotations.Count != eData.RotationEvents.Count)
-                        eData.RotationEventsChanged = true;
-                }
-
-                #endregion
 
                 Plugin.LogDebug($"[RotationGenerator] 5 Rotation Events Count: {eData.RotationEvents.Count()}");
 
@@ -1001,14 +1101,14 @@ namespace AutoBS
         {
             switch ((int)degrees)
             {
-                //case -60: return 0;
+                case -60: return 0;
                 case -45: return 1;
                 case -30: return 2;
                 case -15: return 3;
                 case 15: return 4;
                 case 30: return 5;
                 case 45: return 6;
-                //case 60: return 7;
+                case 60: return 7;
                 default: return 4;//null; // Or throw, or clamp, as you see fit
             }
         }
@@ -1016,14 +1116,14 @@ namespace AutoBS
         {
             switch ((int)degrees)
             {
-                //case -60: return -4;
+                case -60: return -4;
                 case -45: return -3;
                 case -30: return -2;
                 case -15: return -1;
                 case 15: return 1;
                 case 30: return 2;
                 case 45: return 3;
-                //case 60: return 4;
+                case 60: return 4;
                 default: return 1;//null; // Or throw, or clamp, as you see fit
             }
         }
@@ -1031,14 +1131,14 @@ namespace AutoBS
         {
             switch (value)
             {
-                //case -60: return 0;
+                case 0: return -60;
                 case 1: return -45;
                 case 2: return -30;
                 case 3: return -15;
                 case 4: return 15;
                 case 5: return 30;
                 case 6: return 45;
-                //case 7: return 60f;
+                case 7: return 60;
                 default: return 0;//null; // Or throw, or clamp, as you see fit
             }
         }
@@ -1046,14 +1146,14 @@ namespace AutoBS
         {
             switch (value)
             {
-                //case -60: return 0;
+                case -60: return 0;
                 case -45: return 1;
                 case -30: return 2;
                 case -15: return 3;
                 case 15: return 4;
                 case 30: return 5;
                 case 45: return 6;
-                //case 7: return 60f;
+                case 60: return 7;
                 default: return 4;//not 0 which is 60 degrees
             }
         }
@@ -1061,14 +1161,14 @@ namespace AutoBS
         {
             switch (value)
             {
-                //case -60: return -4;
+                case 0: return -4;
                 case 1: return -3;
                 case 2: return -2;
                 case 3: return -1;
                 case 4: return 1;
                 case 5: return 2;
                 case 6: return 3;
-                //case 7: return 4f;
+                case 7: return 4;
                 default: return 1;//null; // Or throw, or clamp, as you see fit
             }
         }

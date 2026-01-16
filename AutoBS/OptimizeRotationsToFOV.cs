@@ -14,28 +14,34 @@ public class OptimizeRotationsToFOV
     private List<ERotationEventData> rotations;
     private float timeWindow; // User-defined time window to check for large cumulative rotations
     private int maxRotation; // Maximum rotation angle within half the FOV
+    private int maxRotationSizeSetByUser;
 
     int rotationsReduced = 0; // Counter for rotations reduced in size
     int rotationsRemoved = 0; // Counter for rotations removed
 
     public OptimizeRotationsToFOV(List<ERotationEventData> rots, float timeWindow, float FOV)//, EditableCBD eData)
     {
-        Plugin.LogDebug($"Optimizer FOV: {FOV} Time Window: {timeWindow}");
+        Plugin.LogDebug($"[FOVFix] FOV: {FOV} Time Window: {timeWindow}");
 
         //this.eData = eData;
         this.rotations = rots;
         this.timeWindow = timeWindow;
-        this.maxRotation = (int)FOV / 2;// / 15; // Convert FOV/2 to 15-degree steps
+        this.maxRotation = (int)FOV / 2;// (int)Math.Max(FOV / 2, Config.Instance.MaxRotationSize);// / 15; // Convert FOV/2 to 15-degree steps
+        this.maxRotationSizeSetByUser = (int)Config.Instance.MaxRotationSize;
     }
 
     public List<ERotationEventData> FOVFix()
     {
-        // Work directly with the RotationEvents list in eData
+        // Snapshot the start times so removals/insertions do not affect the outer iteration.
+        var startTimes = rotations.Select(r => r.time).ToArray();
 
-        for (int i = 0; i < rotations.Count; i++)
+        for (int i = 0; i < startTimes.Length; i++)
         {
-            float windowStartTime = rotations[i].time;
-            var windowRotations = rotations.Where(r => r.time >= windowStartTime && r.time <= windowStartTime + timeWindow).ToList();
+            float windowStartTime = startTimes[i];
+
+            var windowRotations = rotations
+                .Where(r => r.time >= windowStartTime && r.time <= windowStartTime + timeWindow)
+                .ToList();
 
             int cumulativeRotation = CalculateCumulativeRotation(windowRotations);
 
@@ -52,6 +58,7 @@ public class OptimizeRotationsToFOV
 
         return rotations;
     }
+
 
     private int CalculateCumulativeRotation(List<ERotationEventData> windowRotations)
     {
@@ -80,11 +87,28 @@ public class OptimizeRotationsToFOV
                 {
                     int currentRotation = rotations[index].rotation;
 
-                    rotations[index] = new ERotationEventData(rotations[index].time, rotations[index].rotation + (isPositiveExcess ? -15 : 15));
+                    int sign   = Math.Sign(currentRotation);
+                    int absCur = Math.Abs(currentRotation);
 
-                    rotationsReduced++; // Increment the counter for reduced rotations
+                    // one 15° step smaller
+                    int absAfterStep = absCur - 15;
 
-                    //Plugin.Log.Info($"Current Rotation Time: {rotations[index].Item1} Rotation: {currentRotation} New Rotation: {rotations[index].Item2}");
+                    // clamp to user max (e.g., 30/45/60)
+                    int absAfterClamp = Math.Min(absAfterStep, maxRotationSizeSetByUser);
+
+                    // keep minimum step at 15 (removal phase handles 15s)
+                    absAfterClamp = Math.Max(absAfterClamp, 15);
+
+                    int newRotation = sign * absAfterClamp;
+
+                    if (newRotation != currentRotation)
+                    {
+                        rotations[index].rotation = newRotation;
+                        rotationsReduced++;
+
+                        //Plugin.Log.Info($"[FOVFix]  Current Rotation Time: {rotations[index].time} Rot: {currentRotation} New Rot: {newRotation} (OLD Accum: {rotations[index].accumRotation})");
+                    }
+
 
                     // Update windowRotations to reflect changes
                     windowRotations = rotations.Where(r => r.time >= windowStartTime && r.time <= windowStartTime + timeWindow).ToList();

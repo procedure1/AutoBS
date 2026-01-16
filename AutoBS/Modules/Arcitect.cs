@@ -1541,7 +1541,7 @@ namespace AutoBS
             // ---------------- CONFIG & SETUP ----------------
             const float TOL = 0.0005f;
 
-            bool rotationModeLate = eData.RotationModeLate;
+            bool rotationModeLate = eData.RotationModeLate; //false;
 
             int allowedCumulativeRots = Config.Instance.ArcRotationMode == Config.ArcRotationModeType.ForceZero ? 0 : 15;
 
@@ -2089,7 +2089,7 @@ namespace AutoBS
 
             var result = new List<ERotationEventData>(rotations.Count);
             int reduced = 0, removed = 0, unchanged = 0;
-
+            
             for (int i = 0; i < rotations.Count; i++)
             {
                 var r = rotations[i];
@@ -2097,6 +2097,37 @@ namespace AutoBS
 
                 bool isBoundary = boundaryTimes.Any(bt => Math.Abs(bt - r.time) <= TOL);
 
+                if (val == 0)
+                {
+                    if (isBoundary)
+                    {
+                        // keep explicit boundary zero
+                        if (val == r.rotation) unchanged++;
+                        else reduced++;
+
+                        result.Add(ERotationEventData.Create(r.time, 0, 0, r.customData));
+                    }
+                    else
+                    {
+                        removed++; // drop interior zero
+                    }
+
+                    continue;
+                }
+
+                if (val == r.rotation)
+                {
+                    unchanged++;
+                    result.Add(r);
+                }
+                else
+                {
+                    reduced++;
+                    result.Add(ERotationEventData.Create(r.time, val, 0, r.customData));
+                }
+
+                /*
+                // OLD version added 0 value rotations 
                 if (val == 0 && !isBoundary)
                 {
                     removed++;
@@ -2112,9 +2143,8 @@ namespace AutoBS
                     reduced++;
                     result.Add(ERotationEventData.Create(r.time, val, 0, r.customData));
                 }
+                */
             }
-
-            result = result.OrderBy(r => r.time).ToList();
 
             // ---------------- FINAL: RECOMPUTE accumRotation ----------------
             result = ERotationEventData.RecalculateAccumulatedRotations(result);

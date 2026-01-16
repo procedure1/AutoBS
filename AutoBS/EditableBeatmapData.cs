@@ -18,6 +18,7 @@ namespace AutoBS
     using AutoBS.UI;
     using BeatmapSaveDataVersion4;
     using CustomJSONData.CustomBeatmap;
+    using IPA.Config.Data;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -40,6 +41,7 @@ namespace AutoBS
 
         public NoteCutDirection cutDirection { get; set; }
         public int rotation { get; set; } = 0; //accumulated rotation as held by customNoteData
+        public int originalRotation { get; set; } = 0; //accumulated rotation that was the origianal rotation as provide by a native 360/90 map
 
         public ESliderData headNoteArc { get; set; } = null; // For arc sliders, helps keep track of the head note
         public ESliderData tailNoteArc { get; set; } = null;
@@ -59,7 +61,8 @@ namespace AutoBS
             beforeJumpLayer = (int)original.beforeJumpNoteLineLayer;
             cutDirection = original.cutDirection;
             colorType = (ColorType)original.colorType;
-            rotation = original.rotation;
+            rotation = 0;
+            originalRotation = original.rotation;
             customData = original.customData ?? new CustomData();
         }
         public ENoteData(NoteData original)
@@ -72,7 +75,8 @@ namespace AutoBS
             beforeJumpLayer = (int)original.beforeJumpNoteLineLayer;
             cutDirection = original.cutDirection;
             colorType = (ColorType)original.colorType;
-            rotation = original.rotation;
+            rotation = 0;
+            originalRotation = original.rotation;
         }
         /// <summary>
         /// Creates a new ENoteData object. Rotation is accumulated.
@@ -116,6 +120,7 @@ namespace AutoBS
                 beforeJumpLayer = 0, // animation seems always to come from 0 layer
                 cutDirection = cutDirection,
                 rotation = rotation,
+                originalRotation = rotation,
                 headNoteArc = ArcHeadNote,
                 tailNoteArc = ArcTailNote,
                 headNoteChain = ChainHeadNote,
@@ -171,7 +176,6 @@ namespace AutoBS
 
             return note;
         }
-
     }
 
     public class EObstacleData
@@ -186,6 +190,7 @@ namespace AutoBS
         public int width { get; set; }
         public int height { get; set; }
         public int rotation { get; set; } = 0;
+        public int originalRotation { get; set; } = 0;
 
         public CustomData customData { get; set; } = new CustomData();
         public void UpdateDuration(float dur)
@@ -205,7 +210,8 @@ namespace AutoBS
             layer = (int)original.lineLayer;
             width = original.width;
             height = original.height;
-            rotation = original.rotation;
+            rotation = 0;
+            originalRotation = original.rotation;
             customData = original.customData ?? new CustomData();
         }
         public EObstacleData(ObstacleData original)
@@ -218,7 +224,8 @@ namespace AutoBS
             layer = (int)original.lineLayer;
             width = original.width;
             height = original.height;
-            rotation = original.rotation;
+            rotation = 0;
+            originalRotation = original.rotation;
         }
         /// <summary>
         /// Creates a new EObstacleData object. Rotation is accumulated.
@@ -252,12 +259,13 @@ namespace AutoBS
                 duration = duration,
                 endTime = time + duration,
                 endBeat = endBeatValue,
-                line = line,
+                line = line,    
                 layer = layer,
                 width = width,
                 height = height,
                 rotation = rotation,
-                customData = new CustomData(),
+                originalRotation = rotation,
+                customData = customData ?? new CustomData()
             };
         }
 
@@ -318,7 +326,9 @@ namespace AutoBS
         public float headControlPointLengthMultiplier { get; set; } = 1f;
         public float tailControlPointLengthMultiplier { get; set; } = 1f;
         public int rotation { get; set; } = 0;
+        public int originalRotation { get; set; } = 0;
         public int tailRotation { get; set; } = 0;
+        public int originalTailRotation { get; set; } = 0;
 
         public bool hasHeadNote = true;
         public bool hasTailNote = true;
@@ -350,7 +360,9 @@ namespace AutoBS
             headControlPointLengthMultiplier = original.headControlPointLengthMultiplier;
             tailControlPointLengthMultiplier = original.tailControlPointLengthMultiplier;
             rotation = 0; // original.rotation; // since all eData events have rotation events in ERotationEventData and not inline which is added later.
-            tailRotation = original.rotation; // same as head
+            originalRotation = original.rotation;
+            tailRotation = 0; // same as head
+            originalTailRotation = original.tailRotation;
             hasHeadNote = original.hasHeadNote;
             hasTailNote = original.hasTailNote;
             sliceCount = original.sliceCount;
@@ -364,23 +376,26 @@ namespace AutoBS
             time = original.time;
             line = original.headLineIndex;
             layer = (int)original.headLineLayer;
-            headBeforeJumpLineLayer = (int)original.headLineLayer;
+            headBeforeJumpLineLayer = (int)original.headBeforeJumpLineLayer;
             cutDirection = original.headCutDirection;
             rotation = 0; // since all eData events have rotation events in ERotationEventData and not inline which is added later.
+            originalRotation = original.rotation;
             tailTime = original.tailTime;
             tailLine = original.tailLineIndex;
             tailLayer = (int)original.tailLineLayer;
-            tailBeforeJumpLineLayer = (int)original.tailLineLayer;
+            tailBeforeJumpLineLayer = (int)original.tailBeforeJumpLineLayer;
             tailCutDirection = original.tailCutDirection;
             sliderMidAnchorMode = original.midAnchorMode;
             headControlPointLengthMultiplier = original.headControlPointLengthMultiplier;
             tailControlPointLengthMultiplier = original.tailControlPointLengthMultiplier;
-            rotation = original.rotation;
-            tailRotation = original.tailRotation;
+            tailRotation = 0; // same as head
+            originalTailRotation = original.tailRotation; 
             hasHeadNote = original.hasHeadNote;
             hasTailNote = original.hasTailNote;
             sliceCount = original.sliceCount;
             squishAmount = original.squishAmount;
+            customData = new CustomData();
+
         }
 
         /// <summary>
@@ -408,7 +423,7 @@ namespace AutoBS
             int tailLine,
             int tailLayer,
             NoteCutDirection tailCutDirection,
-            float rotation = 0,
+            int rotation = 0,
             SliderMidAnchorMode sliderMidAnchorMode = SliderMidAnchorMode.Straight,
             float headControlPointLengthMultiplier = 1,
             float tailControlPointLengthMultiplier = 1,
@@ -429,20 +444,23 @@ namespace AutoBS
                 headBeforeJumpLineLayer = layer,
                 cutDirection = cutDirection,
                 headControlPointLengthMultiplier = headControlPointLengthMultiplier,
-                rotation = 0, // since all eData events have rotation events in ERotationEventData and not inline which is added later.
+                rotation = rotation, // since all eData events have rotation events in ERotationEventData and not inline which is added later.
+                originalRotation = rotation,
                 tailTime = tailTime,
                 tailLine = tailLine,
                 tailLayer = tailLayer,
                 tailBeforeJumpLineLayer = tailLayer,
                 tailCutDirection = tailCutDirection,
                 tailControlPointLengthMultiplier = tailControlPointLengthMultiplier,
+                tailRotation = rotation,
+                originalTailRotation = rotation,
                 sliderMidAnchorMode = sliderMidAnchorMode,
                 sliceCount = 0,
                 squishAmount = 1f,
                 hasHeadNote = hasHeadNote,
                 hasTailNote = hasTailNote,
                 headNote = headNote,
-                tailNote = tailNote,
+                tailNote = tailNote
             };
         }
         /// <summary>
@@ -469,9 +487,9 @@ namespace AutoBS
             int tailLine,
             int tailLayer,
             int sliceCount,
-            //float rotation = 0,
             float squishAmount = 1,
-            ENoteData headNote = null)
+            ENoteData headNote = null,
+            int rotation = 0)
         {
             return new ESliderData
             {
@@ -484,12 +502,15 @@ namespace AutoBS
                 layer = layer,
                 headControlPointLengthMultiplier = 1f,
                 cutDirection = cutDirection,
-                rotation = 0, // since all eData events have rotation events in ERotationEventData and not inline which is added later.
+                rotation = rotation, // since all eData events have rotation events in ERotationEventData and not inline which is added later.
+                originalRotation = rotation,
                 tailTime = tailTime,
                 tailLine = tailLine,
                 tailLayer = tailLayer,
                 tailControlPointLengthMultiplier = 1f,
                 tailCutDirection = cutDirection,
+                tailRotation = rotation,
+                originalTailRotation = rotation,
                 sliderMidAnchorMode = SliderMidAnchorMode.Straight, // Or Burst, if you have a special enum for chains
                 sliceCount = sliceCount,
                 squishAmount = squishAmount,
@@ -646,12 +667,14 @@ namespace AutoBS
 
         private static int lastAccumRotation = 0; // tracks across Create calls
 
+
+        // This will not cause a large accumulated jump if any rotations were removed
         public static List<ERotationEventData> RecalculateAccumulatedRotations(List<ERotationEventData> rotationEvents)
         {
             if (rotationEvents == null || rotationEvents.Count == 0)
                 return rotationEvents ?? new List<ERotationEventData>();
 
-            rotationEvents = rotationEvents
+            rotationEvents = rotationEvents // sorts by time!
                 .Where(r => r.rotation != 0)     // enforce “no zero rotations”
                 .OrderBy(r => r.time)
                 .ToList();
@@ -943,7 +966,7 @@ namespace AutoBS
         public CustomBeatmapData OriginalCBData { get; }
         public BeatmapData OriginalBData { get; }
 
-        public bool MapWasAltered { get; set; }
+        public bool IsNative360or90 { get; set; } = false; // this is important so will know to delete per object rotations which will already be set based on v2/v3 rotations found in basic data or save data etc. 
 
         public bool RotationEventsChanged { get; set; } = false; // this will cause Color Notes, Bomb Notes, Arcs, and Chains to change since will add per object rotations
         public bool ColorNotesChanged { get; set; } = false;
@@ -951,7 +974,6 @@ namespace AutoBS
         public bool ObstaclesChanged { get; set; } = false;
         public bool ArcsChanged { get; set; } = false;
         public bool ChainsChanged { get; set; } = false;
-
         public bool BasicEventsChanged { get; set; } = false;
         public bool ColorBoostEventsChanged { get; set; } = false;
         public bool CustomEventsChanged { get; set; } = false;
@@ -977,7 +999,6 @@ namespace AutoBS
         public bool MapAlreadyUsesEnvColorBoost { get; set; } = false;
         public bool MapAlreadyUsesArcs { get; set; } = false;
         public bool MapAlreadyUsesChains { get; set; } = false;
-        public bool MapAlreadyUsesRotations { get; set; } = false;
         public int OriginalObstacleCount { get; set; } = 0;
         public List<(float time, int rotationSteps)> WallCutMoments { get; set; }
             = new List<(float time, int rotationSteps)>(); // Rotation cut moments for wall gap logic, filled by RotationGenerator.
@@ -990,6 +1011,49 @@ namespace AutoBS
             LevelCustomData = new CustomData();
             CustomData = new CustomData();
             Version = version ?? new Version();
+
+            RotationModeLate = true; // Sets to LATE mode unless incoming events set to EARLY
+
+            RotationEvents = new List<ERotationEventData>();
+
+            //no v2 or v3 files will come to this method at all. but someone could program rotations into basic events. v4.0.0 has SpawnRotations but was removed in v4.1.0 so very little change of those existing in any map
+            var basicRotEvents = original.allBeatmapDataItems
+                .OfType<BasicBeatmapEventData>()
+                .Where(e =>
+                    e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || // early
+                    e.basicBeatmapEventType == BasicBeatmapEventType.Event15    // late
+                )
+                .OrderBy(e => e.time)
+                .ToList();
+
+            if (basicRotEvents.Count > 0)
+            {
+                int earlyCount = basicRotEvents.Count(e => e.basicBeatmapEventType == BasicBeatmapEventType.Event14);
+                int lateCount = basicRotEvents.Count(e => e.basicBeatmapEventType == BasicBeatmapEventType.Event15);
+
+                // Majority vote; tie-breaker: prefer late (or early—your choice)
+                RotationModeLate = lateCount >= earlyCount;
+
+                int accum = 0;
+
+                foreach (var e in basicRotEvents)
+                {
+                    // v2: value is a step that needs scaling (e.g., *15)
+                    // v3: value is already degrees; if you’re not sure you can treat 2+3 the same using your helper
+                    int deltaDegrees = RotationGenerator.SpawnRotationValueToDegrees(e.value);
+
+                    accum += deltaDegrees;
+
+                    RotationEvents.Add(new ERotationEventData(
+                        e.time,        // time in beats
+                        deltaDegrees,  // delta rotation
+                        accum          // accumRotation
+                                       // customData omitted, ctor defaults to new CustomData()
+                    ));
+                }
+
+                Plugin.LogDebug($"[EditableCBD] - RotationImport BasicEvents- Loaded {RotationEvents.Count} rotation events. early={earlyCount}, late={lateCount} => using {(RotationModeLate ? "LATE" : "EARLY")}");
+            }
 
             ColorNotes = original.allBeatmapDataItems
                 .OfType<NoteData>()
@@ -1025,51 +1089,6 @@ namespace AutoBS
                 .Select(s => new ESliderData(s))
                 .ToList();
 
-            RotationEvents = new List<ERotationEventData>();
-
-            //no v2 or v3 files will come to this method at all. but someone could program rotations into basic events. v4.0.0 has SpawnRotations but was removed in v4.1.0 so very little change of those existing in any map
-
-            var basicRotEvents = original.allBeatmapDataItems
-                .OfType<BasicBeatmapEventData>()
-                .Where(e =>
-                    e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || // early
-                    e.basicBeatmapEventType == BasicBeatmapEventType.Event15    // late
-                )
-                .OrderBy(e => e.time)
-                .ToList();
-
-            if (basicRotEvents.Count > 0)
-            {
-                int earlyCount = basicRotEvents.Count(e => e.basicBeatmapEventType == BasicBeatmapEventType.Event14);
-                int lateCount  = basicRotEvents.Count(e => e.basicBeatmapEventType == BasicBeatmapEventType.Event15);
-
-                // Majority vote; tie-breaker: prefer late (or early—your choice)
-                RotationModeLate = lateCount >= earlyCount;
-
-                int accum = 0;
-
-                foreach (var e in basicRotEvents)
-                {
-                    // v2: value is a step that needs scaling (e.g., *15)
-                    // v3: value is already degrees; if you’re not sure you can treat 2+3 the same using your helper
-                    int deltaDegrees = RotationGenerator.SpawnRotationValueToDegrees(e.value);
-
-                    accum += deltaDegrees;
-
-                    RotationEvents.Add(new ERotationEventData(
-                        e.time,        // time in beats
-                        deltaDegrees,  // delta rotation
-                        accum          // accumRotation
-                                       // customData omitted, ctor defaults to new CustomData()
-                    ));
-                }
-
-                Plugin.LogDebug($"[EditableCBD] - RotationImport BasicEvents- Loaded {RotationEvents.Count} rotation events. early={earlyCount}, late={lateCount} => using {(RotationModeLate ? "LATE" : "EARLY")}");
-            }
-            
-            if (RotationEvents.Count == 0)
-                RotationEvents = BuildInlineRotations(ColorNotes, BombNotes, Obstacles, Arcs, Chains);
-
             BasicEvents = original.allBeatmapDataItems
                 .OfType<BasicBeatmapEventData>()
                 .Where(e => e.basicBeatmapEventType != BasicBeatmapEventType.Event14 && e.basicBeatmapEventType != BasicBeatmapEventType.Event15 && e.basicBeatmapEventType != BasicBeatmapEventType.Event5)
@@ -1089,15 +1108,24 @@ namespace AutoBS
                 .OrderBy(e => e.time)
                 .ToList();
 
+            if (RotationEvents.Count == 0)
+            {
+                RotationEvents = BuildInlineRotations(ColorNotes, BombNotes, Obstacles, Arcs, Chains);
+                if (RotationEvents.Count > 0) RotationModeLate = false;
+            }
+
+            if (RotationEvents.Count > 0)
+                IsNative360or90 = true;
+
             //v1.42 not sure why but getting a color boost event false at time 0 when doesn't exist in the map. so check if more than 1 boost event to set the flag.
             MapAlreadyUsesEnvColorBoost = ColorBoostEvents?.Count > 1;
             MapAlreadyUsesArcs = Arcs?.Count > 0;
             MapAlreadyUsesChains = Chains?.Count > 0;
-            MapAlreadyUsesRotations = RotationEvents?.Count > 1;
+            //MapAlreadyUsesRotations = RotationEvents?.Count > 1;
 
             OriginalObstacleCount = Obstacles.Count;
 
-            Plugin.LogDebug($"[EditableCBD] MapAlreadyUsesEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, MapAlreadyUsesRotations: {MapAlreadyUsesRotations}");
+            Plugin.LogDebug($"[EditableCBD] MapAlreadyUsesEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, MapAlreadyUsesRotations: {IsNative360or90}");
 
             LinkArcEndpointsToNotes();
         }
@@ -1145,6 +1173,8 @@ namespace AutoBS
                 .OrderBy(s => s.time)
                 .Select(s => new ESliderData(s))
                 .ToList();
+
+            RotationModeLate = true; // Sets to LATE mode unless incoming events set to EARLY
 
             RotationEvents = new List<ERotationEventData>();
 
@@ -1219,7 +1249,10 @@ namespace AutoBS
             else if (Version.Major == 4)
             {
                 if (RotationEvents.Count == 0)
+                {
                     RotationEvents = BuildInlineRotations(ColorNotes, BombNotes, Obstacles, Arcs, Chains); // Fallback: synthesize from inline 'r' in the v4 beatmap 360 JSON (early events)
+                    if (RotationEvents.Count > 0) RotationModeLate = false;
+                }
             }
 
             // Basic lighting events (exclude rotation & color boost)
@@ -1262,12 +1295,12 @@ namespace AutoBS
             MapAlreadyUsesEnvColorBoost = ColorBoostEvents?.Count > 1;
             MapAlreadyUsesArcs = Arcs?.Count > 0;
             MapAlreadyUsesChains = Chains?.Count > 0;
-            MapAlreadyUsesRotations = RotationEvents?.Count > 1;
+            IsNative360or90 = RotationEvents?.Count > 1;
 
 
             OriginalObstacleCount = Obstacles.Count;
 
-            Plugin.LogDebug($"[EditableCBD] MapAlreadyUsesEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, MapAlreadyUsesRotations: {MapAlreadyUsesRotations}");
+            Plugin.LogDebug($"[EditableCBD] MapAlreadyUsesEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, MapAlreadyUsesRotations: {IsNative360or90}");
 
             CustomEvents = original.customEventDatas
                     .Select(e => new ECustomEventData(e))
@@ -1918,12 +1951,12 @@ namespace AutoBS
         /// </summary>
         public static void ApplyPerObjectRotations(EditableCBD eData)
         {
+            if (eData.RotationEvents.Count == 0)
+                return;
+
             bool rotationModeLate = eData.RotationModeLate;
 
             Plugin.LogDebug($"[ApplyPerObjectRotations] ---------- Starting per-object rotation application (using RotationModeLate: {rotationModeLate})");
-
-            if (eData.RotationEvents.Count == 0)
-                return;
 
             // 1) Sort your raw rotation events by time
             eData.RotationEvents = eData.RotationEvents
@@ -1938,6 +1971,16 @@ namespace AutoBS
                 accumulated.Add((evt.time, evt.accumRotation)); // i checked this is accurate
                 //if (evt.time > 55 && evt.time < 65) Plugin.Log.Info($"[RotationApplier] Rotation: {evt.time:F} Rot: {evt.rotation} Accum: {evt.accumRotation}");
             }
+
+            /*
+            // better to update rotationEvents with 0 initial event i think during RotationGenerator instead of doing it here
+            float firstObjectTime = float.PositiveInfinity;
+            if (eData.ColorNotes.Count > 0) firstObjectTime = Math.Min(firstObjectTime, eData.ColorNotes[0].time);
+            if (eData.BombNotes.Count > 0) firstObjectTime = Math.Min(firstObjectTime, eData.BombNotes[0].time);
+            if (eData.Obstacles.Count > 0) firstObjectTime = Math.Min(firstObjectTime, eData.Obstacles[0].time);
+            // this is the accumulated rotation of the 1st object.
+            int baseline = rotationModeLate ? 0 : GetAccumRotationAt(firstObjectTime); // Early: include events at time == firstObjectTime
+            */
 
             //the last cumulative rotation at or before t - equivalent to v2 "early" rotation events
             const float EPS = 0.0005f; // same spirit as your TOL
@@ -1956,12 +1999,11 @@ namespace AutoBS
                 return (ans >= 0) ? accumulated[ans].total : 0;
             }
 
-
             // Apply to all notes (color + bombs)
             int rotatedNoteCount = 0;
             foreach (var note in eData.ColorNotes)
             {
-                note.rotation = GetAccumRotationAt(note.time);
+                note.rotation = GetAccumRotationAt(note.time);// - baseline; need this but not ready to implement since it vision blocking walls will not have this info
                 rotatedNoteCount++;
                 //if (note.time < 30)
                 //    Plugin.Log.Info($"[RotationApplier] Note @{note.time:F2}s → rot: {note.rotation} line: {note.line} layer: {note.layer} color: {note.colorType}");
@@ -2010,74 +2052,727 @@ namespace AutoBS
             // 4) Apply to all obstacles
             (bool noodleProblemNotes, bool noodleProblemObstacles) = EditableCBD.TestForNoodleCustomData(eData);
 
-            var noteAndBombKeyframes = eData.ColorNotes
-                .OrderBy(n => n.time)
-                .Select(n => (time: n.time, rot: n.rotation))
-                .ToList();
-
-            var bombFrames = eData.BombNotes
-                .OrderBy(b => b.time)
-                .Select(b => (time: b.time, rot: b.rotation));
-
-            noteAndBombKeyframes = noteAndBombKeyframes
-                .Concat(bombFrames)
-                .GroupBy(x => x.time)
-                .Select(g => (time: g.Key, rot: g.First().rot)) // or some merge logic
-                .OrderBy(x => x.time)
-                .ToList();
-
-            const float TOL = 0.0005f;
-
-            int GetLogicalRotationFromNotes(float t)
+            
+            if (eData.IsNative360or90 && !eData.ColorNotesChanged)
             {
-                if (noteAndBombKeyframes.Count == 0)
-                    return 0;
+                var keyframes = BuildOriginalRotationKeyframes();
 
-                // Before first note
-                if (t < noteAndBombKeyframes[0].time - TOL)
-                    return noteAndBombKeyframes[0].rot;
+                foreach (var obs in eData.Obstacles)
+                {
+                    // If you can distinguish generated vs original walls, do it here.
+                    // Otherwise you'll overwrite original obstacle rotations too.
+                    obs.rotation = GetLogicalRotationFromKeyframes(keyframes, obs.time, eData.RotationModeLate);
+                }
 
-                // After last note
-                if (t > noteAndBombKeyframes[^1].time + TOL)
-                    return noteAndBombKeyframes[^1].rot;
+                int GetLogicalRotationFromKeyframes(
+                    List<(float time, int rot)> keyframes,
+                    float t,
+                    bool rotationModeLate)
+                {
+                    if (keyframes == null || keyframes.Count == 0)
+                        return 0;
 
-                // Binary search: last keyframe with time <= t
-                int lo = 0, hi = noteAndBombKeyframes.Count - 1, idx = 0;
+                    const float TOL = 0.0005f;
+
+                    // For a step function, you must decide whether a keyframe at time==t applies.
+                    // Early: include keyframe when t >= time
+                    // Late:  include keyframe only when t >  time
+                    bool Applies(float queryTime, float frameTime)
+                        => rotationModeLate
+                            ? (queryTime > frameTime + TOL)
+                            : (queryTime >= frameTime - TOL);
+
+                    // Before first applicable keyframe:
+                    if (!Applies(t, keyframes[0].time))
+                        return 0;// keyframes[0].rot;
+
+
+
+                    int lo = 0, hi = keyframes.Count - 1, ans = 0;
+                    while (lo <= hi)
+                    {
+                        int mid = (lo + hi) >> 1;
+                        if (Applies(t, keyframes[mid].time))
+                        {
+                            ans = mid;
+                            lo = mid + 1;
+                        }
+                        else
+                        {
+                            hi = mid - 1;
+                        }
+                    }
+                    return keyframes[ans].rot;
+                }
+                // Helper: extract authored per-object rotations from ORIGINAL data.
+                // Prefer notes, then bombs, then obstacles when multiple items share the same time.
+                List<(float time, int rot)> BuildOriginalRotationKeyframes()
+                {
+                    // NOTE: type names may differ in your project; adjust the casts accordingly.
+                    // The key is: pull from originalBData.allBeatmapDataItems.
+
+                    var frames = new List<(float time, int rot, int prio)>();
+
+                    // Normalize to BeatmapData for iteration
+                    BeatmapData original = (BeatmapData)(eData.OriginalCBData ?? eData.OriginalBData);
+                    if (original == null)
+                        return new List<(float time, int rot)>();
+
+                    foreach (var item in original.allBeatmapDataItems)
+                    {
+                        switch (item)
+                        {
+                            /*
+                            case ObstacleData o:
+                                frames.Add((o.time, o.rotation, 0)); // highest priority
+                                break;
+
+                            case NoteData n:
+                                frames.Add((n.time, n.rotation, 1)); // includes bombs
+                                break;
+                            */
+                            case NoteData n: // or NoteData / ColorNoteData in your type system -- includes bombs
+                                frames.Add((n.time, n.rotation, 0)); // highest priority
+                                break;
+
+                            case ObstacleData o: // or ObstacleData
+                                frames.Add((o.time, o.rotation, 2));
+                                break;
+                        }
+                    }
+
+                    // Deterministic collapse when multiple items share the same timestamp:
+                    // choose the rotation from the highest-priority item at that time.
+                    return frames
+                        .OrderBy(x => x.time)
+                        .ThenBy(x => x.prio)
+                        .GroupBy(x => x.time)
+                        .Select(g =>
+                        {
+                            var chosen = g.OrderBy(x => x.prio).First();
+                            return (time: chosen.time, rot: chosen.rot);
+                        })
+                        .ToList();
+                }
+
+            }
+            else //if (!noodleProblemObstacles) // i removed this for Ride Remix which has no noodle walls (in original walls) and thus has no rotations
+            {
+                foreach (var obs in eData.Obstacles)
+                {
+                    obs.rotation = GetAccumRotationAt(obs.time); // test this version instead of logical from above
+                }
+
+            }
+
+
+
+        }
+
+        // This is the new WallRemovalForRotations() 
+        public static void ApplyWallVisionBlockingFix(EditableCBD eData) // COMBO Method seems to allow more walls on both sides during turns 
+        {
+            float inPointLog  = 207f; // seconds for log only
+            float outPointLog = 207.1f;
+
+            bool rotationModeLate = eData.RotationModeLate;
+
+            //if (WallGenerator._originalWallCount == eData.Obstacles.Count) // started to add this since an untouched map, should keep its obstacles but doesn't work. v3 not working and not v4 since probably is translating everyting from per object into rotation events and then back again and causes wall crossing again
+            //    return eData.Obstacles;
+
+            if (eData.Obstacles.Count == 0 || eData.RotationEvents.Count == 0)
+                return;
+
+            var obstacles = eData.Obstacles ?? new List<EObstacleData>();
+            var rotationEvents = eData.RotationEvents ?? new List<ERotationEventData>();
+            
+            var arcs = eData.Arcs ?? new List<ESliderData>();
+            bool hasArcs = arcs.Count > 0;
+
+            var longChains = (eData.Chains ?? new List<ESliderData>())
+                .Where(c => c.tailTime - c.time > 0.05f)
+                .ToList();
+
+            float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
+            float jd = TransitionPatcher.FinalJumpDistance;
+
+            if (njs <= 0 || jd <= 0)
+            {
+                Plugin.LogDebug("[ApplyWallVisionBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, skipping wall blocking fix.");
+                return;
+            }
+
+            float wallTravelTime = jd / njs;
+            Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Total Obstacles: {obstacles.Count} Total Rotations: {eData.RotationEvents.Count} - NJD={jd:F2}, NJS={njs:F2}, wallTravelTime={wallTravelTime:F2}");
+
+            // --- Common rotation helpers related to rotationEvents (from style1) ------------------------
+
+            var rotations = rotationEvents.OrderBy(evt => evt.time).ToList();
+
+            bool rotationEventsSubsetUsed = false; // if you ever add the "subset" optimization again
+
+            //old
+            /*
+            int GetAccumRotationAt(float t)
+            {
+                int lo = 0, hi = rotations.Count - 1, ans = -1;
                 while (lo <= hi)
                 {
                     int mid = (lo + hi) >> 1;
-                    if (noteAndBombKeyframes[mid].time <= t + TOL)
+                    if (rotations[mid].time <= t) // was < 
                     {
-                        idx = mid;
+                        ans = mid;
                         lo = mid + 1;
                     }
                     else hi = mid - 1;
                 }
-
-                var k0 = noteAndBombKeyframes[idx];
-
-                // If there's a next keyframe and times are close, and you want to be fancy:
-                if (idx < noteAndBombKeyframes.Count - 1)
+                return ans >= 0 ? rotations[ans].accumRotation : 0;
+            }
+            */
+            int GetAccumRotationAt(float t) //recognizes early/late 1 of 2
+            {
+                int lo = 0, hi = rotations.Count - 1, ans = -1;
+                while (lo <= hi)
                 {
-                    var k1 = noteAndBombKeyframes[idx + 1];
+                    int mid = (lo + hi) >> 1;
+                    float mt = rotations[mid].time;
 
-                    // If both rotations are same, treat whole span as flat
-                    if (k0.rot == k1.rot)
-                        return k0.rot;
+                    bool ok = rotationModeLate ? (mt < t) : (mt <= t);
+                    if (ok) { ans = mid; lo = mid + 1; }
+                    else { hi = mid - 1; }
                 }
-
-                return k0.rot;
+                return ans >= 0 ? rotations[ans].accumRotation : 0;
             }
 
-            //if (!noodleProblemObstacles) // i removed this for Ride Remix which has no noodle walls (in original walls) and thus has no rotations
-            {
 
-                foreach (var obs in eData.Obstacles)
+            int RotationForSegmentStart(EObstacleData obs, float segStart)
+                => rotationEventsSubsetUsed ? obs.rotation : GetAccumRotationAt(segStart);
+
+            static bool IsPrecision(int v) => Math.Abs(v) >= 1000;
+
+            static float DecodePrecision(int line)
+            {
+                // Standard: 0..3 are lanes
+                if (!IsPrecision(line)) return line;
+
+                // Precision: 1000->0, 2000->1, etc. => /1000 - 1
+                return (line / 1000f) - 1f;
+            }
+
+            // new version to account for ME
+            static bool WouldBlock(EObstacleData obs, int deltaRot)
+            {
+                float leftEdge = DecodePrecision(obs.line);
+                float width    = DecodePrecision(obs.width);
+                float rightEdge = leftEdge + width;
+
+                bool leftSide  = rightEdge <=  2;
+                bool rightSide = leftEdge  >   2;
+
+                if (deltaRot < 0) return leftSide;   // left turn blocks if wall touches left half
+                if (deltaRot > 0) return rightSide;  // right turn blocks if wall touches right half
+                return false;
+            }
+            /*
+            bool WouldBlockOld(EObstacleData obs, int direction)
+            {
+                int lineIndex = obs.line;
+
+                if (lineIndex < 2 && direction < 0) return true; // left wall, left turn
+                if (lineIndex > 1 && direction > 0) return true; // right wall, right turn
+                return false;
+            }
+            */
+            // --- Gaze points related to per object Note rotation (from style2) ------------------------------------
+
+            var gazePoints = new List<ENoteData>();
+
+            if (eData.ColorNotes != null)
+                gazePoints.AddRange(eData.ColorNotes);
+            if (eData.BombNotes != null)
+                gazePoints.AddRange(eData.BombNotes);
+
+            if (eData.Chains != null)
+            {
+                foreach (var chain in eData.Chains)
                 {
-                    //obs.rotation = GetLogicalRotationFromNotes(obs.time); //suggested to use this instead of rotationEvents
-                    obs.rotation = GetAccumRotationAt(obs.time); // test this version instead of logical from above
+                    gazePoints.Add(ENoteData.Create(
+                        chain.tailTime,
+                        ColorType.None,
+                        chain.tailLine,
+                        chain.tailLayer,
+                        NoteCutDirection.Any,
+                        chain.tailRotation));
+                }
+            }
+
+            gazePoints = gazePoints.OrderBy(n => n.time).ToList();
+            Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Gaze Points: ColorNotes={eData.ColorNotes?.Count ?? 0}, BombNotes={eData.BombNotes?.Count ?? 0}, ChainTails={eData.Chains?.Count ?? 0}");
+
+            // --- Arc overlap helper ----------------------------------------
+
+            bool IsObstacleInArcChainWindow(EObstacleData obs)
+            {
+                //if (arcs == null || arcs.Count == 0) return false; // already checked
+
+                // Simple time-interval overlap. You can tweak with tolerance if needed.
+                float oStart = obs.time;
+                float oEnd = obs.endTime;
+
+                foreach (var arc in arcs)
+                {
+                    float aStart = arc.time;
+                    float aEnd = arc.tailTime;
+
+                    if (oEnd >= aStart && oStart <= aEnd)
+                        return true;
+                }
+                foreach (var chain in longChains) // NEW TEST!
+                {
+                    float cStart = chain.time;
+                    float cEnd = chain.tailTime;
+                    if (oEnd >= cStart && oStart <= cEnd)
+                        return true;
+                }
+                return false;
+            }
+
+            // --- Per-wall Syle1 logic (as a helper) --------------------------
+
+            static float LeadScaleForAbsDelta(int absDelta)
+            {
+                absDelta = Math.Abs(absDelta);
+
+                // Ignore tiny differences
+                if (absDelta < 15) return 1.0f;
+
+                // Piecewise linear:
+                // 15->30 ramps 1.0->1.5
+                // 30->90 ramps 1.5->3.0
+                float s;
+                if (absDelta <= 30)
+                    s = 1.0f + (absDelta - 15) * (0.5f / 15f);          // +0.0333 per degree
+                else
+                    s = 1.5f + (absDelta - 30) * (1.5f / 60f);          // +0.025 per degree
+
+                return Math.Clamp(s, 1.0f, 3.0f);
+            }
+
+
+
+
+            List<EObstacleData> ApplyStyle1ForWall(EObstacleData obs)
+            {
+                var result = new List<EObstacleData>();
+
+                float obsTime = obs.time;
+
+                float mult = Config.Instance.VisionBlockingWallRemovalMult;
+
+                // Map so OLD feels identical at mult=0.9
+                float normalized = mult / 0.9f;
+
+                float lead = (wallTravelTime / 3f) * normalized;
+
+
+                // These are the same as in your OLD method
+                float visibleStart = obsTime;
+                //float visibleEnd = obs.endTime + lead; // old version not accounting for angle size
+                float visibleEnd = obs.endTime + lead * 3f; // accounts for angle size to decide if blocking by matching LeadScaleForAbsDelta clamp
+
+                /* old
+                var blockEvents = rotations
+                    .Where(dt =>
+                        dt.time >= visibleStart && // was > KEEP THIS
+                        dt.time <= visibleEnd &&
+                        WouldBlock(obs, dt.rotation))
+                    .Select(dt => dt.time)
+                    .OrderBy(t => t)
+                    .ToList();
+                */
+                // new respects early late 2 of 2
+                var blockEvents = rotations
+                    .Where(dt =>
+                        InBlockWindow(dt.time, visibleStart, visibleEnd, rotationModeLate) &&
+                        WouldBlock(obs, dt.rotation))
+                    .Select(dt => dt.time)
+                    .OrderBy(t => t)
+                    .ToList();
+
+                const float EPS = 0.0005f;
+
+                bool InBlockWindow(float evtTime, float start, float end, bool late)
+                {
+                    // start boundary differs:
+                    //  - early: event at start counts
+                    //  - late : event at start does NOT count
+                    bool afterStart = late ? (evtTime > start + EPS) : (evtTime >= start - EPS);
+
+                    // end boundary: inclusive is fine for both (use EPS for float noise)
+                    bool beforeEnd = evtTime <= end + EPS;
+
+                    return afterStart && beforeEnd;
+                }
+                // -----------------------------
+
+                float segStart = obs.time;
+                float segEnd = obs.endTime;
+                int segmentCount = 0;
+
+                foreach (var blockTime in blockEvents)
+                {
+                    //float cutTime = blockTime - lead; // old version not accounting for angle size
+                    // accounts for angle size to decide if blocking
+                    int wallRot = RotationForSegmentStart(obs, segStart);
+                    int rotAfter = GetAccumRotationAt(blockTime + 0.0005f); // EPS
+                    int absDelta = Math.Abs(rotAfter - wallRot);
+                    
+                    float leadForDelta = lead * LeadScaleForAbsDelta(absDelta);
+                    float cutTime = blockTime - leadForDelta;
+                    //------------------------
+
+                    if (cutTime > segStart)
+                    {
+                        segmentCount++;
+                        float duration = Math.Min(segEnd, cutTime) - segStart;
+                        if (duration >= 0.001f)
+                        {
+                            var segment = EObstacleData.Create(
+                                segStart,
+                                obs.line,
+                                obs.layer,
+                                duration,
+                                obs.width,
+                                obs.height,
+                                RotationForSegmentStart(obs, segStart)
+                            );
+                            result.Add(segment);
+                        }
+                    }
+
+                    // Delete rest after the first block
+                    segStart = Math.Max(segStart, Math.Min(segEnd, cutTime));
+                    segEnd = segStart;
+                    break;
                 }
 
+                if (segEnd > segStart)
+                {
+                    float duration = segEnd - segStart;
+                    if (duration >= 0.001f)
+                    {
+                        segmentCount++;
+                        var segment = EObstacleData.Create(
+                            segStart,
+                            obs.line,
+                            obs.layer,
+                            duration,
+                            obs.width,
+                            obs.height,
+                            RotationForSegmentStart(obs, segStart)
+                        );
+                        result.Add(segment);
+                    }
+                }
+
+                return result;
+            }
+
+            // --- Style2 Side helpers  -------------------------------- for walls near arcs not in ForceZero mode
+
+            //old version before ME detection
+            //bool IsRightSide(int line) => line > 1; // 2,3
+            //bool IsLeftSide(int line) => line < 2; // 0,1
+
+            bool boostedWalls = Config.Instance.AllowV2BoostedWalls;
+            const float MAX_EXTENSION = 2f;
+
+            // --- Per-wall Style2 logic (as a helper) during arcs --------------------------
+
+            List<EObstacleData> ApplyStyle2ForWall(EObstacleData obs)
+            {
+                var result = new List<EObstacleData>();
+
+                float obsTime = obs.time;
+                float dur = obs.duration;
+
+                // New to fix ME walls
+                float visibleStart = obsTime - .05f;
+                float maxVisibleEnd = obs.endTime + wallTravelTime * MAX_EXTENSION;
+
+                float leftEdge  = DecodePrecision(obs.line);
+                float width     = DecodePrecision(obs.width);
+                float rightEdge = leftEdge + width;
+
+                bool leftSide = rightEdge <= 2;
+                bool rightSide = leftEdge >  2;
+                //------------------------------------------
+                // old version
+                //bool wallRight = IsRightSide(obs.line);
+                //bool wallLeft = IsLeftSide(obs.line);
+
+                float? blockTime = null;
+                ENoteData blockNote = null;
+
+                float extensionForDelta = MAX_EXTENSION;
+                float visionBlockingWallRemovalMult = Config.Instance.VisionBlockingWallRemovalMult;
+
+                int wallRot = obs.rotation;
+                int absDelta = 0;
+
+                foreach (var n in gazePoints)
+                {
+                    if (n.time < visibleStart) continue;
+                    if (n.time > maxVisibleEnd) break;
+
+                    int noteRot = n.rotation;
+                    int delta = noteRot - wallRot;
+                    absDelta = Math.Abs(delta);
+
+                    bool blocks = false;
+                    if (rightSide && delta > 0) blocks = true;
+                    if (leftSide && delta < 0) blocks = true;
+                    if (!blocks) continue;
+                    if (absDelta < 15) continue;
+
+                    if (absDelta == 15) extensionForDelta = MAX_EXTENSION / 2f;
+                    else extensionForDelta = MAX_EXTENSION;
+
+                    float visibleEnd = obs.endTime + wallTravelTime * extensionForDelta;
+                    if (n.time > visibleEnd) continue;
+
+                    blockTime = n.time;
+                    blockNote = n;
+                    break;
+                }
+
+                if (!blockTime.HasValue)
+                {
+                    result.Add(obs); // keep as-is
+                    return result;
+                }
+
+                float multiplier = (absDelta > 15)
+                    ? visionBlockingWallRemovalMult
+                    : visionBlockingWallRemovalMult / 2f;
+
+                float leadTime = wallTravelTime * multiplier;
+                float cutTime = blockTime.Value - leadTime;
+
+                if (cutTime <= obs.time + 0.001f)
+                {
+                    // Entire wall removed
+                    return result;
+                }
+
+                float newDur = Math.Min(obs.endTime, cutTime) - obs.time;
+                if (newDur >= 0.001f)
+                {
+                    var segment = EObstacleData.Create(
+                        obs.time,
+                        obs.line,
+                        obs.layer,
+                        newDur,
+                        obs.width,
+                        obs.height,
+                        obs.rotation
+                    );
+                    result.Add(segment);
+                }
+
+                return result;
+            }
+
+            // --- Main loop, hybrid dispatch --------------------------------
+
+            var kept = new List<EObstacleData>();
+            var arcMode = Config.Instance.ArcRotationMode;
+
+            int obsCount = 1;
+            foreach (var obs in obstacles)
+            {
+                if (obs.time > inPointLog && obs.time < outPointLog)
+                    Plugin.LogDebug($"[ApplyWallVisionBlockingFix] {obsCount} Obs: {obs.time:F} Dur: {obs.duration:F} line: {obs.line} layer: {obs.layer} width: {obs.width} height: {obs.height}");
+                // Skip original walls that are noodle custom walls
+                if (WallGenerator.originalWalls.Contains(obs) && WallGenerator.IsCustomNoodleWall(obs))
+                {
+                    //Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Skipping Noodle Wall: {obs.time:F}");
+                    continue;
+                }
+
+                float obsTime = obs.time;
+                int layer = obs.layer;
+                float dur = obs.duration;
+
+                bool canSkip = false;
+
+                if (WallGenerator.ExtensionMappingWallsGenerated) // otherwise if ME is not used, then don't skip higher walls
+                {
+                    if (layer > 11000) canSkip = true;         // high walls
+                    else if (layer > 10 && layer < 1000) canSkip = true; // floor walls
+                }
+
+                if (layer == 2 && obs.line == 0 && obs.width > 2) canSkip = true; // crouch wall
+                if (dur < 0 && boostedWalls) canSkip = true;                       // boosted v2 walls
+
+                if (canSkip)
+                {
+                    kept.Add(obs);
+                    continue;
+                }
+
+                // Decide which logic to use for this wall
+                bool useStyle2 = hasArcs &&
+                    arcMode != Config.ArcRotationModeType.ForceZero &&
+                    IsObstacleInArcChainWindow(obs);
+
+                List<EObstacleData> pieces =
+                    useStyle2 ? ApplyStyle2ForWall(obs)
+                           : ApplyStyle1ForWall(obs);
+
+                kept.AddRange(pieces);
+
+                if (obs.time > inPointLog && obs.time < outPointLog)
+                {
+                    if (pieces.Count > 0)
+                    {
+                        foreach (EObstacleData piece in pieces)
+                        {
+                            Plugin.LogDebug($"[ApplyWallVisionBlockingFix] -- Kept Wall Piece: {piece.time:F} Dur: {piece.duration:F}");
+                        }
+                    }
+                    else
+                        Plugin.LogDebug($"[ApplyWallVisionBlockingFix] -- Discarded Wall!");
+                }
+
+                    obsCount++;
+            }
+
+            Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Total output obstacles: {kept.Count} kept out of {obstacles.Count} using RotationModeLate: {rotationModeLate}");
+            eData.Obstacles = kept;
+        }
+
+        public static void PerObjectRotationLog(CustomBeatmapData customBeatmapData, EditableCBD eData = null, float inPointLog = 0f, float outPointLog = 30f)
+        {
+            var combinedList = new List<(float time, string type, object item)>();
+
+            var rotations = new List<ERotationEventData>();
+
+            int nativeBasicRotationV2EventsCount = customBeatmapData.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Where((e) => e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15).Count();
+
+            if (eData == null || nativeBasicRotationV2EventsCount > 0)
+            {
+                foreach (var rot in customBeatmapData.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Where((e) => e.basicBeatmapEventType == BasicBeatmapEventType.Event14 || e.basicBeatmapEventType == BasicBeatmapEventType.Event15))
+                {
+                    rotations.Add(ERotationEventData.CreateInOrder(rot.time, RotationGenerator.SpawnRotationValueToDegrees(rot.value)));
+                }
+                Plugin.LogDebug($"[PerObjectRotationLog] Total Rotation Events (cbd v2 basic event rotations): {rotations.Count}");
+
+            }
+            else
+            {
+                // Rotation events from eData
+                rotations = (eData?.RotationEvents ?? new List<ERotationEventData>())
+                    .OrderBy(r => r.time)
+                    .ToList();
+
+                Plugin.LogDebug($"[PerObjectRotationLog] Total Rotation Events (eData): {rotations.Count}");
+            }
+
+            foreach (var rotEvent in rotations)
+                    combinedList.Add((rotEvent.time, "rot", rotEvent));
+
+            // Notes (same window!)
+            foreach (var note in customBeatmapData.allBeatmapDataItems
+                .OfType<CustomNoteData>()
+                .Where(n => n.time >= inPointLog && n.time <= outPointLog))
+            {
+                combinedList.Add((note.time, "note", note));
+            }
+
+            // Arcs (same window!)
+            foreach (var arc in customBeatmapData.allBeatmapDataItems
+                .OfType<CustomSliderData>()
+                .Where(s => s.sliderType == SliderData.Type.Normal)
+                .Where(s => s.time <= outPointLog && s.tailTime >= inPointLog)) // overlaps window
+            {
+                combinedList.Add((arc.time, "arc", arc));
+            }
+
+            // Chains (same window!)
+            foreach (var chain in customBeatmapData.allBeatmapDataItems
+                .OfType<CustomSliderData>()
+                .Where(s => s.sliderType == SliderData.Type.Burst)
+                .Where(s => s.time <= outPointLog && s.tailTime >= inPointLog)) // overlaps window
+            {
+                combinedList.Add((chain.time, "chain", chain));
+            }
+
+            // Walls (same window!)
+            foreach (var wall in customBeatmapData.allBeatmapDataItems
+                .OfType<CustomObstacleData>()
+                .Where(o => o.time >= inPointLog && o.time <= outPointLog))
+            {
+                combinedList.Add((wall.time, "wall", wall));
+            }
+
+            // Helper: accumulated rotation at time t (prefer your stored accumRotation if you have it)
+            /*
+            int GetAccumRotationAt(float t)
+            {
+                int lo = 0, hi = rotations.Count - 1, ans = -1;
+                while (lo <= hi)
+                {
+                    int mid = (lo + hi) >> 1;
+                    if (rotations[mid].time < t) { ans = mid; lo = mid + 1; } // was <= t
+                    else { hi = mid - 1; }
+                }
+                return ans >= 0 ? rotations[ans].accumRotation : 0;
+            }
+            */
+            var ordered = combinedList
+                .OrderBy(x => x.time)
+                .ThenBy(x => x.type)
+                .ToList();
+
+            foreach (var entry in ordered)
+            {
+                // print ONLY the window
+                if (entry.time < inPointLog || entry.time > outPointLog) continue;
+
+                switch (entry.type)
+                {
+                    case "rot":
+                        {
+                            var rot = (ERotationEventData)entry.item;
+                            Plugin.LogDebug($"-- RotEvent - Time: {rot.time}  rot:      {rot.accumRotation} deltaRot: {rot.rotation} ----------------------- ");
+                            break;
+                        }
+                    case "note":
+                        {
+                            var note = (CustomNoteData)entry.item;
+                            Plugin.LogDebug($"   Note     - Time: {note.time}  note.rot: {note.rotation} c:{note.colorType} X:{note.lineIndex} Y:{(int)note.noteLineLayer} cutDir: {note.cutDirection}");
+                            break;
+                        }
+                    case "arc":
+                        {
+                            var arc = (CustomSliderData)entry.item;
+                            Plugin.LogDebug($"   Arc      - Time: {arc.time}  arc.rot: {arc.rotation} Head X:{arc.headLineIndex} Y:{(int)arc.headLineLayer} Tail:{arc.tailTime:F2} ");
+                            break;
+                        }
+                    case "chain":
+                        {
+                            var chain = (CustomSliderData)entry.item;
+                            Plugin.LogDebug($"   Chain    - Time: {chain.time}  chain.rot:{chain.rotation} Head X:{chain.headLineIndex} Y:{(int)chain.headLineLayer} Tail:{chain.tailTime:F2} ");
+                            break;
+                        }
+                    case "wall":
+                        {
+                            var wall = (CustomObstacleData)entry.item;
+                            Plugin.LogDebug($"   Wall     - Time: {wall.time}  wall.rot: {wall.rotation} dur:{wall.duration:F2}  X:{wall.lineIndex} Y:{(int)wall.lineLayer} W:{wall.width} H:{wall.height} ");
+                            break;
+                        }
+                }
             }
         }
 
@@ -2298,567 +2993,6 @@ namespace AutoBS
             return accumulated;
         } 
         */
-
-
-
-        // This is the new WallRemovalForRotations() 
-        public static void ApplyWallVisionBlockingFix(EditableCBD eData) // COMBO Method seems to allow more walls on both sides during turns 
-        {
-            float inPointLog  = 207f; // seconds for log only
-            float outPointLog = 207.1f;
-
-            bool rotationModeLate = eData.RotationModeLate;
-
-            //if (WallGenerator._originalWallCount == eData.Obstacles.Count) // started to add this since an untouched map, should keep its obstacles but doesn't work. v3 not working and not v4 since probably is translating everyting from per object into rotation events and then back again and causes wall crossing again
-            //    return eData.Obstacles;
-
-            if (eData.Obstacles.Count == 0 || eData.RotationEvents.Count == 0)
-                return;
-
-            var obstacles = eData.Obstacles ?? new List<EObstacleData>();
-            var rotationEvents = eData.RotationEvents ?? new List<ERotationEventData>();
-            
-            var arcs = eData.Arcs ?? new List<ESliderData>();
-            bool hasArcs = arcs.Count > 0;
-
-            var longChains = (eData.Chains ?? new List<ESliderData>())
-                .Where(c => c.tailTime - c.time > 0.05f)
-                .ToList();
-
-            float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
-            float jd = TransitionPatcher.FinalJumpDistance;
-
-            if (njs <= 0 || jd <= 0)
-            {
-                Plugin.LogDebug("[ApplyWallVisionBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, skipping wall blocking fix.");
-                return;
-            }
-
-            float wallTravelTime = jd / njs;
-            Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Total Obstacles: {obstacles.Count} Total Rotations: {eData.RotationEvents.Count} - NJD={jd:F2}, NJS={njs:F2}, wallTravelTime={wallTravelTime:F2}");
-
-            // --- Common rotation helpers related to rotationEvents (from style1) ------------------------
-
-            var rotations = rotationEvents.OrderBy(evt => evt.time).ToList();
-
-            bool rotationEventsSubsetUsed = false; // if you ever add the "subset" optimization again
-
-            //old
-            /*
-            int GetAccumRotationAt(float t)
-            {
-                int lo = 0, hi = rotations.Count - 1, ans = -1;
-                while (lo <= hi)
-                {
-                    int mid = (lo + hi) >> 1;
-                    if (rotations[mid].time <= t) // was < 
-                    {
-                        ans = mid;
-                        lo = mid + 1;
-                    }
-                    else hi = mid - 1;
-                }
-                return ans >= 0 ? rotations[ans].accumRotation : 0;
-            }
-            */
-            int GetAccumRotationAt(float t) //recognizes early/late 1 of 2
-            {
-                int lo = 0, hi = rotations.Count - 1, ans = -1;
-                while (lo <= hi)
-                {
-                    int mid = (lo + hi) >> 1;
-                    float mt = rotations[mid].time;
-
-                    bool ok = rotationModeLate ? (mt < t) : (mt <= t);
-                    if (ok) { ans = mid; lo = mid + 1; }
-                    else { hi = mid - 1; }
-                }
-                return ans >= 0 ? rotations[ans].accumRotation : 0;
-            }
-
-
-            int RotationForSegmentStart(EObstacleData obs, float segStart)
-                => rotationEventsSubsetUsed ? obs.rotation : GetAccumRotationAt(segStart);
-
-            static bool IsPrecision(int v) => Math.Abs(v) >= 1000;
-
-            static float DecodePrecision(int line)
-            {
-                // Standard: 0..3 are lanes
-                if (!IsPrecision(line)) return line;
-
-                // Precision: 1000->0, 2000->1, etc. => /1000 - 1
-                return (line / 1000f) - 1f;
-            }
-
-            // new version to account for ME
-            static bool WouldBlock(EObstacleData obs, int deltaRot)
-            {
-                float leftEdge = DecodePrecision(obs.line);
-                float width    = DecodePrecision(obs.width);
-                float rightEdge = leftEdge + width;
-
-                bool leftSide  = rightEdge <=  2;
-                bool rightSide = leftEdge  >   2;
-
-                if (deltaRot < 0) return leftSide;   // left turn blocks if wall touches left half
-                if (deltaRot > 0) return rightSide;  // right turn blocks if wall touches right half
-                return false;
-            }
-            /*
-            bool WouldBlockOld(EObstacleData obs, int direction)
-            {
-                int lineIndex = obs.line;
-
-                if (lineIndex < 2 && direction < 0) return true; // left wall, left turn
-                if (lineIndex > 1 && direction > 0) return true; // right wall, right turn
-                return false;
-            }
-            */
-            // --- Gaze points related to per object Note rotation (from style2) ------------------------------------
-
-            var gazePoints = new List<ENoteData>();
-
-            if (eData.ColorNotes != null)
-                gazePoints.AddRange(eData.ColorNotes);
-            if (eData.BombNotes != null)
-                gazePoints.AddRange(eData.BombNotes);
-
-            if (eData.Chains != null)
-            {
-                foreach (var chain in eData.Chains)
-                {
-                    gazePoints.Add(ENoteData.Create(
-                        chain.tailTime,
-                        ColorType.None,
-                        chain.tailLine,
-                        chain.tailLayer,
-                        NoteCutDirection.Any,
-                        chain.tailRotation));
-                }
-            }
-
-            gazePoints = gazePoints.OrderBy(n => n.time).ToList();
-            Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Gaze Points: ColorNotes={eData.ColorNotes?.Count ?? 0}, BombNotes={eData.BombNotes?.Count ?? 0}, ChainTails={eData.Chains?.Count ?? 0}");
-
-            // --- Arc overlap helper ----------------------------------------
-
-            bool IsObstacleInArcChainWindow(EObstacleData obs)
-            {
-                //if (arcs == null || arcs.Count == 0) return false; // already checked
-
-                // Simple time-interval overlap. You can tweak with tolerance if needed.
-                float oStart = obs.time;
-                float oEnd = obs.endTime;
-
-                foreach (var arc in arcs)
-                {
-                    float aStart = arc.time;
-                    float aEnd = arc.tailTime;
-
-                    if (oEnd >= aStart && oStart <= aEnd)
-                        return true;
-                }
-                foreach (var chain in longChains) // NEW TEST!
-                {
-                    float cStart = chain.time;
-                    float cEnd = chain.tailTime;
-                    if (oEnd >= cStart && oStart <= cEnd)
-                        return true;
-                }
-                return false;
-            }
-
-            // --- Per-wall Syle1 logic (as a helper) --------------------------
-
-            List<EObstacleData> ApplyStyle1ForWall(EObstacleData obs)
-            {
-                var result = new List<EObstacleData>();
-
-                float obsTime = obs.time;
-
-                float mult = Config.Instance.VisionBlockingWallRemovalMult;
-
-                // Map so OLD feels identical at mult=0.9
-                float normalized = mult / 0.9f;
-
-                float lead = (wallTravelTime / 3f) * normalized;
-
-
-                // These are the same as in your OLD method
-                float visibleStart = obsTime;
-                float visibleEnd = obs.endTime + lead;
-
-                /* old
-                var blockEvents = rotations
-                    .Where(dt =>
-                        dt.time >= visibleStart && // was > KEEP THIS
-                        dt.time <= visibleEnd &&
-                        WouldBlock(obs, dt.rotation))
-                    .Select(dt => dt.time)
-                    .OrderBy(t => t)
-                    .ToList();
-                */
-                // new respects early late 2 of 2
-                var blockEvents = rotations
-                    .Where(dt =>
-                        InBlockWindow(dt.time, visibleStart, visibleEnd, rotationModeLate) &&
-                        WouldBlock(obs, dt.rotation))
-                    .Select(dt => dt.time)
-                    .OrderBy(t => t)
-                    .ToList();
-
-                const float EPS = 0.0005f;
-
-                bool InBlockWindow(float evtTime, float start, float end, bool late)
-                {
-                    // start boundary differs:
-                    //  - early: event at start counts
-                    //  - late : event at start does NOT count
-                    bool afterStart = late ? (evtTime > start + EPS) : (evtTime >= start - EPS);
-
-                    // end boundary: inclusive is fine for both (use EPS for float noise)
-                    bool beforeEnd = evtTime <= end + EPS;
-
-                    return afterStart && beforeEnd;
-                }
-                // -----------------------------
-
-                float segStart = obs.time;
-                float segEnd = obs.endTime;
-                int segmentCount = 0;
-
-                foreach (var blockTime in blockEvents)
-                {
-                    float cutTime = blockTime - lead;
-                    if (cutTime > segStart)
-                    {
-                        segmentCount++;
-                        float duration = Math.Min(segEnd, cutTime) - segStart;
-                        if (duration >= 0.001f)
-                        {
-                            var segment = EObstacleData.Create(
-                                segStart,
-                                obs.line,
-                                obs.layer,
-                                duration,
-                                obs.width,
-                                obs.height,
-                                RotationForSegmentStart(obs, segStart)
-                            );
-                            result.Add(segment);
-                        }
-                    }
-
-                    // Delete rest after the first block
-                    segStart = Math.Max(segStart, Math.Min(segEnd, cutTime));
-                    segEnd = segStart;
-                    break;
-                }
-
-                if (segEnd > segStart)
-                {
-                    float duration = segEnd - segStart;
-                    if (duration >= 0.001f)
-                    {
-                        segmentCount++;
-                        var segment = EObstacleData.Create(
-                            segStart,
-                            obs.line,
-                            obs.layer,
-                            duration,
-                            obs.width,
-                            obs.height,
-                            RotationForSegmentStart(obs, segStart)
-                        );
-                        result.Add(segment);
-                    }
-                }
-
-                return result;
-            }
-
-            // --- Style2 Side helpers  -------------------------------- for walls near arcs not in ForceZero mode
-
-            //old version before ME detection
-            //bool IsRightSide(int line) => line > 1; // 2,3
-            //bool IsLeftSide(int line) => line < 2; // 0,1
-
-            bool boostedWalls = Config.Instance.AllowV2BoostedWalls;
-            const float MAX_EXTENSION = 2f;
-
-            // --- Per-wall Style2 logic (as a helper) during arcs --------------------------
-
-            List<EObstacleData> ApplyStyle2ForWall(EObstacleData obs)
-            {
-                var result = new List<EObstacleData>();
-
-                float obsTime = obs.time;
-                float dur = obs.duration;
-
-                // New to fix ME walls
-                float visibleStart = obsTime - .05f;
-                float maxVisibleEnd = obs.endTime + wallTravelTime * MAX_EXTENSION;
-
-                float leftEdge  = DecodePrecision(obs.line);
-                float width     = DecodePrecision(obs.width);
-                float rightEdge = leftEdge + width;
-
-                bool leftSide = rightEdge <= 2;
-                bool rightSide = leftEdge >  2;
-                //------------------------------------------
-                // old version
-                //bool wallRight = IsRightSide(obs.line);
-                //bool wallLeft = IsLeftSide(obs.line);
-
-                float? blockTime = null;
-                ENoteData blockNote = null;
-
-                float extensionForDelta = MAX_EXTENSION;
-                float visionBlockingWallRemovalMult = Config.Instance.VisionBlockingWallRemovalMult;
-
-                int wallRot = obs.rotation;
-                int absDelta = 0;
-
-                foreach (var n in gazePoints)
-                {
-                    if (n.time < visibleStart) continue;
-                    if (n.time > maxVisibleEnd) break;
-
-                    int noteRot = n.rotation;
-                    int delta = noteRot - wallRot;
-                    absDelta = Math.Abs(delta);
-
-                    bool blocks = false;
-                    if (rightSide && delta > 0) blocks = true;
-                    if (leftSide && delta < 0) blocks = true;
-                    if (!blocks) continue;
-                    if (absDelta < 15) continue;
-
-                    if (absDelta == 15) extensionForDelta = MAX_EXTENSION / 2f;
-                    else extensionForDelta = MAX_EXTENSION;
-
-                    float visibleEnd = obs.endTime + wallTravelTime * extensionForDelta;
-                    if (n.time > visibleEnd) continue;
-
-                    blockTime = n.time;
-                    blockNote = n;
-                    break;
-                }
-
-                if (!blockTime.HasValue)
-                {
-                    result.Add(obs); // keep as-is
-                    return result;
-                }
-
-                float multiplier = (absDelta > 15)
-                    ? visionBlockingWallRemovalMult
-                    : visionBlockingWallRemovalMult / 2f;
-
-                float leadTime = wallTravelTime * multiplier;
-                float cutTime = blockTime.Value - leadTime;
-
-                if (cutTime <= obs.time + 0.001f)
-                {
-                    // Entire wall removed
-                    return result;
-                }
-
-                float newDur = Math.Min(obs.endTime, cutTime) - obs.time;
-                if (newDur >= 0.001f)
-                {
-                    var segment = EObstacleData.Create(
-                        obs.time,
-                        obs.line,
-                        obs.layer,
-                        newDur,
-                        obs.width,
-                        obs.height,
-                        obs.rotation
-                    );
-                    result.Add(segment);
-                }
-
-                return result;
-            }
-
-            // --- Main loop, hybrid dispatch --------------------------------
-
-            var kept = new List<EObstacleData>();
-            var arcMode = Config.Instance.ArcRotationMode;
-
-            int obsCount = 1;
-            foreach (var obs in obstacles)
-            {
-                if (obs.time > inPointLog && obs.time < outPointLog)
-                    Plugin.LogDebug($"[ApplyWallVisionBlockingFix] {obsCount} Obs: {obs.time:F} Dur: {obs.duration:F} line: {obs.line} layer: {obs.layer} width: {obs.width} height: {obs.height}");
-                // Skip original walls that are noodle custom walls
-                if (WallGenerator.originalWalls.Contains(obs) && WallGenerator.IsCustomNoodleWall(obs))
-                {
-                    //Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Skipping Noodle Wall: {obs.time:F}");
-                    continue;
-                }
-
-                float obsTime = obs.time;
-                int layer = obs.layer;
-                float dur = obs.duration;
-
-                bool canSkip = false;
-
-                if (WallGenerator.ExtensionMappingWallsGenerated) // otherwise if ME is not used, then don't skip higher walls
-                {
-                    if (layer > 11000) canSkip = true;         // high walls
-                    else if (layer > 10 && layer < 1000) canSkip = true; // floor walls
-                }
-
-                if (layer == 2 && obs.line == 0 && obs.width > 2) canSkip = true; // crouch wall
-                if (dur < 0 && boostedWalls) canSkip = true;                       // boosted v2 walls
-
-                if (canSkip)
-                {
-                    kept.Add(obs);
-                    continue;
-                }
-
-                // Decide which logic to use for this wall
-                bool useStyle2 = hasArcs &&
-                    arcMode != Config.ArcRotationModeType.ForceZero &&
-                    IsObstacleInArcChainWindow(obs);
-
-                List<EObstacleData> pieces =
-                    useStyle2 ? ApplyStyle2ForWall(obs)
-                           : ApplyStyle1ForWall(obs);
-
-                kept.AddRange(pieces);
-
-                if (obs.time > inPointLog && obs.time < outPointLog)
-                {
-                    if (pieces.Count > 0)
-                    {
-                        foreach (EObstacleData piece in pieces)
-                        {
-                            Plugin.LogDebug($"[ApplyWallVisionBlockingFix] -- Kept Wall Piece: {piece.time:F} Dur: {piece.duration:F}");
-                        }
-                    }
-                    else
-                        Plugin.LogDebug($"[ApplyWallVisionBlockingFix] -- Discarded Wall!");
-                }
-
-                    obsCount++;
-            }
-
-            Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Total output obstacles: {kept.Count} kept out of {obstacles.Count}");
-            eData.Obstacles = kept;
-        }
-
-        public static void PerObjectRotationLog(CustomBeatmapData customBeatmapData, EditableCBD eData, float inPointLog, float outPointLog)
-        {
-            var combinedList = new List<(float time, string type, object item)>();
-
-            // Rotation events from eData
-            var rotations = (eData?.RotationEvents ?? new List<ERotationEventData>())
-                .OrderBy(r => r.time)
-                .ToList();
-
-            Plugin.LogDebug($"[PerObjectRotationLog] Total Rotation Events: {rotations.Count}");
-
-            foreach (var rotEvent in rotations)
-                combinedList.Add((rotEvent.time, "rot", rotEvent));
-
-            // Notes (same window!)
-            foreach (var note in customBeatmapData.allBeatmapDataItems
-                .OfType<CustomNoteData>()
-                .Where(n => n.time >= inPointLog && n.time <= outPointLog))
-            {
-                combinedList.Add((note.time, "note", note));
-            }
-
-            // Arcs (same window!)
-            foreach (var arc in customBeatmapData.allBeatmapDataItems
-                .OfType<CustomSliderData>()
-                .Where(s => s.sliderType == SliderData.Type.Normal)
-                .Where(s => s.time <= outPointLog && s.tailTime >= inPointLog)) // overlaps window
-            {
-                combinedList.Add((arc.time, "arc", arc));
-            }
-
-            // Chains (same window!)
-            foreach (var chain in customBeatmapData.allBeatmapDataItems
-                .OfType<CustomSliderData>()
-                .Where(s => s.sliderType == SliderData.Type.Burst)
-                .Where(s => s.time <= outPointLog && s.tailTime >= inPointLog)) // overlaps window
-            {
-                combinedList.Add((chain.time, "chain", chain));
-            }
-
-            // Walls (same window!)
-            foreach (var wall in customBeatmapData.allBeatmapDataItems
-                .OfType<CustomObstacleData>()
-                .Where(o => o.time >= inPointLog && o.time <= outPointLog))
-            {
-                combinedList.Add((wall.time, "wall", wall));
-            }
-
-            // Helper: accumulated rotation at time t (prefer your stored accumRotation if you have it)
-            /*
-            int GetAccumRotationAt(float t)
-            {
-                int lo = 0, hi = rotations.Count - 1, ans = -1;
-                while (lo <= hi)
-                {
-                    int mid = (lo + hi) >> 1;
-                    if (rotations[mid].time < t) { ans = mid; lo = mid + 1; } // was <= t
-                    else { hi = mid - 1; }
-                }
-                return ans >= 0 ? rotations[ans].accumRotation : 0;
-            }
-            */
-            var ordered = combinedList
-                .OrderBy(x => x.time)
-                .ThenBy(x => x.type)
-                .ToList();
-
-            foreach (var entry in ordered)
-            {
-                // print ONLY the window
-                if (entry.time < inPointLog || entry.time > outPointLog) continue;
-
-                switch (entry.type)
-                {
-                    case "rot":
-                        {
-                            var rot = (ERotationEventData)entry.item;
-                            Plugin.LogDebug($"-- RotEvent - Time: {rot.time}  rot:      {rot.accumRotation} deltaRot: {rot.rotation} ----------------------- ");
-                            break;
-                        }
-                    case "note":
-                        {
-                            var note = (CustomNoteData)entry.item;
-                            Plugin.LogDebug($"   Note     - Time: {note.time}  note.rot: {note.rotation} c:{note.colorType} X:{note.lineIndex} Y:{(int)note.noteLineLayer} cutDir: {note.cutDirection}");
-                            break;
-                        }
-                    case "arc":
-                        {
-                            var arc = (CustomSliderData)entry.item;
-                            Plugin.LogDebug($"   Arc      - Time: {arc.time}  arc.rot: {arc.rotation} Head X:{arc.headLineIndex} Y:{(int)arc.headLineLayer} Tail:{arc.tailTime:F2} ");
-                            break;
-                        }
-                    case "chain":
-                        {
-                            var chain = (CustomSliderData)entry.item;
-                            Plugin.LogDebug($"   Chain    - Time: {chain.time}  chain.rot:{chain.rotation} Head X:{chain.headLineIndex} Y:{(int)chain.headLineLayer} Tail:{chain.tailTime:F2} ");
-                            break;
-                        }
-                    case "wall":
-                        {
-                            var wall = (CustomObstacleData)entry.item;
-                            Plugin.LogDebug($"   Wall     - Time: {wall.time}  wall.rot: {wall.rotation} dur:{wall.duration:F2}  X:{wall.lineIndex} Y:{(int)wall.lineLayer} W:{wall.width} H:{wall.height} ");
-                            break;
-                        }
-                }
-            }
-        }
 
 
     }

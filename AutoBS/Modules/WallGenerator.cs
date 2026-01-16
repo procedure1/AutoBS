@@ -2010,8 +2010,10 @@ namespace AutoBS
             }
         }
 
-        public static List<ERotationEventData> RemoveCrouchWallRotations(List<ERotationEventData> rotations)
+        public static List<ERotationEventData> RemoveCrouchWallRotations(EditableCBD eData)
         {
+            List<ERotationEventData> rotations = eData.RotationEvents;
+
             List<EObstacleData> crouchWalls = new List<EObstacleData>();
 
             if (Config.Instance.AllowCrouchWalls) 
@@ -2024,14 +2026,14 @@ namespace AutoBS
             }
             if (crouchWalls.Count == 0)
             {
-                Plugin.LogDebug("[RemoveCrouchWallRotations] No crouch wall found. No rotations to remove.");
+                //Plugin.LogDebug("[RemoveCrouchWallRotations] No crouch wall found. No rotations to remove.");
                 return rotations;
             }
             else
             {
-                Plugin.LogDebug($"[RemoveCrouchWallRotations] Crouch walls found: {crouchWalls.Count}.");
-                foreach (var ob in crouchWalls)
-                    Plugin.LogDebug($"[RemoveCrouchWallRotations] -- time: {ob.time:F} dur: {ob.duration:F} end: {(ob.time + ob.duration):F} -- x:{ob.line} y:{ob.layer} w: {ob.width} h:{ob.height}");
+                //Plugin.LogDebug($"[RemoveCrouchWallRotations] Crouch walls found: {crouchWalls.Count}.");
+                //foreach (var ob in crouchWalls)
+                //    Plugin.LogDebug($"[RemoveCrouchWallRotations] -- time: {ob.time:F} dur: {ob.duration:F} end: {(ob.time + ob.duration):F} -- x:{ob.line} y:{ob.layer} w: {ob.width} h:{ob.height}");
             }
 
             // 1) Build + merge crouch intervals
@@ -2086,11 +2088,14 @@ namespace AutoBS
                     result.Add(rotations[i]);
                 else
                 {
-                    Plugin.LogDebug($"[RemoveCrouchWallRotations] ---- Removed Rotation at: {rotations[i].time:F}");
+                    //Plugin.LogDebug($"[RemoveCrouchWallRotations] ---- Removed Rotation at: {rotations[i].time:F}");
                     count++;
                 }
 
-            Plugin.LogDebug($"[RemoveCrouchWallRotations] Total Rotations Removed: {count}");
+            Plugin.LogDebug($"[RemoveCrouchWallRotations] Total Rotations Removed: {count} (crouch walls count: {crouchWalls.Count}).");
+
+            if (count > 0)
+                eData.RotationEventsChanged = true;
 
             return result;
         }

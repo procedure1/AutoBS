@@ -33,7 +33,7 @@ namespace AutoBS.Patches
         public static BeatmapKey SelectedPlayKey;
         public static BeatmapKey BasedOnKey;
         public static Version SelectedBeatmapVersion = new Version(2, 6, 0);
-        public static bool UserSelectedMapToInject = false; // Only inject once, for the map the player actually "Starts" instead of all difficulties in the set
+        public static bool IsGen360 = false; // Only inject once, for the map the player actually "Starts" instead of all difficulties in the set
         public static string SelectedSerializedName;//will be "Generated360Degree" for gen 360
         public static BeatmapCharacteristicSO SelectedCharacteristicSO;
         public static BeatmapLevel SelectedBeatmapLevel;
@@ -108,8 +108,8 @@ namespace AutoBS.Patches
             SelectedPlayKey = beatmapKey;
             bpm = beatmapLevel.beatsPerMinute;
 
-            bool isGen360 = SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
-            if (isGen360)
+            IsGen360 = SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
+            if (IsGen360)
             {
                 if (!SetContent.GeneratedToStandardKey.TryGetValue(beatmapKey.SerializedName(), out BasedOnKey))
                 {
@@ -131,11 +131,8 @@ namespace AutoBS.Patches
             Plugin.LogDebug(".");
             Plugin.LogDebug($"[TransitionPatcher] User selected:  {beatmapKey.beatmapCharacteristic.serializedName} {SelectedDifficulty} - ID: {beatmapKey.levelId} -------------------------------------"); // will be solo and standard, Generater360Degree, Generated90Degree, 360Degree, 90Degree, Lightshow, etc
 
-            
-            UserSelectedMapToInject = isGen360;
-
             // using generated beatmapkey. same levelId is fine between standard and gen 360, but changing the characteristic (Standard → Generated360Degree) makes it a distinct beatmap for scoring and most plugins.
-            Plugin.LogDebug($"[TransitionPatcher] Will inject? {UserSelectedMapToInject} for {beatmapKey.beatmapCharacteristic.serializedName} - {beatmapKey.difficulty}");
+            Plugin.LogDebug($"[TransitionPatcher] Will inject? {IsGen360} for {beatmapKey.beatmapCharacteristic.serializedName} - {beatmapKey.difficulty}");
 
             // For noodle standard maps, need to do it this way. but this works for all maps so use this instead of the registry lookup. not checked in SetContent.
             if (isCustomLevel)
@@ -160,7 +157,7 @@ namespace AutoBS.Patches
             IsBeatSageMap = SetContent.IsBeatSageMap;
 
             bool isBasedOn = SelectedSerializedName == basedOn;
-            if (isGen360 || isBasedOn)
+            if (IsGen360 || isBasedOn)
             {
                 NotesPerSecond = NotesPerSecRegistry.findByKey.TryGetValue(BasedOnKey, out var nps) ? nps : 0f;
                 SelectedBeatmapVersion = BeatmapVersionRegistry.versionByKey.TryGetValue(BasedOnKey, out var v) ? v : new Version(0, 0, 0);
@@ -207,7 +204,7 @@ namespace AutoBS.Patches
             if (!isCustomLevel && SelectedBeatmapVersion.Major == 0)
                 SelectedBeatmapVersion = new Version(4, 0, 0);
 
-            if (!isCustomLevel && isGen360)
+            if (!isCustomLevel && IsGen360)
             {
                 // Compute the color scheme the ORIGINAL (BasedOn) map would have used
                 var originalEffective = ResolveEffectiveSchemeVanillaLevels(
@@ -340,7 +337,7 @@ namespace AutoBS.Patches
         public static string GetEnvironmentName(BeatmapKey beatmapKey, BeatmapLevel beatmapLevel, OverrideEnvironmentSettings overrideEnvironmentSettings)
         {
             // If this is Generated360, always use GlassDesert:
-            if (TransitionPatcher.UserSelectedMapToInject)
+            if (TransitionPatcher.IsGen360)
             {
                 Plugin.LogDebug("[TransitionPatcher][GetEnvironmentname] Forcing GlassDesertEnvironment on injected 360 map");
                 return "GlassDesertEnvironment";
