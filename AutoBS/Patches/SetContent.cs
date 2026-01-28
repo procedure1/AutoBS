@@ -9,8 +9,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEngine;
+using static PyramidBloomRendererSO;
 using DiffData = SongCore.Data.SongData.DifficultyData;
 using MapColor = SongCore.Data.SongData.MapColor;
 using SongData = SongCore.Data.SongData;
@@ -351,8 +353,10 @@ namespace AutoBS.Patches
                         BeatmapData originalBeatmapData;
                         if (version.Major == 2)
                         {
-                            //according to chatGPT CustomJSONData.HarmonyPatches.BeatmapDataLoaderV2_6_0AndEarlierCustomify  CustomJSONData.HarmonyPatches.BeatmapDataLoaderV3Customify have patched the BeatmapDataLoader to keep the customData
-                            originalBeatmapData = BeatmapDataLoaderVersion2_6_0AndEarlier.BeatmapDataLoader
+                            try
+                            {
+                                //according to chatGPT CustomJSONData.HarmonyPatches.BeatmapDataLoaderV2_6_0AndEarlierCustomify  CustomJSONData.HarmonyPatches.BeatmapDataLoaderV3Customify have patched the BeatmapDataLoader to keep the customData
+                                originalBeatmapData = BeatmapDataLoaderVersion2_6_0AndEarlier.BeatmapDataLoader
                                 .GetBeatmapDataFromSaveDataJson(
                                     beatmapJson,
                                     defaultLightshowJson,
@@ -364,38 +368,149 @@ namespace AutoBS.Patches
                                     SetContent.PlayerSpecificSettings,
                                     new NoOpLightEventConverter()
                                 );
+                            }
+                            catch (IndexOutOfRangeException ex) // occurs with more than 4 lanes
+                            {
+                                Plugin.Log.Warn($"{level.levelID} {difficulty}. Forcing all line indices to 0. Since this map has more than 4 lanes. {ex}");
+
+                                var sanitizedJson = ForceAllLineIndicesToZero(beatmapJson, version.Major);
+
+                                try
+                                {
+                                    originalBeatmapData = BeatmapDataLoaderVersion2_6_0AndEarlier.BeatmapDataLoader
+                                        .GetBeatmapDataFromSaveDataJson(
+                                            sanitizedJson,
+                                            defaultLightshowJson,
+                                            difficulty,
+                                            level.beatsPerMinute,
+                                            false,
+                                            env,
+                                            BeatmapLevelDataVersion.Original,
+                                            SetContent.PlayerSpecificSettings,
+                                            new NoOpLightEventConverter()
+                                        );
+                                }
+                                catch (Exception ex2)
+                                {
+                                    Plugin.Log.Error($"[AutoBS] Sanitized v2 load still failed for {level.levelID} {difficulty}. " + $"Skipping originalBeatmapData. {ex2}");
+                                    return;
+                                }
+                            }
+
                         }
                         else if (version.Major == 3)
                         {
-                            originalBeatmapData = BeatmapDataLoaderVersion3.BeatmapDataLoader
-                                .GetBeatmapDataFromSaveDataJson(
-                                    beatmapJson,
-                                    defaultLightshowJson,
-                                    difficulty,
-                                    level.beatsPerMinute,
-                                    false,
-                                    env, //null works
-                                    BeatmapLevelDataVersion.Original,
-                                    SetContent.PlayerSpecificSettings,
-                                    new NoOpLightEventConverter()
-                                );
+                            try
+                            {
+                                originalBeatmapData = BeatmapDataLoaderVersion3.BeatmapDataLoader
+                                    .GetBeatmapDataFromSaveDataJson(
+                                        beatmapJson,
+                                        defaultLightshowJson,
+                                        difficulty,
+                                        level.beatsPerMinute,
+                                        false,
+                                        env, //null works
+                                        BeatmapLevelDataVersion.Original,
+                                        SetContent.PlayerSpecificSettings,
+                                        new NoOpLightEventConverter()
+                                    );
+                            }
+                            catch (IndexOutOfRangeException ex) // occurs with more than 4 lanes
+                            {
+                                Plugin.Log.Warn($"{level.levelID} {difficulty}. Forcing all line indices to 0. Since this map has more than 4 lanes. {ex}");
+
+                                var sanitizedJson = ForceAllLineIndicesToZero(beatmapJson, version.Major);
+
+                                try
+                                {
+                                    originalBeatmapData = BeatmapDataLoaderVersion3.BeatmapDataLoader
+                                    .GetBeatmapDataFromSaveDataJson(
+                                        sanitizedJson,
+                                        defaultLightshowJson,
+                                        difficulty,
+                                        level.beatsPerMinute,
+                                        false,
+                                        env, //null works
+                                        BeatmapLevelDataVersion.Original,
+                                        SetContent.PlayerSpecificSettings,
+                                        new NoOpLightEventConverter()
+                                    );
+                                }
+                                catch (Exception ex2)
+                                {
+                                    Plugin.Log.Error($"[AutoBS] Sanitized v3 load still failed for {level.levelID} {difficulty}. " + $"Skipping originalBeatmapData. {ex2}");
+                                    return;
+                                }
+                            }
+
                         }
                         else // v4 is the only one that crashes with null lightEventConverter. if null, then can't make built-in maps
                         {
-                            originalBeatmapData = BeatmapDataLoaderVersion4.BeatmapDataLoader.GetBeatmapDataFromSaveDataJson(
-                                audioDataJson,
-                                lightshowJson: lightshowJson,
-                                defaultLightshowJson: defaultLightshowJson,
-                                beatmapJson: beatmapJson,
-                                beatmapDifficulty: difficulty,
-                                loadingForDesignatedEnvironment: false,
-                                targetEnvironmentInfo: env,
-                                originalEnvironmentInfo: env,
-                                beatmapLevelDataVersion: BeatmapLevelDataVersion.Original,
-                                gameplayModifiers: null,
-                                playerSpecificSettings: SetContent.PlayerSpecificSettings,
-                                lightEventConverter: new NoOpLightEventConverter()
-                            );
+                            try
+                            {
+                                originalBeatmapData = BeatmapDataLoaderVersion4.BeatmapDataLoader.GetBeatmapDataFromSaveDataJson(
+                                    audioDataJson,
+                                    lightshowJson: lightshowJson,
+                                    defaultLightshowJson: defaultLightshowJson,
+                                    beatmapJson: beatmapJson,
+                                    beatmapDifficulty: difficulty,
+                                    loadingForDesignatedEnvironment: false,
+                                    targetEnvironmentInfo: env,
+                                    originalEnvironmentInfo: env,
+                                    beatmapLevelDataVersion: BeatmapLevelDataVersion.Original,
+                                    gameplayModifiers: null,
+                                    playerSpecificSettings: SetContent.PlayerSpecificSettings,
+                                    lightEventConverter: new NoOpLightEventConverter()
+                                );
+                            }
+                            catch (IndexOutOfRangeException ex)
+                            {
+                                Plugin.Log.Warn($"{level.levelID} {difficulty}. Forcing all line indices to 0. Since this map has more than 4 lanes. {ex}");
+
+                                var sanitizedJson = ForceAllLineIndicesToZero(beatmapJson, 4);
+
+                                try
+                                {
+                                    originalBeatmapData = BeatmapDataLoaderVersion4.BeatmapDataLoader.GetBeatmapDataFromSaveDataJson(
+                                        audioDataJson,
+                                        lightshowJson: lightshowJson,
+                                        defaultLightshowJson: defaultLightshowJson,
+                                        beatmapJson: sanitizedJson,
+                                        beatmapDifficulty: difficulty,
+                                        loadingForDesignatedEnvironment: false,
+                                        targetEnvironmentInfo: env,
+                                        originalEnvironmentInfo: env,
+                                        beatmapLevelDataVersion: BeatmapLevelDataVersion.Original,
+                                        gameplayModifiers: null,
+                                        playerSpecificSettings: SetContent.PlayerSpecificSettings,
+                                        lightEventConverter: new NoOpLightEventConverter()
+                                    );
+                                }
+                                catch (Exception ex2)
+                                {
+                                    Plugin.Log.Error($"[AutoBS] Sanitized v4 load still failed for {level.levelID} {difficulty}. " + $"Skipping originalBeatmapData. {ex2}");
+                                    return;
+                                }
+                            }
+                        }
+
+                        string ForceAllLineIndicesToZero(string json, int majorVersion)
+                        {
+                            if (majorVersion == 2)
+                            {
+                                // Matches keys that *contain* "lineIndex" (lineIndex, _lineIndex,
+                                // headLineIndex, _tailLineIndex, etc.) and any integer value after :
+                                const string pattern = "\"(?<key>[^\"]*lineIndex[^\"]*)\"\\s*:\\s*-?\\d+";
+
+                                return Regex.Replace(json, pattern, "\"${key}\": 0");
+                            }
+                            else
+                            {
+                                // v3 / v4: collapse x and tx (position and tail position)
+                                // Matches: "x" and "tx"
+                                const string v3v4Pattern = "\"(?<key>t?x)\"\\s*:\\s*-?\\d+(?:\\.\\d+)?";
+                                return Regex.Replace(json, v3v4Pattern, "\"${key}\": 0");
+                            }
                         }
 
                         int originalBpmEventsCount = originalBeatmapData.allBeatmapDataItems.OfType<BpmChangeEventData>().Count();

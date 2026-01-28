@@ -685,7 +685,12 @@ namespace AutoBS
             chainNotes.AddRange(chainNotesA); chainNotes.AddRange(chainNotesB); // these can accidentally have chains at same time so appear to be double chains but haven't been vetted as double chains.
 
             chainNotes.Sort((note1, note2) => note1.time.CompareTo(note2.time));
-
+            /*
+            foreach (ENoteData note in chainNotes)
+            {
+                Plugin.LogDebug($"---- Chain Note: {note.time:F} - cutDirection: {note.cutDirection} line: {note.line} layer: {note.layer} color: {note.colorType} ");
+            }
+            */
 
             Plugin.LogDebug($"Chains Count: {currentChainsCount} with pauseMultiplier: {pauseThresholdMultiplier} took {counter} iterations. -- pause detection"); //Double Chains Count: { doubleChainNotes.Count}
 
@@ -861,15 +866,29 @@ namespace AutoBS
             List<ESliderData> chains = new List<ESliderData>();
 
             int longChainCount = 1; // use to avoid adding chains at the same or almost the same time. let Double chains do that.
+            
+            float njs = MathF.Max(1f, TransitionPatcher.FinalNoteJumpMovementSpeed);
 
             // Reset the lastCheckedIndex at the beginning of the processing
             _lastCheckedIndex = 0;
+
+            const float REF_NJS = 16f; // pick the NJS where test values look right to me
+            float ScaleTailTimeByNjs(float baseSeconds, float minSeconds, float maxSeconds, float exponent = 1.5f)
+            {
+                float njs = MathF.Max(1f, TransitionPatcher.FinalNoteJumpMovementSpeed);
+
+                // Stronger than linear: higher NJS shrinks time more aggressively
+                float factor = MathF.Pow(REF_NJS / njs, exponent);
+
+                float scaled = baseSeconds * factor;
+                return Math.Clamp(scaled, minSeconds, maxSeconds);
+            }
 
             foreach (ENoteData chainNote in chainNotes)
             {
                 int sliceCount = 4;
 
-                float tailTime = chainNote.time + .02f;
+                float tailTime = chainNote.time + ScaleTailTimeByNjs(0.025f, 0.02f, 0.120f);
 
                 (int headLineLayer, int headLineIndex, int tailLineLayer, int tailLineIndex) = CalculateTailPosition(chainNote);
                 NoteLineLayer tailBeforeJumpLineLayer = (NoteLineLayer)tailLineLayer;
@@ -882,7 +901,7 @@ namespace AutoBS
                     else
                         sliceCount = 6; // diagonal can be hard to hit the 6th segment
 
-                    tailTime = chainNote.time + .05f;
+                   tailTime = chainNote.time + ScaleTailTimeByNjs(0.05f, 0.020f, 0.120f);
                 }
 
                 // This is a single chain being added. However, its possible there has been another single chain added to a different note at the same time by chance. This can produce illegitimate double chains that are hard for the player to hit
@@ -931,30 +950,35 @@ namespace AutoBS
                         if (//gapBetweenChains >= .5f && // Check for .5 second or longer gap between chainNotes 
                             ((chainNote.layer == 0 && // make sure the note is far edge note at the very top, bottom, left or right etc
                               (chainNote.cutDirection == NoteCutDirection.Up || chainNote.cutDirection == NoteCutDirection.UpLeft || chainNote.cutDirection == NoteCutDirection.UpRight)) ||
-                             (chainNote.layer == 1 &&
-                              (chainNote.cutDirection == NoteCutDirection.Down || chainNote.cutDirection == NoteCutDirection.DownLeft || chainNote.cutDirection == NoteCutDirection.DownRight)) ||
+                             (chainNote.layer == 2 &&
+                             chainNote.cutDirection == NoteCutDirection.Down) || 
+                             ((chainNote.layer == 1 || chainNote.layer == 2) &&
+                             (chainNote.cutDirection == NoteCutDirection.DownLeft || chainNote.cutDirection == NoteCutDirection.DownRight)) ||
                              (chainNote.line == 3 &&
                               (chainNote.cutDirection == NoteCutDirection.Left || chainNote.cutDirection == NoteCutDirection.DownLeft || chainNote.cutDirection == NoteCutDirection.UpLeft)) ||
                              (chainNote.line == 0 &&
                               (chainNote.cutDirection == NoteCutDirection.Right || chainNote.cutDirection == NoteCutDirection.DownRight || chainNote.cutDirection == NoteCutDirection.UpRight))))
                         {
-                            float minGapAfterLongChain = .2f; // need time after long chain for player to get to the next note test was .4
-                            float minLongChainAllowed = .1f;
-                            float maxLongChainAllowed = Config.Instance.LongChainMaxDuration; // max length allowed. super long chains don't curve, so they are not ideal
+                            float minGapAfterLongChain = ScaleTailTimeByNjs(0.30f, 0.10f, 0.60f);
+                            float minLongChainAllowed = ScaleTailTimeByNjs(0.10f, 0.04f, 0.25f);
+
+                            float maxLongChainAllowed  = Config.Instance.LongChainMaxDuration; // max length allowed. super long chains don't curve, so they are not ideal
 
                             float timeUntilNextNote = GetTimeUntilNextNote(notes, chainNote.time);// relevantNotes, chainNote.time);
 
                             if (timeUntilNextNote > minGapAfterLongChain + minLongChainAllowed)
                             {
-                                float chainDuration = Math.Min(timeUntilNextNote - minGapAfterLongChain, maxLongChainAllowed);
+                                float longChainDuration = Math.Min(timeUntilNextNote - minGapAfterLongChain, maxLongChainAllowed);
 
-                                bool awkwardLongChain = false; // 
+                                bool awkwardLongChain = false;
+                                bool limitMaxDuration = false;
+                                
 
                                 // make sure long chains get max width between head and tail - not good for diagonal chains that are not in a corner
                                 if ((chainNote.cutDirection == NoteCutDirection.Up || chainNote.cutDirection == NoteCutDirection.UpLeft || chainNote.cutDirection == NoteCutDirection.UpRight) &&
                                     chainNote.layer == 0) tailLineLayer = 2;
-                                else if ((chainNote.cutDirection == NoteCutDirection.Down || chainNote.cutDirection == NoteCutDirection.DownLeft || chainNote.cutDirection == NoteCutDirection.DownRight) &&
-                                         chainNote.layer == 2) tailLineLayer = 0;
+                                else if ((chainNote.cutDirection == NoteCutDirection.Down || chainNote.cutDirection == NoteCutDirection.DownLeft || chainNote.cutDirection == NoteCutDirection.DownRight))// &&
+                                      tailLineLayer = 0; //chainNote.layer == 2) tailLineLayer = 0;
                                 if ((chainNote.cutDirection == NoteCutDirection.Right || chainNote.cutDirection == NoteCutDirection.DownRight || chainNote.cutDirection == NoteCutDirection.UpRight) &&
                                     chainNote.line == 0) tailLineIndex = 3;
                                 else if ((chainNote.cutDirection == NoteCutDirection.Left || chainNote.cutDirection == NoteCutDirection.DownLeft || chainNote.cutDirection == NoteCutDirection.UpLeft) &&
@@ -962,7 +986,18 @@ namespace AutoBS
 
                                 if (chainNote.cutDirection == NoteCutDirection.Down)
                                 {
-                                    awkwardLongChain = true;
+                                    //awkwardLongChain = true;
+                                    //TEST
+                                    limitMaxDuration = true;
+                                    tailLineIndex = chainNote.line;// Keep the same lineIndex
+
+                                    if ((chainNote.colorType == ColorType.ColorA && chainNote.line > 1) || // right note (blue) are on the left which is awkward
+                                        (chainNote.colorType == ColorType.ColorB && chainNote.line < 2))   // left note (red) are on the right which is awkward
+                                    {
+                                        awkwardLongChain = true;
+                                    }
+                                    //----------------------
+
                                 }
                                 else if (chainNote.cutDirection == NoteCutDirection.Up)
                                 {
@@ -977,6 +1012,7 @@ namespace AutoBS
                                 else if (chainNote.cutDirection == NoteCutDirection.Left || chainNote.cutDirection == NoteCutDirection.Right)
                                 {
                                     tailLineLayer = (int)chainNote.layer; // Keep the same layer
+                                    limitMaxDuration = true;
                                 }
                                 else if (chainNote.cutDirection == NoteCutDirection.UpRight &&
                                          chainNote.line == 0 && chainNote.layer == 0)
@@ -984,6 +1020,7 @@ namespace AutoBS
                                     tailLineIndex = 3;
                                     tailLineLayer = (int)2;
                                     sliceCount = 8; // long diagonal
+                                    limitMaxDuration = true;
                                 }
                                 else if (chainNote.cutDirection == NoteCutDirection.UpLeft &&
                                          chainNote.line == 3 && chainNote.layer == 0)
@@ -991,13 +1028,15 @@ namespace AutoBS
                                     tailLineIndex = 0;
                                     tailLineLayer = (int)2;
                                     sliceCount = 8; // long diagonal
+                                    limitMaxDuration = true;
                                 }
                                 else if (chainNote.cutDirection == NoteCutDirection.DownRight &&
-                                         chainNote.line == 0 && chainNote.layer == 2)
+                                         chainNote.line == 0 && (chainNote.layer == 2) )
                                 {
                                     tailLineIndex = 3;
                                     tailLineLayer = (int)0;
                                     sliceCount = 8; // long diagonal
+                                    limitMaxDuration = true;
                                 }
                                 else if (chainNote.cutDirection == NoteCutDirection.DownLeft &&
                                          chainNote.line == 3 && chainNote.layer == 2)
@@ -1005,6 +1044,7 @@ namespace AutoBS
                                     tailLineIndex = 0;
                                     tailLineLayer = (int)0;
                                     sliceCount = 8; // long diagonal
+                                    limitMaxDuration = true;
                                 }
                                 else
                                 {
@@ -1013,10 +1053,20 @@ namespace AutoBS
 
                                 if (!awkwardLongChain)
                                 {
-                                    tailTime = chainNote.time + chainDuration;
-                                    sliceCount = Math.Max((int)(chainDuration * 17), 6); // more segments depending on the length of time with min of 6
+                                    if (limitMaxDuration && longChainDuration == maxLongChainAllowed && maxLongChainAllowed > 0.2f)
+                                    {
+                                        if (chainNote.cutDirection == NoteCutDirection.Down)
+                                            longChainDuration = ScaleTailTimeByNjs(0.05f, 0.012f, 0.060f); // same as short chain
+                                        else
+                                            longChainDuration -= ScaleTailTimeByNjs(0.025f, 0.012f, 0.120f);
+
+                                    }
+                                    longChainDuration = Math.Max(longChainDuration, 0.02f); // safety
+                                    tailTime = chainNote.time + longChainDuration;
+
+                                    sliceCount = Math.Max((int)(longChainDuration * 17f * (TransitionPatcher.FinalNoteJumpMovementSpeed / 14f)), 6);//sliceCount = Math.Max((int)(longChainDuration * 17), 6); // more segments depending on the length of time with min of 6
                                     //Plugin.LogDebug($"gapBetweenChains: {gapBetweenChains}");
-                                    //Plugin.LogDebug($"Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} Dur: {chainDuration} slices: {sliceCount}");
+                                    Plugin.LogDebug($"Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} Dur: {longChainDuration} slices: {sliceCount}");
                                     longChainCount++;
                                 }
 

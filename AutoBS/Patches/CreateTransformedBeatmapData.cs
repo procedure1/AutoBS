@@ -225,8 +225,6 @@ namespace AutoBS.Patches
 
                 __result = outp.IsCustom ? (IReadonlyBeatmapData)outp.Custom : outp.Vanilla;
 
-
-
                 if (outp.IsCustom)
                 {
                     //__result = outp.Custom!;
@@ -244,7 +242,7 @@ namespace AutoBS.Patches
                          $"rotation events (in-line per object) {eData.RotationEvents.Count}" );
                     // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
-                    //ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 30f, 60f);
+                    ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 157f, 161f);
                     /*
                     Plugin.LogDebug($"Final Note Rotations:");
                     foreach (var note in __result.allBeatmapDataItems
@@ -254,6 +252,14 @@ namespace AutoBS.Patches
                         Plugin.LogDebug($"Note: {note.time:F} Rot: {note.rotation}");
                     }
                     */
+                    /*
+                    foreach (var evt in __result.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>())
+                    {
+                        if (evt.time > 0 && evt.time < 85)
+                            Plugin.LogDebug($"Light: {evt.time:F3} {(EventType)evt.basicBeatmapEventType} {(EventValue)evt.value} float: {evt.floatValue}");
+                    }
+                    */
+
                     JsonOutputConverter.ToJsonFile(__result as CustomBeatmapData, eData);
 
                 }
@@ -273,6 +279,19 @@ namespace AutoBS.Patches
                         $"bpm events: {__result.allBeatmapDataItems.OfType<BpmChangeEventData>().Count()}, " +
                         $"njs events: {__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()}, " +
                         $"rotation events (in -line per object): {eData.RotationEvents.Count}");
+                    /*
+                    if (__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count() > 0)
+                    {
+                        
+                        Plugin.LogDebug($"Final NJS Events:");
+                        foreach (var evt in __result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>())//.Where(n => n.time >= 0f && n.time <= 60f))
+                        {
+                            Plugin.LogDebug($"NJS Event: {evt.time:F} relative NJS: {evt.relativeNoteJumpSpeed} EaseType: {evt.easeType} usePreviousValue: {evt.usePreviousValue}");
+                        }
+                       
+
+                    } 
+                    */
                 }
                 
                 //Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");

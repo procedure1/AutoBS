@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using IPA.Config.Stores;
 using IPA.Config.Stores.Attributes;
 using IPA.Config.Stores.Converters;
+using Microsoft.Identity.Client;
 
 
 [assembly: InternalsVisibleTo(GeneratedStore.AssemblyVisibilityTarget)]
@@ -56,14 +57,14 @@ namespace AutoBS
         public virtual float RotationSpeedMultiplier { get; set; } = 1.0f;//BW This is a multiplier for PreferredBarDuration which has a default of 1.84f causes to emit more (smaller, closer-together) delta rotation events
         public virtual float MinRotationSize { get; set; } = 15f;//disallows single rotations smaller than this
         public virtual float MaxRotationSize { get; set; } = 30f;//disallows single rotations larger than this
-        public virtual float FOV { get; set; } = 75f; //15 degree increments since 75 and 80 are the same.
+        public virtual float FOV { get; set; } = 80f; // rotations are always 15 degree increments so for example, 60-85 are the same (60/2 = 30 and 85/2 = 42.5 so no angle over 30 is allowed). 90/2 allows a 45 angle
         public virtual float TimeWindow { get; set; } = 0.35f; // FOV time window
 
         public virtual float VisionBlockingWallRemovalMult { get; set; } = 1f; // increase to remove more vision blocking walls 
 
         public virtual bool ReduceRotationForHighSpeedHighDensityMaps { get; set; } = true; // reduce rotation amounts for maps with high BPM and high note density
-        public virtual float HighBPMThresholdForRotationReduction { get; set; } = 15f; // BPM above which rotation reduction can occur
-        public virtual float HighNoteDensityThresholdForRotationReduction { get; set; } = 5f; // notes per second above which rotation reduction can occur
+        public virtual float HighNJSThresholdForRotationReduction { get; set; } = 15f; // NJS above which rotation reduction can occur
+        public virtual float HighNPSThresholdForRotationReduction { get; set; } = 5f; // notes per second above which rotation reduction can occur. both must be true! (NJS and NPS)
         public virtual int MassiveStreakNumberOfRotationsThreshold { get; set; } = 30; // how many same direction rotations to consider a "massive streak" that should be curtailed
 
         // ARCS
@@ -104,8 +105,7 @@ namespace AutoBS
         public virtual float StandardWallsMultiplier { get; set; } = 100; // 100% is max and can't be increased unlike the other multipliers
         public virtual float StandardWallsMinDistance { get; set; } = 0; // default 0 since comes into lanes 0 and 3
         
-        //v1.42 never needed this
-        //public virtual bool EnableMappingExtensionsWallsGenerator { get; set; } = true; // not set by user currently. set by whether mapping extensions mod is installed. // turns on/off all ext walls - BW add new decorative extension mapping walls. must install extension mapping to work
+        //public virtual bool UseMappingExtensionsForWallsGenerator { get; set; } = true; // allows user to to use all the walls with ME if they prefer - doesn't work. must also somehow disable ME or will use it anyway.
         
         public virtual bool EnableDistantExtensionWalls { get; set; } = true; // -- i think i can delete this!!!!!!!!!!!!!!!!!!!!!!!
         public virtual float DistantExtensionWallsMultiplier { get; set; } = 2;
@@ -158,8 +158,11 @@ namespace AutoBS
 
         public virtual int BoostLightingRandomSeed { get; set; } = 242;
 
-        public virtual bool UseStrobes { get; set; } = false;
-        public virtual float StrobeMaxDuration { get; set; } = 5f; // seconds
+        public virtual bool EnableStrobes { get; set; } = true;
+        public virtual float StrobeMultiplier { get; set; } = 1; // frequency of use. 0 is off
+
+        public virtual float StrobeBrightnessMultiplier { get; set; } = 1f; // 1 is noticeably bright in 360 and will be automatically sets to 2x for standard environment since its so dimmer there.
+        public virtual float StrobeMaxDuration { get; set; } = 5f; // seconds - this doesn't work for some reason. in logs this works, but when viewing the game, strobes usually seem much shorter than this. this can still help them last longer though.
 
         public virtual bool EnableLightAutoMapper { get; set; } = true;
 
@@ -173,7 +176,7 @@ namespace AutoBS
             FADE = 3,      // Med Fade: fade events
             TRANSITION = 4 // Slow Transition: transition & fade
         }
-        public virtual Style LightStyle { get; set; } = Style.FLASH;//not using off
+        public virtual Style LightStyle { get; set; } = Style.FADE;//not using off
 
         public enum Base
         {

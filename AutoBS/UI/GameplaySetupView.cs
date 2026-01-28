@@ -113,9 +113,7 @@ namespace AutoBS.UI
         //-----------------------------------------------
 
         // Needed this since can't determine if MappingExtensions is installed or not until first song is selected by the user otherwise
-        public static bool IsMappingExtensionsInstalled = true;//=>
-            //AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "MappingExtensions");
-
+        public static bool IsMappingExtensionsInstalled => AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name == "MappingExtensions"); // put this hear since only needs to be done once per game session
 
         [UIValue("EnablePlugin")]
         public bool EnablePlugin
@@ -906,7 +904,7 @@ namespace AutoBS.UI
             EnablerWallGenerator = Config.Instance.EnablePlugin && isEnabled;
             FontColorWallGenerator = EnablerWallGenerator ? OnColor : OffColor;
 
-            EnablerExtWallGenerator = EnablerWallGenerator && IsMappingExtensionsInstalled;
+            EnablerExtWallGenerator = EnablerWallGenerator;
             FontColorExtWallGenerator = EnablerExtWallGenerator ? OnColor : OffColor;
 
             EnablerStandard = EnablerWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls);
@@ -955,6 +953,9 @@ namespace AutoBS.UI
 
             SafeNotify(nameof(EnablerRows));
             SafeNotify(nameof(FontColorRows));
+
+            SafeNotify(nameof(EnablerTunnelToggle));
+            SafeNotify(nameof(FontColorTunnelToggle));
 
             SafeNotify(nameof(EnablerTunnels));
             SafeNotify(nameof(FontColorTunnels));
@@ -1066,6 +1067,24 @@ namespace AutoBS.UI
                 UpdateLightingGeneratorUI();
                 SafeNotify();
             }
+        }
+        [UIValue("StrobeMultiplier")]
+        public float StrobeMultiplier
+        {
+            get => Config.Instance.StrobeMultiplier;
+            set => Config.Instance.StrobeMultiplier = value;
+        }
+        [UIValue("StrobeMaxDuration")]
+        public float StrobeMaxDuration
+        {
+            get => Config.Instance.StrobeMaxDuration;
+            set => Config.Instance.StrobeMaxDuration = value;
+        }
+        [UIValue("StrobeBrightnessMultiplier")]
+        public float StrobeBrightnessMultiplier
+        {
+            get => Config.Instance.StrobeBrightnessMultiplier;
+            set => Config.Instance.StrobeBrightnessMultiplier = value;
         }
         [UIValue("LightFrequencyMultiplier")]
         public float LightFrequencyMultiplier
@@ -1309,9 +1328,7 @@ namespace AutoBS.UI
         [UIValue("EnablerExtWallGenerator")]
         public bool EnablerExtWallGenerator
         {
-            get => Config.Instance.EnablePlugin
-                   && EnableWallGenerator
-                   && IsMappingExtensionsInstalled;
+            get => Config.Instance.EnablePlugin && EnableWallGenerator;
             set => SafeNotify();
         }
         [UIValue("EnablerStandard")]
@@ -1321,35 +1338,47 @@ namespace AutoBS.UI
 
         [UIValue("EnablerDistant")]
         public bool EnablerDistant
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalled && Config.Instance.EnableDistantExtensionWalls; set { SafeNotify(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && Config.Instance.EnableDistantExtensionWalls;
+            set { SafeNotify(); } }
 
         [UIValue("EnablerColumns")]
         public bool EnablerColumns
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalled && Config.Instance.EnableColumnWalls; set { SafeNotify(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && Config.Instance.EnableColumnWalls; 
+            set { SafeNotify(); } }
 
         [UIValue("EnablerRows")]
         public bool EnablerRows
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalled && Config.Instance.EnableRowWalls; set { SafeNotify(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && Config.Instance.EnableRowWalls; 
+            set { SafeNotify(); } }
+
+        [UIValue("EnablerTunnelToggle")]
+        public bool EnablerTunnelToggle =>
+            EnablerExtWallGenerator && EnableWallGenerator && IsMappingExtensionsInstalled;
 
         [UIValue("EnablerTunnels")]
         public bool EnablerTunnels
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalled && Config.Instance.EnableTunnelWalls; set { SafeNotify(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && Config.Instance.EnableTunnelWalls && IsMappingExtensionsInstalled; 
+            set { SafeNotify(); } }
 
         [UIValue("EnablerGrids")]
         public bool EnablerGrids
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalled && Config.Instance.EnableGridWalls; set { SafeNotify(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && Config.Instance.EnableGridWalls;
+            set { SafeNotify(); } }
 
         [UIValue("EnablerPanes")]
         public bool EnablerPanes
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalled && Config.Instance.EnableWindowPaneWalls; set { SafeNotify(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && Config.Instance.EnableWindowPaneWalls; 
+            set { SafeNotify(); } }
 
         [UIValue("EnablerParticles")]
         public bool EnablerParticles
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalled && Config.Instance.EnableParticleWalls; set { SafeNotify(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && Config.Instance.EnableParticleWalls; 
+            set { SafeNotify(); } }
 
         [UIValue("EnablerFloors")]
         public bool EnablerFloors
-        { get => Config.Instance.EnablePlugin && EnableWallGenerator && IsMappingExtensionsInstalled && Config.Instance.EnableFloorWalls; set { SafeNotify(); } }
+        { get => Config.Instance.EnablePlugin && EnableWallGenerator && Config.Instance.EnableFloorWalls; 
+            set { SafeNotify(); } }
 
         [UIValue("EnablerCleanBeatSage")]
         public bool EnablerCleanBeatSage
@@ -1431,9 +1460,7 @@ namespace AutoBS.UI
         [UIValue("FontColorExtWallGenerator")]
         public string FontColorExtWallGenerator
         {
-            get => !Config.Instance.EnablePlugin
-                    || !EnableWallGenerator
-                    || !IsMappingExtensionsInstalled
+            get => !Config.Instance.EnablePlugin || !EnableWallGenerator
                 ? OffColor
                 : OnColor;
             set => SafeNotify();
@@ -1441,35 +1468,40 @@ namespace AutoBS.UI
 
         [UIValue("FontColorDistant")]
         public String FontColorDistant
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalled ? OffColor : (Config.Instance.EnableDistantExtensionWalls ? OnColor : OffColor); set { SafeNotify(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator ? OffColor : (Config.Instance.EnableDistantExtensionWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorColumns")]
         public String FontColorColumns
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalled ? OffColor : (Config.Instance.EnableColumnWalls ? OnColor : OffColor); set { SafeNotify(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator ? OffColor : (Config.Instance.EnableColumnWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorRows")]
         public String FontColorRows
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalled ? OffColor : (Config.Instance.EnableRowWalls ? OnColor : OffColor); set { SafeNotify(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator ? OffColor : (Config.Instance.EnableRowWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorTunnels")]
         public String FontColorTunnels
         { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalled ? OffColor : (Config.Instance.EnableTunnelWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
+        // Optional: dim the toggle text when ME missing
+        [UIValue("FontColorTunnelToggle")]
+        public string FontColorTunnelToggle =>
+            EnablerTunnelToggle ? OnColor : OffColor;
+
         [UIValue("FontColorGrids")]
         public String FontColorGrids
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalled ? OffColor : (Config.Instance.EnableGridWalls ? OnColor : OffColor); set { SafeNotify(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator ? OffColor : (Config.Instance.EnableGridWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorPanes")]
         public String FontColorPanes
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalled ? OffColor : (Config.Instance.EnableWindowPaneWalls ? OnColor : OffColor); set { SafeNotify(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator ? OffColor : (Config.Instance.EnableWindowPaneWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorParticles")]
         public String FontColorParticles
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalled ? OffColor : (Config.Instance.EnableParticleWalls ? OnColor : OffColor); set { SafeNotify(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator ? OffColor : (Config.Instance.EnableParticleWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorFloors")]
         public String FontColorFloors
-        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator || !IsMappingExtensionsInstalled ? OffColor : (Config.Instance.EnableFloorWalls ? OnColor : OffColor); set { SafeNotify(); } }
+        { get => !Config.Instance.EnablePlugin || !EnableWallGenerator ? OffColor : (Config.Instance.EnableFloorWalls ? OnColor : OffColor); set { SafeNotify(); } }
 
         [UIValue("FontColorCleanBeatSage")]
         public string FontColorCleanBeatSage

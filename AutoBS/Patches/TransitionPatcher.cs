@@ -32,6 +32,7 @@ namespace AutoBS.Patches
         }
         public static BeatmapKey SelectedPlayKey;
         public static BeatmapKey BasedOnKey;
+        public static System.Random RepeatableRandom = new System.Random();
         public static Version SelectedBeatmapVersion = new Version(2, 6, 0);
         public static bool IsGen360 = false; // Only inject once, for the map the player actually "Starts" instead of all difficulties in the set
         public static string SelectedSerializedName;//will be "Generated360Degree" for gen 360
@@ -124,6 +125,10 @@ namespace AutoBS.Patches
                 }
             }
 
+            //string seedStr = BasedOnKey == null ? SelectedPlayKey.ToString() : BasedOnKey.ToString(); // prefer basedOn so that standard and Gen are the same.
+            //Plugin.LogDebug($"[TransitionPatcher] beatmapLevel.levelID: {beatmapLevel.levelID}" );
+            int seed = StableHash32(beatmapLevel.levelID); // example: custom_level_D812C45C625570F09AD71AB2AE5529D9B28C9B3E so will keep same seed for all levels of same song
+            RepeatableRandom = new System.Random(seed); // use for psuedo random 
 
             bool isCustomLevel = beatmapLevel.levelID.StartsWith("custom_level_");//v1.42
 
@@ -229,6 +234,19 @@ namespace AutoBS.Patches
 
             ForceActivatePatches.MappingExtensionsForceActivate();
 
+        }
+
+
+        //Get a stable seed for system.random
+        public static int StableHash32(string s)
+        {
+            unchecked
+            {
+                uint hash = 2166136261;
+                for (int i = 0; i < s.Length; i++)
+                    hash = (hash ^ s[i]) * 16777619;
+                return (int)hash;
+            }
         }
 
         /// <summary>

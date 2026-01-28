@@ -97,10 +97,9 @@ namespace AutoBS
         }
         public static bool IsEnabledExtensionWalls()
         {
-            Config Cfg = Config.Instance;
             if (!IsEnabledWalls()) return false;
             if (!GameplaySetupView.IsMappingExtensionsInstalled) return false;
-            if (Cfg.EnableDistantExtensionWalls || Cfg.EnableColumnWalls || Cfg.EnableRowWalls || Cfg.EnableGridWalls || Cfg.EnableTunnelWalls || Cfg.EnableWindowPaneWalls || Cfg.EnableParticleWalls || Cfg.EnableFloorWalls)
+            if (Config.Instance.EnableDistantExtensionWalls || Config.Instance.EnableColumnWalls || Config.Instance.EnableRowWalls || Config.Instance.EnableGridWalls || Config.Instance.EnableTunnelWalls || Config.Instance.EnableWindowPaneWalls || Config.Instance.EnableParticleWalls || Config.Instance.EnableFloorWalls)
                 return true;
             
 

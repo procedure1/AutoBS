@@ -207,7 +207,7 @@ namespace AutoBS
             float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
 
             // high speed high density maps can have too many 30 degree rotations which seems excessive. 
-            if (Config.Instance.ReduceRotationForHighSpeedHighDensityMaps && notespersecond > Config.Instance.HighNoteDensityThresholdForRotationReduction && njs > Config.Instance.HighBPMThresholdForRotationReduction)
+            if (Config.Instance.ReduceRotationForHighSpeedHighDensityMaps && notespersecond > Config.Instance.HighNPSThresholdForRotationReduction && njs > Config.Instance.HighNJSThresholdForRotationReduction)
             {
                 maxRotationStep = minRotationStep = 1;
                 rotationStepOffset = 0;

@@ -129,6 +129,14 @@ namespace AutoBS
 
             Plugin.LogDebug("[PipelineResult] Original map altered! New altered map will be used!");
 
+            /*
+            eData.BasicEvents.OrderBy(r => r.time).ToList();
+            foreach (var light in eData.BasicEvents)
+            {
+                if (light.time > 59 && light.time < 80)
+                    Plugin.LogDebug($"Light: {light.time:F3} type: {(EventType)light.basicBeatmapEventType} value: {(EventValue)light.value} floatValue: {light.floatValue}");
+            }
+            */
             ConvertEditableCBD.ApplyPerObjectRotations(eData);
             ConvertEditableCBD.ApplyWallVisionBlockingFix(eData); // will alter eData by reference
 
@@ -416,16 +424,9 @@ namespace AutoBS
                     Plugin.LogDebug($"[FinalizeWallGeneration][FindGapsUsingNotes] No WallCutMoments! With notes found {gaps.Count} gaps to help set floor walls and mega walls.");
                 }
 
-
-                //outside the loop. so not using wallTime and not on the beat
-                if (Utils.IsEnabledExtensionWalls())// && !BeatmapDataTransformHelperPatcher.NoodleProblemNotes && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles) // turn off automated extended walls for maps already using mapping extensions
-                {
-                    WallGenerator.ParticleWalls();
-                    WallGenerator.FloorWalls(gaps);
-
-                    //Plugin.LogDebug($" ------- Create Particle & Floor Walls Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}");
-                }
-
+                WallGenerator.ParticleWalls(); WallGenerator.FloorWalls(gaps);//outside the loop. so not using wallTime and not on the beat
+                
+                
                 //v1.42 added mega walls outside of the extension walls since mega walls do not require ME (but height is severely restricted to about 8 or 10)
                 WallGenerator.MegaWalls(gaps);
 

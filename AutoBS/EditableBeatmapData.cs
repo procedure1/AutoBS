@@ -2172,8 +2172,8 @@ namespace AutoBS
         // This is the new WallRemovalForRotations() 
         public static void ApplyWallVisionBlockingFix(EditableCBD eData) // COMBO Method seems to allow more walls on both sides during turns 
         {
-            float inPointLog  = 207f; // seconds for log only
-            float outPointLog = 207.1f;
+            float inPointLog  = 158f; // seconds for log only
+            float outPointLog = 161f;
 
             bool rotationModeLate = eData.RotationModeLate;
 
@@ -2266,8 +2266,11 @@ namespace AutoBS
                 float width    = DecodePrecision(obs.width);
                 float rightEdge = leftEdge + width;
 
-                bool leftSide  = rightEdge <=  2;
-                bool rightSide = leftEdge  >   2;
+                const float EPS = 0.0001f;
+
+                // lanes 0-1 are left, lanes 2-3 are right
+                bool leftSide = rightEdge <= 2f + EPS; //rightEdge <= 2f
+                bool rightSide = leftEdge >= 2f - EPS; //leftEdge > 2f; BIG CHANGE! since didn't catch leftEdage = 2 which is definitely right side
 
                 if (deltaRot < 0) return leftSide;   // left turn blocks if wall touches left half
                 if (deltaRot > 0) return rightSide;  // right turn blocks if wall touches right half
@@ -2341,25 +2344,21 @@ namespace AutoBS
 
             static float LeadScaleForAbsDelta(int absDelta)
             {
-                absDelta = Math.Abs(absDelta);
-
+                absDelta = Math.Abs(absDelta); 
                 // Ignore tiny differences
-                if (absDelta < 15) return 1.0f;
-
-                // Piecewise linear:
-                // 15->30 ramps 1.0->1.5
+                if (absDelta < 15) return 1.0f; 
+                // Piecewise linear: 
+                // 15->30 ramps 1.0->1.5 
                 // 30->90 ramps 1.5->3.0
-                float s;
+
+                float s; 
                 if (absDelta <= 30)
-                    s = 1.0f + (absDelta - 15) * (0.5f / 15f);          // +0.0333 per degree
-                else
-                    s = 1.5f + (absDelta - 30) * (1.5f / 60f);          // +0.025 per degree
-
-                return Math.Clamp(s, 1.0f, 3.0f);
+                    s = 1.0f + (absDelta - 15) * (0.5f / 15f); // +0.0333 per degree
+                else 
+                    s = 1.5f + (absDelta - 30) * (1.5f / 60f); // +0.025 per degree
+                
+                return Math.Clamp(s, 1.0f, 3.0f); 
             }
-
-
-
 
             List<EObstacleData> ApplyStyle1ForWall(EObstacleData obs)
             {
@@ -2373,6 +2372,11 @@ namespace AutoBS
                 float normalized = mult / 0.9f;
 
                 float lead = (wallTravelTime / 3f) * normalized;
+
+                if (obs.time > inPointLog && obs.time < outPointLog)
+                {
+                    Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Style1 Wall @{obs.time:F2}s duration {obs.duration:F2}s lead={lead:F3}s VisionBlockingWallRemovalMult={mult:F3} normalized={normalized:F3} wallTravelTime={wallTravelTime}");
+                }
 
 
                 // These are the same as in your OLD method
@@ -2398,6 +2402,14 @@ namespace AutoBS
                     .Select(dt => dt.time)
                     .OrderBy(t => t)
                     .ToList();
+
+                if (obs.time > inPointLog && obs.time < outPointLog)
+                {
+                    Plugin.LogDebug($"[WB] Wall@{obs.time:F4} end={obs.endTime:F4} lead={lead:F3} visibleEnd={visibleEnd:F4} blockEvents={blockEvents.Count}");
+                    foreach (var t in blockEvents.Take(5))
+                        Plugin.LogDebug($"[WB]   blockEvt t={t:F4}");
+                }
+
 
                 const float EPS = 0.0005f;
 
