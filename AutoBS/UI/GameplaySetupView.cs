@@ -1124,8 +1124,8 @@ namespace AutoBS.UI
             _arcRotationModes.Add(_arcRotationModeLabels[Config.ArcRotationModeType.NetZero]);
             _arcRotationModes.Add(_arcRotationModeLabels[Config.ArcRotationModeType.NoRestriction]);
 
-            _autoNjsModes.Add(_autoNjsFixerModeLabels[Config.AutoNjsFixerModeType.MaintainNoteSpeed]);
-            _autoNjsModes.Add(_autoNjsFixerModeLabels[Config.AutoNjsFixerModeType.ForceNJS]);
+            _autoNjsModes.Add(_autoNjsFixerModeLabels[Config.AutoNjsFixerModeType.PreserveTravelTime]);
+            _autoNjsModes.Add(_autoNjsFixerModeLabels[Config.AutoNjsFixerModeType.SetNoteSpeed]);
         }
 
         [UIValue("LightStyle")]
@@ -1171,8 +1171,8 @@ namespace AutoBS.UI
 
         private readonly Dictionary<Config.AutoNjsFixerModeType, string> _autoNjsFixerModeLabels = new Dictionary<Config.AutoNjsFixerModeType, string>
         {
-            { Config.AutoNjsFixerModeType.MaintainNoteSpeed, "Maintain Map Speed" },
-            { Config.AutoNjsFixerModeType.ForceNJS,         "Set Note Speed" }
+            { Config.AutoNjsFixerModeType.PreserveTravelTime, "Preserve Travel Time" },
+            { Config.AutoNjsFixerModeType.SetNoteSpeed,         "Set Note Speed" }
         };
 
         [UIValue("available-auto-modes")]
@@ -1403,7 +1403,7 @@ namespace AutoBS.UI
         {
             get => Config.Instance.EnablePlugin
                    && EnablerAutoNjsFixer
-                   && Config.Instance.AutoNjsFixerMode == Config.AutoNjsFixerModeType.ForceNJS; // "Set Velocity"
+                   && Config.Instance.AutoNjsFixerMode == Config.AutoNjsFixerModeType.SetNoteSpeed; // "Set Velocity"
             set => SafeNotify();
         }
 

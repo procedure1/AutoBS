@@ -109,6 +109,7 @@ namespace AutoBS
             foreach (var obstacle in eData.Obstacles) // Clear existing obstacles from BeatmapData so obstacles are empty
             {
                 originalWalls.Add(obstacle); // add original obstacles into the list
+                Plugin.LogDebug($"[SetOriginalWalls] Original wall at time: {obstacle.time}, duration: {obstacle.duration}, layer: {obstacle.layer}, line: {obstacle.line}, width: {obstacle.width}, height: {obstacle.height}");
             }
             originalWalls.Sort((a, b) => a.time.CompareTo(b.time));
             originalWallCount = originalWalls.Count;
@@ -263,21 +264,37 @@ namespace AutoBS
             }
 
             minWallDuration = Config.Instance.MinWallDuration;
-            
 
-            if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE || TransitionPatcher.SelectedSerializedName == "360Degree")
+            int standardWallsMinDistance = (int)Config.Instance.StandardWallsMinDistance;
+
+            int offsetRightWall = 0; // used to offset randomly right or left wall by 2 so they both will not be at 0 offset, otherwise that is 2 leaning walls touching each other with no gap between.
+            int offsetLeftWall  = 0;
+            if (standardWallsMinDistance == 0)
+            {
+                offsetRightWall = TransitionPatcher.RepeatableRandom.Next(2) == 0 ? 2 : 0; // if false, will offset left wall instead. if i use 1 offset, then there is a tiny 1 lane tunnel between 2 walls. but if use 2 then one wall is lean and the other either -1 or 4.
+                offsetLeftWall = offsetRightWall == 2 ? 0 : 2;
+            }
+
+                if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE || TransitionPatcher.SelectedSerializedName == "360Degree" || TransitionPatcher.SelectedSerializedName == "90Degree") // was not setting this for 360 before
+            {
                 minDistanceBetweenNotesAndWalls = Config.Instance.MinDistanceBetweenNotesAndWalls * Config.Instance.RotationSpeedMultiplier; // was .5f then .7f
-            else
+                wallTime += minDistanceBetweenNotesAndWalls;
+            }
+            {
                 minDistanceBetweenNotesAndWalls = .2f;
+                wallTime += minDistanceBetweenNotesAndWalls/2;
+            }
 
             //Plugin.Log.Info($"WallGen: i: {i} wallTime: {wallTime:F} wallDuration: {wallDuration:F} afterLastNote: {afterLastNote?.time:F} notesInBarBeat.Count: {notesInBarBeat.Count} notesInBar.Count: {notesInBar.Count}");
 
             //Plugin.Log.Info($"WallGenerator: containsCustomWalls: {BeatmapDataTransformHelperPatcher.containsCustomWalls}");
 
-
+            /*
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
                 wallTime += minDistanceBetweenNotesAndWalls; // Shift wall start time forward
-
+            else
+                wallTime += minDistanceBetweenNotesAndWalls/2;
+            */
             string generatedBigWall = "none"; // used to prevent bigWalls overlapping with columns of walls and rows of walls
             string generatedWall = "none";    // used to prevent standard walls overlapping with columns of walls and rows of walls
 
@@ -345,7 +362,7 @@ namespace AutoBS
                     }
 
                     // compute start col for the clamp BEFORE calling it
-                    int startColRight = 3 + (int)Config.Instance.StandardWallsMinDistance;
+                    int startColRight = 2 + standardWallsMinDistance + offsetRightWall;
 
                     // use local start/dur so this side doesn’t affect the other
                     float rStart = wallTime;
@@ -369,6 +386,8 @@ namespace AutoBS
 
                         var customObsDataR = EObstacleData.Create(rStart, startColRight, lineLayerR, rDur, widthRight, heightR);
                         generatedStandardWalls.Add(customObsDataR);
+
+                        //Plugin.LogDebug($"[WallGen] Generated RIGHT wall at time {rStart:F}, duration {rDur:F2}, line {startColRight}, width {widthRight}, height {heightR}");
 
                         int idxR = tempOriginalAndStandardWalls.BinarySearch(customObsDataR, Comparer<EObstacleData>.Create((x, y) => x.time.CompareTo(y.time)));
                         if (idxR < 0) idxR = ~idxR;
@@ -394,7 +413,7 @@ namespace AutoBS
                     }
 
                     // compute LEFT start column FIRST; big walls sit farther left
-                    int startColLeft = (widthLeft == 1 ? 0 : -11) - (int)Config.Instance.StandardWallsMinDistance;
+                    int startColLeft = (widthLeft == 1 ? 1 : -10) - standardWallsMinDistance - offsetLeftWall;
 
                     // side-local start/dur
                     float lStart = wallTime;
@@ -420,6 +439,8 @@ namespace AutoBS
 
                         var customObsDataL = EObstacleData.Create(lStart, startColLeft, lineLayerL, lDur, widthLeft, heightL);
                         generatedStandardWalls.Add(customObsDataL);
+
+                        //Plugin.LogDebug($"[WallGen] Generated LEFT wall at time {lStart:F}, duration {lDur:F2}, line {startColLeft}, width {widthLeft}, height {heightL}");
 
                         int idxL = tempOriginalAndStandardWalls.BinarySearch(customObsDataL, Comparer<EObstacleData>.Create((x, y) => x.time.CompareTo(y.time)));
                         if (idxL < 0) idxL = ~idxL;
@@ -1099,7 +1120,7 @@ namespace AutoBS
 
             // TEST !!!!!!!!!!!!!!!!!!!
 
-            int topLineLayer = (int)Config.Instance.TunnelWallsMinDistance + 5;// (int)Config.Instance.TunnelWallsMinDistance * 1000 + 6750; // 6000 default which is 2 away but count as 1. // this value does not work for my mapping extension mod that i fixed to test 1.42. not sure why but this value makes the wall disapper. if i change to 5 it appear.
+            int topLineLayer = (int)Config.Instance.TunnelWallsMinDistance * 1000 + 6750; // 1000 + 6750 // this value does not work for my mapping extension mod that i fixed to test 1.42. not sure why but this value makes the wall disapper. if i change to 5 it appear.
             int leftLineIndex = (int)Config.Instance.TunnelWallsMinDistance * 1000 + 2250; // 1500 default which is 1 (1.5) away basically from player
             int rightLineIndex = (int)Config.Instance.TunnelWallsMinDistance * 1000 + 5750; // 5000 default which is 1 away basically from player
 
@@ -1131,10 +1152,10 @@ namespace AutoBS
                         {
                             customObsData = EObstacleData.Create(newWallStartTime, -leftLineIndex, layer2, .03f * durationMult, 1010, height1); // left wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                             generatedExtensionWalls.Add(customObsData);
-                            //Plugin.Log.Info($"Tunnel Wall: Time: {newWallStartTime:F2}, line: {-leftLineIndex}, Layer: {layer2}, Width: 1010, Height: {height1}");
+                            //Plugin.Log.Info($"[TunnelWalls] Left Time: {newWallStartTime:F2}, line: {-leftLineIndex}, Layer: {layer2}, Width: 1010, Height: {height1}");
                            
                             tunnelCount++;
-                        }
+                        }   
 
                     }
                     // right wall
@@ -1149,7 +1170,7 @@ namespace AutoBS
                         {
                             customObsData = EObstacleData.Create(newWallStartTime, rightLineIndex, layer2, .03f * durationMult, 1010, height1); // right wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                             generatedExtensionWalls.Add(customObsData);
-                            //Plugin.Log.Info($"Tunnel Wall: Time: {newWallStartTime:F2}, line: {rightLineIndex}, Layer: {layer2}, Width: 1010, Height: {height1}");
+                            //Plugin.Log.Info($"[TunnelWalls] Right Time: {newWallStartTime:F2}, line: {rightLineIndex}, Layer: {layer2}, Width: 1010, Height: {height1}");
 
                             tunnelCount++;
                         }

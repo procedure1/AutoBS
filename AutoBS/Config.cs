@@ -76,6 +76,9 @@ namespace AutoBS
         public virtual float PreferredArcCountPerMin { get; set; } = 12.0f;//how many arcs per minute to aim for.
         public virtual float MinArcDuration { get; set; } = 0.9f;
         public virtual float MaxArcDuration { get; set; } = 2.5f;
+        public virtual bool AllowArcHeadDotNotes { get; set; } = false;
+        public virtual bool AllowArcTailDotNotes { get; set; } = false;
+        
 
         // CHAINS
 
@@ -86,6 +89,8 @@ namespace AutoBS
         public virtual float ChainTimeBumper { get; set; } = 0.2f;//how much time between chain and other notes.
         public virtual bool EnableLongChains { get; set; } = true; // chains more like arcs that don't get slashed
         public virtual float LongChainMaxDuration { get; set; } = 0.425f; // max duration of long chains
+
+        public virtual float LongChainChanceMultiplier { get; set; } = 10f; // multiplier to increase or decrease chance of long chains 10 is always allows. 0 is never allow.
 
         // BEAT SAGE
 
@@ -103,10 +108,10 @@ namespace AutoBS
         public virtual bool EnableStandardWalls { get; set; } = true; 
         public virtual bool EnableBigWalls { get; set; } = true;
         public virtual float StandardWallsMultiplier { get; set; } = 100; // 100% is max and can't be increased unlike the other multipliers
-        public virtual float StandardWallsMinDistance { get; set; } = 0; // default 0 since comes into lanes 0 and 3
-        
+        public virtual float StandardWallsMinDistance { get; set; } = 1; // default 1 so ends into lanes 0 and 3. at 0 will be lean walls into lanes 1 and 2
+
         //public virtual bool UseMappingExtensionsForWallsGenerator { get; set; } = true; // allows user to to use all the walls with ME if they prefer - doesn't work. must also somehow disable ME or will use it anyway.
-        
+
         public virtual bool EnableDistantExtensionWalls { get; set; } = true; // -- i think i can delete this!!!!!!!!!!!!!!!!!!!!!!!
         public virtual float DistantExtensionWallsMultiplier { get; set; } = 2;
         
@@ -225,8 +230,8 @@ namespace AutoBS
         public virtual bool EnabledInPractice { get; set; } = false; 
         public virtual float DesiredNJS { get; set; } = 10f; // if > 0 use this value
         public virtual float DesiredJD  { get; set; } = 30f; // if > 0 use this value
-        public enum AutoNjsFixerModeType { MaintainNoteSpeed, ForceNJS } // bpm is required for maintain speed mode
-        public virtual AutoNjsFixerModeType AutoNjsFixerMode { get; set; } = AutoNjsFixerModeType.MaintainNoteSpeed;
+        public enum AutoNjsFixerModeType { PreserveTravelTime, SetNoteSpeed } // bpm is required for PreserveTravelTime mode. 
+        public virtual AutoNjsFixerModeType AutoNjsFixerMode { get; set; } = AutoNjsFixerModeType.PreserveTravelTime;
 
 
         //------------------------

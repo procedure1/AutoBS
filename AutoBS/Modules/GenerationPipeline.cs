@@ -92,8 +92,8 @@ namespace AutoBS
             bool boostNotAdded = (Config.Instance.BoostLighting && eData.ColorBoostEvents.Count == 0) || eData.MapAlreadyUsesEnvColorBoost;
             Plugin.LogDebug($"[PipelineResult] 6 boostNotAdded: {boostNotAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {eData.MapAlreadyUsesEnvColorBoost})");
 
-            bool wallsNotAdded = (Utils.IsEnabledWalls() && originalWallCount == eData.Obstacles.Count) || !Utils.IsEnabledWalls();
-            Plugin.LogDebug($"[PipelineResult] 7 wallsNotAdded: {wallsNotAdded} (Original Count: {originalWallCount} Final Count: {eData.Obstacles.Count}).");
+            bool wallsNotAltered = ((Utils.IsEnabledWalls() && originalWallCount == eData.Obstacles.Count) || !Utils.IsEnabledWalls()) && !eData.ObstaclesChanged;
+            Plugin.LogDebug($"[PipelineResult] 7 wallsNotAltered: {wallsNotAltered} (Original Count: {originalWallCount} Final Count: {eData.Obstacles.Count} -- walls may have changed start time or duration or lineLayer if beatsage cleaner used)");
 
             if (eData.IsNative360or90 && eData.RotationEventsChanged) // if rotations are altered, then original data with its per object rotations will change! (basic event data is turned into per object rotation)  
             {

@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using System;
 using UnityEngine;
 
 namespace AutoBS.Patches
@@ -56,20 +57,33 @@ namespace AutoBS.Patches
 
             float originalNJS = noteJumpMovementSpeed; // from prefix argument
             float originalNJO = TransitionPatcher.NoteJumpOffset;
+            float originalJD = AutoNjsFixer.GetJumpDistance(bpm == 0 ? TransitionPatcher.bpm : bpm, originalNJS, originalNJO);
 
-            noteJumpMovementSpeed = TransitionPatcher.FinalNoteJumpMovementSpeed;
-            noteJumpValueType = BeatmapObjectSpawnMovementData.NoteJumpValueType.JumpDuration;
-            noteJumpValue = TransitionPatcher.FinalJumpDistance / TransitionPatcher.FinalNoteJumpMovementSpeed / 2f;
+            float finalNJS = TransitionPatcher.FinalNoteJumpMovementSpeed;
+            float finalJD = TransitionPatcher.FinalJumpDistance;
 
-            bool maintainVelocity = (Config.Instance.AutoNjsFixerMode == Config.AutoNjsFixerModeType.MaintainNoteSpeed) ? true : false; // if false , it's ForceNJS mode
+            bool njsChanged = Math.Abs(finalNJS - originalNJS) > 0.01f;
+            bool jdChanged  = Math.Abs(finalJD - originalJD) > 0.01f;
 
-            if (maintainVelocity)
+            if (!njsChanged && !jdChanged)
             {
-                Plugin.LogDebug($"[VariableMovementDataProvider][AutoNjsFixer] MAINTAIN PERCEIVED SPEED MODE: NJS:{noteJumpMovementSpeed:F2} JD:{TransitionPatcher.FinalJumpDistance:F2} -- (original NJS: {originalNJS})");
+                Plugin.LogDebug($"[VariableMovementDataProvider][AutoNjsFixer] (final == original). NJS JD Unchanged!");
+                return;
+            }
+
+            noteJumpMovementSpeed = finalNJS;
+            noteJumpValueType = BeatmapObjectSpawnMovementData.NoteJumpValueType.JumpDuration;
+            noteJumpValue = finalJD / finalNJS / 2f;
+
+            bool preserveTravelTime = (Config.Instance.AutoNjsFixerMode == Config.AutoNjsFixerModeType.PreserveTravelTime) ? true : false; // if false , it's ForceNJS mode
+
+            if (preserveTravelTime)
+            {
+                Plugin.LogDebug($"[VariableMovementDataProvider][AutoNjsFixer] Preserve Travel Time MODE: NJS:{noteJumpMovementSpeed:F2} JD:{TransitionPatcher.FinalJumpDistance:F2} -- (original NJS: {originalNJS})");
             }
             else
             {
-                Plugin.LogDebug($"[VariableMovementDataProvider][AutoNjsFixer] SET NOTE SPEED MODE: NJS:{noteJumpMovementSpeed} JD:{TransitionPatcher.FinalJumpDistance} -- (original NJS: {originalNJS}) ");
+                Plugin.LogDebug($"[VariableMovementDataProvider][AutoNjsFixer] Set Note Speed MODE: NJS:{noteJumpMovementSpeed} JD:{TransitionPatcher.FinalJumpDistance} -- (original NJS: {originalNJS}) ");
             }
         }
     }

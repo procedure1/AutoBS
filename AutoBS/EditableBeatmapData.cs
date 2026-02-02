@@ -519,6 +519,58 @@ namespace AutoBS
             };
         }
 
+        public void LinkNotesAndSliders(List<ENoteData> notes, List<ESliderData> sliders)
+        {
+            foreach (var s in sliders)
+            {
+                // HEAD
+                if (s.hasHeadNote && s.headNote == null)
+                {
+                    var head = FindNote(notes, s.time, s.line, s.layer, s.colorType);
+                    if (head != null)
+                    {
+                        s.headNote = head;
+                        if (s.sliderType == ESliderType.Chain)
+                        {
+                            head.headNoteChain = s;
+                            // Only override scoringType if it isn't already something more specific
+                            //if (head.scoringType == NoteData.ScoringType.Normal)
+                            //    head.scoringType = NoteData.ScoringType.ChainHead;
+                        }
+                        else if (s.sliderType == ESliderType.Arc)
+                        {
+                            head.headNoteArc = s;
+                            // same idea for arc scoring type, if you want
+                        }
+                    }
+                }
+
+                // TAIL – if you care
+                if (s.hasTailNote && s.tailNote == null)
+                {
+                    var tail = FindNote(notes, s.tailTime, s.tailLine, s.tailLayer, s.colorType);
+                    if (tail != null)
+                    {
+                        s.tailNote = tail;
+                        if (s.sliderType == ESliderType.Arc)
+                        {
+                            tail.tailNoteArc = s;
+                        }
+                    }
+                }
+            }
+        }
+        ENoteData FindNote(List<ENoteData> notes, float time, int line, int layer, ColorType color)
+        {
+            const float TOL = 0.0005f;
+            return notes.FirstOrDefault(n =>
+                n.colorType == color &&
+                n.line == line &&
+                n.layer == layer &&
+                Math.Abs(n.time - time) < TOL);
+        }
+
+
         public CustomSliderData ToCustomSliderData(Version version)
         {
             float beatValue = time * (TransitionPatcher.bpm / 60f);
@@ -1127,7 +1179,7 @@ namespace AutoBS
 
             Plugin.LogDebug($"[EditableCBD] MapAlreadyUsesEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, MapAlreadyUsesRotations: {IsNative360or90}");
 
-            LinkArcEndpointsToNotes();
+            LinkSlidersToNotes();
         }
 
         // Creates an EditableCBD from a CustomBeatmapData object!!!!!!!!!!!!!!
@@ -1173,6 +1225,8 @@ namespace AutoBS
                 .OrderBy(s => s.time)
                 .Select(s => new ESliderData(s))
                 .ToList();
+
+            LinkSlidersToNotes();
 
             RotationModeLate = true; // Sets to LATE mode unless incoming events set to EARLY
 
@@ -1307,10 +1361,117 @@ namespace AutoBS
                     .OrderBy(e => e.time)
                     .ToList();
 
-            LinkArcEndpointsToNotes();
+            LinkSlidersToNotes();
         }
 
+        /// <summary>
+        /// Links chains and arcs with a head note and tail note based on matching time, color, line, and layer. This is needed to add per object rotations to notes linked to arcs on maps that have arcs already. 
+        /// Also its needed to prevent arcs being generated on chain heads that already exist in the original map
+        /// </summary>
+        private void LinkSlidersToNotes(bool linkChains = true, bool linkArcs = true)
+        {
+            bool hasChains = linkChains && Chains != null && Chains.Count > 0;
+            bool hasArcs = linkArcs && Arcs != null && Arcs.Count > 0;
 
+            if (!hasChains && !hasArcs) return;
+            if (ColorNotes == null || ColorNotes.Count == 0) return;
+
+            const float TOL = 0.0005f;
+            var notes = ColorNotes; // assume already sorted by time
+
+            // local helper to link one list of sliders
+            void LinkList(List<ESliderData> sliders, bool isChain)
+            {
+                if (sliders == null || sliders.Count == 0) return;
+
+                foreach (var s in sliders)
+                {
+                    ENoteData head = s.headNote;
+                    ENoteData tail = s.tailNote;
+
+                    float headTime = s.time;
+                    float tailTime = s.tailTime;
+
+                    // ---- HEAD ----
+                    if (head == null)
+                    {
+                        for (int i = 0; i < notes.Count; i++)
+                        {
+                            var n = notes[i];
+
+                            // small time window to avoid scanning the whole list unnecessarily
+                            if (n.time < headTime - 0.1f) continue;
+                            if (n.time > headTime + 0.1f) break;
+
+                            if (Math.Abs(n.time - headTime) <= TOL &&
+                                n.colorType == s.colorType &&
+                                n.line == s.line &&
+                                n.layer == s.layer)
+                            {
+                                head = n;
+                                break;
+                            }
+                        }
+                    }
+
+                    // ---- TAIL ----
+                    if (tail == null)
+                    {
+                        for (int i = 0; i < notes.Count; i++)
+                        {
+                            var n = notes[i];
+
+                            if (n.time < tailTime - 0.1f) continue;
+                            if (n.time > tailTime + 0.1f) break;
+
+                            if (Math.Abs(n.time - tailTime) <= TOL &&
+                                n.colorType == s.colorType &&
+                                n.line == s.tailLine &&
+                                n.layer == s.tailLayer)
+                            {
+                                tail = n;
+                                break;
+                            }
+                        }
+                    }
+
+                    s.headNote = head;
+                    s.tailNote = tail;
+
+                    // ---- Tag notes based on slider type ----
+                    if (isChain)
+                    {
+                        if (head != null)
+                        {
+                            head.headNoteChain = s;
+                            if (head.scoringType == NoteData.ScoringType.Normal)
+                                head.scoringType = NoteData.ScoringType.ChainHead;
+                        }
+                    }
+                    else // Arc
+                    {
+                        if (head != null)
+                        {
+                            head.headNoteArc = s;
+                            // optionally: set ArcHead scoringType
+                        }
+
+                        if (tail != null)
+                        {
+                            tail.tailNoteArc = s;
+                            // optionally: set ArcTail scoringType
+                        }
+                    }
+                }
+            }
+
+            if (hasArcs)
+                LinkList(Arcs, isChain: false);
+            if (hasChains)
+                LinkList(Chains, isChain: true);
+        }
+
+        /*
         /// <summary>
         /// Links arc with a head note and tail note based on matching time, color, line, and layer. This is needed to add per object rotations to notes linked to arcs on maps that have arcs already
         /// </summary>
@@ -1379,7 +1540,7 @@ namespace AutoBS
                 //Plugin.Log.Info($"[LinkArcEndpointsToNotes] Arc @{arc.time:F3}s linked head note: {(head != null ? head.time.ToString("F3") : "null")}, tail note: {(tail != null ? tail.time.ToString("F3") : "null")}");
             }
         }
-
+        */
 
 
         /// <summary>
@@ -2310,7 +2471,7 @@ namespace AutoBS
             }
 
             gazePoints = gazePoints.OrderBy(n => n.time).ToList();
-            Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Gaze Points: ColorNotes={eData.ColorNotes?.Count ?? 0}, BombNotes={eData.BombNotes?.Count ?? 0}, ChainTails={eData.Chains?.Count ?? 0}");
+            //Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Gaze Points: ColorNotes={eData.ColorNotes?.Count ?? 0}, BombNotes={eData.BombNotes?.Count ?? 0}, ChainTails={eData.Chains?.Count ?? 0}");
 
             // --- Arc overlap helper ----------------------------------------
 
@@ -2372,12 +2533,12 @@ namespace AutoBS
                 float normalized = mult / 0.9f;
 
                 float lead = (wallTravelTime / 3f) * normalized;
-
+                /*
                 if (obs.time > inPointLog && obs.time < outPointLog)
                 {
                     Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Style1 Wall @{obs.time:F2}s duration {obs.duration:F2}s lead={lead:F3}s VisionBlockingWallRemovalMult={mult:F3} normalized={normalized:F3} wallTravelTime={wallTravelTime}");
                 }
-
+                */
 
                 // These are the same as in your OLD method
                 float visibleStart = obsTime;
@@ -2402,14 +2563,14 @@ namespace AutoBS
                     .Select(dt => dt.time)
                     .OrderBy(t => t)
                     .ToList();
-
+                /*
                 if (obs.time > inPointLog && obs.time < outPointLog)
                 {
                     Plugin.LogDebug($"[WB] Wall@{obs.time:F4} end={obs.endTime:F4} lead={lead:F3} visibleEnd={visibleEnd:F4} blockEvents={blockEvents.Count}");
                     foreach (var t in blockEvents.Take(5))
                         Plugin.LogDebug($"[WB]   blockEvt t={t:F4}");
                 }
-
+                */
 
                 const float EPS = 0.0005f;
 
@@ -2603,8 +2764,8 @@ namespace AutoBS
             int obsCount = 1;
             foreach (var obs in obstacles)
             {
-                if (obs.time > inPointLog && obs.time < outPointLog)
-                    Plugin.LogDebug($"[ApplyWallVisionBlockingFix] {obsCount} Obs: {obs.time:F} Dur: {obs.duration:F} line: {obs.line} layer: {obs.layer} width: {obs.width} height: {obs.height}");
+                //if (obs.time > inPointLog && obs.time < outPointLog)
+                //    Plugin.LogDebug($"[ApplyWallVisionBlockingFix] {obsCount} Obs: {obs.time:F} Dur: {obs.duration:F} line: {obs.line} layer: {obs.layer} width: {obs.width} height: {obs.height}");
                 // Skip original walls that are noodle custom walls
                 if (WallGenerator.originalWalls.Contains(obs) && WallGenerator.IsCustomNoodleWall(obs))
                 {
@@ -2643,7 +2804,7 @@ namespace AutoBS
                            : ApplyStyle1ForWall(obs);
 
                 kept.AddRange(pieces);
-
+                /*
                 if (obs.time > inPointLog && obs.time < outPointLog)
                 {
                     if (pieces.Count > 0)
@@ -2656,7 +2817,7 @@ namespace AutoBS
                     else
                         Plugin.LogDebug($"[ApplyWallVisionBlockingFix] -- Discarded Wall!");
                 }
-
+                */
                     obsCount++;
             }
 

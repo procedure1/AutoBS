@@ -745,7 +745,7 @@ namespace AutoBS
 
                     r++;
 
-                    // --- Massive Streak detector driven by emitted events ---
+                    // --- MassiveStreak detector driven by emitted events ---
                     int newIdx = allRotations.Count - 1;
                     if (newIdx > lastProcessedEvtIdx) // means Rotate() actually emitted an event (rotationStep != 0 *and* not clamped to 0)
                     {
@@ -800,7 +800,10 @@ namespace AutoBS
 
             Plugin.LogDebug($"[RotationGenerator][MassiveStreak] Total detected streaks: {massiveStreaks.Count} (using: MassiveStreakNumberOfRotationsThreshold: {Config.Instance.MassiveStreakNumberOfRotationsThreshold})");
 
-            
+            if (massiveStreaks.Count > 0)
+            {
+                AddRotationsIntoMassiveStreak(allRotations, flexibleRotations, massiveStreaks);
+            }
 
             if (allRotations.Count > 0)
             {
@@ -1092,6 +1095,143 @@ namespace AutoBS
                 return adjustedRotations;
             }
         }
+
+        /// <summary>
+        /// Adds rotation events into massive streaks of single direction rotations to break them up. Will alter the input list of rotations (allRotations)
+        /// </summary>
+        /// <param name="rots"></param>
+        /// <param name="flexibleRotations"></param>
+        /// <param name="massiveStreaks"></param>
+        /// <param name="minRun"></param>
+        /// <param name="maxRun"></param>
+        static void AddRotationsIntoMassiveStreak(
+            List<ERotationEventData> rots,
+            List<bool> flexibleRotations,
+            List<(int start, int end)> massiveStreaks,
+            int minRun = 6, // change these to control segment lengths
+            int maxRun = 16,
+            int minFlexiblePerSegment = 2   // NEW: ensure each segment has at least this many flexible events when possible
+)
+        {
+            if (rots == null || flexibleRotations == null || massiveStreaks == null) return;
+            if (rots.Count == 0 || flexibleRotations.Count != rots.Count) return;
+            if (minRun < 1) minRun = 1;
+            if (maxRun < minRun) maxRun = minRun;
+            if (minFlexiblePerSegment < 0) minFlexiblePerSegment = 0;
+
+            // deterministic "randomlike" generator
+            static uint LcgNext(ref uint s) { unchecked { s = 1664525u * s + 1013904223u; } return s; }
+            static int NextRunLen(ref uint s, int minR, int maxR)
+            {
+                uint span = (uint)(maxR - minR + 1);
+                uint n = LcgNext(ref s) % span;
+                return minR + (int)n;
+            }
+
+            foreach (var (start, end) in massiveStreaks)
+            {
+                if (start < 0 || end >= rots.Count || start > end) continue;
+
+                int origSign = Math.Sign(rots[start].rotation);
+                if (origSign == 0)
+                {
+                    for (int k = start; k <= end && origSign == 0; k++)
+                        origSign = Math.Sign(rots[k].rotation);
+                    if (origSign == 0) continue; // nothing to do
+                }
+
+                // Seed from stable streak properties (deterministic)
+                uint seed;
+                unchecked
+                {
+                    seed = 0x9E3779B9u;
+                    seed ^= (uint)start * 0x85EBCA6Bu;
+                    seed ^= (uint)end * 0xC2B2AE35u;
+                    seed ^= (uint)(Math.Abs(rots[start].rotation) + 1) * 0x27D4EB2Fu;
+                    seed ^= (uint)(Math.Abs(rots[end].rotation) + 3) * 0x165667B1u;
+                }
+
+                // 1) Build initial segments from deterministic run lengths (index space)
+                var segs = new List<(int a, int b)>();
+                {
+                    int segStart = start;
+                    while (segStart <= end)
+                    {
+                        int runLen = NextRunLen(ref seed, minRun, maxRun);
+                        int segEnd = Math.Min(end, segStart + runLen - 1);
+                        segs.Add((segStart, segEnd));
+                        segStart = segEnd + 1;
+                    }
+                }
+
+                // 2) Merge segments that have too few flexible events
+                if (minFlexiblePerSegment > 0 && segs.Count > 0)
+                {
+                    var merged = new List<(int a, int b)>();
+                    int idx = 0;
+                    while (idx < segs.Count)
+                    {
+                        int a = segs[idx].a;
+                        int b = segs[idx].b;
+
+                        // count flexible in [a..b]
+                        int flexHere = 0;
+                        for (int i = a; i <= b; i++)
+                            if (flexibleRotations[i]) flexHere++;
+
+                        // greedily merge forward until we hit the threshold (or run out)
+                        int j = idx + 1;
+                        while (flexHere < minFlexiblePerSegment && j < segs.Count)
+                        {
+                            int na = segs[j].a;
+                            int nb = segs[j].b;
+                            // extend current segment
+                            for (int i = na; i <= nb; i++)
+                                if (flexibleRotations[i]) flexHere++;
+                            b = nb;
+                            j++;
+                        }
+
+                        merged.Add((a, b));
+                        idx = j;
+                    }
+                    segs = merged;
+                }
+
+                // 3) Apply alternating signs per (possibly merged) segment
+                int totalChanged = 0;
+                Plugin.Log.Info($"[MassiveStreakDbg] --- Streak {start}-{end} len={(end - start + 1)}, origSign={(origSign > 0 ? "R" : "L")} --- start time: {rots[start].time} end time: {rots[end].time}");
+                for (int s = 0; s < segs.Count; s++)
+                {
+                    var (a, b) = segs[s];
+                    int desiredSign = (s % 2 == 0) ? origSign : -origSign;
+                    string dirLabel = desiredSign > 0 ? "RIGHT" : "LEFT";
+
+                    int flexCount = 0;
+                    int changedThisSeg = 0;
+
+                    for (int i = a; i <= b; i++)
+                    {
+                        if (!flexibleRotations[i]) continue;
+                        flexCount++;
+                        int mag = Math.Abs(rots[i].rotation);
+                        if (mag == 0) continue;
+                        rots[i].rotation = desiredSign * mag;
+                        changedThisSeg++;
+                    }
+
+                    totalChanged += changedThisSeg;
+                    int actualLen = b - a + 1;
+
+                    Plugin.Log.Info(
+                        $"[MassiveStreakDbg]   Segment {s:D2} {a}-{b} len={actualLen} dir={dirLabel} flex={flexCount} changed={changedThisSeg}");
+                }
+
+                int flips = Math.Max(0, segs.Count - 1);
+                Plugin.Log.Info($"[MassiveStreakDbg] >>> Finished streak {start}-{end}: segments={segs.Count}, flips={flips}, changed={totalChanged}");
+            }
+        }
+
 
         /// <summary>
         /// Converts a spawn rotation angle (in degrees) to the legacy Beat Saber rotation event value for v2 maps.

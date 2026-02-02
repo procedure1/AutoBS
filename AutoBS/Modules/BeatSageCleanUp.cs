@@ -38,24 +38,30 @@ namespace AutoBS
         #region Adjust Notes
         private static EditableCBD notesAdjustment(EditableCBD eData)
         {
-            List<ENoteData> notes = eData.ColorNotes.ToList();
+            int originalNoteCount = eData.ColorNotes.Count();
+            int originalBombCount = eData.BombNotes.Count();
 
-            int originalNoteCount = notes.Count();
+            int notesRemoved = 0;
+            int bombsRemoved = 0;
+
+            List<ENoteData> notesAndBombs = eData.ColorNotes.ToList();
+            notesAndBombs.AddRange(eData.BombNotes);
+            notesAndBombs = notesAndBombs.OrderBy(o => o.time).ToList();
 
             List<int> indicesToRemove = new List<int>();
 
-            Plugin.LogDebug($"[BeatSageCleanUp] Studying {notes.Count} notes.");
+            Plugin.LogDebug($"[BeatSageCleanUp] Studying {notesAndBombs.Count} notes and bombs.");
 
-            for (int i = 0; i < notes.Count; i++)
+            for (int i = 0; i < notesAndBombs.Count; i++)
             {
-                ENoteData currentNote = notes[i];
+                ENoteData currentNote = notesAndBombs[i];
 
                 // Iterate through the next three notes
-                for (int j = i + 1; j < Math.Min(i + 4, notes.Count); j++)
+                for (int j = i + 1; j < Math.Min(i + 4, notesAndBombs.Count); j++)
                 {
                     //Plugin.Log.Info($"Beat Sage j: {j}"); 
 
-                    ENoteData nextNote = notes[j];
+                    ENoteData nextNote = notesAndBombs[j];
 
                     //if (Math.Round(currentNote.time, 2) == 17.58 && Math.Round(nextNote.time, 2) == 17.58)
                     //    Plugin.Log.Info($"BW 1 ********Found the offending notes!!!!!*******************");
@@ -245,7 +251,7 @@ namespace AutoBS
 
             if (indicesToRemove.Count == 0)
             {
-                Plugin.LogDebug($"[BeatSageCleanUp] - No notes to clean!!!!!! - Remaining notes: {notes.Count}");
+                Plugin.LogDebug($"[BeatSageCleanUp] No problem notes discovered. - Remaining notes and bombs: {notesAndBombs.Count}");
             }
             else
             {
@@ -253,26 +259,25 @@ namespace AutoBS
                 for (int i = indicesToRemove.Count - 1; i >= 0; i--)
                 {
                     int indexToRemove = indicesToRemove[i];
-                    ENoteData noteToRemove = notes[indexToRemove]; // Get the reference before removing it from notes
-                    //Plugin.Log.Info($"Beat Sage Map had a note/bomb cut at: {noteToRemove.time:F}");
-
-                    notes.RemoveAt(indexToRemove); // Remove from notes list
-                                                   // Directly remove the note object from allBeatmapDataItems
-                    if (eData.ColorNotes.Contains(noteToRemove))
+                    ENoteData noteToRemove = notesAndBombs[indexToRemove]; // Get the reference before removing it from notes
+                                                                           //Plugin.Log.Info($"Beat Sage Map had a note/bomb cut at: {noteToRemove.time:F}");
+                                                                           // Directly remove the note object from allBeatmapDataItems
+                    if (noteToRemove.gameplayType == GameplayType.Bomb)
                     {
-                        eData.ColorNotes.Remove(noteToRemove);
+                        eData.BombNotes.Remove(noteToRemove);
+                        bombsRemoved++;
                     }
                     else
                     {
-                        //Plugin.Log.Info($"Note at {noteToRemove.time:F} was not found in allBeatmapDataItems and could not be removed.");
+                        eData.ColorNotes.Remove(noteToRemove);
+                        notesRemoved++;
                     }
                 }
 
-                notes = eData.ColorNotes.ToList(); // do this since notes have been changed above
+                if (notesRemoved > 0) eData.ColorNotesChanged = true; else eData.ColorNotesChanged = false;
+                if (bombsRemoved > 0) eData.BombNotesChanged  = true; else eData.BombNotesChanged  = false;
 
-                if (indicesToRemove.Count > 0) eData.ColorNotesChanged = true; else eData.ColorNotesChanged = false;
-
-                Plugin.Log.Info($"[BeatSageCleanUp] - Notes Removed {indicesToRemove.Count} - Remaining notes: {notes.Count}");
+                Plugin.LogDebug($"[BeatSageCleanUp] Notes Removed: {notesRemoved}, Bombs Removed: {bombsRemoved} - Remaining notes and bombs: {eData.ColorNotes.Count + eData.BombNotes.Count}");
             }
                 
             return eData;
@@ -283,7 +288,7 @@ namespace AutoBS
         #region Adjust Walls
         private static EditableCBD wallsAdjustment(EditableCBD eData)
         {
-            Plugin.LogDebug($"[BeatSageCleanUp] Adjusting Walls in Beat Sage Map!");
+            //Plugin.LogDebug($"[BeatSageCleanUp] Adjusting Walls in Beat Sage Map!");
             List<EObstacleData> obs = eData.Obstacles.ToList();
             List<ENoteData> notes = eData.ColorNotes.ToList();
             //Plugin.Log.Info($"[BeatSageCleanUp] Found {obs.Count} obstacles and {notes.Count} notes in Beat Sage Map!");
@@ -300,6 +305,7 @@ namespace AutoBS
             EObstacleData prevLeanOrCrouchWall = null;
 
             int obCnt = 0;
+            int wallAlteredCtnt = 0;
 
             int originalObstacleCount = obs.Count();
 
@@ -314,7 +320,7 @@ namespace AutoBS
                 float endTime = ob.time + ob.duration;
 
                 int right = line;
-                int left  = line + ob.width - 1;
+                int left = line + ob.width - 1;
                 bool outsideRange = (left < 0) || (right > 3);
 
                 if (outsideRange)
@@ -339,14 +345,14 @@ namespace AutoBS
                     {
                         break;
                     }
-                    //if (startTime > 171f && startTime < 174f)
+                    //if (startTime > 52 && startTime < 60)
                     //{
                     //    Plugin.Log.Info($"--- {obCnt} Beat Sage Map Studying wall at: {startTime:F} dur: {duration:F} line: {line} layer: {ob.layer} width: {ob.width} - note:time {note.time} line: {note.line} layer: {note.layer}");
                     //}
                     // Check if a note is too close to the beginning of a wall or just inside the beginning
                     if (note.time > startTime - minTimeBetweenWallsAndNotes && // *** have to use startTime, duration, etc here since if alter wall for a note, the next notes need to see the new version of the wall.
                         note.time < startTime + minTimeBetweenWallsAndNotes &&
-                        //(int)note.layer + 1 >= (int)ob.layer && // Note is inside or behind wall a note at layer 1 will be inside a wall at layer 2 since walls hang lower than their layer
+                         //(int)note.layer + 1 >= (int)ob.layer && // Note is inside or behind wall a note at layer 1 will be inside a wall at layer 2 since walls hang lower than their layer
                          ((note.line >= line && line > 1) ||
                           (note.line <= line && line < 2)))
                     {
@@ -360,7 +366,7 @@ namespace AutoBS
 
                                 //Plugin.Log.Info(
                                 //    $"--- {obCnt} Beat Sage Map NEW START TIME - wall: {oldStartTime:F} dur: {duration:F} had a note too close to the beginning of a wall. note: {note.time:F} and will cut beginning of the wall to start at: {startTime:F}");
-
+                                wallAlteredCtnt++;
                                 customObstacle = EObstacleData.Create(startTime,
                                     line, ob.layer, duration, ob.width, ob.height
                                  );
@@ -398,6 +404,7 @@ namespace AutoBS
                             {
                                 duration = newDuration;
 
+                                wallAlteredCtnt++;
                                 //Plugin.Log.Info(
                                 //    $"--- {obCnt} Beat Sage Map NEW DURATION -   wall: {startTime:F} dur: {oldDuration:F} had a note too close to the end of a wall. wall end: {endTime} note: {note.time:F} New duration: {duration:F}");
                                 customObstacle = EObstacleData.Create(startTime,
@@ -422,9 +429,9 @@ namespace AutoBS
 
                             //newObstacleEndTime = note.time - .3f;
                             //newDuration = newObstacleEndTime - newStartTime;
-
+                            wallAlteredCtnt++;
                             //Plugin.Log.Info(
-                            //        $"--- {obCnt} Beat Sage Map NEW LINE INDEX - wall: {startTime:F} dur: {duration:F} had a note/bomb inside a left wall. note: {note.time:F} and will move wall to lineIndex: {lineIndex}");// shorten wall to end here: {newObstacleEndTime}");
+                            //        $"--- {obCnt} Beat Sage Map NEW LINE INDEX - wall: {startTime:F} dur: {duration:F} had a note/bomb inside a left wall. note: {note.time:F} and will move wall to lineIndex: {line}");// shorten wall to end here: {newObstacleEndTime}");
                             customObstacle = EObstacleData.Create(startTime,
                                 line, ob.layer, duration, ob.width, ob.height);
                         }
@@ -434,9 +441,9 @@ namespace AutoBS
 
                             //newObstacleEndTime = note.time - .3f;
                             //newDuration = newObstacleEndTime - newStartTime;
-
+                            wallAlteredCtnt++;
                             //Plugin.Log.Info(
-                            //        $"--- {obCnt} Beat Sage Map NEW LINE INDEX - wall: {startTime:F} dur: {duration:F} had a note/bomb inside a right wall. note: {note.time:F} and will move wall to lineIndex: {lineIndex}");// shorten wall to end here: {newObstacleEndTime}");
+                            //       $"--- {obCnt} Beat Sage Map NEW LINE INDEX - wall: {startTime:F} dur: {duration:F} had a note/bomb inside a right wall. note: {note.time:F} and will move wall to lineIndex: {line}");// shorten wall to end here: {newObstacleEndTime}");
                             customObstacle = EObstacleData.Create(startTime,
                                 line, ob.layer, duration, ob.width, ob.height);
                         }
@@ -507,6 +514,7 @@ namespace AutoBS
                             startTime = newStartTime;
                             duration = newDuration;
 
+                            wallAlteredCtnt++;
                             //Plugin.Log.Info(
                             //        $"--- {obCnt} Beat Sage Map NEW START TIME - wall: {oldStartTime:F} dur: {oldDuration:F} is too close to another wall. New time: {startTime:F} new dur: {duration:F}!");
                             customObstacle = EObstacleData.Create(startTime,
@@ -526,7 +534,10 @@ namespace AutoBS
                 if (!isLeanWall && !isCrouchWall && duration > minWallDuration)
                 {
                     if (customObstacle != null)
+                    {
+                        //Plugin.LogDebug($"--- {obCnt} Beat Sage Map ADDING NON-CROUCH/LEAN WALL - wall: {startTime:F} duration: {duration:F} i: {line} l: {(int)ob.layer} w: {ob.width} h: {ob.height}");
                         finalWalls.Add(customObstacle);
+                    }
 
                     continue; // Non-crouch/lean walls are just passed through
                 }
@@ -544,7 +555,8 @@ namespace AutoBS
                     {
                         duration = newDuration;
 
-                        //Plugin.Log.Info($"--- {obCnt} Beat Sage Map NEW DURATION - wall: {startTime:F} duration: {oldDuration:F} a crouch wall that was too long. New dur: {duration:F}!");
+                        wallAlteredCtnt++;
+                        //Plugin.LogDebug($"--- {obCnt} Beat Sage Map NEW DURATION - wall: {startTime:F} duration: {oldDuration:F} a crouch wall that was too long. New dur: {duration:F}!");
                         customObstacle = EObstacleData.Create(startTime,
                             line, ob.layer, duration, ob.width, ob.height);
                     }
@@ -553,7 +565,7 @@ namespace AutoBS
                 // Skip adding this wall if the adjusted duration is 0, effectively deleting it
                 if (duration <= minWallDuration)
                 {
-                    //Plugin.Log.Info($"--- {obCnt} Beat Sage Map DELETED WALL -   wall: {startTime:F} duration: {duration:F} a crouch or lean wall that is too close to another at time. New duration would be too short!!!!");
+                    //Plugin.LogDebug($"--- {obCnt} Beat Sage Map DELETED WALL -   wall: {startTime:F} duration: {duration:F} a crouch or lean wall that is too close to another at time. New duration would be too short!!!!");
                     break;
                     // This wall is skipped because its adjusted duration is invalid
                 }
@@ -577,12 +589,18 @@ namespace AutoBS
             {
                 theCount++;
                 eData.Obstacles.Add(ob);
-                //Plugin.Log.Info($"--- {theCount} Time: {ob.time:F} dur: {ob.duration:F} i: {ob.line} l: {(int)ob.lineLayer} w: {ob.width} h: {ob.height}");
             }
 
             eData.Obstacles = eData.Obstacles.OrderBy(o => o.time).ToList(); // Sort the obstacles by time
 
-            Plugin.Log.Info($"[BeatSageCleanUp] - Original Obstacles Cleaned: {originalObstacleCount}. Final Count: {theCount}.");
+            int wallsDeletedCtn = originalObstacleCount - theCount;
+
+            if (wallsDeletedCtn > 0 || wallAlteredCtnt > 0)
+                eData.ObstaclesChanged = true;
+            else
+                eData.ObstaclesChanged = false;
+
+            Plugin.Log.Info($"[BeatSageCleanUp] Adjusting Walls in Beat Sage Map. Final Wall Count: {theCount} -- Walls deleted: {wallsDeletedCtn}, Walls modified (start time or duration or lineIndex): {wallAlteredCtnt}");
 
             return eData;
         }

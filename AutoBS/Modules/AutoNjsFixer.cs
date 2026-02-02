@@ -22,29 +22,29 @@ namespace AutoBS
             float desiredNJS = Config.Instance.DesiredNJS > 0 ? Config.Instance.DesiredNJS : originalNJS; // → (10, 0) for 100Bills Easy Standard (matches menu)
             float finalNJS = desiredNJS; // maybe be different from desiredNJS if maintainVelocity is ON
 
-            float desiredJD = Config.Instance.DesiredJD > 0 ? Config.Instance.DesiredJD : originalNJS;
+            float desiredJD = Config.Instance.DesiredJD > 0 ? Config.Instance.DesiredJD : originalJD;
             float finalJD = desiredJD;
 
 
             Plugin.LogDebug($"[AutoNjsFixer] Called... originalNJS: {originalNJS}, originalNJO: {originalNJO} originalJD: {originalJD}, desiredNJS: {desiredNJS}, desiredJD: {desiredJD}");
 
-            bool maintainVelocity = (Config.Instance.AutoNjsFixerMode == Config.AutoNjsFixerModeType.MaintainNoteSpeed) ? true : false; // if false , it's ForceNJS mode
+            bool preserveJumpDuration = (Config.Instance.AutoNjsFixerMode == Config.AutoNjsFixerModeType.PreserveTravelTime) ? true : false; // if false , it's ForceNJS mode
 
             // 3) Then your maintain‑velocity logic:
-            if (maintainVelocity && originalJD > 0.01f)
-            {
-                finalNJS = originalNJS * (desiredJD / originalJD);
-            }
-            else if (!maintainVelocity) // forceNJS is ON
-            {
-                finalNJS = desiredNJS > 0 ? desiredNJS : originalNJS;
-            }
+                if (preserveJumpDuration && originalJD > 0.01f)
+                {
+                    finalNJS = originalNJS * (desiredJD / originalJD);
+                }
+                else if (!preserveJumpDuration) // forceNJS is ON
+                {
+                    finalNJS = desiredNJS > 0 ? desiredNJS : originalNJS;
+                }
 
             finalNJS = finalNJS > 0 ? finalNJS : originalNJS; // user sets desiredNJS to 0 then use originalNJS
             finalJD = desiredJD > 0 ? desiredJD : originalJD;
 
             string mode = "Set Note Speed";
-            if (maintainVelocity) mode = "Maintain Perceived Speed";
+            if (preserveJumpDuration) mode = "Preserve Travel Time";
             Plugin.Log.Info($"[AutoNjsFixer] originalNJS: {originalNJS}, originalJD: {originalJD} => finalNJS: {finalNJS}, finalJD: {finalJD} (mode: {mode})");
 
             return (finalNJS, finalJD, originalJD);

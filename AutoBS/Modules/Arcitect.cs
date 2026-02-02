@@ -2,6 +2,7 @@
 using BeatmapSaveDataVersion4;
 using CustomJSONData.CustomBeatmap;
 using HMUI;
+using IPA.Config.Data;
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
@@ -308,17 +309,31 @@ namespace AutoBS
         }
         public static bool IsCompatibleForArc(ENoteData note1, ENoteData note2)
         {
-            if (note1.cutDirection == NoteCutDirection.Any || note2.cutDirection == NoteCutDirection.Any)
-                return false;
+            //Plugin.LogDebug($"IsCompatibleForArc: Checking notes at t1={note1.time:F3} scoringType={note1.scoringType} t2={note2.time:F3} scoringType={note2.scoringType}");
 
-            if (Config.Instance.ForceNaturalArcs)
+            if (note1.headNoteChain != null) return false; // Never use chain heads as arc heads. chain heads would be from the original map in this case
+
+            bool allowDotHead = Config.Instance.AllowArcHeadDotNotes; 
+            bool allowDotTail = Config.Instance.AllowArcTailDotNotes;
+            bool headIsDot = note1.cutDirection == NoteCutDirection.Any;
+            bool tailIsDot = note2.cutDirection == NoteCutDirection.Any;
+
+            if (headIsDot || tailIsDot)
             {
-                return IsContraryLikeDirectionBetweenSwings(note1, note2);
+                // Head dot not allowed
+                if (headIsDot && !allowDotHead) return false;
+
+                // Tail dot not allowed
+                if (tailIsDot && !allowDotTail) return false;
+
+                // If we get here, any present dots are allowed by config
+                Plugin.LogDebug($"IsCompatibleForArc: Dot allowed. head={note1.cutDirection} tail={note2.cutDirection} t1={note1.time:F3} t2={note2.time:F3}");
+                return true; // if your policy is "dots bypass contrary checks"
             }
-            else
-            {
-                return IsContrarySwingsBy135Degrees(note1, note2);
-            }
+
+            return Config.Instance.ForceNaturalArcs
+                ? IsContraryLikeDirectionBetweenSwings(note1, note2)
+                : IsContrarySwingsBy135Degrees(note1, note2); // less natural less restrictive
         }
 
         public static bool IsContraryLikeDirectionBetweenSwings(ENoteData note1, ENoteData note2) // new BW version that takes into account how it feels to reverse the swing of each hand
@@ -383,7 +398,11 @@ namespace AutoBS
                             else
                                 return false;
                         }
-                    default: // For Dot Note or any other cases
+                    case NoteCutDirection.Any:
+                        {
+                            return true;
+                        }
+                    default: // For any other cases
                         {
                             return false;
                         }
@@ -449,7 +468,11 @@ namespace AutoBS
                             else
                                 return false;
                         }
-                    default: // For Dot Note or any other cases
+                    case NoteCutDirection.Any:
+                        {
+                            return true;
+                        }
+                    default: // For any other cases
                         {
                             return false;
                         }
@@ -459,8 +482,8 @@ namespace AutoBS
 
         public static bool IsContrarySwingsBy135Degrees(ENoteData note1, ENoteData note2) // i changed it but original version actually returns true is direction is similar not contrary
         {
-            if (note1.cutDirection == NoteCutDirection.Any || note2.cutDirection == NoteCutDirection.Any) return false;
-            else
+            //if (note1.cutDirection == NoteCutDirection.Any || note2.cutDirection == NoteCutDirection.Any) return false;
+            //else
             {
                 float angleDiff = note1.cutDirection.RotationAngle() - note2.cutDirection.RotationAngle();
                 if (Mathf.Abs(angleDiff) < 135f)
@@ -692,7 +715,7 @@ namespace AutoBS
             }
             */
 
-            Plugin.LogDebug($"Chains Count: {currentChainsCount} with pauseMultiplier: {pauseThresholdMultiplier} took {counter} iterations. -- pause detection"); //Double Chains Count: { doubleChainNotes.Count}
+            Plugin.LogDebug($"Chains Count: {currentChainsCount} with pauseMultiplier: {pauseThresholdMultiplier} took {counter} iterations. -- pause detection -- LongChainMaxDuration: {Config.Instance.LongChainMaxDuration} First chain at: {chainNotes.First().time:F}"); //Double Chains Count: { doubleChainNotes.Count}
 
             return CreateChains(chainNotes);
         }
@@ -783,7 +806,7 @@ namespace AutoBS
                 }
                 recentTimeDifferences.Enqueue(timeDifference);
 
-                if (timeDifference >= Config.Instance.ChainTimeBumper && (timeDifference > recentTimeDifferences.Average() * pauseThresholdMultiplier) && !justDetectedPause)
+                if (timeDifference >= Config.Instance.ChainTimeBumper && (timeDifference > recentTimeDifferences.Average() * pauseThresholdMultiplier) && !justDetectedPause) // don't scale ChainTimeBumper
                 {
                     if (recentTimeDifferences.Count > 1)
                     {
@@ -860,7 +883,378 @@ namespace AutoBS
 
         private static int _lastCheckedIndex = 0;
 
+
         // Final step for both style options for making chains
+        private static List<ESliderData> CreateChains(List<ENoteData> chainNotes)
+        {
+            var chains = new List<ESliderData>();
+            int longChainCount = 1;
+
+            // Reset the lastCheckedIndex at the beginning of the processing
+            _lastCheckedIndex = 0;
+
+            // Final movement parameters (seconds-based system in your mod)
+            float njs = MathF.Max(1f, TransitionPatcher.FinalNoteJumpMovementSpeed);
+            float jd = MathF.Max(1f, TransitionPatcher.FinalJumpDistance);
+
+            // Jump duration approximation (seconds)
+            // (Conceptually: jumpDistance ≈ njs * jumpDuration)
+            float jumpDuration = jd / njs;
+
+            // -----------------------------
+            // SHORT / MEDIUM: fixed seconds
+            // -----------------------------
+            // Tune these by feel. These should remain stable across NJS/JD.
+            const float SHORT_CHAIN_DUR = 0.010f; // 4 slices
+            const float MED_CHAIN_DUR = 0.050f; // 5–6 slices
+
+            
+
+            // -----------------------------
+            // LONG: derived but capped
+            // -----------------------------
+            // Your user-config max (seconds)
+            float userMaxLong = MathF.Max(0.0001f, Config.Instance.LongChainMaxDuration);
+
+            // Cap long chains relative to jump duration to prevent extremes:
+            // - If someone sets JD high and/or NJS high, jumpDuration can shrink/grow and long chains should not become absurd.
+            // Tune these bounds and fraction to taste.
+            float maxLongByJump = Math.Clamp(0.70f * jumpDuration, 0.12f, 0.90f);
+            float maxLongChainAllowed = Math.Min(userMaxLong, maxLongByJump);
+
+            // Gating values for “is there enough room to place a long chain?”
+            // These are best expressed as fractions of jumpDuration (not NJS alone) when JD is user-controlled.
+            float minGapAfterLongChain = Math.Clamp(0.35f * jumpDuration, 0.10f, 0.60f);
+            float minLongChainAllowed = Math.Clamp(0.12f * jumpDuration, 0.04f, 0.30f);
+
+            // Long chain chance evaluated per note
+            int chance = Mathf.Clamp((int)Config.Instance.LongChainChanceMultiplier, 0, 10);
+
+            // Optional: cap how close any chain tail can get to the next note (same color or all notes).
+            // If you want no extra logic, set this to 0.
+            const float MIN_TAIL_CLEARANCE = .05f;
+
+            // Helper: clamp tailTime so it doesn't bump into next note if you want.
+            float ClampTailToNextNote(float headTime, float desiredTailTime)
+            {
+                if (MIN_TAIL_CLEARANCE <= 0f)
+                    return desiredTailTime;
+
+                float timeUntilNext = GetTimeUntilNextNote(notes, headTime);
+                if (timeUntilNext <= 0f)
+                    return desiredTailTime;
+
+                float latestTail = headTime + Math.Max(0.0001f, timeUntilNext - MIN_TAIL_CLEARANCE);
+                return Math.Min(desiredTailTime, latestTail);
+            }
+
+            // Helper: epsilon compare for floats
+            static bool NearlyEqual(float a, float b, float eps = 1e-5f) => MathF.Abs(a - b) < eps;
+
+            foreach (ENoteData chainNote in chainNotes)
+            {
+                // -----------------------------
+                // Default: SHORT chain
+                // -----------------------------
+                int sliceCount = 4;
+                float tailTime = chainNote.time + SHORT_CHAIN_DUR;
+
+                // Tail geometry from your existing logic
+                (int headLineLayer, int headLineIndex, int tailLineLayer, int tailLineIndex) = CalculateTailPosition(chainNote);
+                NoteLineLayer tailBeforeJumpLineLayer = (NoteLineLayer)tailLineLayer;
+
+                // -----------------------------
+                // MEDIUM chain heuristic
+                // -----------------------------
+                int dx = Math.Abs(tailLineIndex - chainNote.line);
+                int dy = Math.Abs(tailLineLayer - (int)chainNote.layer);
+
+                // Your existing intent: if span is “large”, use 5–6 slices and a bit longer duration.
+                if (dx == 2 || dy == 2)
+                {
+                    // “Knight-ish” diagonal tends to feel bunched; keep at 5.
+                    //if ((dx == 2 && dy == 1) || (dx == 1 && dy == 2))
+                    //    sliceCount = 5;
+                    //else
+                        sliceCount = 6;
+
+                    tailTime = chainNote.time + MED_CHAIN_DUR;
+                }
+
+                // Optional safety to avoid hitting next note
+                tailTime = ClampTailToNextNote(chainNote.time, tailTime);
+
+                // -----------------------------
+                // Accidental double-chain handling (your existing logic)
+                // -----------------------------
+                bool shouldAddChain = true;
+
+                ESliderData existingChainAtSameTime = chains.FirstOrDefault(a => Math.Abs(a.time - chainNote.time) < 0.01f);
+
+                if (existingChainAtSameTime != null)
+                {
+                    if (TryCreateDoubleChain(chainNote, existingChainAtSameTime, out var matchingChain))
+                    {
+                        if (!chains.Contains(matchingChain))
+                        {
+                            chains.Add(matchingChain);
+                            chainsTemp.Add(matchingChain);
+                        }
+
+                        shouldAddChain = false; // double chain handled, skip creating new one
+                    }
+                    else
+                    {
+                        shouldAddChain = true;
+                    }
+                }
+
+                if (!shouldAddChain)
+                    continue;
+
+                // -----------------------------
+                // LONG chain attempt (optional)
+                // -----------------------------
+                bool longChainChance = TransitionPatcher.RepeatableRandom.Next(10) < chance;
+
+                if (Config.Instance.EnableLongChains &&
+                    longChainChance &&
+                    chainNotes.IndexOf(chainNote) < chainNotes.Count - 1)
+                {
+                    // Your edge/direction eligibility gate (kept)
+                    bool eligibleForLong =
+                        (chainNote.layer == 0 &&
+                         (chainNote.cutDirection == NoteCutDirection.Up ||
+                          chainNote.cutDirection == NoteCutDirection.UpLeft ||
+                          chainNote.cutDirection == NoteCutDirection.UpRight))
+                        ||
+                        (chainNote.layer == 2 && chainNote.cutDirection == NoteCutDirection.Down)
+                        ||
+                        ((chainNote.layer == 1 || chainNote.layer == 2) &&
+                         (chainNote.cutDirection == NoteCutDirection.DownLeft ||
+                          chainNote.cutDirection == NoteCutDirection.DownRight))
+                        ||
+                        (chainNote.line == 3 &&
+                         (chainNote.cutDirection == NoteCutDirection.Left ||
+                          chainNote.cutDirection == NoteCutDirection.DownLeft ||
+                          chainNote.cutDirection == NoteCutDirection.UpLeft))
+                        ||
+                        (chainNote.line == 0 &&
+                         (chainNote.cutDirection == NoteCutDirection.Right ||
+                          chainNote.cutDirection == NoteCutDirection.DownRight ||
+                          chainNote.cutDirection == NoteCutDirection.UpRight));
+
+                    if (eligibleForLong)
+                    {
+                        float timeUntilNextNote = GetTimeUntilNextNote(notes, chainNote.time);
+
+                        if (timeUntilNextNote > (minGapAfterLongChain + minLongChainAllowed))
+                        {
+                            float longChainDuration = Math.Min(timeUntilNextNote - minGapAfterLongChain, maxLongChainAllowed);
+
+                            bool awkwardLongChain = false;
+                            bool limitMaxDuration = false;
+
+                            // --- Tail positioning rules (kept, with one critical fix) ---
+                            // IMPORTANT: don’t force tailLineLayer=0 for ALL down-ish notes; only do it when you intend.
+                            // Your current code forces tailLineLayer = 0 for any Down/DownLeft/DownRight regardless of head layer.
+                            // If you want original behaviour, gate it on head layer == 2:
+                            if ((chainNote.cutDirection == NoteCutDirection.Up ||
+                                 chainNote.cutDirection == NoteCutDirection.UpLeft ||
+                                 chainNote.cutDirection == NoteCutDirection.UpRight) &&
+                                chainNote.layer == 0)
+                            {
+                                tailLineLayer = 2;
+                            }
+                            else if ((chainNote.cutDirection == NoteCutDirection.Down ||
+                                      chainNote.cutDirection == NoteCutDirection.DownLeft ||
+                                      chainNote.cutDirection == NoteCutDirection.DownRight) &&
+                                     chainNote.layer == 2)
+                            {
+                                tailLineLayer = 0;
+                            }
+
+                            if ((chainNote.cutDirection == NoteCutDirection.Right ||
+                                 chainNote.cutDirection == NoteCutDirection.DownRight ||
+                                 chainNote.cutDirection == NoteCutDirection.UpRight) &&
+                                chainNote.line == 0)
+                            {
+                                tailLineIndex = 3;
+                            }
+                            else if ((chainNote.cutDirection == NoteCutDirection.Left ||
+                                      chainNote.cutDirection == NoteCutDirection.DownLeft ||
+                                      chainNote.cutDirection == NoteCutDirection.UpLeft) &&
+                                     chainNote.line == 3)
+                            {
+                                tailLineIndex = 0;
+                            }
+
+                            // --- Awkwardness + special cases (kept with minimal edits) ---
+                            if (chainNote.cutDirection == NoteCutDirection.Down)
+                            {
+                                limitMaxDuration = true;
+                                tailLineIndex = chainNote.line;
+
+                                if ((chainNote.colorType == ColorType.ColorA && chainNote.line > 1) ||
+                                    (chainNote.colorType == ColorType.ColorB && chainNote.line < 2))
+                                {
+                                    awkwardLongChain = true;
+                                }
+                            }
+                            else if (chainNote.cutDirection == NoteCutDirection.Up)
+                            {
+                                tailLineIndex = chainNote.line;
+
+                                if ((chainNote.colorType == ColorType.ColorA && chainNote.line > 1) ||
+                                    (chainNote.colorType == ColorType.ColorB && chainNote.line < 2))
+                                {
+                                    awkwardLongChain = true;
+                                }
+                            }
+                            else if (chainNote.cutDirection == NoteCutDirection.Left || chainNote.cutDirection == NoteCutDirection.Right)
+                            {
+                                tailLineLayer = (int)chainNote.layer;
+                                //limitMaxDuration = true;
+                            }
+                            else if (chainNote.cutDirection == NoteCutDirection.UpRight &&
+                                     chainNote.line == 0 && chainNote.layer == 0)
+                            {
+                                tailLineIndex = 3;
+                                tailLineLayer = 2;
+                                sliceCount = 8;
+                                //limitMaxDuration = true;
+                            }
+                            else if (chainNote.cutDirection == NoteCutDirection.UpLeft &&
+                                     chainNote.line == 3 && chainNote.layer == 0)
+                            {
+                                tailLineIndex = 0;
+                                tailLineLayer = 2;
+                                sliceCount = 8;
+                                //limitMaxDuration = true;
+                            }
+                            else if (chainNote.cutDirection == NoteCutDirection.DownRight &&
+                                     chainNote.line == 0 && chainNote.layer == 2)
+                            {
+                                tailLineIndex = 3;
+                                tailLineLayer = 0;
+                                sliceCount = 8;
+                                limitMaxDuration = true;
+                            }
+                            else if (chainNote.cutDirection == NoteCutDirection.DownLeft &&
+                                     chainNote.line == 3 && chainNote.layer == 2)
+                            {
+                                tailLineIndex = 0;
+                                tailLineLayer = 0;
+                                sliceCount = 8;
+                                limitMaxDuration = true;
+                            }
+                            else
+                            {
+                                awkwardLongChain = true;
+                            }
+
+                            if (!awkwardLongChain)
+                            {
+                                // If we are hitting the max cap, trim a little (in seconds).
+                                // Use epsilon comparison instead of ==.
+                                if (limitMaxDuration && NearlyEqual(longChainDuration, maxLongChainAllowed))
+                                {
+                                    longChainDuration = Math.Max(0.0001f, longChainDuration - 0.030f);
+                                }
+
+                                // Special handling for Down: cap it so it stays hittable.
+                                if (chainNote.cutDirection == NoteCutDirection.Down)
+                                {
+                                    // Cap down long chains relative to jumpDuration (or a fixed ceiling).
+                                    float downCap = Math.Clamp(0.20f * jumpDuration, 0.05f, 0.10f);
+                                    longChainDuration = Math.Min(longChainDuration, downCap);
+                                }
+
+                                longChainDuration = Math.Max(longChainDuration, 0.0001f);
+                                tailTime = chainNote.time + longChainDuration;
+
+                                // LONG CHAIN sliceCount:
+
+                                //int tx = Math.Abs(tailLineIndex - chainNote.line);
+                                //int ty = Math.Abs(tailLineLayer - (int)chainNote.layer);
+                                float dist = MathF.Sqrt(dx * dx + dy * dy);
+
+                                // Base min for any long chain
+                                int baselineMin = 8;
+
+                                // Distance-based base density
+                                const float SLICES_PER_GRID_UNIT = 4.5f; // tune this to taste higher adds more slices. 4.5 is 12-15% more. 5.0 is 25% more.
+                                int baseSlicesByDist = (int)MathF.Ceiling(dist * SLICES_PER_GRID_UNIT);
+
+                                // NJS-based factor: linear, stronger than before
+                                const float REF_NJS = 16f;
+                                //float njs = MathF.Max(1f, TransitionPatcher.FinalNoteJumpMovementSpeed);
+
+                                // Raw ratio: 5/16 ≈ 0.31, 18/16 ≈ 1.125, 31/16 ≈ 1.94
+                                float rawFactor = njs / REF_NJS;
+
+                                // Clamp so low NJS doesn’t kill slices, high NJS doesn’t explode them
+                                float speedFactor = Math.Clamp(rawFactor, 0.5f, 2.5f);
+
+                                // Apply speed factor
+                                int desiredByDistAndSpeed = (int)MathF.Ceiling(baseSlicesByDist * speedFactor);
+
+                                // Time-based ceiling so slices aren't impossibly fast
+                                const float MIN_SECONDS_PER_SLICE = 0.018f;
+                                int maxSlicesByTime = (int)MathF.Floor(longChainDuration / MIN_SECONDS_PER_SLICE);
+
+                                // Combine
+                                int desired = Math.Max(baselineMin, desiredByDistAndSpeed);
+                                int ceiling = Math.Max(baselineMin, maxSlicesByTime);
+
+                                sliceCount = Math.Clamp(desired, baselineMin, ceiling);
+
+
+                                // Optional: don’t let long chains bump next note
+                                tailTime = ClampTailToNextNote(chainNote.time, tailTime);
+
+                                Plugin.LogDebug(
+                                    $"Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} " +
+                                    $"H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} " +
+                                    $"Dur: {longChainDuration:F3} slices: {sliceCount} (jumpDur={jumpDuration:F3}, maxLong={maxLongChainAllowed:F3})"
+                                );
+
+                                longChainCount++;
+                            }
+                        }
+                    }
+                }
+
+                // Log final choice for this chain
+                Plugin.LogDebug(
+                    $"Chain: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} " +
+                    $"H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} " +
+                    $"Dur: {(tailTime - chainNote.time):F3} slices: {sliceCount}"
+                );
+
+                var newChain = ESliderData.CreateChain(
+                    chainNote.colorType,
+                    chainNote.time, headLineIndex, headLineLayer, chainNote.cutDirection,
+                    tailTime, tailLineIndex, tailLineLayer,
+                    sliceCount, squishAmount,
+                    chainNote);
+
+                if (chains.Contains(newChain))
+                    continue;
+
+                chains.Add(newChain);
+
+                chainNote.headNoteChain = newChain;
+                chainNote.scoringType = NoteData.ScoringType.ChainHead;
+                chainNote.gameplayType = NoteData.GameplayType.BurstSliderHead;
+
+                chainsTemp.Add(newChain);
+            }
+
+            return chains;
+        }
+
+        /*
         private static List<ESliderData> CreateChains(List<ENoteData> chainNotes)
         {
             List<ESliderData> chains = new List<ESliderData>();
@@ -873,7 +1267,9 @@ namespace AutoBS
             _lastCheckedIndex = 0;
 
             const float REF_NJS = 16f; // pick the NJS where test values look right to me
-            float ScaleTailTimeByNjs(float baseSeconds, float minSeconds, float maxSeconds, float exponent = 1.5f)
+            const float CHAIN_MIN = 0.0001f; // seconds
+            const float CHAIN_MAX = 10f; //seconds
+            float ScaleTailTimeByNjs(float baseSeconds, float exponent = 1f)
             {
                 float njs = MathF.Max(1f, TransitionPatcher.FinalNoteJumpMovementSpeed);
 
@@ -881,14 +1277,22 @@ namespace AutoBS
                 float factor = MathF.Pow(REF_NJS / njs, exponent);
 
                 float scaled = baseSeconds * factor;
-                return Math.Clamp(scaled, minSeconds, maxSeconds);
+                return Math.Clamp(scaled, CHAIN_MIN, CHAIN_MAX);
             }
+
+            float minGapAfterLongChain = ScaleTailTimeByNjs(0.30f);
+            float minLongChainAllowed  = ScaleTailTimeByNjs(0.10f);
+            float maxLongChainAllowed  = ScaleTailTimeByNjs(Config.Instance.LongChainMaxDuration);
+
+            int chance = Mathf.Clamp((int)Config.Instance.LongChainChanceMultiplier, 0, 10);
+            bool longChainChance = TransitionPatcher.RepeatableRandom.Next(10) < chance; // 0..10  ->  0%..100%, chance=0 → Next(10) < 0 → never, chance=5 → 50%, chance=10 → always
+
 
             foreach (ENoteData chainNote in chainNotes)
             {
                 int sliceCount = 4;
 
-                float tailTime = chainNote.time + ScaleTailTimeByNjs(0.025f, 0.02f, 0.120f);
+                float tailTime = chainNote.time + ScaleTailTimeByNjs(0.01f);
 
                 (int headLineLayer, int headLineIndex, int tailLineLayer, int tailLineIndex) = CalculateTailPosition(chainNote);
                 NoteLineLayer tailBeforeJumpLineLayer = (NoteLineLayer)tailLineLayer;
@@ -896,12 +1300,13 @@ namespace AutoBS
                 // Set sliceCount to 6 only if the absolute difference between head and tail positions is 2
                 if (Math.Abs(tailLineIndex - chainNote.line) == 2 || Math.Abs(tailLineLayer - (int)chainNote.layer) == 2)
                 {
-                    if (chainNote.cutDirection == NoteCutDirection.Up || chainNote.cutDirection == NoteCutDirection.Down)
-                        sliceCount = 6; // up and down is easy to hit all the segments
-                    else
-                        sliceCount = 6; // diagonal can be hard to hit the 6th segment
+                   if ((Math.Abs(tailLineIndex - chainNote.line) == 2 && Math.Abs(tailLineLayer - (int)chainNote.layer) == 1) ||
+                       (Math.Abs(tailLineIndex - chainNote.line) == 1 && Math.Abs(tailLineLayer - (int)chainNote.layer) == 2))
+                            sliceCount = 5; // seems too bunched up
+                   else
+                        sliceCount = 6;
 
-                   tailTime = chainNote.time + ScaleTailTimeByNjs(0.05f, 0.020f, 0.120f);
+                    tailTime = chainNote.time + ScaleTailTimeByNjs(0.05f);
                 }
 
                 // This is a single chain being added. However, its possible there has been another single chain added to a different note at the same time by chance. This can produce illegitimate double chains that are hard for the player to hit
@@ -943,7 +1348,7 @@ namespace AutoBS
                     #region Long Chain
 
                     // Add LONG CHAIN potentially
-                    if (Config.Instance.EnableLongChains && chainNotes.IndexOf(chainNote) < chainNotes.Count - 1) // chainNotes.IndexOf(chainNote) % 3 == 0 && 
+                    if (Config.Instance.EnableLongChains && chainNotes.IndexOf(chainNote) < chainNotes.Count - 1 && longChainChance) // chainNotes.IndexOf(chainNote) % 3 == 0 && 
                     {
                         ENoteData nextChain = chainNotes[chainNotes.IndexOf(chainNote) + 1];
 
@@ -959,10 +1364,6 @@ namespace AutoBS
                              (chainNote.line == 0 &&
                               (chainNote.cutDirection == NoteCutDirection.Right || chainNote.cutDirection == NoteCutDirection.DownRight || chainNote.cutDirection == NoteCutDirection.UpRight))))
                         {
-                            float minGapAfterLongChain = ScaleTailTimeByNjs(0.30f, 0.10f, 0.60f);
-                            float minLongChainAllowed = ScaleTailTimeByNjs(0.10f, 0.04f, 0.25f);
-
-                            float maxLongChainAllowed  = Config.Instance.LongChainMaxDuration; // max length allowed. super long chains don't curve, so they are not ideal
 
                             float timeUntilNextNote = GetTimeUntilNextNote(notes, chainNote.time);// relevantNotes, chainNote.time);
 
@@ -1053,20 +1454,19 @@ namespace AutoBS
 
                                 if (!awkwardLongChain)
                                 {
-                                    if (limitMaxDuration && longChainDuration == maxLongChainAllowed && maxLongChainAllowed > 0.2f)
+                                    if (limitMaxDuration && longChainDuration == maxLongChainAllowed) // skipped by up chains since those get max duration possibly since they are not awkward and are not limited. all other long chains need limiting
                                     {
-                                        if (chainNote.cutDirection == NoteCutDirection.Down)
-                                            longChainDuration = ScaleTailTimeByNjs(0.05f, 0.012f, 0.060f); // same as short chain
-                                        else
-                                            longChainDuration -= ScaleTailTimeByNjs(0.025f, 0.012f, 0.120f);
-
+                                        longChainDuration -= ScaleTailTimeByNjs(0.03f);
                                     }
-                                    longChainDuration = Math.Max(longChainDuration, 0.02f); // safety
-                                    tailTime = chainNote.time + longChainDuration;
+                                    if (chainNote.cutDirection == NoteCutDirection.Down)
+                                        longChainDuration = Math.Min(longChainDuration, ScaleTailTimeByNjs(0.08f)); // same as short chain since super awkward to hit long curving down chain
 
-                                    sliceCount = Math.Max((int)(longChainDuration * 17f * (TransitionPatcher.FinalNoteJumpMovementSpeed / 14f)), 6);//sliceCount = Math.Max((int)(longChainDuration * 17), 6); // more segments depending on the length of time with min of 6
+                                    longChainDuration = Math.Max(longChainDuration, 0.0001f); // safety
+                                    tailTime = chainNote.time + longChainDuration;
+                                        
+                                    sliceCount = Math.Max((int)(longChainDuration * 30f * (TransitionPatcher.FinalNoteJumpMovementSpeed / 16f)), 8);//sliceCount = Math.Max((int)(longChainDuration * 17), 6); // more segments depending on the length of time with min of 6
                                     //Plugin.LogDebug($"gapBetweenChains: {gapBetweenChains}");
-                                    Plugin.LogDebug($"Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} Dur: {longChainDuration} slices: {sliceCount}");
+                                    Plugin.LogDebug($"Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} Dur: {longChainDuration:F3} slices: {sliceCount} maxLongChainAllowed(scaled by njs): {maxLongChainAllowed}");
                                     longChainCount++;
                                 }
 
@@ -1074,6 +1474,7 @@ namespace AutoBS
                         }
                     }
                     #endregion
+                    Plugin.LogDebug($"Chain: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} Dur: {(tailTime - chainNote.time):F3} slices: {sliceCount}");
 
                     // needs to be ESliderData or will get chroma errors missing customData i think
                     var newChain = ESliderData.CreateChain(
@@ -1098,6 +1499,7 @@ namespace AutoBS
             }
             return chains;
         }
+        */
         private static float GetTimeUntilNextNote(List<ENoteData> notes, float currentTime)
         {
             for (int i = _lastCheckedIndex; i < notes.Count; i++) // this avoids sorting through all the beginning notes that were already previously checked for earlier long chains
