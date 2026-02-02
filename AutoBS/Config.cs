@@ -97,6 +97,7 @@ namespace AutoBS
         public virtual bool EnableCleanBeatSage { get; set; } = false; // alter notes so that chains will be compatible - will move note position so tail can exist
         public virtual float MaxCrouchWallDuration { get; set; } = 0.75f; // max duration of crouch walls in Seconds
         public virtual float StrayNoteCleanerOffset { get; set; } = 6f; // how many seconds from primary note content to remove straggler notes that are off by themselves at the beginning or end of map
+        public virtual float MaxStrayNotes { get; set; } = 5f; //how many stray notes allowed with a StrayNoteCleanerOffset time gap before removal
 
         // WALLS
 

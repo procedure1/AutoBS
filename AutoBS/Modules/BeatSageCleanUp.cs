@@ -22,7 +22,7 @@ namespace AutoBS
 
             int originalNoteCount = eData.ColorNotes.Count();
 
-            BeatSageStrayNoteCleaner.RemoveStragglers(eData, TransitionPatcher.bpm, minPauseSeconds: Config.Instance.StrayNoteCleanerOffset, maxStragglers: 4);
+            StrayNoteCleaner.RemoveStrays(eData, minPauseSeconds: Config.Instance.StrayNoteCleanerOffset, maxStrays: (int)Config.Instance.MaxStrayNotes);
 
             eData = notesAdjustment(eData);
             eData = wallsAdjustment(eData);
@@ -251,7 +251,7 @@ namespace AutoBS
 
             if (indicesToRemove.Count == 0)
             {
-                Plugin.LogDebug($"[BeatSageCleanUp] No problem notes discovered. - Remaining notes and bombs: {notesAndBombs.Count}");
+                Plugin.LogDebug($"[BeatSageCleanUp] No problem notes discovered.");
             }
             else
             {
@@ -274,8 +274,8 @@ namespace AutoBS
                     }
                 }
 
-                if (notesRemoved > 0) eData.ColorNotesChanged = true; else eData.ColorNotesChanged = false;
-                if (bombsRemoved > 0) eData.BombNotesChanged  = true; else eData.BombNotesChanged  = false;
+                if (notesRemoved > 0) eData.ColorNotesChanged = true;
+                if (bombsRemoved > 0) eData.BombNotesChanged = true;
 
                 Plugin.LogDebug($"[BeatSageCleanUp] Notes Removed: {notesRemoved}, Bombs Removed: {bombsRemoved} - Remaining notes and bombs: {eData.ColorNotes.Count + eData.BombNotes.Count}");
             }
@@ -597,8 +597,6 @@ namespace AutoBS
 
             if (wallsDeletedCtn > 0 || wallAlteredCtnt > 0)
                 eData.ObstaclesChanged = true;
-            else
-                eData.ObstaclesChanged = false;
 
             Plugin.Log.Info($"[BeatSageCleanUp] Adjusting Walls in Beat Sage Map. Final Wall Count: {theCount} -- Walls deleted: {wallsDeletedCtn}, Walls modified (start time or duration or lineIndex): {wallAlteredCtnt}");
 
@@ -606,65 +604,74 @@ namespace AutoBS
         }
 
 
-        private static class BeatSageStrayNoteCleaner
+        private static class StrayNoteCleaner
         {
             public static float bps = 120f;
             /// <summary>
             /// Remove small clusters (1..maxStragglers) of notes at the beginning/end of a song
             /// when they are separated from the main body by a long pause (>= minPauseSeconds).
-            /// Operates on eData.ColorNotes (ENoteData has .time in beats).
+            /// Operates on eData.ColorNotes.
             /// </summary>
             /// <returns>Total notes removed</returns>
-            public static int RemoveStragglers(
+            public static void RemoveStrays(
                 EditableCBD eData,
-                float bpm,
-                float minPauseSeconds = 6f, // if user sets to 0 , then disable
-                int maxStragglers = 4)
+                float minPauseSeconds = 6f, // if user sets to 0, then disable
+                int maxStrays = 5,
+                float bombBufferSeconds = 1f) // buffer to preserve bombs near 1st/last note
             {
-                Plugin.LogDebug($"[BeatSage-StrayNoteCleaner] Called! bpm: {bpm} minPauseSeconds: {minPauseSeconds} maxStragglers: {maxStragglers} Note Count: {eData.ColorNotes?.Count}");
-                if (minPauseSeconds == 0 || eData == null || eData.ColorNotes == null || eData.ColorNotes.Count == 0)
-                {
-                    return 0;
-                }
+                Plugin.LogDebug($"[BeatSageCleanUp][StrayNoteCleaner] Called! minPauseSeconds: {minPauseSeconds} maxStrays: {maxStrays} Note Count: {eData.ColorNotes?.Count}");
 
-                bps = bpm / 60f;
+                if (minPauseSeconds == 0 || maxStrays == 0 ||
+                    eData == null ||
+                    eData.ColorNotes == null ||
+                    eData.ColorNotes.Count == 0)
+                {
+                    return;
+                }
 
                 // Work on a sorted copy (by time), then remove from the original list by reference
                 var notes = eData.ColorNotes.OrderBy(n => n.time).ToList();
-                int totalRemoved = 0;
+
+                int totalColorRemoved = 0;
+                int totalBombRemoved = 0;
                 bool changed;
+
+                bool removedLeadingSegments = false;
+                bool removedTrailingSegments = false;
 
                 do
                 {
                     changed = false;
                     if (notes.Count == 0) break;
 
-                    // Build segments separated by big gaps (>= pauseBeats)
+                    // Build segments separated by big gaps (>= minPauseSeconds)
                     var segments = BuildSegments(notes, minPauseSeconds);
                     if (segments.Count <= 1)
                         break; // nothing to do: no large pauses splitting the map
 
-                    // Try to remove leading straggler segment
+                    // Try to remove leading straggler segment (color notes only)
                     var first = segments[0];
-                    if (SegmentSize(first) <= maxStragglers)
+                    if (SegmentSize(first) <= maxStrays)
                     {
-                        int removed = RemoveSegment(eData.ColorNotes, notes, first);
+                        int removed = RemoveColorNoteSegment(eData.ColorNotes, notes, first);
                         if (removed > 0)
                         {
-                            totalRemoved += removed;
+                            totalColorRemoved += removed;
+                            removedLeadingSegments = true;
                             changed = true;
                             continue; // rebuild segments next iteration
                         }
                     }
 
-                    // Try to remove trailing straggler segment
+                    // Try to remove trailing straggler segment (color notes only)
                     var last = segments[segments.Count - 1];
-                    if (SegmentSize(last) <= maxStragglers)
+                    if (SegmentSize(last) <= maxStrays)
                     {
-                        int removed = RemoveSegment(eData.ColorNotes, notes, last);
+                        int removed = RemoveColorNoteSegment(eData.ColorNotes, notes, last);
                         if (removed > 0)
                         {
-                            totalRemoved += removed;
+                            totalColorRemoved += removed;
+                            removedTrailingSegments = true;
                             changed = true;
                             continue; // rebuild segments next iteration
                         }
@@ -672,15 +679,63 @@ namespace AutoBS
 
                 } while (changed);
 
-                Plugin.Log.Info($"[BeatSageCleanUp][StrayNoteCleaner] Notes Removed: {totalRemoved}.");
-                return totalRemoved;
+                if (totalColorRemoved > 0)
+                    eData.ColorNotesChanged = true;
+
+                // --------------------------------------------------------------------
+                // Phase 2: Bomb cleanup based on first/last remaining COLOR note - this removes all bomb notes before the first color note and after the last color note with a buffer if desired
+                // --------------------------------------------------------------------
+                if (eData.BombNotes != null && eData.BombNotes.Count > 0 &&
+                    (removedLeadingSegments || removedTrailingSegments))
+                {
+                    // Re-evaluate remaining color notes in time order
+                    var remainingColorNotes = eData.ColorNotes.OrderBy(n => n.time).ToList();
+                    
+                    float firstNoteTime = remainingColorNotes.First().time;
+                    float lastNoteTime = remainingColorNotes.Last().time;
+
+                    // Bombs "near" first/last note (within bombBufferSeconds) are kept.
+                    float leadingKeepFrom = Math.Max(0f, firstNoteTime - bombBufferSeconds);
+                    float trailingKeepTo = lastNoteTime + bombBufferSeconds;
+
+                    int leadingBombsRemoved = 0;
+                    int trailingBombsRemoved = 0;
+
+                    // Remove bombs before the "safe" first note window
+                    if (removedLeadingSegments)
+                    {
+                        int before = eData.BombNotes.Count;
+                        eData.BombNotes.RemoveAll(b => b.time < leadingKeepFrom);
+                        leadingBombsRemoved = before - eData.BombNotes.Count;
+                    }
+
+                    // Remove bombs after the "safe" last note window
+                    if (removedTrailingSegments && eData.BombNotes.Count > 0)
+                    {
+                        int before = eData.BombNotes.Count;
+                        eData.BombNotes.RemoveAll(b => b.time > trailingKeepTo);
+                        trailingBombsRemoved = before - eData.BombNotes.Count;
+                    }
+
+                    int removedBombsThisPass = leadingBombsRemoved + trailingBombsRemoved;
+
+                    if (removedBombsThisPass > 0)
+                    {
+                        totalBombRemoved += removedBombsThisPass;
+                        eData.BombNotesChanged = true;
+
+                        //Plugin.LogDebug($"[BeatSageCleanUp][StrayNoteCleaner] Bomb cleanup: removed {leadingBombsRemoved} leading bomb(s) between time 0 - {leadingKeepFrom:F}s and {trailingBombsRemoved} trailing bomb(s) between {trailingKeepTo:F}s - end of song.");
+                    }
+                }
+                Plugin.Log.Info($"[BeatSageCleanUp][StrayNoteCleaner] Removed {totalColorRemoved} color note(s) and {totalBombRemoved} bomb(s).");
             }
 
-            // A segment is [startIndex, endIndex] inclusive in the sorted 'notes' list
+
+            // A segment is [startIndex, endIndex] inclusive in the sorted 'notes' (color) list
             private struct Seg { public int S; public int E; public Seg(int s, int e) { S = s; E = e; } }
             private static int SegmentSize(Seg seg) => seg.E >= seg.S ? (seg.E - seg.S + 1) : 0;
 
-            private static List<Seg> BuildSegments(List<ENoteData> notes, float pauseBeats)
+            private static List<Seg> BuildSegments(List<ENoteData> notes, float pauseSeconds)
             {
                 var segments = new List<Seg>();
                 int n = notes.Count;
@@ -688,9 +743,10 @@ namespace AutoBS
 
                 for (int i = 0; i < n - 1; i++)
                 {
-                    float gap = notes[i + 1].time - notes[i].time;
-                    if (gap >= pauseBeats)
+                    float gap = notes[i + 1].time - notes[i].time;   // in seconds
+                    if (gap >= pauseSeconds)
                     {
+                        //Plugin.LogDebug($"[BeatSageCleanUp][StrayNoteCleaner] Found segment from {notes[start].time:F} to {notes[i].time:F} - number of notes: {i - start + 1} (gap after segment: {gap:F}s)");
                         segments.Add(new Seg(start, i));
                         start = i + 1;
                     }
@@ -699,28 +755,36 @@ namespace AutoBS
                 return segments;
             }
 
-            private static int RemoveSegment(List<ENoteData> originalList, List<ENoteData> sortedList, Seg seg)
+
+            // will only remove notes at end or beginning of song. when it removes a segment, it will then attempt to remove the next segment until no more can be removed.
+            private static int RemoveColorNoteSegment(
+                List<ENoteData> originalColorNotes,
+                List<ENoteData> sortedColorNotes,
+                Seg seg)
             {
                 if (seg.S > seg.E) return 0;
 
-                // Collect references to remove (match by reference, not by value)
+                // Collect the color notes to remove (by reference)
                 var toRemove = new HashSet<ENoteData>();
                 for (int i = seg.S; i <= seg.E; i++)
-                    toRemove.Add(sortedList[i]);
+                    toRemove.Add(sortedColorNotes[i]);
 
-                int before = originalList.Count;
-                originalList.RemoveAll(n => toRemove.Contains(n));
-                int removed = before - originalList.Count;
+                float segStartTime = toRemove.Min(n => n.time);
+                float segEndTime = toRemove.Max(n => n.time);
 
-                // Also remove from our working sorted list
-                sortedList.RemoveAll(n => toRemove.Contains(n));
+                // Remove from original
+                int before = originalColorNotes.Count;
+                originalColorNotes.RemoveAll(n => toRemove.Contains(n));
+                int removed = before - originalColorNotes.Count;
 
+                // Remove from working sorted list
+                sortedColorNotes.RemoveAll(n => toRemove.Contains(n));
+                /*
                 if (removed > 0)
                 {
-                    float segStartBeat = toRemove.Min(n => n.time);
-                    float segEndBeat = toRemove.Max(n => n.time);
-                    //Plugin.Log.Info($"[BeatSage-StrayNoteCleaner] Removed {removed} note(s) at {segStartBeat / bps:F3}–{segEndBeat / bps:F3}");
+                    Plugin.LogDebug($"[BeatSageCleanUp][StrayNoteCleaner] Removed {removed} color note(s) at {segStartTime:F}–{segEndTime:F}s");
                 }
+                */
                 return removed;
             }
         }

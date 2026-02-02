@@ -572,6 +572,12 @@ namespace AutoBS.UI
             get => Config.Instance.StrayNoteCleanerOffset;
             set => Config.Instance.StrayNoteCleanerOffset = value;
         }
+        [UIValue("MaxStrayNotes")]
+        public float MaxStrayNotes
+        {
+            get => Config.Instance.MaxStrayNotes;
+            set => Config.Instance.MaxStrayNotes = value;
+        }
 
         // Walls
 
@@ -1224,6 +1230,10 @@ namespace AutoBS.UI
         public string TimeFormatter(float value)//This will output the text on the slider with an 's' at the end in BSML
         {
             return $"{value}s";
+        }
+        public string NoteFormatter(float value)//This will output the text on the slider with an 's' at the end in BSML
+        {
+            return $"{value} notes";
         }
         public string MultFormatter(float value)
         {
