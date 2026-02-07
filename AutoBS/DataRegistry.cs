@@ -51,6 +51,11 @@ namespace AutoBS
         public static Dictionary<BeatmapKey, float> findByKey
             = new Dictionary<BeatmapKey, float>();
     }
+    public static class NJORegistry
+    {
+        public static Dictionary<BeatmapKey, float> findByKey
+            = new Dictionary<BeatmapKey, float>();
+    }
 
     // holds the v3 SaveData rotation events since cbm and beatmapData do not contain RotationEventData. its only held in SaveData. only needed for v3 since v2 uses basic events for rotation and v4 uses per object rotation which is held in beatmapData
     //This hold v3 rotation events from a loaded beatmapData JSON file
@@ -77,13 +82,35 @@ namespace AutoBS
             = new Dictionary<BeatmapKey, Version>();
     }
 
+    public sealed class BeatmapMetadata
+    {
+        public HashSet<string> Requirements { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Suggestions { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Warnings { get; }    = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Information { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    public static class MetadataRegistry
+    {
+        public static readonly Dictionary<BeatmapKey, BeatmapMetadata> findByKey = new Dictionary<BeatmapKey, BeatmapMetadata>();
+
+        public static BeatmapMetadata GetOrCreate(BeatmapKey key)
+        {
+            if (!findByKey.TryGetValue(key, out var m))
+                findByKey[key] = m = new BeatmapMetadata();
+            return m;
+        }
+    }
+
+
     // Stores metadata about all available (including custom) difficulty sets for each level ID.
+    /*
     public static class CustomBeatmapMetadataRegistry //v1.40 Stores IDifficultyBeatmapSet (doesn't exist in 1.40 so i re-created it) by levelID
     {
         // Stores metadata about all available (including custom) difficulty sets for each level ID.
         public static readonly Dictionary<string, List<IDifficultyBeatmapSet>> CustomSetsByLevelID = new Dictionary<string, List<IDifficultyBeatmapSet>>();
     }
-
+    */
     public class IDifficultyBeatmapSet //v1.40 IDifficultyBeatmapSet no longer exists so replaced with this so could keep my code similar to old version
     {
         public BeatmapCharacteristicSO characteristic;

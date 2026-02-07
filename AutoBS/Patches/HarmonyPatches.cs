@@ -14,6 +14,28 @@ using UnityEngine;
 
 namespace AutoBS.Patches
 {
+
+    /// <summary>
+    /// !May get fixed by Real Mapping Extensions but they may exclude v4 so would still need this. Method to preserve raw obstacle layer values outside the standard range. Starting v1.42, v4 maps clamp obstcle layers from 0 to 4 which breaks v4 mapping extensions.
+    /// </summary>
+    /// <remarks>This patch allows out-of-range obstacle layer values to be retained. For standard layer values (0 to 4), the original method behavior is preserved.</remarks>
+    [HarmonyPatch(typeof(BeatmapTypeConverters), nameof(BeatmapTypeConverters.ConvertObstacleLineLayer))]
+    static class Patch_ConvertObstacleLineLayer_PreserveRaw
+    {
+        static bool Prefix(int layer, ref NoteLineLayer __result)
+        {
+            // Preserve raw obstacle layer for Mapping Extensions / out-of-range values.
+            // Keep normal mappings for the common values (optional).
+            if (layer >= 0 && layer <= 4)
+                return true; // let original handle 0..4
+
+            __result = (NoteLineLayer)layer;
+            return false; // skip original (prevents defaulting to Base)
+        }
+    }
+
+
+
     #region Prefix - BeatmapDataLoader.LoadBeatmapDataAsync - adds the beatmapData (IReadonlyBeatmapData)
 
     // This works great, but required mods like Noodle and Chroma will not activate on the gen 360 map. It uses a unique BeatmapKey so scoring works.

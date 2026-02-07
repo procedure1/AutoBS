@@ -11,7 +11,7 @@ NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time.
 
-This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without `Automapper` lights. So I attempted to make 360 a bit flashier. `Boost lighting events` add more color to maps that don't have them. `Automapper` lights power larger and brighter lasers. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more intereseting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps.
+This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without `Auto Lights` lights. So I attempted to make 360 a bit flashier. `Boost lighting events` add more color to maps that don't have them. `Auto Lights` lights power larger and brighter lasers and optional strobe events. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more intereseting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps.
 
 Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
@@ -36,29 +36,29 @@ Wireless headset users can use the `Wireless 360` menu setting, which has no rot
 
 Rotation size and frequency can be adjusted in the menu, and headset FOV limits can be set so that rotations don't move outside your peripheral vision.
 
-***HINT: For rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier` and `Min Rotation Size`. Then start decreasing `FOV Time Window` until rotations start to move too far outside your peripheral vision.***
+***HINT: For challenging rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier`, `Min Rotation Size` and/or `Max Rotation Size`. If you set `Max Rotation Size` > 30, then your must set `FOV` to 90 or greater (otherwise those rotations will be removed. Higher than 90 on a Quest will allow rotations you can't see most likely). I like to use Mult = 1.6x, Min Rotation = 15, Max Rotation = 45 and FOV = 90 for my Quest3 headset. To go even bigger set Min Rotation = 30. You can start trimming around the edges of your peripheral vision with `FOV Time Window`. Increase it a bit to reduce a little of the large jumps at the periphery.***
 
 ## Arcitect Arc + Chain Maker
 
-`Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the segments can become impossible to hit when chains get too long.
+`Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the segments can become difficult to hit when chains get too long.
 
-NOTE: Chains added to a map will change the scoring, so I have disabled score submission for maps that get chains added.
+NOTE: Chains added to a map would change the scoring, so I have disabled score submission for maps with generated chains.
 
 ## Auto Lighting
 
-`Light Automapper` automatically adds basic lighting events to maps that don't have them. This only works for 360 and the older environments before Weave. Modern GLS environments are not supported. Thanks to Loloppe (based on their ChroMapper-AutoMapper)! I made many changes so anything crappy is my fault :) You can choose to add `boost` lighting events as well. And 360-environment lasers are fat and bright to enliven the boring 360 environment. Human-crafted lights are best, machine-made lights are OK, no lights suck! (I am considering adding automatic lighting for GLS environments as well in the future.)
+`Auto Lights` automatically adds basic lighting events to maps that don't have them. This only works for 360 and the older environments before Weave. Modern GLS environments are not supported. Thanks to Loloppe (based on their ChroMapper-AutoMapper)! I made many changes so anything crappy is my fault :) You can choose to add `boost` lighting events as well. And 360-environment lasers are fat and bright to enliven the boring 360 environment. Human-crafted lights are best, machine-made lights are OK, no lights suck! (I am considering adding automatic lighting for GLS environments as well in the future.)
 
 Note: Aeroluna's `Technicolor` mod is awesome with 360fyer if you play a lot of 360 maps.
 
 ## Auto Wall Generator
 
-The original 360fyer generated awesome walls. This version adds `Mapping Extensions` walls (if you have the Mapping Extensions mod installed) and creates tons of walls to help enliven the boring 360 environment. But you can add this to any environment. 
+The original 360fyer generated awesome walls. This version adds `Generated Extension Walls` walls and creates tons of walls and particle walls to help enliven the boring 360 environment. But you can add this to any environment. This is designed to work with `Mapping Extensions` mod. Many of the walls types will still work in a modified and reduced way without the mod.
 
-NOTE: Dense walls in 360 can be claustrophobic and distracting, but you can disable them, reduce them, or move them away from your play space if you like (using `Min Distance` for each wall type) .
+NOTE: Dense walls can be claustrophobic and distracting, but you can disable them, reduce them, or move them away from your play space if you like (using `Min Distance` for each wall type) .
 
 ## Auto NJS Fixer
 
-Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence the need for this. You can choose `Maintain Speed` if you want to keep the mapper’s intended perceived speed but increase or change the spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs until note density gets very tight.
+Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence the need for this. You can choose `Preserve Travel Time` if you want to keep the mapper’s intended duration of travel and perceived note speed while letting you change the note spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs until note density gets very tight. Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET.
 
 NOTE: If settings cause the note speed to be slower than the mapper intended, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not).
 
@@ -86,8 +86,8 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 | **Rot Speed Multiplier*** | Default: **1.0**. Scales how often rotations occur. Less than 1 slows rotations; greater than 1 increases them. **Score submission is disabled** if set below 0.3. Very high values are still constrained by `FOV` settings. * ***Bump this up for more rotations!***               |
 | **Add Extra Rotations**  | Default: **True**. Adds extra rotations in a consistent direction to maps that would otherwise have low overall rotation. |
 | **Min Rotation Size***    | Default: **15°**. Minimum rotation step size. Rotations are typically 15° or 30°. `FOV` rules may force this down to 15° sometimes. * ***Bump this up for larger rotations angles!***|
-| **Max Rotation Size**    | Default: **30°**. Maximum rotation step size. While 15° and 30° are typical, 45° rotations may fall outside peripheral vision. `FOV` rules may also force this value lower.|
-| **FOV**                  | Default: **80°**. Set to slightly below your headset’s actual field of view. This is used to keep rotations within your peripheral vision over time. 80° is recommended for Quest 2 and 3.|
+| **Max Rotation Size**    | Default: **30°**. Maximum rotation step size. 30° is typical while 45° is more challenging. 60° rotations may fall outside peripheral vision. `FOV` rules may also force this value lower.|
+| **FOV**                  | Default: **80°**. Set to slightly below your headset’s actual field of view. This is used to keep rotations within your peripheral vision over time. 80° is recommended for Quest 2 and 3. 90° and higher is required if you allow 45° rotations. This still works well for Quest 3.|
 | **FOV Time Window**      | Default: **0.36 s**. Time window used to evaluate cumulative rotations against your FOV. Prevents multiple small rotations from stacking into a large FOV-breaking turns within this time span. Lower values allow more rapid rotations that can edge toward or outside the periphery. ***Bump this down for more and larger rotation angles!***|
 | **Wall Removal Mult**    | Default: **1.0**. Controls how aggressively vision-blocking walls are removed during rotation sequences. Higher values remove more chaotic walls that may pass in front of the player and block visibility.|
 | **Wall Note Dist**       | Default: **0.2 s**. This is the minimum distance allowed between notes and walls. Rotation events can cause notes and walls to appear closer together. Increase this to allow more space between them.|
@@ -97,17 +97,19 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 
 | Option                        | Description                                                                                                                                                                                                                                                                                |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Arc Rotation Mode**         | Default: **Net Zero**. Controls how arcs behave during rotations. **Force Zero** disables rotations during arcs. **Net Zero** allows rotations that sum to net zero degrees over the arc duration. **No Restrictions** allows full rotations during arcs, which can be more challenging. |
-| **Force Natural Arc Swings**  | Default: **True**. Encourages more 180-degree relationships between head and tail cut directions so arcs feel more natural to swing. Turning this off allows more variety in arc shapes but can produce some less natural-feeling motions.                                                 |
-| **Pref Count per Minute** | Default: **12**. The target number of arcs per minute of music. The system attempts to reach this count while respecting other constraints.                                                                                                                       |
+| **Arc Rotation Mode**         | Default: **Net Zero**. Controls how arcs behave during rotations. **Force Zero** disables rotations during arcs. **Net Zero** allows rotations that sum to net 0° over the arc duration. **No Restrictions** allows full rotations during arcs, which can be more challenging. |
+| **Force Natural Arc Swings**  | Default: **True**. Forces 180° relationships between head and tail cut directions so arcs feel more natural. Turning this off allows more variety in arc shapes (135° and 180°) but can produce some less natural-feeling motions.                                                 |
+| **Pref Count per Minute** | Default: **12**. Attempts to create this many arcs per minute. This is an asperation only and could create many more or less than this number.                                                                                                     |
 | **Min Duration**       | Default: **0.9 s**. Shortest allowed arc duration. This value may be relaxed internally if needed to better match your preferred arc count.                                                                                                                                                |
 | **Max Duration**       | Default: **2.5 s**. Longest allowed arc duration. Longer arcs than this will not be generated.                                                                                                                                                                                             |
+
+NOTE: The JSON config file has an `AllowArcHeadDotNotes` and `AllowArcTailDotNotes` setting not available in the menus if you want dot notes to produce arcs.
 
 ***Architect – Chains***
 
 | Option                          | Description                                                                                                                                        |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pref Count per Minute** | Default: **10**. Target number of chains per minute. The system attempts to reach this count while respecting other constraints.     |
+| **Pref Count per Minute** | Default: **10**. Attempts to create this many chains per minute. This is an asperation only and could create many more or less than this number. To create more chains, reduce `Chain Time Bumper` and reduce arcs or turn them off.     |
 | **Chain Time Bumper**           | Default: **0.2 s**. Minimum allowed time between a chain and surrounding notes. |
 | **Enable Long Chains**          | Default: **True**. Enables long chains that behave similarly to arcs in terms of duration and feel.
 | **Long Chain Max Duration**     | Default: **0.425 s**. Maximum allowed duration for a chain. Chain segments become awkward to hit on longer chains.        |
@@ -117,8 +119,8 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 | Option                       | Description |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Enable for Practice Mode** | When enabled, Auto NJS Fixer attempts to apply its adjustments in Practice Mode. It will be overridden if `PracticePlugin` is installed (activated or not). |
-| **Mode**                     | Default: **Maintain Speed**. **Maintain Speed** keeps the perceived note speed intended by the map while allowing you to change note spawn distance. Use **Set Speed** to set your desired note speed. **Score submission is disabled** if the speed ends up lower than the map’s original speed. (This can also happen with **Maintain Speed** when adjusting for note spawn distance.) |
-| **Note Speed**               | Default: **10**. Overrides the map’s note speed (NJS). Setting this to **0** reverts to the map’s original NJS. **Score submission is disabled** if you set this below the map’s original speed. I use this to set my favorite speed for all maps. Doesn't work great on high note density maps sometimes. |
+| **Mode**                     | Default: **Preserve Travel Time**. Use Preserve Travel Time to keep a similar perceived note speed and keep the same duration of travel intended by the map while letting you change the note spawn distance. Use **Set Note Speed** to set your desired note speed. **Score submission is disabled** if the speed ends up lower than the map’s original speed. (This can also happen with **Preserve Travel Time** when adjusting for note spawn distance.) |
+| **Note Speed**               | Default: **10 m/s**. Overrides the map’s note speed (NJS). Setting this to **0** reverts to the map’s original NJS. **Score submission is disabled** if you set this below the map’s original speed. I use this to set my favorite speed for all maps. Doesn't work great on high note density maps sometimes. |
 | **Note Spawn Distance**      | Default: **30 m**. Overrides the map’s note spawn distance (JD). Setting this to **0** uses the map’s original spawn distance. It's difficult to see notes coming in 360 with short note spawn distances. |
 
 ***Auto Lighting***
@@ -128,17 +130,21 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 | **Big 360 Lasers**           | Default: **True**. Scales up laser sizes in 360 environments. The stock 360 environment has small, weak lasers without this.                                                                |
 | **Bright 360 Lights**        | Default: **True**. Brightens low-key lights in 360 environments. The base 360 environment laser set is fairly dim without this.                                                                |
 | **Boost Lighting Events**    | Default: **True**. Adds “boost” lighting events to maps that don’t have them, giving lights another set of colors. Use Beat Saber **COLORS → OVERRIDE DEFAULT COLORS** to set boost colors. |
-| **Enable Automapper Lights** | Uses note-based automatic lighting for maps that lack lights. Based on ChroMapper-AutoMapper by Loloppe (tweaked for AutoBS; any issues are my fault!).  This only works for 360 and the older environments before Weave.  ***Modern GLS environments are not supported.***                |
-| **Frequency Multiplier**     | Default: **1.0**. Scales how frequently automapped light events are placed. Lower values reduce the number of events. |
-| **Brightness Multiplier**    | Default: **1.0**. Scales the brightness of automapped lights. Increase to make the overall light show brighter.   |
-| **Light Style**              | Default: **Med Flash**. Chooses the automapper lighting style. Styles lower in the list are less and less strobe-like. |
+| **Enable Auto Lights** | Uses note-based automatic lighting for maps without lights. Based on ChroMapper-AutoMapper by Loloppe (tweaked for AutoBS; any issues are my fault!).  This only works for 360 and the older environments before Weave.  ***Modern GLS environments are not supported.***                |
+| **Strobe Multiplier**     | Default: **1**. Lower this to reduce the number of strobe sessions. 0 is OFF. |
+| **Strobe Max Duration**     | Default: **5s**. Lower this for shorter strobe sessions. |
+| **Strobe Brightness Mult**     | Default: **1**. Controls the brightness of strobe lights. |
+| **All Lights Frequency Multiplier**     | Default: **1.0**. Scales how frequently auto light events are placed. Lower this to reduce the number of events. |
+| **All Lights Brightness Multiplier**    | Default: **1.0**. Scales the brightness of auto lights. Increase to make the overall light show brighter.   |
+| **Light Style**              | Default: **Med Flash**. Chooses the auto lighting style. Styles lower in the list are less and less strobe-like. This is not related to 'strobe lights' which set above separately. |
 
 ***Beat Sage Cleaner***
 
 | Option                           | Description                                                                                                                                                                                                                         |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Set Crouch Wall Max Duration** | Default: **0.75 s**. Shortens long crouch walls created by Beat Sage to this maximum duration. |
-| **Stray Notes Remover**          | Default: **6 s**. Removes up to 4 stray notes at the start or end of a map if they are this far away in time from the main note stream. Use with `Intro Skip` mod. |
+| **Set Crouch Wall Max Duration** | Default: **0.75s**. Shortens long crouch walls created by Beat Sage to this maximum duration. |
+| **Stray Notes Remover**          | Default: **6s**. 0 is OFF. Removes stray notes at the start or end of a map if they are this far away in time from the main note stream. Use with `Intro Skip` mod. |
+| **Max Strays Allowed**          | Default: **5 notes**. 0 is OFF. Removes up to this many stray notes at the start or end of a song. NOTE: All bombs will be removed where clean up occurs. Use with `Intro Skip` mod. |
 
 ***Existing Wall Manipulation***
 
@@ -149,31 +155,31 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 
 ***Auto Walls – Generated Walls (Standard & Big)***
 
-No crouch or lean walls are generated by this system. Walls are for visual effect only.
+No crouch are generated by this system. Walls are primarily for visual effect only but lean walls can be added by setting `Standard and Big Walls Min Dis` to 0.
 
 | Option                             | Description                                                                                                                                                               |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Standard Walls**                 | Enables generation of standard-size walls |
 | **Big Walls**                      | Enables generation of very wide walls   |
 | **Standard and Big Walls Mult**    | Default: **100%**. Percentage multiplier controlling how many Standard and Big walls are generated. Decrease for fewer walls.                          |
-| **Standard and Big Walls Min Dis** | Default: **0**. Minimum distance from the player (by line index) for Standard and Big walls. Increase this to move generated walls further out from the center playspace. |
+| **Standard and Big Walls Min Dis** | Default: **1**. Minimum distance from the player (by line index) for Standard and Big walls. 0 will make lean walls. Increase this to move generated walls further out from the center playspace. |
 
-***Auto Walls – Generated Walls (Mapping Extensions)***
+***Auto Walls – Generated Extension Walls***
 
-All options below require `Mapping Extensions` mod to be installed. (I use the word `Ext` below to denote Mapping Extensions walls.)
+Designed to work with `Mapping Extensions` mod installed. Many of the following will work in a modified and reduced way without the mod. (I use the word `Ext` below to denote Generated Extension walls.)
 
 ***Distant Walls***
 
 | Option                       | Description                                                                                                     |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **Enable Ext Distant Walls** | Enables mostly large, distant walls that appear far from the player or high above.                 |
+| **Enable Ext Distant Walls** | Enables mostly large, distant walls that appear far from the player or high above. Best with `Mapping Extensions` mod installed.                 |
 | **Distant Walls Mult**       | Default: **2**. Multiplier controlling how many distant walls are generated. Higher values generate more walls. |
 
 ***Column Walls***
 
 | Option                      | Description                                                                        |
 | --------------------------- | ---------------------------------------------------------------------------------- |
-| **Enable Ext Column Walls** | Enables tall, narrow column walls.                                                 |
+| **Enable Ext Column Walls** | Enables tall, narrow column walls. Best with `Mapping Extensions` mod installed.                                                |
 | **Column Walls Mult**       | Default: **1**. Controls how many column walls are generated.                      |
 | **Column Walls Min Dis**    | Default: **2**. Minimum distance from the player (by line index) for column walls. |
 		
@@ -182,24 +188,16 @@ All options below require `Mapping Extensions` mod to be installed. (I use the w
 
 | Option                   | Description                                                                     |
 | ------------------------ | ------------------------------------------------------------------------------- |
-| **Enable Ext Row Walls** | Enables long, wide rows of stacked walls.                |
+| **Enable Ext Row Walls** | Enables long, wide rows of stacked walls. Best with `Mapping Extensions` mod installed.                |
 | **Row Walls Mult**       | Default: **1**. Controls how many row walls are generated.                      |
 | **Row Walls Min Dis**    | Default: **3**. Minimum distance from the player (by line index) for row walls. |
 
-
-***Tunnel Walls***
-
-| Option                      | Description                                                                                    |
-| --------------------------- | ---------------------------------------------------------------------------------------------- |
-| **Enable Ext Tunnel Walls** | Enables thin side and overhead wall groups that form tunnel-like structures around the player. |
-| **Tunnel Walls Mult**       | Default: **1**. Controls how many tunnel wall groups are generated.                            |
-| **Tunnel Walls Min Dis**    | Default: **0**. Minimum distance from the player (by line index) for tunnel walls.             |
 
 ***Grid Walls***
 
 | Option                    | Description                                                                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable Ext Grid Walls** | Enables grids of small walls. Depending on frequency, these can be huge, sparse grids or smaller, dense grids.                                    |
+| **Enable Ext Grid Walls** | Enables grids of small walls. Depending on frequency, these can be huge, sparse grids or smaller, dense grids. Best with `Mapping Extensions` mod installed.                                    |
 | **Grid Walls Mult**       | Default: **1**. Frequency of grid wall generation. |
 | **Grid Walls Min Dis**    | Default: **2**. Minimum distance from the player (by line index) for grid walls.                                                                  |
 
@@ -217,7 +215,7 @@ All options below require `Mapping Extensions` mod to be installed. (I use the w
 
 | Option                          | Description                                                                                                                                                                                                                                                                      |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable Ext Particle Walls**   | Enables bursts of tiny particle-like walls.                                                                                                                                                                                                                   |
+| **Enable Ext Particle Walls**   | Enables a burst of tiny particle-like walls with `Mapping Extensions` mod. Without the mod, it produces random blocks. Best with `Mapping Extensions` mod installed.                                                                                                                                                                                                                   |
 | **Enable Large Particle Walls** | Default: **True**. Enables larger, note-sized particle walls. These can sometimes be confused with actual notes.|
 | **Particle Walls Mult**         | Default: **4**. Controls how frequently particle wall batches are generated. More is better! Calculations on this can slow map generation time on some maps.   |
 | **Particle Walls Batch Size**   | Default: **20**. Maximum number of walls per particle batch. Higher values create denser particle bursts. More is better! Calculations on this can slow map generation time on some maps.  |
@@ -225,16 +223,25 @@ All options below require `Mapping Extensions` mod to be installed. (I use the w
 | **Max Wait Time**               | Default: **6 s**. Particle and floor wall calculations can slow map generation and even cause Beat Saber to appear frozen on heavy maps. This setting automatically reduces the number of particle and floor walls when generation time reaches this limit. |
 
 
-***Floor Walls (and ceiling tiles and miniature cityscapes)***
+***Floor Walls (and sky tiles and miniature cityscapes)***
 
 | Option                     | Description                                                                                                                                                                 |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable Ext Floor Walls** | Enables bursts of thin, flat walls like floor tiles under (and sometimes above) the player. This also forms miniature “cityscape” patterns of walls around you. |
+| **Enable Ext Floor Walls** | Enables bursts of thin, flat walls like floor tiles under (and sometimes sky tiles above) the player. This also forms miniature “cityscape” patterns of walls around you. Best with `Mapping Extensions` mod installed. |
 | **Floor Walls Mult**       | Default: **4**. Controls how frequently floor wall batches are generated. Higher values mean more batches. More is better! Calculations on this can slow map generation time on some maps.                                        |
 | **Floor Walls Batch Size** | Default: **20**. Maximum number of floors walls per batch. More is better! Calculations on this can slow map generation time on some maps..                                                               |
 | **Floor Walls Min Dis**    | Default: **0**. Minimum distance from the player (by line index and line layer).                                                                                           |
 
-NOTE: The JSON config file has a `StandardLevelWallMultiplier` that reduces walls for standard maps. If you like the number of walls in 360 but find that there are too many or few in a standard map, then change this config item.
+***Tunnel Walls (Mapping Extensions only)***
+
+| Option                      | Description                                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Enable Ext Tunnel Walls** | Enables thin side and overhead wall groups that form tunnel-like structures around the player. Requires `Mapping Extensions` mod installed. |
+| **Tunnel Walls Mult**       | Default: **1**. Controls how many tunnel wall groups are generated.                            |
+| **Tunnel Walls Min Dis**    | Default: **0**. Minimum distance from the player (by line index) for tunnel walls.             |
+
+
+NOTE: The JSON config file has a `StandardLevelWallMultiplier` setting not available in the menus that reduces walls for standard maps. If you like the number of walls in 360 but find that there are too many or few in a standard map, then change this config item.
 ***
 
 ## JSON Beatmap File Output
@@ -273,7 +280,7 @@ For v4 output, you must also set the `OutputV4JsonSongSampleRate` config setting
 
 ***
 
-## How to build
+## How to build AutoBS Mod
 
 To test and build this project locally, do the following:
 1. Use `Beat Saber Modding Tools` extension for Visual Studio to make things easier.
@@ -286,5 +293,3 @@ To test and build this project locally, do the following:
 Beat Saber Mixed Reality Mode support
 
 Modern GLS lighting and environment support
-
-

@@ -109,7 +109,7 @@ namespace AutoBS
             foreach (var obstacle in eData.Obstacles) // Clear existing obstacles from BeatmapData so obstacles are empty
             {
                 originalWalls.Add(obstacle); // add original obstacles into the list
-                Plugin.LogDebug($"[SetOriginalWalls] Original wall at time: {obstacle.time}, duration: {obstacle.duration}, layer: {obstacle.layer}, line: {obstacle.line}, width: {obstacle.width}, height: {obstacle.height}");
+                //Plugin.LogDebug($"[SetOriginalWalls] Original wall at time: {obstacle.time}, duration: {obstacle.duration}, layer: {obstacle.layer}, line: {obstacle.line}, width: {obstacle.width}, height: {obstacle.height}");
             }
             originalWalls.Sort((a, b) => a.time.CompareTo(b.time));
             originalWallCount = originalWalls.Count;

@@ -56,11 +56,13 @@ namespace AutoBS.Patches
             }
 
             float originalNJS = noteJumpMovementSpeed; // from prefix argument
-            float originalNJO = TransitionPatcher.NoteJumpOffset;
+            float originalNJO = TransitionPatcher.OriginalNoteJumpOffset;
             float originalJD = AutoNjsFixer.GetJumpDistance(bpm == 0 ? TransitionPatcher.bpm : bpm, originalNJS, originalNJO);
 
-            float finalNJS = TransitionPatcher.FinalNoteJumpMovementSpeed;
-            float finalJD = TransitionPatcher.FinalJumpDistance;
+            float finalNJS = TransitionPatcher.FinalNoteJumpMovementSpeed > 0 ? TransitionPatcher.FinalNoteJumpMovementSpeed : originalNJS;
+            float finalJD = TransitionPatcher.FinalJumpDistance > 0 ? TransitionPatcher.FinalJumpDistance : originalJD;
+
+            Plugin.LogDebug($"[VariableMovementDataProvider][AutoNjsFixer] Original NJS: {originalNJS} Original JD: {originalJD} -- (bpm: {(bpm == 0 ? TransitionPatcher.bpm : bpm)})");
 
             bool njsChanged = Math.Abs(finalNJS - originalNJS) > 0.01f;
             bool jdChanged  = Math.Abs(finalJD - originalJD) > 0.01f;

@@ -98,7 +98,7 @@ namespace AutoBS.Patches
             }
             else if (beatmapData is BeatmapData bm) // built-in map data
             {
-                Plugin.Log.Info($"[CreateTransformedBeatmapData] Retrieved Vanilla BeatmapData from JSON v{TransitionPatcher.SelectedBeatmapVersion}: " +
+                Plugin.Log.Info($"[CreateTransformedBeatmapData] Retrieved custom v4 or Vanilla BeatmapData from JSON v{TransitionPatcher.SelectedBeatmapVersion}: " +
                          $"notes: {bm.cuttableNotesCount}, " +
                          $"bombs: {bm.bombsCount}, " +
                          $"obstacles: {bm.obstaclesCount}, " +
@@ -116,107 +116,29 @@ namespace AutoBS.Patches
                 var bmCopy = bm.GetCopy(); // need this so that original data is immutable. otherwise changes to eData will affect original data.
                 eData = new EditableCBD(bmCopy, version);
             }
-            /*
-#if DEBUG
-            foreach (var rot in eData.RotationEvents)
-            {
-                if (rot.time < 30)
-                    Plugin.LogDebug($"Original Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
-            }
-#endif
-            */
-            Plugin.LogDebug($"[CreateTransformedBeatmapData] Converted (Custom)BeatmapData to EditableCBD map version: {eData.Version.Major} - notes: {eData.ColorNotes.Count}, bombs: {eData.BombNotes.Count}, obstacles: {eData.Obstacles.Count}, arcs: {eData.Arcs.Count}, chains: {eData.Chains.Count}, rotations: {eData.RotationEvents.Count}, basic events: {eData.BasicEvents.Count}, customEvents: {eData.CustomEvents.Count}, color boosts: {eData.ColorBoostEvents.Count}.");
-
-            Plugin.LogDebug($"[CreateTransformedBeatmapData] Song Name: {SetContent.SongName} - v{TransitionPatcher.SelectedBeatmapVersion} - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty}  ----------------------------------------------------------------------------");
-
-            (NoodleProblemNotes, NoodleProblemObstacles) = EditableCBD.TestForNoodleCustomData(eData); //Should remove notes and walls first before figuring out rotations etc which are based on notes
-
-            /*
-            if (TransitionPatcher.IsBeatSageMap && Config.Instance.EnableCleanBeatSage)
-            {
-                BeatSageCleanUp.Clean(eData); // reference sent so no need to return eData
-            }
-            */
-            /*
-            if (Utils.IsEnabledArcs() || Utils.IsEnabledChains())
-            {
-                if ((eData.Arcs.Count == 0 || eData.Chains.Count == 0) && !NoodleProblemNotes)
-                {
-                    Arcitect.CreateSliders(eData); //update data and update sliders list for arcfix later
-
-                    string disabledText = DetermineScoreSubmissionReason(BeatSageCleanUp.DisableScoreSubmission, eData.MapAlreadyUsesChains, eData.Chains.Count);
-
-                    if (!string.IsNullOrEmpty(disabledText))
-                    {
-                        ScoreGate.Set(disabledText);
-                    }
-                }
-                else
-                {
-                    Plugin.LogDebug("[CreateTransformedBeatmapData] Arcitect OFF. Native Arcs and Chains already exists.");
-                }
-
-                if (Utils.IsEnabledArcs() && // go ahead and arc fix nonGen360 maps if arcs are enabled.
-                    !eData.MapAlreadyUsesArcs && // unless they already use arcs. if they exist in 360 then they are probably placed correctly.
-                    Config.Instance.ArcFixFull &&
-                   (TransitionPatcher.SelectedSerializedName == "360Degree" || TransitionPatcher.SelectedSerializedName == "90Degree"))
-                {
-                    List<ERotationEventData> allRotations = eData.RotationEvents;
-                    
-                    Plugin.LogDebug($"[CreateTransformedBeatmapData] Arcitect ArcFix for NonGen360 Maps Activated. Original Rotations Count: {allRotations.Count}");
-                    eData.RotationEvents = Arcitect.ArcFix(allRotations, eData);
-                }
-            }
-            */
-            /*
-            #region LightAutoMapper
-
-            if (Utils.IsEnabledLighting() && Config.Instance.EnableLightAutoMapper)
-            {
-                LightAutoMapper.Start(eData);
-            }
-            
-            #endregion
-            */
-            //if ((Utils.IsEnabledArcs() ||
-            //    Utils.IsEnabledChains() ||
-            //    Utils.IsEnabledWalls() ||
-            //    (Utils.IsEnabledLighting() &&
-            //    Config.Instance.BoostLighting) || // Config.Instance.EnableLightAutoMapper)) || //Config.Instance.OnlyOneSaber ||
-            //    TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE))
-            {
-                Plugin.LogDebug($"[ ] Pipeline Called. Generating map changes for {TransitionPatcher.SelectedSerializedName}...");
                 /*
-                Generator gen = new Generator
+                foreach (var obs in eData.Obstacles)
                 {
-                    RotationSpeedMultiplier = (float)Math.Round(Config.Instance.RotationSpeedMultiplier, 1),
-                    AllowCrouchWalls = Config.Instance.AllowCrouchWalls,
-                    AllowLeanWalls = Config.Instance.AllowLeanWalls,
-                };
-
-                if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
-                {
-                    Plugin.LogDebug($"[CreateTransformedBeatmapData] Generating rotation events for {TransitionPatcher.SelectedSerializedName}...");
-                    
-                    if (Config.Instance.Wireless360)
-                    {
-                        gen.LimitRotations = 99999;
-                        gen.BottleneckRotations = 99999;
-                    }
-                    else
-                    {
-                        gen.LimitRotations =
-                            (int)((Config.Instance.LimitRotations360 / 360f / 2f) * (24f)); // / Config.Instance.RotationAngleMultiplier));//BW this convert the angle into LimitRotation units of 15 degree slices. Need to divide the Multiplier since it causes the angle to change from 15 degrees. this will keep the desired limit to work if a multiplier is added.
-                        gen.BottleneckRotations = gen.LimitRotations / 2;
-                    }
+                    if (obs.time > 32 && obs.time < 33)
+                        Plugin.LogDebug($"Original Obstacle - Time: {obs.time:F} - Line: {obs.line} - Layer: {obs.layer} - Height: {obs.height} - width: {obs.width} - Dur: {obs.duration}");
                 }
-
-                // Noodle events still exist in eData up to this point.
-                var outp = gen.Generate(eData, beatmapLevel.beatsPerMinute);
-
-                if (!gen.OriginalMapAltered)
-                    return;
+                
+    #if DEBUG
+                foreach (var rot in eData.RotationEvents)
+                {
+                    if (rot.time < 30)
+                        Plugin.LogDebug($"Original Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
+                }
+    #endif
                 */
+                Plugin.LogDebug($"[CreateTransformedBeatmapData] Converted (Custom)BeatmapData to EditableCBD map version: {eData.Version.Major} - notes: {eData.ColorNotes.Count}, bombs: {eData.BombNotes.Count}, obstacles: {eData.Obstacles.Count}, arcs: {eData.Arcs.Count}, chains: {eData.Chains.Count}, rotations: {eData.RotationEvents.Count}, basic events: {eData.BasicEvents.Count}, customEvents: {eData.CustomEvents.Count}, color boosts: {eData.ColorBoostEvents.Count}.");
+
+                Plugin.LogDebug($"[CreateTransformedBeatmapData] Song Name: {SetContent.SongName} - v{TransitionPatcher.SelectedBeatmapVersion} - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty}  ----------------------------------------------------------------------------");
+
+                (NoodleProblemNotes, NoodleProblemObstacles) = EditableCBD.TestForNoodleCustomData(eData); //Should remove notes and walls first before figuring out rotations etc which are based on notes
+
+                
+                // CALL PIPELINE ---------------------------------------------
 
                 PipelineResult outp = GenerationPipeline.Run(eData);
 
@@ -230,16 +152,16 @@ namespace AutoBS.Patches
                     //__result = outp.Custom!;
 
                     Plugin.Log.Info($"[CreateTransformedBeatmapData] Final CustomBeatmapData: " +
-                         $"notes: {__result.cuttableNotesCount}, " +
-                         $"bombs: {__result.bombsCount}, " +
-                         $"obstacles: {__result.obstaclesCount}, " +
-                         $"arcs: {__result.allBeatmapDataItems.OfType<CustomSliderData>().Where((e) => e.sliderType == CustomSliderData.Type.Normal).Count()}, " +
-                         $"chains: {__result.allBeatmapDataItems.OfType<CustomSliderData>().Where((e) => e.sliderType == CustomSliderData.Type.Burst).Count()}, " +
-                         $"basic events: {__result.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Count()}, " +
-                         $"events: {__result.allBeatmapDataItems.OfType<CustomEventData>().Count()}, " +
-                         $"color boosts: {__result.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()}, " +
-                         $"bpm events: {__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}, " +
-                         $"rotation events (in-line per object) {eData.RotationEvents.Count}" );
+                            $"notes: {__result.cuttableNotesCount}, " +
+                            $"bombs: {__result.bombsCount}, " +
+                            $"obstacles: {__result.obstaclesCount}, " +
+                            $"arcs: {__result.allBeatmapDataItems.OfType<CustomSliderData>().Where((e) => e.sliderType == CustomSliderData.Type.Normal).Count()}, " +
+                            $"chains: {__result.allBeatmapDataItems.OfType<CustomSliderData>().Where((e) => e.sliderType == CustomSliderData.Type.Burst).Count()}, " +
+                            $"basic events: {__result.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>().Count()}, " +
+                            $"events: {__result.allBeatmapDataItems.OfType<CustomEventData>().Count()}, " +
+                            $"color boosts: {__result.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()}, " +
+                            $"bpm events: {__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}, " +
+                            $"rotation events (in-line per object) {eData.RotationEvents.Count}");
                     // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
                     //ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 157f, 161f);
@@ -266,7 +188,7 @@ namespace AutoBS.Patches
                 else
                 {
                     //__result = outp.Vanilla!;
-                    
+
                     Plugin.Log.Info($"[CreateTransformedBeatmapData] Final Vanilla BeatmapData v{TransitionPatcher.SelectedBeatmapVersion}: " +
                         $"notes: {__result.cuttableNotesCount}, " +
                         $"bombs: {__result.bombsCount}, " +
@@ -279,23 +201,33 @@ namespace AutoBS.Patches
                         $"bpm events: {__result.allBeatmapDataItems.OfType<BpmChangeEventData>().Count()}, " +
                         $"njs events: {__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()}, " +
                         $"rotation events (in -line per object): {eData.RotationEvents.Count}");
-                    /*
-                    if (__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count() > 0)
-                    {
-                        
-                        Plugin.LogDebug($"Final NJS Events:");
-                        foreach (var evt in __result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>())//.Where(n => n.time >= 0f && n.time <= 60f))
-                        {
-                            Plugin.LogDebug($"NJS Event: {evt.time:F} relative NJS: {evt.relativeNoteJumpSpeed} EaseType: {evt.easeType} usePreviousValue: {evt.usePreviousValue}");
-                        }
-                       
 
-                    } 
-                    */
+                    if (TransitionPatcher.IsCustomLevel) // can be v4 custom level. i'm trying to avoid outputing json for vanilla maps for copywrite reasons i suppose
+                        JsonOutputConverter.ToJsonFile(__result as CustomBeatmapData, eData);
+                /*
+                if (__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count() > 0)
+                {
+
+                    Plugin.LogDebug($"Final NJS Events:");
+                    foreach (var evt in __result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>())//.Where(n => n.time >= 0f && n.time <= 60f))
+                    {
+                        Plugin.LogDebug($"NJS Event: {evt.time:F} relative NJS: {evt.relativeNoteJumpSpeed} EaseType: {evt.easeType} usePreviousValue: {evt.usePreviousValue}");
+                    }
+
+
+                } 
+                */
+                /*
+                foreach (var obs in __result.allBeatmapDataItems.OfType<ObstacleData>())
+                {
+                    if (obs.time > 32 && obs.time < 33)
+                        Plugin.LogDebug($"Final ObstacleData - Time: {obs.time:F} - Line: {obs.lineIndex} - Layer: {(int)obs.lineLayer} - Height: {obs.height} - width: {obs.width} - Dur: {obs.duration}");
                 }
+                */
+            }
                 
                 //Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");
-            }
+
             //BeatmapLightingLogger.LogGLSLightingEvents(HarmonyPatches.CurrentBeatmapSaveData);
         }
 

@@ -914,8 +914,7 @@ namespace AutoBS
                         
                             strobeWindows.Add((burstStart, burstEndTime, mode));
 
-                            Plugin.LogDebug(
-                                $"[AutoLightMapper] Generated strobe burst {strobeCount}: start {burstStart:F3} dur {burstDuration:F3}, mode: {mode}, interval {strobeInterval:F3} (StrobeMultiplier: {mult})");
+                            //Plugin.LogDebug($"[AutoLightMapper] Generated strobe burst {strobeCount}: start {burstStart:F3} dur {burstDuration:F3}, mode: {mode}, interval {strobeInterval:F3} (StrobeMultiplier: {mult})");
 
                             int strobeStep = 0;
 

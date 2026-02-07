@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEngine;
+using static BeatSaberMarkupLanguage.Components.KEYBOARD;
 using static PyramidBloomRendererSO;
 using DiffData = SongCore.Data.SongData.DifficultyData;
 using MapColor = SongCore.Data.SongData.MapColor;
@@ -47,6 +48,8 @@ namespace AutoBS.Patches
         public static readonly Dictionary<string, BeatmapKey> GeneratedToStandardKey = new Dictionary<string, BeatmapKey>(StringComparer.Ordinal);
         public static string KeyStr(in BeatmapKey k) => k.SerializedName(); // stable string key
 
+        public static string[] Mappers  = Array.Empty<string>();
+        public static string[] Lighters = Array.Empty<string>();
 
         static void Prefix(StandardLevelDetailView __instance,
                    BeatmapLevel level,
@@ -152,27 +155,29 @@ namespace AutoBS.Patches
             //Plugin.Log.Info($"[CreateGen360DifficultySet] Song Hash: {songHash} (levelID: {level.levelID})");
             var songCoreExtraData = SongCoreBridge.TryGetSongCoreSongData(level); // will work on song core's live cached object
 
-            string[] mappers = level.allMappers ?? Array.Empty<string>(); //empty for vanilla but maybe newer songs have it
-            string[] lighters = level.allLighters ?? Array.Empty<string>();//empty for vanilla
+            Mappers = level.allMappers ?? Array.Empty<string>(); //empty for vanilla but maybe newer songs have it
+            Lighters = level.allLighters ?? Array.Empty<string>();//empty for vanilla
 
             if (songCoreExtraData != null)
             {
                 // All contributors by role
                 var contributorMappers = songCoreExtraData.contributors.Where(c => c._role?.ToLower() == "mapper").Select(c => c._name).ToArray();
-                if (contributorMappers.Length > 0) mappers = contributorMappers;
+                if (contributorMappers.Length > 0) Mappers = contributorMappers;
                 var contributorLighters = songCoreExtraData.contributors.Where(c => c._role?.ToLower() == "lighter").Select(c => c._name).ToArray();
-                if (contributorLighters.Length > 0) lighters = contributorLighters;
+                if (contributorLighters.Length > 0) Lighters = contributorLighters;
                 //var contributorAuthors = songCoreExtraData.contributors.Where(c => c._role?.ToLower() == "author").Select(c => c._name).ToArray();
                 //if (contributorAuthors.Length > 0) authors = contributorAuthors;
             }
 
+            if (Mappers.Length > 0 & Lighters.Length == 0) Lighters = Mappers;
+
             //Plugin.Log.Info($"[CreateGen360DifficultySet] Authors: {string.Join(", ", authors)}");
-            Plugin.LogDebug($"[CreateGen360DifficultySet] Mappers: {string.Join(", ", mappers)}"); //empty for vanilla
-            Plugin.LogDebug($"[CreateGen360DifficultySet] Lighters: {string.Join(", ", lighters)}"); //empty for vanilla
+            Plugin.LogDebug($"[CreateGen360DifficultySet] Mappers: {string.Join(", ", Mappers)}, Lighters: {string.Join(", ", Lighters)}"); //empty for vanilla
+
 
             IsBeatSageMap = false; // will be true for all difficulties
 
-            if (mappers.Contains("Beat Sage"))
+            if (Mappers.Contains("Beat Sage"))
             {
                 Plugin.LogDebug($"[CreateGen360DifficultySet] Beat Sage map!");
                 IsBeatSageMap = true;
@@ -306,7 +311,7 @@ namespace AutoBS.Patches
 
                     if (!string.IsNullOrEmpty(beatmapJson))// v2/v3 custom map have no lightshowJson && !string.IsNullOrEmpty(lightshowJson))
                     {
-                        Plugin.LogDebug($"[CreateGen360DifficultySet] -- Difficulty: {difficulty} JSON length={beatmapJson.Length}");
+                        Plugin.LogDebug($"[CreateGen360DifficultySet] -- Difficulty: {difficulty}");
 
                         BeatmapVersionRegistry.versionByKey[stdKey] = version;  //BeatmapVersionRegistry.versionByKey[genKey] = version; //v1.42 will get from basedOnKey now,
 
@@ -446,6 +451,14 @@ namespace AutoBS.Patches
                         }
                         else // v4 is the only one that crashes with null lightEventConverter. if null, then can't make built-in maps
                         {
+                            if (lightshowJson == null)
+                            {
+                                Plugin.Log.Error($"[AutoBS] No lightshowJson for {level.songName} {difficulty}.");
+                            }
+                            if (audioDataJson == null)
+                            {
+                                Plugin.Log.Error($"[AutoBS] No audioDataJson for {level.songName} {difficulty}.");
+                            }
                             try
                             {
                                 originalBeatmapData = BeatmapDataLoaderVersion4.BeatmapDataLoader.GetBeatmapDataFromSaveDataJson(
@@ -513,7 +526,19 @@ namespace AutoBS.Patches
                             }
                         }
 
-                        int originalBpmEventsCount = originalBeatmapData.allBeatmapDataItems.OfType<BpmChangeEventData>().Count();
+                        int originalBpmEventsCount =
+                            originalBeatmapData?.allBeatmapDataItems?
+                                .OfType<BpmChangeEventData>()
+                                .Count()
+                            ?? 0;
+
+                        if (originalBeatmapData == null)
+                        {
+                            Plugin.Log.Warn($"[AutoBS] BeatmapData is null after load for {level.songName} {difficulty} (v{version.Major}). Skipping.");
+                            return;
+                        }
+
+
                         int customBpmEventsCount = 0;
                         if (IsCustomLevel && version.Major < 4) // CustomJsonData does not support v4
                         {
@@ -603,6 +628,8 @@ namespace AutoBS.Patches
                         originalNJS = NoteJumpMovementSpeed(difficulty, origBasicData.noteJumpMovementSpeed); // some built-in levels send a default of 0
                         originalNJO = origBasicData.noteJumpStartBeatOffset;
 
+                        NJORegistry.findByKey[genKey] = originalNJO;
+
                         notesPerSecond = (songLength > 0f) ? (noteCount / songLength) : 0f;
 
                         //These are all accurate (custom maps)
@@ -621,8 +648,8 @@ namespace AutoBS.Patches
                                     noteCount,
                                     obstacleCount,
                                     bombCount,
-                                    mappers,
-                                    lighters,
+                                    Mappers,
+                                    Lighters,
                                     levelCustomData,
                                     beatmapCustomData
                     );
@@ -671,6 +698,11 @@ namespace AutoBS.Patches
 
                                 Plugin.LogDebug($"[CreateGen360DifficultySet] -- Base requirements: [{string.Join(",", reqs)}]");
                                 Plugin.LogDebug($"[CreateGen360DifficultySet] -- Base suggestions: [{string.Join(",", suggs)}]");
+
+                                MetadataRegistry.GetOrCreate(genKey).Requirements.UnionWith(reqs);
+                                MetadataRegistry.GetOrCreate(genKey).Suggestions.UnionWith(suggs);
+                                MetadataRegistry.GetOrCreate(genKey).Warnings.UnionWith(warns);
+                                MetadataRegistry.GetOrCreate(genKey).Information.UnionWith(info);
 
                                 var reqArr = reqs.Count == 0 ? Array.Empty<string>() : reqs.ToArray();
                                 var suggsArr = suggs.Count == 0 ? Array.Empty<string>() : suggs.ToArray();
@@ -726,8 +758,8 @@ namespace AutoBS.Patches
                                     noteCount,
                                     obstacleCount,
                                     bombCount,
-                                    mappers,
-                                    lighters,
+                                    Mappers,
+                                    Lighters,
                                     levelCustomData,
                                     beatmapCustomData
                                 );
@@ -751,6 +783,8 @@ namespace AutoBS.Patches
                         originalNJS = vanillaBasicData.noteJumpMovementSpeed;
                         originalNJO = vanillaBasicData.noteJumpStartBeatOffset;
 
+                        NJORegistry.findByKey[genKey] = originalNJO;
+
                         MapAlreadyUsesArcsRegistry.findByKey[stdKey] = false; //don't know yet i think
                         MapAlreadyUsesArcsRegistry.findByKey[genKey] = false;
                         MapAlreadyUsesChainsRegistry.findByKey[stdKey] = false;
@@ -766,8 +800,8 @@ namespace AutoBS.Patches
                                         cuttableObjectsCount,
                                         obstacleCount,
                                         bombCount,
-                                        mappers,
-                                        lighters,
+                                        Mappers,
+                                        Lighters,
                                         levelCustomData,
                                         beatmapCustomData
                                     );
@@ -832,7 +866,7 @@ namespace AutoBS.Patches
                 var beatmapLevelsModel = SongCore.Loader.BeatmapLevelsModelSO;
                 if (beatmapLevelsModel == null)
                 {
-                    Plugin.LogDebug("[CreateGen360DifficultySet] BeatmapLevelsModelSO is null.");
+                    Plugin.Log.Error("[GetJsonForCustomLevel] BeatmapLevelsModelSO is null.");
                     return (beatmapJson, lightshowJson, audioDataJson, version);
                 }
                 // === LOAD RAW JSON FOR THIS DIFFICULTY used to create metadata for BeatmapBasicData and get Note, Obstacle, etc data  ===
@@ -848,7 +882,18 @@ namespace AutoBS.Patches
                     lightshowJson = beatmapLevelData.GetLightshowString(in beatmapKey);
                     audioDataJson = beatmapLevelData.GetAudioDataString();
 
+                    Plugin.LogDebug($"[GetJsonForCustomLevel] Loaded JSON for {difficulty}: " +
+                        $"beatmapJson len={(beatmapJson?.Length ?? 0)}, " +
+                        $"lightshowJson len={(lightshowJson?.Length ?? 0)}, " +
+                        $"audioDataJson len={(audioDataJson?.Length ?? 0)}");
+
                     version = GetBeatMapDataJsonVersion(beatmapJson); // 0,0,0 if json empty or null
+
+                    if (version.Major == 4)
+                    {
+                        if (lightshowJson == null || lightshowJson?.Length == 0) Plugin.Log.Warn($"[GetJsonForCustomLevel] No lightshowJson for {level.songName} {difficulty}.");
+                        if (audioDataJson == null || audioDataJson?.Length == 0) Plugin.Log.Warn($"[GetJsonForCustomLevel] No audioDataJson for {level.songName} {difficulty}.");
+                    }
 
                     SongFolderPath = SongFolderUtils.TryGetSongFolder(level.levelID);
 
@@ -894,7 +939,7 @@ namespace AutoBS.Patches
                             if (list.Count > 0)
                             {
                                 RotationV3Registry.RotationEventsByKey[beatmapKey] = list;
-                                Plugin.LogDebug($"[RotationV3Registry] Stored {list.Count} v3 rotation events.");
+                                Plugin.LogDebug($"[GetJsonForCustomLevel][RotationV3Registry] Stored {list.Count} v3 rotation events.");
                             }
                         }
                     }
@@ -904,7 +949,7 @@ namespace AutoBS.Patches
             }
             catch (Exception ex)
             {
-                Plugin.Log.Error($"[CreateGen360DifficultySet] -- JSON parse error: {ex}");
+                Plugin.Log.Error($"[GetJsonForCustomLevel] -- JSON parse error: {ex}");
             }
 
             return (beatmapJson, lightshowJson, audioDataJson, version);
@@ -914,11 +959,11 @@ namespace AutoBS.Patches
         {
             if (beatmapJson == null || beatmapJson == string.Empty)
             {
-                Plugin.Log.Warn($"[CreateGen360DifficultySet][GetBeatMapDataJsonVersion] beatmapJson is NULL or empty");
+                Plugin.Log.Warn($"[GetBeatMapDataJsonVersion] beatmapJson is NULL or empty");
                 return new Version(0, 0, 0);
             }
             Version version = BeatmapSaveDataHelpers.GetVersion(beatmapJson);
-            Plugin.LogDebug($"[CreateGen360DifficultySet] -- [GetBeatMapDataJsonVersion] found version={version} (if v0 then its missing from the dat file)");
+            Plugin.LogDebug($"[GetBeatMapDataJsonVersion] found version={version} (if v0 then its missing from the dat file)");
 
             if (version.Major == 0) // version missing from json file (will get error loading 360fyer difficulties if missing version)
             {
@@ -945,7 +990,7 @@ namespace AutoBS.Patches
                 {
                     version = new Version(majorVersion, 0, 0);
                 }
-                Plugin.LogDebug($"[CreateGen360DifficultySet][GetBeatMapDataJsonVersion] Used JSON to find missing version={version}");
+                Plugin.LogDebug($"[GetBeatMapDataJsonVersion] Used JSON to find missing version={version}");
             }
             return version;
         }

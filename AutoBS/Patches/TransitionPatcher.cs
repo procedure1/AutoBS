@@ -35,6 +35,7 @@ namespace AutoBS.Patches
         public static System.Random RepeatableRandom = new System.Random();
         public static Version SelectedBeatmapVersion = new Version(2, 6, 0);
         public static bool IsGen360 = false; // Only inject once, for the map the player actually "Starts" instead of all difficulties in the set
+        public static bool IsCustomLevel = true;
         public static string SelectedSerializedName;//will be "Generated360Degree" for gen 360
         public static BeatmapCharacteristicSO SelectedCharacteristicSO;
         public static BeatmapLevel SelectedBeatmapLevel;
@@ -45,8 +46,10 @@ namespace AutoBS.Patches
         //public static CustomBeatmapData beatMapDataCBforColorScheme;
 
         public static float OriginalNoteJumpMovementSpeed = 0;
+        public static float OrginalJumpDistance;
+        public static float OriginalNoteJumpOffset = 0; //noteJumpStartBeatOffset
         public static float FinalNoteJumpMovementSpeed = 0;
-        public static float NoteJumpOffset; //noteJumpStartBeatOffset
+        
         public static float FinalJumpDistance;
         public static bool AutoNJSDisabledByConflictingMod = false;
         public static bool AutoNJSPracticeModeDisabledByConflictingMod = false;
@@ -103,11 +106,14 @@ namespace AutoBS.Patches
 
             ScoreGate.Clear();
 
+            IsCustomLevel = beatmapLevel.levelID.StartsWith("custom_level_");
             SelectedCharacteristicSO = beatmapKey.beatmapCharacteristic;
             SelectedDifficulty = beatmapKey.difficulty;
             SelectedBeatmapLevel = beatmapLevel;
             SelectedPlayKey = beatmapKey;
             bpm = beatmapLevel.beatsPerMinute;
+
+            OriginalNoteJumpOffset = NJORegistry.findByKey.TryGetValue(SelectedPlayKey, out var n) ? n : 0f; // used by JsonOutputConverter so only needed for generated map. this will not work anyway for non generated maps.
 
             IsGen360 = SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
             if (IsGen360)
@@ -130,7 +136,7 @@ namespace AutoBS.Patches
             int seed = StableHash32(beatmapLevel.levelID); // example: custom_level_D812C45C625570F09AD71AB2AE5529D9B28C9B3E so will keep same seed for all levels of same song
             RepeatableRandom = new System.Random(seed); // use for psuedo random 
 
-            bool isCustomLevel = beatmapLevel.levelID.StartsWith("custom_level_");//v1.42
+            
 
 
             Plugin.LogDebug(".");
@@ -140,7 +146,7 @@ namespace AutoBS.Patches
             Plugin.LogDebug($"[TransitionPatcher] Will inject? {IsGen360} for {beatmapKey.beatmapCharacteristic.serializedName} - {beatmapKey.difficulty}");
 
             // For noodle standard maps, need to do it this way. but this works for all maps so use this instead of the registry lookup. not checked in SetContent.
-            if (isCustomLevel)
+            if (IsCustomLevel)
             {
                 RequiresMappingExtensions = CheckForExternalModRequirement(beatmapLevel, "Mapping Extensions");
                 RequiresNoodle = CheckForExternalModRequirement(beatmapLevel, "Noodle Extensions");
@@ -173,7 +179,7 @@ namespace AutoBS.Patches
 
                 //v1.42
                 string beatmapJson = ""; string lightshowJson = ""; string audioDataJson = ""; Version version = new Version();
-                if (isCustomLevel)
+                if (IsCustomLevel)
                     (beatmapJson, lightshowJson, audioDataJson, version) = GetJsonForCustomLevel(beatmapLevel, SelectedDifficulty, SelectedPlayKey); //no longer works for built-in levels
                 
                 JObject beatmapObj = JObject.Parse(beatmapJson);
@@ -206,10 +212,10 @@ namespace AutoBS.Patches
 
             
 
-            if (!isCustomLevel && SelectedBeatmapVersion.Major == 0)
+            if (!IsCustomLevel && SelectedBeatmapVersion.Major == 0)
                 SelectedBeatmapVersion = new Version(4, 0, 0);
 
-            if (!isCustomLevel && IsGen360)
+            if (!IsCustomLevel && IsGen360)
             {
                 // Compute the color scheme the ORIGINAL (BasedOn) map would have used
                 var originalEffective = ResolveEffectiveSchemeVanillaLevels(

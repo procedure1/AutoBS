@@ -165,7 +165,7 @@ namespace AutoBS
             float originalNjs = SetContent.NoteJumpMovementSpeed(difficulty, basic.noteJumpMovementSpeed);
             float njo = basic.noteJumpStartBeatOffset;
 
-            (float fixedNjs, float fixedJd, float originalJd) = AutoNjsFixer.Fix(originalNjs, njo, TransitionPatcher.bpm);
+            (float fixedNjs, float fixedJd, float originalJd) = AutoNjsFixer.Calculate(originalNjs, njo, TransitionPatcher.bpm);
 
             TransitionPatcher.OriginalNoteJumpMovementSpeed = originalNjs;
             TransitionPatcher.FinalNoteJumpMovementSpeed = fixedNjs;
