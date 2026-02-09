@@ -63,7 +63,7 @@
     <Compile Include="FieldHelper.cs" />
     <Compile Include="GameModeHelper.cs" />
     <Compile Include="UNUSED_GLSConverter.cs" />
-    <Compile Include="Modules\LightAutoMapper.cs" />
+    <Compile Include="Modules\LightsGenerator.cs" />
     <Compile Include="OptimizeRotationsToFOV.cs" />
     <Compile Include="Patches\HarmonyPatches.cs" />
     <Compile Include="Plugin.cs" />

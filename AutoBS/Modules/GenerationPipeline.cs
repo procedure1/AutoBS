@@ -86,7 +86,7 @@ namespace AutoBS
             Plugin.LogDebug($"[PipelineResult] 4 rotationsNotchanged: {rotationsNotchanged} Rotation Events Count: {eData.RotationEvents.Count()}.");
             if (!rotationsNotchanged) eData.RotationEventsChanged = true;
 
-            bool lightsNotAdded = (Utils.IsEnabledLighting() && !LightAutoMapper.LightEventsAdded) || !Utils.IsEnabledLighting();
+            bool lightsNotAdded = (Utils.IsEnabledLighting() && !LightsGenerator.LightEventsAdded) || !Utils.IsEnabledLighting();
             Plugin.LogDebug($"[PipelineResult] 5 lightsNotAdded: {lightsNotAdded}.");
 
             bool boostNotAdded = (Config.Instance.BoostLighting && eData.ColorBoostEvents.Count == 0) || eData.MapAlreadyUsesEnvColorBoost;
@@ -239,7 +239,7 @@ namespace AutoBS
             if (!Utils.IsEnabledLighting()) return;
             if (!Config.Instance.EnableLightAutoMapper) return;
 
-            LightAutoMapper.Start(eData);
+            LightsGenerator.Start(eData);
         }
 
         private static void RunColorBoostGenerator(EditableCBD eData)

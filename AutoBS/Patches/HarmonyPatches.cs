@@ -15,6 +15,10 @@ using UnityEngine;
 namespace AutoBS.Patches
 {
 
+    // !!!!!!!!!!! This should be in Mapping Extentions not AutoBS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //
+    //
+    //
     /// <summary>
     /// !May get fixed by Real Mapping Extensions but they may exclude v4 so would still need this. Method to preserve raw obstacle layer values outside the standard range. Starting v1.42, v4 maps clamp obstcle layers from 0 to 4 which breaks v4 mapping extensions.
     /// </summary>
@@ -33,7 +37,10 @@ namespace AutoBS.Patches
             return false; // skip original (prevents defaulting to Base)
         }
     }
-
+    //
+    //
+    //
+    // !!!!!!!!!!! This should be in Mapping Extentions not AutoBS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
     #region Prefix - BeatmapDataLoader.LoadBeatmapDataAsync - adds the beatmapData (IReadonlyBeatmapData)

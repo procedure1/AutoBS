@@ -8,8 +8,8 @@ using System.Linq;
 using System.Security.Cryptography;
 using UnityEngine;
 
+//Original code by Loloppe. Thank you!!! @Lowoppe
 //https://github.com/Loloppe/ChroMapper-AutoMapper/
-//@Lowoppe
 
 // UPDATED: Added environment-based filtering for special events.
 // Only special events required by Skrillex, Billie Eilish, or Lady Gaga environments will be added.
@@ -17,7 +17,7 @@ namespace AutoBS
 {
     //---------------------------------------------------------------------------------------------------------------------------
     // V2 light events (not GLS v3 lights)
-    public static class LightAutoMapper
+    public static class LightsGenerator
     {
         private enum StrobeMode
         {
@@ -46,7 +46,7 @@ namespace AutoBS
 
             isTheFirstEnvironment = isSupportedEnvironment && !TransitionPatcher.IsGen360 && (envName == "DefaultEnvironment" || envName.IndexOf("first", StringComparison.OrdinalIgnoreCase) >= 0);
 
-            Plugin.LogDebug($"[AutoLightMapper] {envName} Environment isSupported: {isSupportedEnvironment}"); // if v3 environment is chosen, then there is no reason to produce lights since they are not supported. Never was able to produce GLS lights
+            Plugin.LogDebug($"[AutoLights] {envName} Environment isSupported: {isSupportedEnvironment}"); // if v3 environment is chosen, then there is no reason to produce lights since they are not supported. Never was able to produce GLS lights
 
             if (!isSupportedEnvironment) return;
 
@@ -96,7 +96,7 @@ namespace AutoBS
             bool needsRINGZOOM = !eventTypeCounts.ContainsKey(BasicBeatmapEventType.Event9) ||
                                  eventTypeCounts[BasicBeatmapEventType.Event9] == 0;
 
-            Plugin.LogDebug($"[AutoLightMapper] - this map needsBACK: {needsBACK}, needsRING: {needsRING}, needsLEFT: {needsLEFT}, needsRIGHT: {needsRIGHT}, needsCENTER: {needsCENTER}, needsLEFTSPEED: {needsLEFTSPEED}, needsRIGHTSPEED: {needsRIGHTSPEED}, needsRINGSPIN: {needsRINGSPIN}, needsRINGZOOM: {needsRINGZOOM}");
+            Plugin.LogDebug($"[AutoLights] - this map needsBACK: {needsBACK}, needsRING: {needsRING}, needsLEFT: {needsLEFT}, needsRIGHT: {needsRIGHT}, needsCENTER: {needsCENTER}, needsLEFTSPEED: {needsLEFTSPEED}, needsRIGHTSPEED: {needsRIGHTSPEED}, needsRINGSPIN: {needsRINGSPIN}, needsRINGZOOM: {needsRINGZOOM}");
 
             bool[] allLightTypes = { needsBACK, needsRING, needsLEFT, needsRIGHT, needsCENTER, needsLEFTSPEED, needsRIGHTSPEED, needsRINGSPIN, needsRINGZOOM };
             bool[] threeSixtyTypes = { needsBACK, needsRING, needsLEFT, needsRIGHT, needsCENTER, needsLEFTSPEED, needsRIGHTSPEED };
@@ -115,7 +115,7 @@ namespace AutoBS
             */
 
             int existingLightTypes = allLightTypes.Count(b => !b);
-            Plugin.LogDebug($"[AutoLightMapper] - Existing Light Types: {existingLightTypes} count");
+            Plugin.LogDebug($"[AutoLights] - Existing Light Types: {existingLightTypes} count");
 
             //Standard maps: If 2 or more light types already exist → skip light generation
             if (existingLightTypes > 2 && //counts how many false values exist in bools. It effectively counts how many light events already exist in the map.
@@ -123,7 +123,7 @@ namespace AutoBS
                 TransitionPatcher.SelectedSerializedName != "360Degree" &&
                 TransitionPatcher.SelectedSerializedName != "90Degree")
             {
-                Plugin.LogDebug($"[AutoLightMapper] not used since there are 3 or more light events types programmed already for standard map.");
+                Plugin.LogDebug($"[AutoLights] not used since there are 3 or more light events types programmed already for standard map.");
                 LightEventsAdded = false;
                 return;
             }
@@ -142,7 +142,7 @@ namespace AutoBS
                 }
                 else
                 {
-                    Plugin.LogDebug($"[AutoLightMapper] not used since all seven 360 light event types are already programmed.");
+                    Plugin.LogDebug($"[AutoLights] not used since all seven 360 light event types are already programmed.");
                     LightEventsAdded = false;
                     return;
                 }
@@ -153,13 +153,19 @@ namespace AutoBS
                 eData, needsBACK, needsRING, needsLEFT, needsRIGHT, needsCENTER, needsLEFTSPEED,
                 needsRIGHTSPEED, needsRINGSPIN, needsRINGZOOM);
 
+            eData.BasicEvents.Clear(); // avoid duplicates of original lights
+            eData.BasicEvents.AddRange(v2lights);
+
+            eData.BasicEventsChanged = false;
+            if (v2lights.Count > 0) eData.BasicEventsChanged = true;
+
             /*
             // 2
             //  "Light Parser" for  "Cross Environment Compatible Lightshows" for ALL environments announced in Beat Games Dev Blog 12/2024. So don't need this hopefully.
             if (!IsV2Environment(envName) || envName.Contains("Second"))
             {
                 // Instead of inserting the v2 events, convert them to GLS events.
-                Plugin.LogDebug($"[AutoLightMapper] Converting v2 events into GLS events for environment '{envName}'");
+                Plugin.LogDebug($"[AutoLights] Converting v2 events into GLS events for environment '{envName}'");
                 GLSConverter.ConvertToGLSEvents(v2lights, envName);
                 return;
             }
@@ -172,19 +178,16 @@ namespace AutoBS
             }
             */
 
-            eData.BasicEventsChanged = false;
 
-            int lightCounter = 0;
+
+            /*
+            int lightCounter = 1;
             foreach (EBasicEventData light in v2lights)
             {
-                //Plugin.LogDebug($"[AutoLightMapper] Inserting event: Time={light.time:F3}, Type={(EventType)light.basicBeatmapEventType}, Value={(EventValue)light.value}, Brightness={light.floatValue:F2}");
-                eData.BasicEvents.Add(light);
+                Plugin.LogDebug($"[AutoLights] {lightCounter} Inserting event: Time={light.time:F3}, Type={(EventType)light.basicBeatmapEventType}, Value={(EventValue)light.value}, Brightness={light.floatValue:F2}");
                 lightCounter++;
             }
-
-            if (lightCounter > 0) eData.BasicEventsChanged = true;
-
-            //return data;
+            */
         }
 
         // A helper method to check if the environment is v2-based.
@@ -242,7 +245,7 @@ namespace AutoBS
             /*
             foreach (var s in originalSpecialEvents)
             {
-                Plugin.LogDebug($"[AutoLightMapper] Original special event: Type={s.Key}, Exists={s.Value}");
+                Plugin.LogDebug($"[AutoLights] Original special event: Type={s.Key}, Exists={s.Value}");
             }
             */
             Dictionary<EventType, EventValue> lastEventColors = new Dictionary<EventType, EventValue>();
@@ -255,7 +258,7 @@ namespace AutoBS
 
             // --- NEW: Determine allowed special events based on environment ---
             string environmentName = TransitionPatcher.EnvironmentName != null ? TransitionPatcher.EnvironmentName : "DefaultEnvironment";
-            //Plugin.LogDebug($"[AutoLightMapper] Song name: {SetContent.SongName} --- Current environment name: {environmentName} -------------------");
+            //Plugin.LogDebug($"[AutoLights] Song name: {SetContent.SongName} --- Current environment name: {environmentName} -------------------");
             //Plugin.LogDebug($" -------------------");
 
             List<EventType> allowedSpecialEventTypes = new List<EventType>();
@@ -284,9 +287,9 @@ namespace AutoBS
             }
             else
             {
-                Plugin.LogDebug($"[AutoLightMapper] Environment '{environmentName}' does not support special events. No special events will be added.");
+                Plugin.LogDebug($"[AutoLights] Environment '{environmentName}' does not support special events. No special events will be added.");
             }
-            Plugin.LogDebug($"[AutoLightMapper] Allowed special event types: {string.Join(", ", allowedSpecialEventTypes)}");
+            Plugin.LogDebug($"[AutoLights] Allowed special event types: {string.Join(", ", allowedSpecialEventTypes)}");
             // --- End of environment check ---
 
             // Use a counter to track when to trigger a light event based on the multiplier
@@ -392,79 +395,79 @@ namespace AutoBS
                             float t = now - (now - last) / 2;
                             if (needsBACK)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (BACK) at time {t:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (BACK) at time {t:F3}");
                                 lightEvents.Add(EBasicEventData.Create(t, EventType.BACK, (int)EventValue.OFF));
                             }
                             if (needsRING)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (RING) at time {t:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (RING) at time {t:F3}");
                                 lightEvents.Add(EBasicEventData.Create(t, EventType.RING, EventValue.OFF));
                             }
                             if (needsLEFT)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (LEFT) at time {t:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (LEFT) at time {t:F3}");
                                 lightEvents.Add(EBasicEventData.Create(t, EventType.LEFT, EventValue.OFF));
                             }
                             if (needsRIGHT)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (RIGHT) at time {t:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (RIGHT) at time {t:F3}");
                                 lightEvents.Add(EBasicEventData.Create(t, EventType.RIGHT, EventValue.OFF));
                             }
                             if (needsCENTER)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (CENTER) at time {t:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (CENTER) at time {t:F3}");
                                 lightEvents.Add(EBasicEventData.Create(t, EventType.CENTER, EventValue.OFF));
                             }
                             if (needsRINGSPIN)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (RING_SPIN) at time {t:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (RING_SPIN) at time {t:F3}");
                                 lightEvents.Add(EBasicEventData.Create(t, EventType.RING_SPIN, EventValue.OFF));
                             }
                             if (needsRINGZOOM)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (RING_ZOOM) at time {t:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (RING_ZOOM) at time {t:F3}");
                                 lightEvents.Add(EBasicEventData.Create(t, EventType.RING_ZOOM, EventValue.OFF));
                             }
-                            //Plugin.LogDebug($"[AutoLightMapper] Off events (group 1) added at time {t:F3}");
+                            //Plugin.LogDebug($"[AutoLights] Off events (group 1) added at time {t:F3}");
                         }
                         else
                         {
                             if (needsBACK)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (BACK) at time {now:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (BACK) at time {now:F3}");
                                 lightEvents.Add(EBasicEventData.Create(now, EventType.BACK, EventValue.OFF));
                             }
                             if (needsRING)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (RING) at time {now:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (RING) at time {now:F3}");
                                 lightEvents.Add(EBasicEventData.Create(now, EventType.RING, EventValue.OFF));
                             }
                             if (needsLEFT)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (LEFT) at time {now:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (LEFT) at time {now:F3}");
                                 lightEvents.Add(EBasicEventData.Create(now, EventType.LEFT, EventValue.OFF));
                             }
                             if (needsRIGHT)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (RIGHT) at time {now:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (RIGHT) at time {now:F3}");
                                 lightEvents.Add(EBasicEventData.Create(now, EventType.RIGHT, EventValue.OFF));
                             }
                             if (needsCENTER)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (CENTER) at time {now:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (CENTER) at time {now:F3}");
                                 lightEvents.Add(EBasicEventData.Create(now, EventType.CENTER, EventValue.OFF));
                             }
                             if (needsRINGSPIN)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (RING_SPIN) at time {now:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (RING_SPIN) at time {now:F3}");
                                 lightEvents.Add(EBasicEventData.Create(now, EventType.RING_SPIN, EventValue.OFF));
                             }
                             if (needsRINGZOOM)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF event (RING_ZOOM) at time {now:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated OFF event (RING_ZOOM) at time {now:F3}");
                                 lightEvents.Add(EBasicEventData.Create(now, EventType.RING_ZOOM, EventValue.OFF));
                             }
-                            //Plugin.LogDebug($"[AutoLightMapper] Off events (group 2) added at time {now:F3}");
+                            //Plugin.LogDebug($"[AutoLights] Off events (group 2) added at time {now:F3}");
                         }
                         doubleOn = false;
                     }
@@ -475,13 +478,13 @@ namespace AutoBS
                         if (needsBACK)
                         {
                             (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, repeatableRandom);
-                            //Plugin.LogDebug($"[AutoLightMapper] Generated BACK event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
+                            //Plugin.LogDebug($"[AutoLights] Generated BACK event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
                             lightEvents.Add(EBasicEventData.Create(now, EventType.BACK, color, floatValue * brightnessMultiplier));
                         }
                         if (needsRING)
                         {
                             (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, repeatableRandom);
-                            //Plugin.LogDebug($"[AutoLightMapper] Generated RING event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
+                            //Plugin.LogDebug($"[AutoLights] Generated RING event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
                             lightEvents.Add(EBasicEventData.Create(now, EventType.RING, color, floatValue * brightnessMultiplier));
                         }
                         if (needsLEFT || needsRIGHT)
@@ -489,35 +492,35 @@ namespace AutoBS
                             (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, repeatableRandom, false); // false so it will go back and forth between colors
                             if (needsLEFT)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated LEFT event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
+                                //Plugin.LogDebug($"[AutoLights] Generated LEFT event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
                                 lightEvents.Add(EBasicEventData.Create(now, EventType.LEFT, color, floatValue * brightnessMultiplier));
                             }
                             if (needsRIGHT)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated RIGHT event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
+                                //Plugin.LogDebug($"[AutoLights] Generated RIGHT event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
                                 lightEvents.Add(EBasicEventData.Create(now, EventType.RIGHT, color, floatValue * brightnessMultiplier));
                             }
                         }
                         if (needsCENTER)
                         {
                             (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, repeatableRandom);
-                            //Plugin.LogDebug($"[AutoLightMapper] Generated CENTER event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
+                            //Plugin.LogDebug($"[AutoLights] Generated CENTER event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
                             lightEvents.Add(EBasicEventData.Create(now, EventType.CENTER, color, floatValue * brightnessMultiplier));
                         }
                         if (needsRINGSPIN)
                         {
-                            //Plugin.LogDebug($"[AutoLightMapper] Generated RING_SPIN event at time {now:F3}");
+                            //Plugin.LogDebug($"[AutoLights] Generated RING_SPIN event at time {now:F3}");
                             lightEvents.Add(EBasicEventData.Create(now, EventType.RING_SPIN, EventValue.OFF));
                         }
                         if (needsRINGZOOM)
                         {
                             (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, repeatableRandom);
-                            //Plugin.LogDebug($"[AutoLightMapper] Generated RING_ZOOM event at time {now:F3}");
+                            //Plugin.LogDebug($"[AutoLights] Generated RING_ZOOM event at time {now:F3}");
                             lightEvents.Add(EBasicEventData.Create(now, EventType.RING_ZOOM, EventValue.OFF));
                         }
                         doubleOn = true;
                         last = now;
-                        //Plugin.LogDebug($"[AutoLightMapper] Generated light event at time {now:F3}.");
+                        //Plugin.LogDebug($"[AutoLights] Generated light event at time {now:F3}.");
                     }
 
                     for (int i = 3; i > 0; i--)
@@ -914,7 +917,7 @@ namespace AutoBS
                         
                             strobeWindows.Add((burstStart, burstEndTime, mode));
 
-                            //Plugin.LogDebug($"[AutoLightMapper] Generated strobe burst {strobeCount}: start {burstStart:F3} dur {burstDuration:F3}, mode: {mode}, interval {strobeInterval:F3} (StrobeMultiplier: {mult})");
+                            //Plugin.LogDebug($"[AutoLights] Generated strobe burst {strobeCount}: start {burstStart:F3} dur {burstDuration:F3}, mode: {mode}, interval {strobeInterval:F3} (StrobeMultiplier: {mult})");
 
                             int strobeStep = 0;
 
@@ -1021,7 +1024,7 @@ namespace AutoBS
                     {
                         if (needsRINGSPIN)
                         {
-                            //Plugin.LogDebug($"[AutoLightMapper] Generated RING_SPIN event at time {note.time:F3} OFF");
+                            //Plugin.LogDebug($"[AutoLights] Generated RING_SPIN event at time {note.time:F3} OFF");
                             lightEvents.Add(EBasicEventData.Create(note.time, EventType.RING_SPIN, EventValue.OFF));
                             lastSpinTriggerTime = note.time;
                         }
@@ -1031,7 +1034,7 @@ namespace AutoBS
                     {
                         if (needsRINGZOOM && (index % 2 == 0 || index % 3 == 0))
                         {
-                            //Plugin.LogDebug($"[AutoLightMapper] Generated RING_ZOOM event at time {note.time:F3} OFF");
+                            //Plugin.LogDebug($"[AutoLights] Generated RING_ZOOM event at time {note.time:F3} OFF");
                             lightEvents.Add(EBasicEventData.Create(note.time, EventType.RING_ZOOM, EventValue.OFF));
                             lastZoomTriggerTime = note.time;
                         }
@@ -1049,7 +1052,7 @@ namespace AutoBS
                         (EventValue specColor, float specBrightness) = FindColor(notes.First().time, note.time, lightStyle, repeatableRandom);
                         EventType specialEventType = missingSpecialEvents[specialEventIndex];  // Rotate through missing ones
 
-                        //Plugin.LogDebug($"[AutoLightMapper] Generated SPECIAL event: Type={specialEventType}, Time={note.time:F3}, Value={specColor}, Brightness={specBrightness * brightnessMultiplier:F2}");
+                        //Plugin.LogDebug($"[AutoLights] Generated SPECIAL event: Type={specialEventType}, Time={note.time:F3}, Value={specColor}, Brightness={specBrightness * brightnessMultiplier:F2}");
 
                         lightEvents.Add(EBasicEventData.Create(note.time, specialEventType, specColor, specBrightness * brightnessMultiplier));
 
@@ -1146,13 +1149,13 @@ namespace AutoBS
                             // Place light
                             (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, repeatableRandom);
 
-                            //Plugin.LogDebug($"[AutoLightMapper] Generated SLIDER event ({et}) at time {time[0]:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
+                            //Plugin.LogDebug($"[AutoLights] Generated SLIDER event ({et}) at time {time[0]:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
 
                             if ((needsCENTER && et == EventType.CENTER) || (needsRING && et == EventType.RING) || (needsBACK && et == EventType.BACK))
                             {
                                 if (!IsSuppressedByStrobe(time[0], et))
                                 {
-                                    //Plugin.LogDebug($"[AutoLightMapper] Generated SLIDER event ({et}) at time {time[0]:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
+                                    //Plugin.LogDebug($"[AutoLights] Generated SLIDER event ({et}) at time {time[0]:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
                                     lightEvents.Add(EBasicEventData.Create(time[0], et, (color - 2), floatValue * brightnessMultiplier));
                                     lightEvents.Add(EBasicEventData.Create(time[0] + 0.125f, et, (color - 1), floatValue * brightnessMultiplier));
                                     lightEvents.Add(EBasicEventData.Create(time[0] + 0.25f, et, (color - 2), floatValue * brightnessMultiplier));
@@ -1162,7 +1165,7 @@ namespace AutoBS
                             }
                             if ((needsRINGSPIN && et == EventType.RING_SPIN) || (needsRINGZOOM && et == EventType.RING_ZOOM))
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated SLIDER event (RING_SPIN or RING_ZOOM) OFF at time {time[0]:F3}");
+                                //Plugin.LogDebug($"[AutoLights] Generated SLIDER event (RING_SPIN or RING_ZOOM) OFF at time {time[0]:F3}");
                                 lightEvents.Add(EBasicEventData.Create(time[0], et, EventValue.OFF));
                                 lightEvents.Add(EBasicEventData.Create(time[0] + 0.125f, et, EventValue.OFF));
                                 lightEvents.Add(EBasicEventData.Create(time[0] + 0.25f, et, EventValue.OFF));
@@ -1195,11 +1198,11 @@ namespace AutoBS
                                 (needsRINGZOOM && (EventType)pattern[patternIndex] == EventType.RING_ZOOM))
                             {
                                 (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, repeatableRandom);
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated PATTERN event ({(EventType)pattern[patternIndex]}) at time {time[0]:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}.");
+                                //Plugin.LogDebug($"[AutoLights] Generated PATTERN event ({(EventType)pattern[patternIndex]}) at time {time[0]:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}.");
 
                                 if (!IsSuppressedByStrobe(time[0], (EventType)pattern[patternIndex]))
                                 {
-                                    //Plugin.LogDebug($"[AutoLightMapper] Generated PATTERN event ({(EventType)pattern[patternIndex]}) at time {time[0]:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}.");
+                                    //Plugin.LogDebug($"[AutoLights] Generated PATTERN event ({(EventType)pattern[patternIndex]}) at time {time[0]:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}.");
                                     lightEvents.Add(EBasicEventData.Create(time[0], (EventType)pattern[patternIndex], color, floatValue * brightnessMultiplier));
                                 }
 
@@ -1234,34 +1237,34 @@ namespace AutoBS
                                                 {
                                                     if ((EventType)pattern[patternIndex] == EventType.LEFT)
                                                     {
-                                                        //Plugin.LogDebug($"[AutoLightMapper] Generated FADE (LEFT) event at time {notes[index].time + value:F3}");
+                                                        //Plugin.LogDebug($"[AutoLights] Generated FADE (LEFT) event at time {notes[index].time + value:F3}");
                                                         lightEvents.Add(EBasicEventData.Create(notes[index].time + value, (EventType)pattern[patternIndex], FadeEvent(lastLeftColor), brightnessMultiplier));
                                                     }
                                                     else if ((EventType)pattern[patternIndex] == EventType.RIGHT)
                                                     {
-                                                        //Plugin.LogDebug($"[AutoLightMapper] Generated FADE (RIGHT) event at time {notes[index].time + value:F3}");
+                                                        //Plugin.LogDebug($"[AutoLights] Generated FADE (RIGHT) event at time {notes[index].time + value:F3}");
                                                         lightEvents.Add(EBasicEventData.Create(notes[index].time + value, (EventType)pattern[patternIndex], FadeEvent(lastRightColor), brightnessMultiplier));
                                                     }
                                                     else if ((EventType)pattern[patternIndex] == EventType.BACK)
                                                     {
-                                                        //Plugin.LogDebug($"[AutoLightMapper] Generated FADE (BACK) event at time {notes[index].time + value:F3}");
+                                                        //Plugin.LogDebug($"[AutoLights] Generated FADE (BACK) event at time {notes[index].time + value:F3}");
                                                         lightEvents.Add(EBasicEventData.Create(notes[index].time + value, (EventType)pattern[patternIndex], FadeEvent(lastBackColor), brightnessMultiplier));
                                                     }
                                                     else if ((EventType)pattern[patternIndex] == EventType.RING)
                                                     {
-                                                        //Plugin.LogDebug($"[AutoLightMapper] Generated FADE (RING) event at time {notes[index].time + value:F3}");
+                                                        //Plugin.LogDebug($"[AutoLights] Generated FADE (RING) event at time {notes[index].time + value:F3}");
                                                         lightEvents.Add(EBasicEventData.Create(notes[index].time + value, (EventType)pattern[patternIndex], FadeEvent(lastRingColor), brightnessMultiplier));
                                                     }
                                                     else if ((EventType)pattern[patternIndex] == EventType.CENTER)
                                                     {
-                                                        //Plugin.LogDebug($"[AutoLightMapper] Generated FADE (CENTER) event at time {notes[index].time + value:F3}");
+                                                        //Plugin.LogDebug($"[AutoLights] Generated FADE (CENTER) event at time {notes[index].time + value:F3}");
                                                         lightEvents.Add(EBasicEventData.Create(notes[index].time + value, (EventType)pattern[patternIndex], FadeEvent(lastCenterColor), brightnessMultiplier));
                                                     }
-                                                //Plugin.LogDebug($"[AutoLightMapper] Generated {(EventType)pattern[patternIndex]} event at time {notes[index].time + value:F3}");
+                                                //Plugin.LogDebug($"[AutoLights] Generated {(EventType)pattern[patternIndex]} event at time {notes[index].time + value:F3}");
                                             }
                                             else
                                                 {
-                                                    //Plugin.LogDebug($"[AutoLightMapper] Generated OFF (pattern) event at time {notes[index].time + value:F3}");
+                                                    //Plugin.LogDebug($"[AutoLights] Generated OFF (pattern) event at time {notes[index].time + value:F3}");
                                                     lightEvents.Add(EBasicEventData.Create(notes[index].time + value, (EventType)pattern[patternIndex], EventValue.OFF));
                                                 }
                                             }
@@ -1284,40 +1287,40 @@ namespace AutoBS
                                             {
                                                 if ((EventType)pattern[patternIndex] == EventType.LEFT)
                                                 {
-                                                    //Plugin.LogDebug($"[AutoLightMapper] Generated FADE (LEFT) event at time {notes[index + 1].time:F3}");
+                                                    //Plugin.LogDebug($"[AutoLights] Generated FADE (LEFT) event at time {notes[index + 1].time:F3}");
                                                     lightEvents.Add(EBasicEventData.Create(notes[index + 1].time, (EventType)pattern[patternIndex], FadeEvent(lastLeftColor), brightnessMultiplier));
                                                 }
                                                 else if ((EventType)pattern[patternIndex] == EventType.RIGHT)
                                                 {
-                                                    //Plugin.LogDebug($"[AutoLightMapper] Generated FADE (RIGHT) event at time {notes[index + 1].time:F3}");
+                                                    //Plugin.LogDebug($"[AutoLights] Generated FADE (RIGHT) event at time {notes[index + 1].time:F3}");
                                                     lightEvents.Add(EBasicEventData.Create(notes[index + 1].time, (EventType)pattern[patternIndex], FadeEvent(lastRightColor), brightnessMultiplier));
                                                 }
                                                 else if ((EventType)pattern[patternIndex] == EventType.BACK)
                                                 {
-                                                    //Plugin.LogDebug($"[AutoLightMapper] Generated FADE (BACK) event at time {notes[index + 1].time:F3}");
+                                                    //Plugin.LogDebug($"[AutoLights] Generated FADE (BACK) event at time {notes[index + 1].time:F3}");
                                                     lightEvents.Add(EBasicEventData.Create(notes[index + 1].time, (EventType)pattern[patternIndex], FadeEvent(lastBackColor), brightnessMultiplier));
                                                 }
                                                 else if ((EventType)pattern[patternIndex] == EventType.RING)
                                                 {
-                                                    //Plugin.LogDebug($"[AutoLightMapper] Generated FADE (RING) event at time {notes[index + 1].time:F3}");
+                                                    //Plugin.LogDebug($"[AutoLights] Generated FADE (RING) event at time {notes[index + 1].time:F3}");
                                                     lightEvents.Add(EBasicEventData.Create(notes[index + 1].time, (EventType)pattern[patternIndex], FadeEvent(lastRingColor), brightnessMultiplier));
                                                 }
                                                 else if ((EventType)pattern[patternIndex] == EventType.CENTER)
                                                 {
-                                                    //Plugin.LogDebug($"[AutoLightMapper] Generated FADE (CENTER) event at time {notes[index + 1].time:F3}");
+                                                    //Plugin.LogDebug($"[AutoLights] Generated FADE (CENTER) event at time {notes[index + 1].time:F3}");
                                                     if (repeatableRandom.Next(3) == 0)
                                                     {
                                                         lightEvents.Add(EBasicEventData.Create(notes[index + 1].time, EventType.CENTER, EventValue.OFF));
-                                                        //Plugin.LogDebug($"[AutoLightMapper] Generated OFF (CENTER) event at time {notes[index + 1].time:F3}");
+                                                        //Plugin.LogDebug($"[AutoLights] Generated OFF (CENTER) event at time {notes[index + 1].time:F3}");
                                                     }
                                                     else
                                                         lightEvents.Add(EBasicEventData.Create(notes[index + 1].time, EventType.CENTER, FadeEvent(lastCenterColor), brightnessMultiplier));
                                                 }
-                                                //Plugin.LogDebug($"[AutoLightMapper] Generated {(EventType)pattern[patternIndex]} event at time {notes[index + 1].time:F3}");
+                                                //Plugin.LogDebug($"[AutoLights] Generated {(EventType)pattern[patternIndex]} event at time {notes[index + 1].time:F3}");
                                         }
                                         else
                                             {
-                                                //Plugin.LogDebug($"[AutoLightMapper] Generated OFF (pattern) event at time {notes[index + 1].time:F3}");
+                                                //Plugin.LogDebug($"[AutoLights] Generated OFF (pattern) event at time {notes[index + 1].time:F3}");
                                                 lightEvents.Add(EBasicEventData.Create(notes[index + 1].time, (EventType)pattern[patternIndex], EventValue.OFF));
                                             }
                                         }
@@ -1357,7 +1360,7 @@ namespace AutoBS
                             // --- Long Gaps CHANGE: Move long gap events to the start of the gap (time[1]) ----------------------
                             if (timeDifference > 2.5f)// && UnityEngine.Random.Range(0, 2) == 0)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Long gap detected ({timeDifference:F3}s). Adding slow, low-brightness rotating laser at time: {time[1]:F3} (start of gap).");
+                                //Plugin.LogDebug($"[AutoLights] Long gap detected ({timeDifference:F3}s). Adding slow, low-brightness rotating laser at time: {time[1]:F3} (start of gap).");
 
                                 lightEvents.Add(EBasicEventData.Create(time[1], EventType.LEFT_SPEED, (EventValue)1));  // Very slow rotation at start of gap
                                 lightEvents.Add(EBasicEventData.Create(time[1], EventType.RIGHT_SPEED, (EventValue)1)); // Very slow rotation at start of gap
@@ -1372,13 +1375,13 @@ namespace AutoBS
                             // ------------------------------------------------------------------------------
                             if (needsLEFT && needsLEFTSPEED && pattern[patternIndex] == 2 && Math.Abs(currentSpeed - lastLeftSpeed) >= 2)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated LEFT_SPEED event at time {time[0]:F3} with speed {currentSpeed}");
+                                //Plugin.LogDebug($"[AutoLights] Generated LEFT_SPEED event at time {time[0]:F3} with speed {currentSpeed}");
                                 lightEvents.Add(EBasicEventData.Create(time[0], EventType.LEFT_SPEED, (EventValue)currentSpeed));
                                 lastLeftSpeed = currentSpeed;
                             }
                             if (needsRIGHT && needsRIGHTSPEED && pattern[patternIndex] == 3 && Math.Abs(currentSpeed - lastRightSpeed) >= 2)
                             {
-                                //Plugin.LogDebug($"[AutoLightMapper] Generated RIGHT_SPEED event at time {time[0]:F3} with speed {currentSpeed}");
+                                //Plugin.LogDebug($"[AutoLights] Generated RIGHT_SPEED event at time {time[0]:F3} with speed {currentSpeed}");
                                 lightEvents.Add(EBasicEventData.Create(time[0], EventType.RIGHT_SPEED, (EventValue)currentSpeed));
                                 lastRightSpeed = currentSpeed;
                             }
@@ -1392,7 +1395,7 @@ namespace AutoBS
                 }
             }
 
-            Plugin.LogDebug($"[AutoLightMapper] Generated {strobeCount} strobe bursts.");
+            Plugin.LogDebug($"[AutoLights] Generated {strobeCount} strobe bursts.");
 
             #endregion
 
@@ -1400,7 +1403,7 @@ namespace AutoBS
             foreach (EBasicEventData e in originalLightEvents)
             {
                 EBasicEventData currentLight = EBasicEventData.Create(e.time, e.basicBeatmapEventType, e.value, e.floatValue);
-                //Plugin.LogDebug($"[AutoLightMapper] Preserving original event: Time={e.time:F3}, Type={(EventType)e.basicBeatmapEventType}, Value={(EventValue)e.value}");
+                //Plugin.LogDebug($"[AutoLights] Preserving original event: Time={e.time:F3}, Type={(EventType)e.basicBeatmapEventType}, Value={(EventValue)e.value}");
                 lightEvents.Add(currentLight);
             }
 
@@ -1420,7 +1423,7 @@ namespace AutoBS
             if (lightEvents.Count > 0)
             {
                 LightEventsAdded = true;
-                Plugin.LogDebug($"[AutoLightMapper] {lightEvents.Count} Light Events Added.");
+                Plugin.LogDebug($"[AutoLights] {lightEvents.Count} Light Events Added.");
             }
 
             return lightEvents;
@@ -1642,7 +1645,7 @@ namespace AutoBS
             {
                 if (!lastEventColors.TryGetValue(eventType, out EventValue lastColor) || lastColor != color)
                 {
-                    //Plugin.LogDebug($"[AutoLightMapper] Adding event for {eventType} at time {time:F3} with new color {color}");
+                    //Plugin.LogDebug($"[AutoLights] Adding event for {eventType} at time {time:F3} with new color {color}");
                     eventTempo.Add(EBasicEventData.Create(time, eventType, color)); //, brightnessMultiplier
                     lastEventColors[eventType] = color;
                 }

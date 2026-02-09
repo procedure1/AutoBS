@@ -36,6 +36,12 @@ namespace AutoBS
         /// <returns></returns>
         private static bool ToJsonFileCore(CustomBeatmapData? custom, BeatmapData? bmd, EditableCBD eData, bool outputSecondsToBeats) // if converted to seconds for FromJsonString then need this
         { 
+            bool outputV2 = Config.Instance.OutputV2JsonToSongFolder_NoArcsNoChainsNoMapExtWalls;
+            bool outputV3 = Config.Instance.OutputV3JsonToSongFolder;
+            bool outputV4 = Config.Instance.OutputV4JsonToSongFolder;
+
+            if (!outputV2 && !outputV3 && !outputV4) return false;
+
             // ───────── Common setup ─────────────────────────────────────
             float timeMult = 1;
             if (outputSecondsToBeats)
@@ -48,54 +54,68 @@ namespace AutoBS
 
             var rotationEvents = eData.RotationEvents;
 
+            int requestedMapVersion = 2;
+            if (outputV3) requestedMapVersion = 3;
+            if (outputV4) requestedMapVersion = 4;
+
+
+
             // Output V2 (no arcs/chains) if requested
-            if (Config.Instance.OutputV2JsonToSongFolder_NoArcsNoChainsNoMapExtWalls)
+            if (outputV2)
             {
-                Plugin.Log.Info($"[ToJsonStringFile] Outputting V2 JSON...");
+                Plugin.Log.Info($"[ToJsonFileCore] Outputting V2 JSON...");
                 root = JsonV2Output(eData, timeMult);//eData, timeMult, rotationEvents);
                 createFile(root, 2);
             }
 
             // Output V3 if requested
-            if (Config.Instance.OutputV3JsonToSongFolder)
+            if (outputV3)
             {
                 if (custom == null)
                 {
-                    Plugin.Log.Warn("[ToJsonFile] OutputV3 fron InputV4 requsted but workflow is currently disabled in this versin of the mod. Waiiing for CusomJsonData to support v4.");
+                    Plugin.Log.Warn("[ToJsonFileCore] OutputV3 from InputV4 was requested but that workflow is currently disabled in this versin of the mod. Waiiing for CusomJsonData to support v4.");
                     return false;
                 }
                 else
                 {
-                    Plugin.Log.Info($"[ToJsonStringFile] Outputting V3 JSON...");
+                    Plugin.Log.Info($"[ToJsonFileCore] Outputting V3 JSON...");
                     root = JsonV3Output(custom, timeMult, eData);
-                    //root = JsonV3Output(eData, timeMult);
+
+                    if (OriginalMajorVersion == 3 && OriginalV3JsonRegistry.findByKey.TryGetValue(TransitionPatcher.SelectedPlayKey, out var origV3JsonBeatmap))
+                    {
+                        PassThroughMissingV3EventBoxes(root, origV3JsonBeatmap); // Approach A key list
+                    }
+
                     createFile(root, 3);
                 }
             }
-            if (Config.Instance.OutputV4JsonToSongFolder)
+            if (outputV4)
             {
-                Plugin.Log.Info($"[ToJsonStringFile] Outputting V4 JSON...");
+                Plugin.Log.Info($"[ToJsonFileCore] Outputting V4 JSON...");
                 root = JsonV4BeatmapOutput(eData, timeMult);
                 createFile(root, 4, "Beatmap");
                 root = JsonV4LightshowOutput(eData, timeMult);
                 createFile(root, 4, "Lightshow");
-
-                root = JsonV4AudioDataOutput(TransitionPatcher.SelectedBeatmapLevel, Config.Instance.OutputV4JsonSongSampleRate); //default is 44100!
-                createFile(root, 4, "AudioData");
-
-                string characteristicName = TransitionPatcher.SelectedCharacteristicSO.serializedName; // "Standard", "360Degree", etc.
-                string characteristicFileName = characteristicName == "Standard" ? "" : characteristicName;
-                string difficulty = TransitionPatcher.SelectedDifficulty.ToString();
-
-                WriteV4InfoDatFile(
-                    songFolderPath: SetContent.SongFolderPath,  
-                    characteristic: characteristicName, // ALWAYS the real characteristic
-                    difficulty: difficulty,
-                    beatmapFilename: $"{characteristicFileName}{difficulty}.BeatmapV4.AutoBS.dat",
-                    lightshowFilename: $"{characteristicFileName}{difficulty}.LightshowV4.AutoBS.dat",
-                    audioDataFilename: "AudioDataV4.AutoBS.dat"
-                );
             }
+
+            // this is created for all maps v2, v3 , v4 output beatmaps because info.dat v4 requires it.
+            root = JsonAudioDataOutput(TransitionPatcher.SelectedBeatmapLevel, Config.Instance.OutputJsonSongSampleRate); //default is 44100!
+            createFile(root, requestedMapVersion, "AudioData"); 
+
+            string characteristicName = TransitionPatcher.SelectedCharacteristicSO.serializedName; // "Standard", "360Degree", etc.
+            string characteristicFileName = characteristicName == "Standard" ? "" : characteristicName;
+            string difficulty = TransitionPatcher.SelectedDifficulty.ToString();
+            string lightshowFilename = requestedMapVersion == 4 ? $"{characteristicFileName}{difficulty}.LightshowV{requestedMapVersion}.AutoBS.dat" : "";
+
+            WriteInfoDatFile(
+                requestedMapVersion: requestedMapVersion,
+                songFolderPath: SetContent.SongFolderPath,
+                characteristic: characteristicName, // ALWAYS the real characteristic
+                difficulty: difficulty,
+                beatmapFilename: $"{characteristicFileName}{difficulty}.BeatmapV{requestedMapVersion}.AutoBS.dat",
+                lightshowFilename: lightshowFilename, // will not be output for v2 or 3
+                audioDataFilename: $"AudioData.AutoBS.dat" // will not be output for v2 or 3
+            );
 
             // Reset only if "turn off after one play" is enabled
             if (Config.Instance.TurnOffJSONDatOutputAfterOneMapPlay)
@@ -120,7 +140,7 @@ namespace AutoBS
                 }
                 else if (outputType == "AudioData")
                 {
-                    fileName = $"{outputType}V{version}.AutoBS.dat";
+                    fileName = $"AudioData.AutoBS.dat";
                 }
 
                 string path;
@@ -134,7 +154,7 @@ namespace AutoBS
                     path = Path.Combine(@"D:\", fileName);
                 }
 
-                Plugin.Log.Info($"[ToJsonStringFile] Original Map v{OriginalMajorVersion}. Outputing JSON file to: {path}");
+                Plugin.Log.Info($"[ToJsonFileCore] Original Map v{OriginalMajorVersion}. Outputing JSON file to: {path}");
 
                 File.WriteAllText(path, jsonString);
             }
@@ -289,7 +309,7 @@ namespace AutoBS
 
             // (Sliders / arcs are still disabled for v2; see your comment.)
             // If you ever want to re-enable v2 sliders, you’d base them on eData.Arcs
-            // here and keep the map version at 2.6.0+.
+            // here and keep the map version at 2.6.0+. I retested being sure of the format and it doesn't work
 
             // ─────────────────────────────────────────────────────────────
             // 3) EVENTS (_events) — basic + color boost + rotation
@@ -1240,7 +1260,7 @@ namespace AutoBS
         /// <param name="bpm">Song BPM.</param>
         /// <param name="songChecksum">Optional checksum string (can be "").</param>
         /// <param name="lufs">Approximate loudness (LUFS). 0 is fine if unknown.</param>
-        public static JObject JsonV4AudioDataOutput(BeatmapLevel level, int songFrequency)
+        public static JObject JsonAudioDataOutput(BeatmapLevel level, int songFrequency)
         {
             string songChecksum = "";
             int songSampleCount = (int)(level.songDuration * songFrequency);
@@ -1319,8 +1339,9 @@ namespace AutoBS
             cd["generatedBy"] = $"{ModName}";
         }
 
-        // INFO.DAT FILE Creation (v4 only but works with all maps versions ------------------------------------------------
-        private static void WriteV4InfoDatFile(
+        // INFO.DAT FILE Creation ( this is info v4 which works with all maps versions and can mix and match ------------------------------------------------
+        private static void WriteInfoDatFile(
+            int requestedMapVersion,
             string songFolderPath,
             string characteristic,
             string difficulty,
@@ -1332,25 +1353,25 @@ namespace AutoBS
             {
                 if (string.IsNullOrWhiteSpace(songFolderPath) || !Directory.Exists(songFolderPath))
                 {
-                    Plugin.Log.Warn("[WriteV4InfoDatFile] SongFolderPath missing; cannot write Info.AutoBS.dat.");
+                    Plugin.Log.Warn("[WriteInfoDatFile] SongFolderPath missing; cannot write Info.AutoBS.dat.");
                     return;
                 }
 
                 string infoPath = Path.Combine(songFolderPath, "Info.dat");
                 if (!File.Exists(infoPath))
                 {
-                    Plugin.Log.Warn($"[WriteV4InfoDatFile] Info.dat not found at {infoPath}; cannot build v4 info.");
+                    Plugin.Log.Warn($"[WriteInfoDatFile] Info.dat not found at {infoPath}; cannot build v4 info.");
                     return;
                 }
 
-                var src = JObject.Parse(File.ReadAllText(infoPath));
-                var v4 = ConvertInfoToV4_401(src);
+                var infoDatSrc = JObject.Parse(File.ReadAllText(infoPath));
+                var infoDatV4 = ConvertInfoToV4_401(infoDatSrc);
 
                 // Ensure audioDataFilename points at your generated file (or keep existing if you prefer)
-                PrepAudioData(v4, src, audioDataFilename);
+                PrepAudioData(infoDatV4, infoDatSrc, audioDataFilename); // v2,v3,v4 all get this created in the info file
 
                 // Ensure the list exists
-                var diffs = (JArray)(v4["difficultyBeatmaps"] ??= new JArray());
+                var diffs = (JArray)(infoDatV4["difficultyBeatmaps"] ??= new JArray());
 
                 // Add the freshly generated v4 entry
                 var newEntry = (BuildV4DifficultyEntry(
@@ -1365,17 +1386,17 @@ namespace AutoBS
                 UpsertDifficultyEntryByCharAndDiff(diffs, newEntry);
 
                 string outPath = Path.Combine(songFolderPath, "Info.AutoBS.dat");
-                File.WriteAllText(outPath, v4.ToString(Formatting.Indented));
+                File.WriteAllText(outPath, infoDatV4.ToString(Formatting.Indented));
 
-                Plugin.Log.Info($"[WriteV4InfoDatFile] Wrote Info.AutoBS.dat here: {outPath}");
+                Plugin.Log.Info($"[WriteInfoDatFile] Wrote Info.AutoBS.dat here: {outPath}");
             }
             catch (Exception ex)
             {
-                Plugin.Log.Warn($"[WriteV4InfoDatFile] Failed to write Info.AutoBS.dat: {ex}");
+                Plugin.Log.Warn($"[WriteInfoDatFile] Failed to write Info.AutoBS.dat: {ex}");
             }
         }
 
-        // this json changes not replacing actual files.
+        // this replaces inside json, not replacing actual files.
         private static void RemoveExistingDifficulty(JArray difficultyBeatmaps, string characteristic, string difficulty)
         {
             for (int i = difficultyBeatmaps.Count - 1; i >= 0; i--)
@@ -1388,53 +1409,53 @@ namespace AutoBS
         }
 
         /// <summary>
-        /// Converts v2/v3 or v4 Info.dat JObject into v4.0.1 form.
+        /// Converts v2 info.dat (for v2 or v3 maps) into v4.0.1 form.
         /// Keeps as much metadata as possible; converts difficulty sets when needed.
         /// </summary>
-        private static JObject ConvertInfoToV4_401(JObject src)
+        private static JObject ConvertInfoToV4_401(JObject infoDatSrc)
         {
-            int major = GetInfoMajor(src);
+            int major = GetInfoMajor(infoDatSrc);
 
             // If already v4, clone and just force version=4.0.1
             if (major >= 4)
             {
-                var v4 = (JObject)src.DeepClone();
+                var v4 = (JObject)infoDatSrc.DeepClone();
                 v4["version"] = "4.0.1";
                 return v4;
             }
 
-            // v2/v3 -> v4 minimal faithful mapping
-            var v4out = new JObject
+            // v2 info.dat (for v2 and v3 maps) -> v4 minimal faithful mapping
+            var infoDatV4 = new JObject
             {
                 ["version"] = "4.0.1",
                 ["song"] = new JObject
                 {
-                    ["title"] = (string?)src["_songName"] ?? "",
-                    ["subTitle"] = (string?)src["_songSubName"] ?? "",
-                    ["author"] = (string?)src["_songAuthorName"] ?? ""
+                    ["title"] = (string?)infoDatSrc["_songName"] ?? "",
+                    ["subTitle"] = (string?)infoDatSrc["_songSubName"] ?? "",
+                    ["author"] = (string?)infoDatSrc["_songAuthorName"] ?? ""
                 },
                 ["audio"] = new JObject
                 {
-                    ["songFilename"] = (string?)src["_songFilename"] ?? "song.ogg",
+                    ["songFilename"] = (string?)infoDatSrc["_songFilename"] ?? "song.ogg",
                     // You can set this from SelectedBeatmapLevel if you want; if not, keep a placeholder.
                     ["songDuration"] = (float?)(TransitionPatcher.SelectedBeatmapLevel?.songDuration) ?? 0f,
-                    ["audioDataFilename"] = "AudioData.dat", // will be overwritten by EnsureV4AudioBlock
-                    ["bpm"] = (float?)src["_beatsPerMinute"] ?? 120f,
+                    ["audioDataFilename"] = "AudioData.AutoBS.dat", // will be overwritten by EnsureV4AudioBlock
+                    ["bpm"] = (float?)infoDatSrc["_beatsPerMinute"] ?? 120f,
                     ["lufs"] = 0.0f,
-                    ["previewStartTime"] = (float?)src["_previewStartTime"] ?? 0f,
-                    ["previewDuration"] = (float?)src["_previewDuration"] ?? 15f
+                    ["previewStartTime"] = (float?)infoDatSrc["_previewStartTime"] ?? 0f,
+                    ["previewDuration"] = (float?)infoDatSrc["_previewDuration"] ?? 15f
                 },
-                ["songPreviewFilename"] = (string?)src["_songFilename"] ?? "song.ogg",
-                ["coverImageFilename"] = (string?)src["_coverImageFilename"] ?? "cover.jpg",
-                ["environmentNames"] = BuildV4EnvironmentNames(src),
-                ["colorSchemes"] = (JArray?)src["_colorSchemes"] ?? new JArray(),
-                ["difficultyBeatmaps"] = ConvertV2DifficultySetsToV4DifficultyBeatmaps(src)
+                ["songPreviewFilename"] = (string?)infoDatSrc["_songFilename"] ?? "song.ogg",
+                ["coverImageFilename"] = (string?)infoDatSrc["_coverImageFilename"] ?? "cover.jpg",
+                ["environmentNames"] = BuildV4EnvironmentNames(infoDatSrc),
+                ["colorSchemes"] = (JArray?)infoDatSrc["_colorSchemes"] ?? new JArray(),
+                ["difficultyBeatmaps"] = ConvertV2DifficultySetsToV4DifficultySets(infoDatSrc)
             };
 
-            return v4out;
+            return infoDatV4;
         }
 
-        private static JArray BuildV4EnvironmentNames(JObject v2)
+        private static JArray BuildV4EnvironmentNames(JObject infoDatSrcV2)
         {
             // v2 has: _environmentName, _allDirectionsEnvironmentName, _environmentNames[]
             var list = new List<string>();
@@ -1445,10 +1466,10 @@ namespace AutoBS
                 if (!list.Contains(s)) list.Add(s);
             }
 
-            add((string?)v2["_environmentName"]);
-            add((string?)v2["_allDirectionsEnvironmentName"]);
+            add((string?)infoDatSrcV2["_environmentName"]);
+            add((string?)infoDatSrcV2["_allDirectionsEnvironmentName"]);
 
-            if (v2["_environmentNames"] is JArray envs)
+            if (infoDatSrcV2["_environmentNames"] is JArray envs)
             {
                 foreach (var e in envs.OfType<JValue>())
                     add(e.Value?.ToString());
@@ -1460,14 +1481,19 @@ namespace AutoBS
             return new JArray(list);
         }
 
-        private static JArray ConvertV2DifficultySetsToV4DifficultyBeatmaps(JObject v2)
+        /// <summary>
+        /// Converts all the unused levels from v2 info.dat to v4 info.dat. Later the generated difficulty is added separately
+        /// </summary>
+        /// <param name="infoDatSrcV2"></param>
+        /// <returns></returns>
+        private static JArray ConvertV2DifficultySetsToV4DifficultySets(JObject infoDatSrcV2)
         {
             var outArr = new JArray();
 
-            var sets = v2["_difficultyBeatmapSets"] as JArray;
+            var sets = infoDatSrcV2["_difficultyBeatmapSets"] as JArray;
             if (sets == null) return outArr;
 
-            string levelAuthor = (string?)v2["_levelAuthorName"] ?? "Unknown";
+            string levelAuthor = (string?)infoDatSrcV2["_levelAuthorName"] ?? "Unknown";
 
             foreach (var setTok in sets.OfType<JObject>())
             {
@@ -1516,16 +1542,16 @@ namespace AutoBS
             return outArr;
         }
 
-        private static void PrepAudioData(JObject v4, JObject srcInfo, string audioDataFilename)
+        private static void PrepAudioData(JObject infoDatSrcV4, JObject infoDatSrc, string audioDataFilename)
         {
-            var audio = (JObject)(v4["audio"] ??= new JObject());
+            var audio = (JObject)(infoDatSrcV4["audio"] ??= new JObject());
 
             // Keep existing songFilename / bpm / preview if already set by ConvertInfoToV4_401
             if (audio["songFilename"] == null)
-                audio["songFilename"] = (string?)srcInfo["_songFilename"] ?? "song.ogg";
+                audio["songFilename"] = (string?)infoDatSrc["_songFilename"] ?? "song.ogg";
 
             if (audio["bpm"] == null)
-                audio["bpm"] = (float?)srcInfo["_beatsPerMinute"] ?? 120f;
+                audio["bpm"] = (float?)infoDatSrc["_beatsPerMinute"] ?? 120f;
 
             // Your generated file name (or whatever you want it to be)
             audio["audioDataFilename"] = audioDataFilename;
@@ -1538,9 +1564,9 @@ namespace AutoBS
                 audio["lufs"] = 0.0f;
         }
 
-        private static int GetInfoMajor(JObject info)
+        private static int GetInfoMajor(JObject infoDatSrc)
         {
-            var ver = (string?)info["_version"] ?? (string?)info["version"] ?? "2.0.0";
+            var ver = (string?)infoDatSrc["_version"] ?? (string?)infoDatSrc["version"] ?? "2.0.0";
             if (int.TryParse(ver.Split('.')[0], out var major)) return major;
             return 2;
         }
@@ -1615,7 +1641,7 @@ namespace AutoBS
                 ["noteJumpMovementSpeed"] = njs,
                 ["noteJumpStartBeatOffset"] = njsOffset,
                 ["beatmapDataFilename"] = beatmapDataFilename,
-                ["LightshowDataFilename"] = lightshowDataFilename,
+                ["LightshowDataFilename"] = lightshowDataFilename, // will be "" for v2 or v3 difficulties
                 ["customData"] = BuildGeneratedCustomData(TransitionPatcher.SelectedPlayKey)
             };
         }
@@ -1695,6 +1721,67 @@ namespace AutoBS
 
             return njo;
         }
+                
+        static void PassThroughMissingV3EventBoxes(JObject gen, string origV3JsonBeatmap)
+        {
+            var jObj = JObject.Parse(origV3JsonBeatmap);
+
+            CopyIfMissing(gen, jObj, "useNormalEventsAsCompatibleEvents");
+
+            // These names must match the actual v3 JSON keys you see in the wild.
+            // Add the ones you observe (see logging snippet below).
+            CopyIfMissingOrEmptyArray(gen, jObj, "indexFilters");
+            CopyIfMissingOrEmptyArray(gen, jObj, "eventBoxGroups");
+            CopyIfMissingOrEmptyArray(gen, jObj, "lightColorEventBoxGroups");
+            CopyIfMissingOrEmptyArray(gen, jObj, "lightColorEvents");
+            CopyIfMissingOrEmptyArray(gen, jObj, "lightRotationEventBoxGroups");
+            CopyIfMissingOrEmptyArray(gen, jObj, "lightRotationEvents");
+            CopyIfMissingOrEmptyArray(gen, jObj, "lightTranslationEventBoxGroups");
+            CopyIfMissingOrEmptyArray(gen, jObj, "lightTranslationEvents");
+            CopyIfMissingOrEmptyArray(gen, jObj, "fxEventBoxes");
+            CopyIfMissingOrEmptyArray(gen, jObj, "floatFxEvents");
+            CopyIfMissingOrEmptyObject(gen, jObj,"basicEventTypesWithKeywords");
+
+        }
+
+        static void CopyIfMissing(JObject dst, JObject src, string key)
+        {
+            if (dst.Property(key) == null && src.Property(key) != null)
+                dst[key] = src[key]!.DeepClone();
+        }
+
+        static void CopyIfMissingOrEmptyArray(JObject dst, JObject src, string key)
+        {
+            if (src.Property(key) == null) return;
+
+            if (dst.Property(key) == null)
+            {
+                dst[key] = src[key]!.DeepClone();
+                return;
+            }
+
+            if (dst[key] is JArray aDst && aDst.Count == 0 && src[key] is JArray aSrc && aSrc.Count > 0)
+                dst[key] = aSrc.DeepClone();
+        }
+        static void CopyIfMissingOrEmptyObject(JObject dst, JObject src, string key)
+        {
+            if (src.Property(key) == null) return;
+
+            if (dst.Property(key) == null)
+            {
+                dst[key] = src[key]!.DeepClone();
+                return;
+            }
+
+            if (dst[key] is JObject oDst &&
+                !oDst.Properties().Any() &&
+                src[key] is JObject oSrc &&
+                oSrc.Properties().Any())
+            {
+                dst[key] = oSrc.DeepClone();
+            }
+        }
+
 
 
 

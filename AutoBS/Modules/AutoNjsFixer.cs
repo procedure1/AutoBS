@@ -26,7 +26,7 @@ namespace AutoBS
             float finalJD = desiredJD;
 
 
-            Plugin.LogDebug($"[ ] Called... originalNJS: {originalNJS}, originalNJO: {originalNJO} originalJD: {originalJD}, desiredNJS: {desiredNJS}, desiredJD: {desiredJD}");
+            Plugin.LogDebug($"[AutoNjsFixer] Called... originalNJS: {originalNJS}, originalNJO: {originalNJO} originalJD: {originalJD}, desiredNJS: {desiredNJS}, desiredJD: {desiredJD}");
 
             bool preserveJumpDuration = (Config.Instance.AutoNjsFixerMode == Config.AutoNjsFixerModeType.PreserveTravelTime) ? true : false; // if false , it's ForceNJS mode
 

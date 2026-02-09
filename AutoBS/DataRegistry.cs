@@ -1,4 +1,5 @@
 ﻿using CustomJSONData.CustomBeatmap;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -71,6 +72,17 @@ namespace AutoBS
         public static readonly Dictionary<BeatmapKey, List<V3RotationRecord>> RotationEventsByKey
             = new Dictionary<BeatmapKey, List<V3RotationRecord>>();
     }
+    /// <summary>
+    /// This is used by SetContent() to store the original v3 JSON map. 
+    /// This is only used to convert a v3 difficulty into a v3 json difficulty file for output since we need all the GLS lighting content that never goes into customBeatmapData.
+    /// Could convert to v4 but going to wait for v4 support in CustomJSONData (not sure that matters since eventBoxes don't end up in customBeatmapData. They are in SaveData i think.)
+    /// </summary>
+    public static class OriginalV3JsonRegistry
+    {
+        public static readonly Dictionary<BeatmapKey, string> findByKey
+            = new Dictionary<BeatmapKey, string>();
+    }
+
 
     //v1.42 Don't need to store beatmapData now. BeatmapDataLoader.LoadBeatmapDataAsync now is able to load basedOn beatmapData
     public static class BeatmapVersionRegistry

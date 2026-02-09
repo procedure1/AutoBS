@@ -110,6 +110,8 @@ namespace AutoBS
         public virtual bool EnableBigWalls { get; set; } = true;
         public virtual float StandardWallsMultiplier { get; set; } = 100; // 100% is max and can't be increased unlike the other multipliers
         public virtual float StandardWallsMinDistance { get; set; } = 1; // default 1 so ends into lanes 0 and 3. at 0 will be lean walls into lanes 1 and 2
+        public virtual bool AllowPlayerCrossingWalls { get; set; } = true; // true allows walls to cross in front of the player as long as they do not block the vision of an upcoming note. It will only delete or shorten the wall if it appears in the gap of time that would block the view of the next object. False will now stop allowing those walls. So no wall cross in front of the player. Will remove many walls though (1/3 maybe)
+
 
         //public virtual bool UseMappingExtensionsForWallsGenerator { get; set; } = true; // allows user to to use all the walls with ME if they prefer - doesn't work. must also somehow disable ME or will use it anyway.
 
@@ -245,6 +247,6 @@ namespace AutoBS
         //add to v2 or v3! since its the info.dat file. add it to each "_difficultyBeatmaps" that needs it: "_customData": {"_requirements": ["Mapping Extensions"]},
         //at least for beat sage, need to remove in info.dat:  "_environmentNames": [ "DefaultEnvironment" ], AND remove "_environmentNameIdx": 0, from each difficultyBeatmap in order for 360 map to use 360 environment
         public virtual bool OutputV4JsonToSongFolder { get; set; } = false; // outputs perfect map compared to v2 or 3
-        public virtual int OutputV4JsonSongSampleRate { get; set; } = 44100;
+        public virtual int OutputJsonSongSampleRate { get; set; } = 44100;
     }
 }

@@ -1212,13 +1212,13 @@ namespace AutoBS
 
                                 // Optional: don’t let long chains bump next note
                                 tailTime = ClampTailToNextNote(chainNote.time, tailTime);
-
+                                /*
                                 Plugin.LogDebug(
                                     $"Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} " +
                                     $"H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} " +
                                     $"Dur: {longChainDuration:F3} slices: {sliceCount} (jumpDur={jumpDuration:F3}, maxLong={maxLongChainAllowed:F3})"
                                 );
-
+                                */
                                 longChainCount++;
                             }
                         }
@@ -1226,11 +1226,11 @@ namespace AutoBS
                 }
 
                 // Log final choice for this chain
-                Plugin.LogDebug(
+                /*Plugin.LogDebug(
                     $"Chain: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} " +
                     $"H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} " +
                     $"Dur: {(tailTime - chainNote.time):F3} slices: {sliceCount}"
-                );
+                );*/
 
                 var newChain = ESliderData.CreateChain(
                     chainNote.colorType,

@@ -1834,14 +1834,14 @@ namespace AutoBS
                 floorWalls.Add(customObsData);
             }
 
-
-            if (gaps.Count == 0 || gaps.Any(g => g.WithinGap(time))) // sky tiles happen during large gaps in notes so off beat
+            // SKY TILES (happen during large gaps in notes so off beat)
+            if (gaps.Count == 0 || gaps.Any(g => g.WithinGap(time)))
             {
                 bool skyTileV1 = (int)time % 3 == 0;
                 bool skyTileV2Type1 = (int)time % 2 == 0;
                 int durMult = TransitionPatcher.RepeatableRandom.Next(2) + 1;
 
-                if (!skyTileV1)
+                if (!skyTileV1) // Random style placement
                 {
                     int skyWidth  = IsMappingExtensionsInstalled ? 1500 : 1;
                     int skyLayer  = IsMappingExtensionsInstalled ? 8 : 5; //8500
@@ -1860,7 +1860,7 @@ namespace AutoBS
                 }
                 else
                 {
-                    if (IsMappingExtensionsInstalled && skyTileV2Type1)
+                    if (IsMappingExtensionsInstalled && skyTileV2Type1) // Random style placement
                     {
                         int layer = 7 + minDis; //8500
                         float dur1 = duration * durMult;
@@ -1870,7 +1870,7 @@ namespace AutoBS
 
                         //Plugin.LogDebug($"[WallFloor] SkyTile v2 - Time: {time:F3}, Line:{line}, Layer: {layer}, Dur: {dur1}, Width: {width}, Height: 1001");
                     }
-                    else
+                    else // Orderly Looking Rows Style 
                     {
                         const float SKY_SPEED_SCALE = 0.70f;
                         const int skyBaseWidth = 1;
@@ -1895,8 +1895,8 @@ namespace AutoBS
                         // Quantized row time for this cell
                         float rowTime = cell * rowPeriod;
 
-                        // Create the full row of sky tiles for this bucket
-                        AddSkyRowForTime(rowTime, floorWalls);
+                        // Create the full fairly ordered row of sky tiles for this bucket
+                        AddOrderlySkyRowForTime(rowTime, floorWalls);
 
                         //Plugin.LogDebug($"[WallFloor] SkyTile v2 - Time:{rowTime:F3}, Idx:{idx}, Width:{width1}, Dur:{tileDur:F3}");
 
@@ -1939,7 +1939,7 @@ namespace AutoBS
             return SKY_MIN_WIDTH + (hash % range);
         }
 
-        private static void AddSkyRowForTime(float time, List<EObstacleData> floorWalls)
+        private static void AddOrderlySkyRowForTime(float time, List<EObstacleData> floorWalls)
         {
             int skyLayer = IsMappingExtensionsInstalled ? 7 + (int)Config.Instance.FloorWallsMinDistance : 5;
             //const int floorLayer = 0;
@@ -1962,8 +1962,8 @@ namespace AutoBS
 
             float rowTime = cell * rowPeriod;
 
-            int[] minLineX = { -14, -7, -21 };
-            int[] maxLineX = { 18, 11, 25 };
+            int[] minLineX = { -14, -7, -21, -31 };
+            int[] maxLineX = { 18, 11, 25, 35 };
 
             int rnd = TransitionPatcher.RepeatableRandom.Next(minLineX.Length);
             int minLine = minLineX[rnd];

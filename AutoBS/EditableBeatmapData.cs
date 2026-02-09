@@ -1715,7 +1715,7 @@ namespace AutoBS
                 numberOfLines: 4, // Standard; parameterize if you support others
                 beatmapCustomData: eData.BeatmapCustomData ?? new CustomData(),
                 levelCustomData: eData.LevelCustomData ?? new CustomData(),
-                customData: new CustomData(), // container-level custom data
+                customData: eData.OriginalCBData?.customData ?? new CustomData(), // container-level custom data
                 version: eData.Version
             );
 
@@ -2333,8 +2333,10 @@ namespace AutoBS
         // This is the new WallRemovalForRotations() 
         public static void ApplyWallVisionBlockingFix(EditableCBD eData) // COMBO Method seems to allow more walls on both sides during turns 
         {
-            float inPointLog  = 158f; // seconds for log only
-            float outPointLog = 161f;
+            float inPointLog  = 160f; // seconds for log only
+            float outPointLog = 161.75f;
+
+            bool allowPlayerCrossingWalls = Config.Instance.AllowPlayerCrossingWalls; //true allows walls to cross in front of the player as long as they do not block the vision of an upcoming note. we only delete or shorten the wall if it appears in the gap of time that would block the view of the next object. so with AllowPlayerCrossingWalls false we now stop allowing those walls. so no wall cross in front of the player
 
             bool rotationModeLate = eData.RotationModeLate;
 
@@ -2555,7 +2557,8 @@ namespace AutoBS
                     .OrderBy(t => t)
                     .ToList();
                 */
-                // new respects early late 2 of 2
+                // OLD VERSION but almost always good! had problem with jump to fall expl 160s 2w vision blocking wall.
+                /*
                 var blockEvents = rotations
                     .Where(dt =>
                         InBlockWindow(dt.time, visibleStart, visibleEnd, rotationModeLate) &&
@@ -2563,6 +2566,23 @@ namespace AutoBS
                     .Select(dt => dt.time)
                     .OrderBy(t => t)
                     .ToList();
+                */
+                int wallRotHead = RotationForSegmentStart(obs, obs.time);
+
+                var blockEvents = rotations
+                    .Where(dt => InBlockWindow(dt.time, visibleStart, visibleEnd, rotationModeLate))
+                    .Where(dt =>
+                    {
+                        int rotAfter = GetAccumRotationAt(dt.time + 0.0005f);
+                        int deltaView = rotAfter - wallRotHead;          // THIS is the “notes rotated further left/right of wall”
+                        return WouldBlock(obs, deltaView);
+                    })
+                    .Select(dt => dt.time)
+                    .OrderBy(t => t)
+                    .ToList();
+
+                if(!allowPlayerCrossingWalls && blockEvents.Count > 0) // if don't allow walls to cross in front of player (even ones that don't block vision of the next note) then still remove it
+                    return result; // wall removed
                 /*
                 if (obs.time > inPointLog && obs.time < outPointLog)
                 {
@@ -2724,6 +2744,8 @@ namespace AutoBS
                     result.Add(obs); // keep as-is
                     return result;
                 }
+                if (!allowPlayerCrossingWalls)
+                    return result; // empty => deleted // If it blocks anything, remove the whole wall.
 
                 float multiplier = (absDelta > 15)
                     ? visionBlockingWallRemovalMult
