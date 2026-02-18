@@ -11,7 +11,7 @@ NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time.
 
-This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without `Auto Lights` lights. So I attempted to make 360 a bit flashier. `Boost lighting events` add more color to maps that don't have them. `Auto Lights` lights power larger and brighter lasers and optional strobe events. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more intereseting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps.
+This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without the included `Auto Lights`. `Boost lighting events` add more color to maps that don't have them. `Auto Lights` power larger and brighter lasers and optional strobe events. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more intereseting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps.
 
 Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
@@ -36,15 +36,15 @@ Wireless headset users can use the `Wireless 360` menu setting, which has no rot
 
 Rotation size and frequency can be adjusted in the menu, and headset FOV limits can be set so that rotations don't move outside your peripheral vision.
 
-***HINT: For challenging rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier`, `Min Rotation Size` and/or `Max Rotation Size`. If you set `Max Rotation Size` > 30, then your must set `FOV` to 90 or greater (otherwise those rotations will be removed. Higher than 90 on a Quest will allow rotations you can't see most likely). I like to use Mult = 1.6x, Min Rotation = 15, Max Rotation = 45 and FOV = 90 for my Quest3 headset. To go even bigger set Min Rotation = 30. You can start trimming around the edges of your peripheral vision with `FOV Time Window`. Increase it a bit to reduce a little of the large jumps at the periphery.***
+***HINT: For challenging rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier`, `Min Rotation Size` and/or `Max Rotation Size`. If you set `Max Rotation Size` > 30, then your must set `FOV` to 90 or greater (otherwise those rotations will be removed. Higher than 90 on a Quest will allow rotations you cannot see). I like to use Mult = 1.6x, Min Rotation = 15, Max Rotation = 45 and FOV = 90 for my Quest3 headset. To go even bigger set Min Rotation = 30. You can start trimming around the edges of your peripheral vision with `FOV Time Window`. Increase it a bit to reduce a little of the large jumps at the periphery.***
 
 ## Arcitect Arc + Chain Maker
 
-`Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the segments can become difficult to hit when chains get too long.
+`Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the slices can become difficult to hit when chains get too long. ***HINT: Set `Arc Rotation Mode` to `No Restrictions` for more challenging arcs.***
 
 NOTE: Chains added to a map would change the scoring, so I have disabled score submission for maps with generated chains.
 
-## Auto Lighting
+## Auto Light Generator
 
 `Auto Lights` automatically adds basic lighting events to maps that don't have them. This only works for 360 and the older environments before Weave. Modern GLS environments are not supported. Thanks to Loloppe (based on their ChroMapper-AutoMapper)! I made many changes so anything crappy is my fault :) You can choose to add `boost` lighting events as well. And 360-environment lasers are fat and bright to enliven the boring 360 environment. Human-crafted lights are best, machine-made lights are OK, no lights suck! (I am considering adding automatic lighting for GLS environments as well in the future.)
 
@@ -58,7 +58,7 @@ NOTE: Dense walls can be claustrophobic and distracting, but you can disable the
 
 ## Auto NJS Fixer
 
-Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence the need for this. You can choose `Preserve Travel Time` if you want to keep the mapper’s intended duration of travel and perceived note speed while letting you change the note spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs until note density gets very tight. Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET.
+Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence the need for this. You can choose `Preserve Travel Time` if you want to keep the mapper’s intended duration of travel, reaction time and perceived note speed while letting you change the note spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs. (But large speed changes don't work well on maps with high note density.) Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET.
 
 NOTE: If settings cause the note speed to be slower than the mapper intended, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not).
 
@@ -73,32 +73,32 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 
 | Option                        | Description                                                                                                                                                                                                                                                                                                                                                  |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **AutoBS**                    | Main toggle and toolset that powers all automatic generation and modification: 360° maps, arcs, chains, NJS fixes, lighting, and walls, etc. Requires a restart for maps that have already been selected in the menu. ***Disable this to disable everything.*** |
-| **360fyer**                   | 360° rotation engine. Generates 360° maps from standard maps. Unlikely to work well with Vivify, Noodle, Mapping Extensions, or maps that contain thousands of walls. ***Requires a restart for maps that have already been selected in the menu.***|
+| **AutoBS**                    | Main toggle and toolset that powers all automatic generation and modification: 360° maps, arcs, chains, NJS fixes, lighting, and walls, etc. Requires a Beat Saber restart for maps that have already been selected in the menu. ***Disable this to disable everything.*** |
+| **360fyer**                   | 360fyer rotation engine. Generates 360° maps from standard maps. Unlikely to work well with Vivify, Noodle, Mapping Extensions, or maps that contain thousands of walls. ***Requires a restart for maps that have already been selected in the menu.***|
 
 
 ***360fyer – Rotation Settings***
 
 | Option                   | Description                                                                                                                                                                                                                                                                                                      |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Wireless 360**         | Default: **True**. For wireless headsets. When enabled, generated maps have no rotation restrictions and are less likely to repeatedly reverse direction.|
-| **Limit Rotations 360**  | Default: **360°**. Limits maximum allowed accumulated rotation. Disabled if **Wireless 360** is enabled. For wired headsets, use 360° or less to avoid twisting your cable (“cable rip”). You can lower this in tight spaces or rooms with furniture. **Score submission is disabled** if this is set below 90°. |
+| **Wireless 360**         | Default: **True**. For wireless headsets. When enabled, generated maps have no rotation restrictions and fewer tendencies to reverse direction.|
+| **Limit Rotations 360**  | Default: **360°**. Limits maximum allowed accumulated rotation. Disabled if **Wireless 360** is enabled. For wired headsets, use 360° or less to avoid twisting your cable (cable rip!). You can lower this in tight spaces. **Score submission is disabled** if this is set below 90°. |
 | **Rot Speed Multiplier*** | Default: **1.0**. Scales how often rotations occur. Less than 1 slows rotations; greater than 1 increases them. **Score submission is disabled** if set below 0.3. Very high values are still constrained by `FOV` settings. * ***Bump this up for more rotations!***               |
 | **Add Extra Rotations**  | Default: **True**. Adds extra rotations in a consistent direction to maps that would otherwise have low overall rotation. |
-| **Min Rotation Size***    | Default: **15°**. Minimum rotation step size. Rotations are typically 15° or 30°. `FOV` rules may force this down to 15° sometimes. * ***Bump this up for larger rotations angles!***|
+| **Min Rotation Size***    | Default: **15°**. Minimum rotation step size. Rotations are typically 15° or 30°. `FOV` rules may force this down to 15° sometimes. * ***Bump this up for larger and challenging rotations angles!***|
 | **Max Rotation Size**    | Default: **30°**. Maximum rotation step size. 30° is typical while 45° is more challenging. 60° rotations may fall outside peripheral vision. `FOV` rules may also force this value lower.|
-| **FOV**                  | Default: **80°**. Set to slightly below your headset’s actual field of view. This is used to keep rotations within your peripheral vision over time. 80° is recommended for Quest 2 and 3. 90° and higher is required if you allow 45° rotations. This still works well for Quest 3.|
-| **FOV Time Window**      | Default: **0.36 s**. Time window used to evaluate cumulative rotations against your FOV. Prevents multiple small rotations from stacking into a large FOV-breaking turns within this time span. Lower values allow more rapid rotations that can edge toward or outside the periphery. ***Bump this down for more and larger rotation angles!***|
+| **FOV**                  | Default: **80°**. Set to slightly below your headset’s actual field of view. This is used to keep rotations within your peripheral vision over time. 80° is recommended for Quest 2 and 3. * ***90° and higher is required if you allow 45° rotations. 90° still works well for Quest 3.***|
+| **FOV Time Window**      | Default: **0.36 s**. Time window used to evaluate cumulative rotations against your FOV. Prevents multiple small rotations from stacking into a large FOV-breaking turns within this time span. Lower values allow more rapid rotations that can edge toward or outside the periphery.|
 | **Wall Removal Mult**    | Default: **1.0**. Controls how aggressively vision-blocking walls are removed during rotation sequences. Higher values remove more chaotic walls that may pass in front of the player and block visibility.|
 | **Wall Note Dist**       | Default: **0.2 s**. This is the minimum distance allowed between notes and walls. Rotation events can cause notes and walls to appear closer together. Increase this to allow more space between them.|
-| **Base Map**             | Default: **Standard**. Chooses which map type is used as the base for 360fyer-generated maps (e.g., Standard vs. other modes). **Score submission is disabled** if this is not set to Standard, and a Beat Saber restart is required for changes to take effect for maps that have already been selected in the menu.|
+| **Base Map**             | Default: **Standard**. Chooses which map type is used as the base for 360fyer-generated maps. **Score submission is disabled** if this is not set to Standard, and a Beat Saber restart is required for changes to take effect for maps that have already been selected in the menu.|
 
 ***Architect – Arcs***
 
 | Option                        | Description                                                                                                                                                                                                                                                                                |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Arc Rotation Mode**         | Default: **Net Zero**. Controls how arcs behave during rotations. **Force Zero** disables rotations during arcs. **Net Zero** allows rotations that sum to net 0° over the arc duration. **No Restrictions** allows full rotations during arcs, which can be more challenging. |
-| **Force Natural Arc Swings**  | Default: **True**. Forces 180° relationships between head and tail cut directions so arcs feel more natural. Turning this off allows more variety in arc shapes (135° and 180°) but can produce some less natural-feeling motions.                                                 |
+| **Arc Rotation Mode**         | Default: **Net Zero**. Controls how arcs behave during rotations. **Force Zero** disables rotations during arcs. **Net Zero** allows rotations that sum to net 0° over the arc duration. **No Restrictions** allows full rotations during arcs, which can be more challenging. * ***No Restrictions is more challenging and more fun!***|
+| **Force Natural Arc Swings**  | Default: **True**. Forces 180° relationships between head and tail cut directions so arcs feel more natural. Turning this off allows more variety in arc shapes (135° and 180°) but can produce some less natural-feeling swings.                                                 |
 | **Pref Count per Minute** | Default: **12**. Attempts to create this many arcs per minute. This is an asperation only and could create many more or less than this number.                                                                                                     |
 | **Min Duration**       | Default: **0.9 s**. Shortest allowed arc duration. This value may be relaxed internally if needed to better match your preferred arc count.                                                                                                                                                |
 | **Max Duration**       | Default: **2.5 s**. Longest allowed arc duration. Longer arcs than this will not be generated.                                                                                                                                                                                             |
@@ -112,14 +112,14 @@ NOTE: The JSON config file has an `AllowArcHeadDotNotes` and `AllowArcTailDotNot
 | **Pref Count per Minute** | Default: **10**. Attempts to create this many chains per minute. This is an asperation only and could create many more or less than this number. To create more chains, reduce `Chain Time Bumper` and reduce arcs or turn them off.     |
 | **Chain Time Bumper**           | Default: **0.2 s**. Minimum allowed time between a chain and surrounding notes. |
 | **Enable Long Chains**          | Default: **True**. Enables long chains that behave similarly to arcs in terms of duration and feel.
-| **Long Chain Max Duration**     | Default: **0.425 s**. Maximum allowed duration for a chain. Chain segments become awkward to hit on longer chains.        |
+| **Long Chain Max Duration**     | Default: **0.35 s**. Maximum allowed duration for a chain. Chain slices become awkward to hit on longer chains.        |
 
 ***Auto NJS Fixer***
 
 | Option                       | Description |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Enable for Practice Mode** | When enabled, Auto NJS Fixer attempts to apply its adjustments in Practice Mode. It will be overridden if `PracticePlugin` is installed (activated or not). |
-| **Mode**                     | Default: **Preserve Travel Time**. Use Preserve Travel Time to keep a similar perceived note speed and keep the same duration of travel intended by the map while letting you change the note spawn distance. Use **Set Note Speed** to set your desired note speed. **Score submission is disabled** if the speed ends up lower than the map’s original speed. (This can also happen with **Preserve Travel Time** when adjusting for note spawn distance.) |
+| **Mode**                     | Default: **Preserve Travel Time**. Use Preserve Travel Time to keep a similar perceived note speed and keep the same duration of travel and reaction time intended by the map while letting you change the note spawn distance. Use **Set Note Speed** to set your desired note speed. Play all your maps at your favorite speed! (But large speed changes don't work well on maps with high note density.) **Score submission is disabled** if the speed ends up lower than the map’s original speed. (This can also happen with **Preserve Travel Time** when it adjusts for note spawn distance.) |
 | **Note Speed**               | Default: **10 m/s**. Overrides the map’s note speed (NJS). Setting this to **0** reverts to the map’s original NJS. **Score submission is disabled** if you set this below the map’s original speed. I use this to set my favorite speed for all maps. Doesn't work great on high note density maps sometimes. |
 | **Note Spawn Distance**      | Default: **30 m**. Overrides the map’s note spawn distance (JD). Setting this to **0** uses the map’s original spawn distance. It's difficult to see notes coming in 360 with short note spawn distances. |
 
@@ -241,22 +241,18 @@ Designed to work with `Mapping Extensions` mod installed. Many of the following 
 | **Tunnel Walls Min Dis**    | Default: **0**. Minimum distance from the player (by line index) for tunnel walls.             |
 
 
-NOTE: The JSON config file has a `StandardLevelWallMultiplier` setting not available in the menus that reduces walls for standard maps. If you like the number of walls in 360 but find that there are too many or few in a standard map, then change this config item.
+NOTE: The JSON config file has a `StandardLevelWallMultiplier` setting not available in the menus that is a multiplier for generated walls in standard maps (non-360). If you like the number of walls in 360 but find that there are too many or few in a standard map, then change this config item.
 ***
 
 ## JSON Beatmap File Output
 
-You can output a generated map to a JSON beatmap file. This file will contain all standard and all generated features including 360 rotation events, arcs, chains, lighting events, and walls (and attempts customData but not really tested). The output file can be in v2, v3, or v4 format (no matter what the starting format was). The output file(s) will be placed in the same folder as the original beatmap. 
+You can output a generated map to a JSON beatmap file. This file will contain all standard and all generated features including 360 rotation events, arcs, chains, lighting events, walls, and auto njs njo values. (It attempts to retain all customData but this is not fully tested). The output file can be in v2, v3, or v4 format (no matter what the starting format was). The output file(s) will be placed in the same folder as the original beatmap and will NOT OVERWRITE any files. The generator will also output a `Info.AutoBS.dat` that will point to the generated files. To use the new generated difficulty, you can rename the original 'Info.dat' to something like 'Info.dat.bak' and then rename the new 'Info.AutoBS.dat' to 'Info.dat'. Currently original v3 beatmaps with GLS lighting can generate a new v3 output and retain the GLS lightshow as well, but the GLS lightshow portion will not be preserved if output to v2 or v4. (If you need that, I believe you can convert the v3 lightshow to v4 using Beat Saber's built-in map editor.)
 
-NOTE: v2 maps will not have arcs, chains or `Mapping Extensions` walls added.
+NOTE: v2 maps will not have arcs, chains or `Mapping Extensions` walls added. Outputs beatmapV2 and 'Info.AutoBS.dat' files.
 
-NOTE: v3 maps may need some cleanup due to some vision blocking walls around arcs if the arc mode is NOT set to `Force Zero`.
+NOTE: v3 360 maps may need some minor cleanup due to some vision blocking walls around arcs if the arc mode is NOT set to `Force Zero`. Outputs beatmapV3 and 'Info.AutoBS.dat' files.
 
-NOTE: v4 will be the most exact match to the in-game generated map. 
-
-NOTE: v4 doesn't really support customData so all customData will be lost (for Noodle etc). `Mapping Extensions` precision placement does still function.
-
-NOTE: This generator does not output an `info.dat` file. So you will need to make your own. FYI, `info` v2.1.0 handles v2 and v3 maps. `info` v4.1.0 files can handle v2, v3, and v4 maps. You can look at `PnfrlEnm`'s `Ascension to Heaven` to see a v4.1.0 info file.
+NOTE: v4 will be the most exact match to the in-game generated map. Outputs beatmapV4, lightshow, audioData and 'Info.AutoBS.dat' files. v4 doesn't really support customData so all customData will be lost (for Noodle etc). `Mapping Extensions` precision placement does still function.
 
 To enable JSON file output, edit the `Beat Saber/UserData/AutoBS.json` config file in Notepad or other text editor. The last 5 settings in the config file are the ones to edit. 
 
@@ -272,11 +268,9 @@ to `true`.
 
 Start Beat Saber and simply begin to play any map difficulty and the file(s) will be generated automatically. No need to finish playing the map.
 
-By default, the `TurnOffJSONDatOutputAfterOneMapPlay` config setting is set to `true`. This means all the output settings will revert to `false` after one play. You can set this to `false` if you want to generate multiple files in one session every time you play a difficulty. After quitting Beat Saber, this will revert back to `true` and all outputs to `false`. This makes sure you don't accidentally leave this on.
+By default, the `TurnOffJSONDatOutputAfterOneMapPlay` config setting is set to `true`. This means all the output settings will revert to `false` after one play. You can set this to `false` if you want to generate multiple files in one session every time you play a difficulty. After quitting Beat Saber, this will revert back to `true` and all outputs to `false`. This makes sure you don't accidentally leave this on. If you generate consecutive maps for the same song, it will overwrite the 'Info.AutoBS.dat' file each time. You will need to edit 'Info.AutoBS.dat' to replace the original beatmap file names with the generated file names. 
 
-v4 output will create beatmap, lightshow, and audioData files.
-
-For v4 output, you must also set the `OutputV4JsonSongSampleRate` config setting. This is the sample rate of the audio file for the song. It will default to `44100`. The map will be out-of-sync if this is not correct. Most songs are `44100` or `48000`. (In Windows, right click the song, choose PROPERTIES>DETAILS.)
+For all output versions, you must also set the `OutputJsonSongSampleRate` config setting. This is the sample rate of the audio file for the song. It will default to `44100`. The map will be out-of-sync if this is not correct. Most songs are `44100` or `48000`. (In Windows, right click the song, choose PROPERTIES>DETAILS to see the sample rate.)
 
 ***
 
