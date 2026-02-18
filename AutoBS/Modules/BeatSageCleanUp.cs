@@ -154,6 +154,14 @@ namespace AutoBS
                                 }
                             }
                             // 2 side-by-side notes of different colors - Check if the leftmost note has cutDirection Left and the rightmost note has cutDirection Right - and other impossible configurations
+                            else if (currentNote.cutDirection == NoteCutDirection.Left || currentNote.cutDirection == NoteCutDirection.Right || nextNote.cutDirection == NoteCutDirection.Left || nextNote.cutDirection == NoteCutDirection.Right)
+                            {
+                                indicesToRemove.Add(i);
+                                Plugin.LogDebug($"Beat Sage 2 - remove left note side-by-side with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
+                            }
+
+                            /*
+                            // OLD VERSION - 2 side-by-side notes of different colors - Check if the leftmost note has cutDirection Left and the rightmost note has cutDirection Right - and other impossible configurations
                             else if (currentNote.line < nextNote.line)
                             {
 
@@ -177,6 +185,7 @@ namespace AutoBS
                                     Plugin.LogDebug($"Beat Sage 3 - remove right note side-by-side with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
                                 }
                             }
+                            */
                         }
                         // Check for ONE-ABOVE-THE-OTHER Notes. -- Check if the two notes (not any bombs) have the same index, and different layer (they may be one-above-the-other)
                         else if (currentNote.line == nextNote.line && // Check for same index
@@ -200,6 +209,13 @@ namespace AutoBS
                                 }
                             }
                             // 2 ONE-ABOVE-THE-OTHER notes of different colors - Check if the bottommost note has cutDirection Down and the uppermost note has cutDirection Up - and other impossible configurations
+                            else if (currentNote.cutDirection == NoteCutDirection.Up || currentNote.cutDirection == NoteCutDirection.Down || nextNote.cutDirection == NoteCutDirection.Up || nextNote.cutDirection == NoteCutDirection.Down)
+                            {
+                                indicesToRemove.Add(i);
+                                Plugin.LogDebug($"Beat Sage 2 - remove bottom note one-above-the-other of DIFFERENT COLORS with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
+                            }
+                            /*
+                            // 2 OLD VERSION ONE-ABOVE-THE-OTHER notes of different colors - Check if the bottommost note has cutDirection Down and the uppermost note has cutDirection Up - and other impossible configurations
                             else if (currentNote.layer < nextNote.layer)
                             {
                                 if ((currentNote.cutDirection == NoteCutDirection.Down) ||
@@ -222,6 +238,7 @@ namespace AutoBS
                                     Plugin.LogDebug($"Beat Sage 3 - remove top note one-above-the-other of DIFFERENT COLORS with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
                                 }
                             }
+                            */
                         }
                         // Check for OVERLAPPING NOTES. -- Check if the two notes have the same lineIndex, and noteLineLayer
                         else if (currentNote.line == nextNote.line &&
@@ -686,11 +703,11 @@ namespace AutoBS
                 // Phase 2: Bomb cleanup based on first/last remaining COLOR note - this removes all bomb notes before the first color note and after the last color note with a buffer if desired
                 // --------------------------------------------------------------------
                 if (eData.BombNotes != null && eData.BombNotes.Count > 0 &&
-                    (removedLeadingSegments || removedTrailingSegments))
+                    eData.ColorNotes != null && eData.ColorNotes.Count > 0)
                 {
                     // Re-evaluate remaining color notes in time order
                     var remainingColorNotes = eData.ColorNotes.OrderBy(n => n.time).ToList();
-                    
+
                     float firstNoteTime = remainingColorNotes.First().time;
                     float lastNoteTime = remainingColorNotes.Last().time;
 
@@ -702,7 +719,7 @@ namespace AutoBS
                     int trailingBombsRemoved = 0;
 
                     // Remove bombs before the "safe" first note window
-                    if (removedLeadingSegments)
+                    if (eData.BombNotes.Count > 0)
                     {
                         int before = eData.BombNotes.Count;
                         eData.BombNotes.RemoveAll(b => b.time < leadingKeepFrom);
@@ -710,7 +727,7 @@ namespace AutoBS
                     }
 
                     // Remove bombs after the "safe" last note window
-                    if (removedTrailingSegments && eData.BombNotes.Count > 0)
+                    if (eData.BombNotes.Count > 0)
                     {
                         int before = eData.BombNotes.Count;
                         eData.BombNotes.RemoveAll(b => b.time > trailingKeepTo);
@@ -724,7 +741,11 @@ namespace AutoBS
                         totalBombRemoved += removedBombsThisPass;
                         eData.BombNotesChanged = true;
 
-                        //Plugin.LogDebug($"[BeatSageCleanUp][StrayNoteCleaner] Bomb cleanup: removed {leadingBombsRemoved} leading bomb(s) between time 0 - {leadingKeepFrom:F}s and {trailingBombsRemoved} trailing bomb(s) between {trailingKeepTo:F}s - end of song.");
+                        Plugin.LogDebug(
+                            $"[BeatSageCleanUp][StrayNoteCleaner] Bomb cleanup: " +
+                            $"removed {leadingBombsRemoved} leading bomb(s) " +
+                            $"and {trailingBombsRemoved} trailing bomb(s) " +
+                            $"outside [{leadingKeepFrom:F3}s, {trailingKeepTo:F3}s].");
                     }
                 }
                 Plugin.Log.Info($"[BeatSageCleanUp][StrayNoteCleaner] Removed {totalColorRemoved} color note(s) and {totalBombRemoved} bomb(s).");

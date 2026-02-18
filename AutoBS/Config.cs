@@ -86,6 +86,11 @@ namespace AutoBS
         public virtual bool AlterNotes { get; set; } = false; // alter notes so that chains will be compatible - will move note position so tail can exist
         public virtual bool PauseDetection { get; set; } = true; // For no particular reason decided to use this algorith only (very similar to the other tempo change algorithm)
         public virtual bool ForceMoreChains { get; set; } = true;
+        /// <summary>
+        /// If true, do not create chains on notes that have a simultaneous pair
+        /// where ColorA ends up to the right of ColorB (crossed-hands doubles).
+        /// </summary>
+        public bool DisallowChainsOnCrossedPairs { get; set; } = true;
         public virtual float ChainTimeBumper { get; set; } = 0.2f;//how much time between chain and other notes.
         public virtual bool EnableLongChains { get; set; } = true; // chains more like arcs that don't get slashed
         public virtual float LongChainMaxDuration { get; set; } = 0.425f; // max duration of long chains

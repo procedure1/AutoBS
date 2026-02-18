@@ -10,6 +10,8 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using static NoteData;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 
 namespace AutoBS
@@ -17,6 +19,7 @@ namespace AutoBS
     internal class Arcitect//Lolighter https://github.com/Loloppe/Lolighter/blob/master/Lolighter/Algorithm/Arc.cs
     {
         public static List<ENoteData> notes; // hold original notes for various checks
+        public static List<ENoteData> notesAndBombs;
         public static List<ESliderData> arcs; // hold finished arcs for various chains checks
         public static Version version = new Version(3, 3, 0);
 
@@ -76,6 +79,8 @@ namespace AutoBS
             //If AlterNotes() is used, the original notes of the song would be altered permanently in the context of that data object.
 
             notes = eData.ColorNotes; // hold original notes for various checks
+            notesAndBombs = new List<ENoteData>(eData.ColorNotes);
+            notesAndBombs.AddRange(eData.BombNotes);
 
             doubleChainCount = 0;
             
@@ -696,6 +701,35 @@ namespace AutoBS
                 if (colorB.Count > 1)
                     chainNotesB = PauseDetection(colorB);
 
+                const float EPS = 0.001f;
+
+                // This new idea helps get more compatible double chains. since pauseDetection works per color, each may present a differnt list of notes based on pauses. thus double notes may not be added to chain notes in all cases.
+                // But if one note in double note pair was detected as compatible, its likely the other note of opposite color may accept a chain too despite not meeting pause detection's constraints. 
+                // But nevertheless, it may be nice to have a double chain at the moment. and anyway, if the other color is completely incompatible for a chain, it will not be added anyway.
+                // A → B
+                foreach (var a in chainNotesA.ToList())
+                {
+                    var partnerB = colorB.FirstOrDefault(b =>
+                        Math.Abs(b.time - a.time) < EPS &&
+                        IsCompatibleForChain(b));
+
+                    if (partnerB != null && !chainNotesB.Contains(partnerB))
+                        chainNotesB.Add(partnerB);
+                }
+                // Must do this 2x since each list may be completely different than the other.
+                // B → A
+                foreach (var b in chainNotesB.ToList())
+                {
+                    var partnerA = colorA.FirstOrDefault(a =>
+                        Math.Abs(a.time - b.time) < EPS &&
+                        IsCompatibleForChain(a));
+
+                    if (partnerA != null && !chainNotesA.Contains(partnerA))
+                        chainNotesA.Add(partnerA);
+                }
+
+
+
                 currentChainsCount = chainNotesA.Count + chainNotesB.Count;// + doubleChainNotes.Count;
 
                 counter++;
@@ -905,10 +939,8 @@ namespace AutoBS
             // SHORT / MEDIUM: fixed seconds
             // -----------------------------
             // Tune these by feel. These should remain stable across NJS/JD.
-            const float SHORT_CHAIN_DUR = 0.010f; // 4 slices
-            const float MED_CHAIN_DUR = 0.050f; // 5–6 slices
-
-            
+            const float SHORT_CHAIN_DUR = 0.01f; // 4 slices
+            float MED_CHAIN_DUR = 0.05f; // 5–6 slices;
 
             // -----------------------------
             // LONG: derived but capped
@@ -928,23 +960,23 @@ namespace AutoBS
             float minLongChainAllowed = Math.Clamp(0.12f * jumpDuration, 0.04f, 0.30f);
 
             // Long chain chance evaluated per note
-            int chance = Mathf.Clamp((int)Config.Instance.LongChainChanceMultiplier, 0, 10);
+            int longChainChanceInt = Mathf.Clamp((int)Config.Instance.LongChainChanceMultiplier, 0, 10); 
 
             // Optional: cap how close any chain tail can get to the next note (same color or all notes).
             // If you want no extra logic, set this to 0.
             const float MIN_TAIL_CLEARANCE = .05f;
 
             // Helper: clamp tailTime so it doesn't bump into next note if you want.
-            float ClampTailToNextNote(float headTime, float desiredTailTime)
+            float ClampTailToNextNote(ENoteData chainNote, float desiredTailTime)
             {
                 if (MIN_TAIL_CLEARANCE <= 0f)
                     return desiredTailTime;
 
-                float timeUntilNext = GetTimeUntilNextNote(notes, headTime);
+                float timeUntilNext = GetTimeUntilNextNote(notesAndBombs, chainNote);
                 if (timeUntilNext <= 0f)
                     return desiredTailTime;
 
-                float latestTail = headTime + Math.Max(0.0001f, timeUntilNext - MIN_TAIL_CLEARANCE);
+                float latestTail = chainNote.time + Math.Max(0.0001f, timeUntilNext - MIN_TAIL_CLEARANCE);
                 return Math.Min(desiredTailTime, latestTail);
             }
 
@@ -981,8 +1013,8 @@ namespace AutoBS
                     tailTime = chainNote.time + MED_CHAIN_DUR;
                 }
 
-                // Optional safety to avoid hitting next note
-                tailTime = ClampTailToNextNote(chainNote.time, tailTime);
+                // safety to avoid hitting next note
+                tailTime = ClampTailToNextNote(chainNote, tailTime);
 
                 // -----------------------------
                 // Accidental double-chain handling (your existing logic)
@@ -993,8 +1025,13 @@ namespace AutoBS
 
                 if (existingChainAtSameTime != null)
                 {
-                    if (TryCreateDoubleChain(chainNote, existingChainAtSameTime, out var matchingChain))
+                    Plugin.LogDebug($"[CreateChains] ChainNote: {chainNote.time:F} {chainNote.cutDirection} x: {chainNote.line} y: {chainNote.layer} -- Found existingChainAtSameTime {existingChainAtSameTime.cutDirection} x: {existingChainAtSameTime.line} y: {existingChainAtSameTime.layer} dur: {(existingChainAtSameTime.tailTime - existingChainAtSameTime.time):F}");
+
+                    if (TryCreateDoubleChain(chainNote, existingChainAtSameTime, MED_CHAIN_DUR, out var matchingChain))
                     {
+                        // For long double chains, prevent “X” crossings
+                        UncrossLongDoubleChainsIfNeeded(existingChainAtSameTime, matchingChain, MED_CHAIN_DUR);
+
                         if (!chains.Contains(matchingChain))
                         {
                             chains.Add(matchingChain);
@@ -1005,7 +1042,7 @@ namespace AutoBS
                     }
                     else
                     {
-                        shouldAddChain = true;
+                        shouldAddChain = false;
                     }
                 }
 
@@ -1015,7 +1052,7 @@ namespace AutoBS
                 // -----------------------------
                 // LONG chain attempt (optional)
                 // -----------------------------
-                bool longChainChance = TransitionPatcher.RepeatableRandom.Next(10) < chance;
+                bool longChainChance = TransitionPatcher.RepeatableRandom.Next(10) < longChainChanceInt; // is set to 10 so will always happen, 5 is 50%, 1 is 10%
 
                 if (Config.Instance.EnableLongChains &&
                     longChainChance &&
@@ -1023,30 +1060,30 @@ namespace AutoBS
                 {
                     // Your edge/direction eligibility gate (kept)
                     bool eligibleForLong =
-                        (chainNote.layer == 0 &&
+                        (chainNote.layer < 2 && // test was (chainNote.layer == 0) so add extra layer
                          (chainNote.cutDirection == NoteCutDirection.Up ||
                           chainNote.cutDirection == NoteCutDirection.UpLeft ||
                           chainNote.cutDirection == NoteCutDirection.UpRight))
                         ||
                         (chainNote.layer == 2 && chainNote.cutDirection == NoteCutDirection.Down)
                         ||
-                        ((chainNote.layer == 1 || chainNote.layer == 2) &&
+                        ((chainNote.layer > 0) && // was (chainNote.layer == 1 || chainNote.layer == 2) should be the same exactly
                          (chainNote.cutDirection == NoteCutDirection.DownLeft ||
                           chainNote.cutDirection == NoteCutDirection.DownRight))
                         ||
-                        (chainNote.line == 3 &&
+                        (chainNote.line > 1 && // was (chainNote.line == 3) so add extra line
                          (chainNote.cutDirection == NoteCutDirection.Left ||
                           chainNote.cutDirection == NoteCutDirection.DownLeft ||
                           chainNote.cutDirection == NoteCutDirection.UpLeft))
                         ||
-                        (chainNote.line == 0 &&
+                        (chainNote.line < 2 && // was (chainNote.line == 0) so add extra line
                          (chainNote.cutDirection == NoteCutDirection.Right ||
                           chainNote.cutDirection == NoteCutDirection.DownRight ||
                           chainNote.cutDirection == NoteCutDirection.UpRight));
 
                     if (eligibleForLong)
                     {
-                        float timeUntilNextNote = GetTimeUntilNextNote(notes, chainNote.time);
+                        float timeUntilNextNote = GetTimeUntilNextNote(notesAndBombs, chainNote);
 
                         if (timeUntilNextNote > (minGapAfterLongChain + minLongChainAllowed))
                         {
@@ -1061,30 +1098,30 @@ namespace AutoBS
                             // If you want original behaviour, gate it on head layer == 2:
                             if ((chainNote.cutDirection == NoteCutDirection.Up ||
                                  chainNote.cutDirection == NoteCutDirection.UpLeft ||
-                                 chainNote.cutDirection == NoteCutDirection.UpRight) &&
-                                chainNote.layer == 0)
+                                 chainNote.cutDirection == NoteCutDirection.UpRight))// && removed these
+                                ///chainNote.layer == 0)
                             {
                                 tailLineLayer = 2;
                             }
                             else if ((chainNote.cutDirection == NoteCutDirection.Down ||
                                       chainNote.cutDirection == NoteCutDirection.DownLeft ||
-                                      chainNote.cutDirection == NoteCutDirection.DownRight) &&
-                                     chainNote.layer == 2)
+                                      chainNote.cutDirection == NoteCutDirection.DownRight))// && removed these
+                                                                                            //chainNote.layer == 2)
                             {
                                 tailLineLayer = 0;
                             }
 
                             if ((chainNote.cutDirection == NoteCutDirection.Right ||
                                  chainNote.cutDirection == NoteCutDirection.DownRight ||
-                                 chainNote.cutDirection == NoteCutDirection.UpRight) &&
-                                chainNote.line == 0)
+                                 chainNote.cutDirection == NoteCutDirection.UpRight)) //&& removed these
+                                                                                      //chainNote.line == 0)
                             {
                                 tailLineIndex = 3;
                             }
                             else if ((chainNote.cutDirection == NoteCutDirection.Left ||
                                       chainNote.cutDirection == NoteCutDirection.DownLeft ||
-                                      chainNote.cutDirection == NoteCutDirection.UpLeft) &&
-                                     chainNote.line == 3)
+                                      chainNote.cutDirection == NoteCutDirection.UpLeft))// && removed these
+                                                                                         //chainNote.line == 3)
                             {
                                 tailLineIndex = 0;
                             }
@@ -1101,7 +1138,7 @@ namespace AutoBS
                                     awkwardLongChain = true;
                                 }
                             }
-                            else if (chainNote.cutDirection == NoteCutDirection.Up)
+                            else if (chainNote.cutDirection == NoteCutDirection.Up && chainNote.layer == 0) // tested layer 1 is awkward for long up chain
                             {
                                 tailLineIndex = chainNote.line;
 
@@ -1117,7 +1154,7 @@ namespace AutoBS
                                 //limitMaxDuration = true;
                             }
                             else if (chainNote.cutDirection == NoteCutDirection.UpRight &&
-                                     chainNote.line == 0 && chainNote.layer == 0)
+                                     chainNote.line < 2 && chainNote.layer < 2) // was chainNote.line == 0 && chainNote.layer == 0)
                             {
                                 tailLineIndex = 3;
                                 tailLineLayer = 2;
@@ -1125,7 +1162,7 @@ namespace AutoBS
                                 //limitMaxDuration = true;
                             }
                             else if (chainNote.cutDirection == NoteCutDirection.UpLeft &&
-                                     chainNote.line == 3 && chainNote.layer == 0)
+                                     chainNote.line > 1 && chainNote.layer < 2) // was wchainNote.line == 3 && chainNote.layer == 0
                             {
                                 tailLineIndex = 0;
                                 tailLineLayer = 2;
@@ -1133,7 +1170,7 @@ namespace AutoBS
                                 //limitMaxDuration = true;
                             }
                             else if (chainNote.cutDirection == NoteCutDirection.DownRight &&
-                                     chainNote.line == 0 && chainNote.layer == 2)
+                                     chainNote.line < 2 && chainNote.layer > 0) // was chainNote.line == 0 && chainNote.layer == 2
                             {
                                 tailLineIndex = 3;
                                 tailLineLayer = 0;
@@ -1141,7 +1178,7 @@ namespace AutoBS
                                 limitMaxDuration = true;
                             }
                             else if (chainNote.cutDirection == NoteCutDirection.DownLeft &&
-                                     chainNote.line == 3 && chainNote.layer == 2)
+                                     chainNote.line > 1 && chainNote.layer > 0) // was chainNote.line == 3 && chainNote.layer == 2
                             {
                                 tailLineIndex = 0;
                                 tailLineLayer = 0;
@@ -1211,14 +1248,14 @@ namespace AutoBS
 
 
                                 // Optional: don’t let long chains bump next note
-                                tailTime = ClampTailToNextNote(chainNote.time, tailTime);
-                                /*
+                                tailTime = ClampTailToNextNote(chainNote, tailTime);
+                                
                                 Plugin.LogDebug(
-                                    $"Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} " +
-                                    $"H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} " +
+                                    $"Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} {chainNote.cutDirection} " +
+                                    $"x: {chainNote.line} xTail: {tailLineIndex} - y: {(int)chainNote.layer} yTail: {tailLineLayer} " +
                                     $"Dur: {longChainDuration:F3} slices: {sliceCount} (jumpDur={jumpDuration:F3}, maxLong={maxLongChainAllowed:F3})"
                                 );
-                                */
+                                
                                 longChainCount++;
                             }
                         }
@@ -1253,6 +1290,143 @@ namespace AutoBS
 
             return chains;
         }
+
+        private static void UncrossLongDoubleChainsIfNeeded(ESliderData chainA, ESliderData chainB, float MED_CHAIN_DUR)
+        {
+            //Plugin.LogDebug("[UncrossLongDoubleChainsIfNeeded] Called...");
+            // 1) Only touch long chains – leave short/medium double chains alone
+            float durA = chainA.tailTime - chainA.time;
+            float durB = chainB.tailTime - chainB.time;
+
+            MED_CHAIN_DUR += .01f; // therefore a long chain
+
+            if (durA < MED_CHAIN_DUR || durB < MED_CHAIN_DUR)
+                return;
+            //Plugin.LogDebug("[UncrossLongDoubleChainsIfNeeded] 2");
+            // 2) Only consider diagonals (avoid messing with pure vertical/horizontal double chains)
+            if (!IsDiagonal(chainA) || !IsDiagonal(chainB))
+                return;
+            //Plugin.LogDebug("[UncrossLongDoubleChainsIfNeeded] 3");
+            // 3) Extract endpoints (grid coordinates)
+            int h1x = chainA.line;
+            int h1y = chainA.layer;
+            int t1x = chainA.tailLine;
+            int t1y = chainA.tailLayer;
+
+            int h2x = chainB.line;
+            int h2y = chainB.layer;
+            int t2x = chainB.tailLine;
+            int t2y = chainB.tailLayer;
+
+            // 4) Do these two segments actually cross (an “X”)?
+            if (!SegmentsProperlyIntersect(h1x, h1y, t1x, t1y,
+                                           h2x, h2y, t2x, t2y))
+                return;
+            //Plugin.LogDebug("[UncrossLongDoubleChainsIfNeeded] 4");
+            // 5) Decide whether to “uncross horizontally” or “uncross vertically”
+            int minX = Math.Min(Math.Min(h1x, t1x), Math.Min(h2x, t2x));
+            int maxX = Math.Max(Math.Max(h1x, t1x), Math.Max(h2x, t2x));
+            int minY = Math.Min(Math.Min(h1y, t1y), Math.Min(h2y, t2y));
+            int maxY = Math.Max(Math.Max(h1y, t1y), Math.Max(h2y, t2y));
+
+            int spanX = maxX - minX; // 0..3
+            int spanY = maxY - minY; // 0..2
+
+            // 6) For the axis we adjust, we keep heads as-is and move tails inward.
+            //    Pick which chain is “first” along that axis to assign the lower/inner slot.
+
+            if (spanX >= spanY && spanX >= 2)
+            {
+                // X spread dominates → keep layers, adjust lineIndex to 1 & 2
+                ESliderData leftChain = (h1x <= h2x) ? chainA : chainB;
+                ESliderData rightChain = (leftChain == chainA) ? chainB : chainA;
+
+                // Both tails get the same layer they already use (no vertical change)
+                int sharedTailLayer = leftChain.tailLayer; // they are diagonals so y-diff != 0, but we do not care which
+
+                leftChain.tailLine = 1;
+                rightChain.tailLine = 2;
+
+                leftChain.tailLayer = sharedTailLayer;
+                rightChain.tailLayer = sharedTailLayer;
+
+                Plugin.LogDebug(
+                    $"[UncrossLongDoubleChainsIfNeeded] Uncrossed by lineIndex at t={chainA.time:F3}: " +
+                    $"L tail=({leftChain.tailLine},{leftChain.tailLayer}) " +
+                    $"R tail=({rightChain.tailLine},{rightChain.tailLayer})");
+            }
+            else if (spanY > spanX && spanY >= 1)
+            {
+                // Y spread dominates → keep lineIndex, adjust layer to (0,1) or (1,2)
+                ESliderData lowChain = (h1y <= h2y) ? chainA : chainB;
+                ESliderData highChain = (lowChain == chainA) ? chainB : chainA;
+
+                int newLowLayer, newHighLayer;
+
+                // If they are mostly in lower half, use 0&1; otherwise 1&2
+                if (minY == 0)
+                {
+                    newLowLayer = 0;
+                    newHighLayer = 1;
+                }
+                else
+                {
+                    newLowLayer = 1;
+                    newHighLayer = 2;
+                }
+
+                lowChain.tailLayer = newLowLayer;
+                highChain.tailLayer = newHighLayer;
+
+                // Keep their lineIndices so one stays “left”, one “right”
+                // (if you want to pull both inward horizontally too, you can adjust lineIndex here as well)
+
+                Plugin.LogDebug(
+                    $"[UncrossLongDoubleChainsIfNeeded] Uncrossed by layer at t={chainA.time:F3}: " +
+                    $"Low tail=({lowChain.tailLine},{lowChain.tailLayer}) " +
+                    $"High tail=({highChain.tailLine},{highChain.tailLayer})");
+            }
+        }
+
+        private static bool IsDiagonal(ESliderData chain)
+        {
+            int dx = chain.tailLine - chain.line;
+            int dy = chain.tailLayer - chain.layer;
+            return dx != 0 && dy != 0;
+        }
+        private static int Orient(int ax, int ay, int bx, int by, int cx, int cy)
+        {
+            int v = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+            if (v == 0) return 0;
+            return (v > 0) ? 1 : -1;
+        }
+
+        private static bool OnSegment(int ax, int ay, int bx, int by, int px, int py)
+        {
+            return Math.Min(ax, bx) <= px && px <= Math.Max(ax, bx) &&
+                   Math.Min(ay, by) <= py && py <= Math.Max(ay, by) &&
+                   Orient(ax, ay, bx, by, px, py) == 0;
+        }
+
+        private static bool SegmentsProperlyIntersect(
+            int x1, int y1, int x2, int y2,
+            int x3, int y3, int x4, int y4)
+        {
+            int o1 = Orient(x1, y1, x2, y2, x3, y3);
+            int o2 = Orient(x1, y1, x2, y2, x4, y4);
+            int o3 = Orient(x3, y3, x4, y4, x1, y1);
+            int o4 = Orient(x3, y3, x4, y4, x2, y2);
+
+            // Proper intersection: each segment straddles the other.
+            if (o1 != o2 && o3 != o4)
+                return true;
+
+            // Optional: treat collinear overlapping as non-“X” (we don’t need to modify those)
+            // If you *do* want to treat collinear overlaps as "bad", add OnSegment checks here.
+
+            return false;
+        }
+
 
         /*
         private static List<ESliderData> CreateChains(List<ENoteData> chainNotes)
@@ -1500,24 +1674,99 @@ namespace AutoBS
             return chains;
         }
         */
-        private static float GetTimeUntilNextNote(List<ENoteData> notes, float currentTime)
+        private static float GetTimeUntilNextNote(List<ENoteData> notesAndBombs, ENoteData chainNote)
         {
-            for (int i = _lastCheckedIndex; i < notes.Count; i++) // this avoids sorting through all the beginning notes that were already previously checked for earlier long chains
+            float currentTime = chainNote.time;
+
+            for (int i = _lastCheckedIndex; i < notesAndBombs.Count; i++)
             {
-                if (notes[i].time > currentTime)
+                ENoteData nb = notesAndBombs[i];
+
+                // Skip anything at or before currentTime
+                if (nb.time <= currentTime)
+                    continue;
+
+                bool isBomb = nb.cutDirection == NoteCutDirection.None || nb.colorType == ColorType.None;
+
+                if (!isBomb)
                 {
-                    _lastCheckedIndex = i; // Update the last checked index
-                    return notes[i].time - currentTime;
+                    // This is a normal note: always blocks the chain.
+                    _lastCheckedIndex = i;
+                    return nb.time - currentTime;
                 }
+
+                // Bomb: only count it if it can actually block this chain
+                if (BombBlocksChain(nb, chainNote))
+                {
+                    _lastCheckedIndex = i;
+                    return nb.time - currentTime;
+                }
+
+                // Otherwise, ignore this bomb and keep scanning
             }
-            return -1f; // Return -1 if no next note is found, indicating no further notes of the same color
+
+            return -1f; // no future note or blocking bomb
         }
+
+        private static bool BombBlocksChain(ENoteData bomb, ENoteData chainNote)
+        {
+            Plugin.LogDebug($"[BombBlocksChain] Checking chainNote {chainNote.time:F} x:{chainNote.line} y:{chainNote.layer} -- bomb {bomb.time:F} x:{bomb.line} y:{bomb.layer}");
+
+            int dx = bomb.line - chainNote.line;
+            int dy = (int)bomb.layer - (int)chainNote.layer;
+
+            // Bomb at or behind the head in both axes is never blocking.
+            if (dx == 0 && dy == 0)
+                return false;
+
+            switch (chainNote.cutDirection)
+            {
+                case NoteCutDirection.Left:
+                    // Must be strictly to the left, and roughly in the same row
+                    if (dx >= 0) return false; else return true;
+                    //return Math.Abs(dy) <= 1;
+
+                case NoteCutDirection.Right:
+                    if (dx <= 0) return false; else return true;
+                    //return Math.Abs(dy) <= 1;
+
+                case NoteCutDirection.Up:
+                    if (dy <= 0) return false; else return true;
+                    //return Math.Abs(dx) <= 1;
+
+                case NoteCutDirection.Down:
+                    if (dy >= 0) return false; else return true;
+                    //return Math.Abs(dx) <= 1;
+
+                case NoteCutDirection.UpLeft:
+                    // Must be up AND left of the head
+                    if (dx >= 0 || dy <= 0) return false; else return true;
+                    // Either strictly on the diagonal, or close to it
+                    //return Math.Abs(dx) == Math.Abs(dy) || (Math.Abs(dx) <= 2 && Math.Abs(dy) <= 2);
+
+                case NoteCutDirection.UpRight:
+                    if (dx <= 0 || dy <= 0) return false; else return true;
+                    //return Math.Abs(dx) == Math.Abs(dy) || (Math.Abs(dx) <= 2 && Math.Abs(dy) <= 2);
+
+                case NoteCutDirection.DownLeft:
+                    if (dx >= 0 || dy >= 0) return false; else return true;
+                    //return Math.Abs(dx) == Math.Abs(dy) || (Math.Abs(dx) <= 2 && Math.Abs(dy) <= 2);
+
+                case NoteCutDirection.DownRight:
+                    if (dx <= 0 || dy >= 0) return false; else return true;
+                    //return Math.Abs(dx) == Math.Abs(dy) || (Math.Abs(dx) <= 2 && Math.Abs(dy) <= 2);
+
+                default:
+                    return false;
+            }
+        }
+
 
 
         // look for double chains or 2 chains that can be hit at the same time. i limited it to both notes up or both down or both left or both right
         private static bool IsCompatibleForChain(ENoteData note)
         {
-            if (note.cutDirection == NoteCutDirection.None || note.cutDirection == NoteCutDirection.Any)
+            if (note.cutDirection == NoteCutDirection.None || note.cutDirection == NoteCutDirection.Any || note.gameplayType == GameplayType.Bomb)
             {
                 return false;
             }
@@ -1592,7 +1841,11 @@ namespace AutoBS
             //Plugin.LogDebug($"matching Notes count: {matchingNotesCount}");
 
 
-            // Remaining checks...
+            if (Config.Instance.DisallowChainsOnCrossedPairs && matchingNoteInOtherColor != null)
+            {
+                if (!naturalPairNotes(note, matchingNoteInOtherColor) && !sideBySideVerticalPair(note, matchingNoteInOtherColor))
+                    return false; // ColorA is effectively to the right of ColorB → do not make a chain on this note with the exception of side-by-side vertical pairs
+            }
 
             foreach (var arc in arcs)
             {
@@ -1618,9 +1871,33 @@ namespace AutoBS
                         headLineIndex, headLineLayer,
                         tailLineIndex, tailLineLayer))
                 {
-                    Plugin.LogDebug($"Chain collision: interfering note found at time {potentialChainCollisonNote.time} at position ({potentialChainCollisonNote.line}, {(int)potentialChainCollisonNote.layer}) blocking chain from {note.time}");
+                    //Plugin.LogDebug($"Chain collision: interfering note found at time {potentialChainCollisonNote.time} at position ({potentialChainCollisonNote.line}, {(int)potentialChainCollisonNote.layer}) blocking chain from {note.time}");
                     return false;
                 }
+            }
+            bool naturalPairNotes(ENoteData note1, ENoteData note2)
+            {
+                if (note1.line == note2.line) // Same column → vertical stack; this is always “natural” regardless of height.
+                    return true;
+                if (note1.colorType == note2.colorType) // Same color: the setting is only about A/B pairs; do not block chains for AA/BB
+                    return true;
+
+                // Order them so leftNote is the one with the smaller line index
+                ENoteData leftNote = note1.line <= note2.line ? note1 : note2;
+
+                // Natural pairing = red on the left, blue on the right.
+                // Any other ordering means ColorA is effectively “to the right of” ColorB.
+                return leftNote.colorType == ColorType.ColorA;
+            }
+
+            bool sideBySideVerticalPair(ENoteData note1, ENoteData note2) //exception for side-by-side vertical pairs
+            {
+                if (Math.Abs(note1.line - note2.line) == 1 &&
+                    (note1.cutDirection == NoteCutDirection.Up && note2.cutDirection == NoteCutDirection.Up ||
+                    note1.cutDirection == NoteCutDirection.Down && note2.cutDirection == NoteCutDirection.Down))
+                    return true;
+
+                return false;
             }
 
             return isTailLineIndexValid && isTailLineLayerValid; // Return true if all conditions are met
@@ -1648,18 +1925,51 @@ namespace AutoBS
         }
 
         // attempt diagonal double chains
-        private static bool TryCreateDoubleChain(ENoteData note, ESliderData existingChain, out ESliderData matchingChain)
+        private static bool TryCreateDoubleChain(ENoteData note, ESliderData existingChain, float MED_CHAIN_DUR, out ESliderData matchingChain)
         {
+            Plugin.LogDebug($"[TryCreateDoubleChain] Called...");
+
             int matchingTailIndex = -1;
             int matchingTailLayer = -1;
+
+            float dur = existingChain.tailTime - existingChain.time;
+            bool isLongChain = dur > MED_CHAIN_DUR + .01f;
+
+            bool bothUp = (note.cutDirection == NoteCutDirection.Up && existingChain.cutDirection == NoteCutDirection.Up);
+            bool bothDown = (note.cutDirection == NoteCutDirection.Down && existingChain.cutDirection == NoteCutDirection.Down);
+            bool bothVertical = bothUp || bothDown;
+
+            if (isLongChain)
+            {
+                bool pairOnNaturalSides = naturalPair(note, existingChain); // left note (type 0) is left of right note (type 1)
+
+                bool safeDoubleLongChain = true;
+
+                Plugin.LogDebug($"[TryCreateDoubleChain] -- Long chain: pairOnNaturalSides: {pairOnNaturalSides}");
+
+                if (!pairOnNaturalSides)
+                {
+                    bool adjacentColumns = Math.Abs(note.line - existingChain.line) == 1;
+                    bool sameLayer = note.layer == existingChain.layer;
+                    if (bothVertical && adjacentColumns && sameLayer) safeDoubleLongChain = true; else safeDoubleLongChain = false;
+
+                    Plugin.LogDebug($"[TryCreateDoubleChain] ---- Long chain: bothVertical && adjacentColumns && sameLayer: {safeDoubleLongChain}");
+                }
+
+                if (!safeDoubleLongChain) // wrong side notes must be up or down only.
+                {
+                    Plugin.LogDebug($"[TryCreateDoubleChain] ---- Long Chain failed to produce double chain.");
+                    matchingChain = null;
+                    return false;
+                }
+            }
 
             // Check if note and existingChain head are compatible.
             // For vertical and horizontal, we already have rules; now we add diagonal.
             if (
                    // Vertical: Up/Down must match; different column but same layer.
                    (
-                      (note.cutDirection == NoteCutDirection.Up || note.cutDirection == NoteCutDirection.Down) &&
-                      (existingChain.cutDirection == NoteCutDirection.Up || existingChain.cutDirection == NoteCutDirection.Down) &&
+                      bothVertical &&
                       note.line != existingChain.line &&
                       note.layer == existingChain.layer
                    )
@@ -1677,7 +1987,8 @@ namespace AutoBS
                         IsDiagonal(note.cutDirection) &&
                         IsDiagonal(existingChain.cutDirection) &&
                         IsValidDiagonalPair(note.cutDirection, existingChain.cutDirection) &&
-                        IsValidPositionalPair(note)
+                        IsValidPositionalPair(note) &&
+                        IsValidDiagonalSpacing(note, existingChain)
                    )
                )
             {
@@ -1750,16 +2061,34 @@ namespace AutoBS
 
                 doubleChainCount++;
 
-                Plugin.LogDebug($" {doubleChainCount} Double chain at {mirroredChain.time}");
-                Plugin.LogDebug($" --- {existingChain.colorType} dir: {existingChain.cutDirection} index: {existingChain.line} layer: {(int)existingChain.layer} -- tail -- index: {existingChain.tailLine} layer: {existingChain.layer} - time: {existingChain.tailTime}");
-                Plugin.LogDebug($" --- {mirroredChain.colorType} dir: {mirroredChain.cutDirection} index: {mirroredChain.line} layer: {(int)mirroredChain.layer} -- tail -- index: {mirroredChain.tailLine} layer: {mirroredChain.layer} - time: {mirroredChain.tailTime}");
+                Plugin.LogDebug($"[TryCreateDoubleChain] {doubleChainCount} Double chain at {mirroredChain.time:F}");
+                Plugin.LogDebug($"[TryCreateDoubleChain] --- {existingChain.colorType} {existingChain.cutDirection} x: {existingChain.line} y: {(int)existingChain.layer} -- tail -- x: {existingChain.tailLine} y: {existingChain.layer} - dur: {(existingChain.tailTime - existingChain.time):F}");
+                Plugin.LogDebug($"[TryCreateDoubleChain] --- {mirroredChain.colorType} {mirroredChain.cutDirection} x: {mirroredChain.line} y: {(int)mirroredChain.layer} -- tail -- x: {mirroredChain.tailLine} y: {mirroredChain.layer} - dur: {(mirroredChain.tailTime - mirroredChain.time):F}");
 
                 matchingChain = mirroredChain;
                 return true;
             }
+            else
+                Plugin.LogDebug("[TryCreateDoubleChain] failed to produce double chain.");
 
             matchingChain = null;
             return false;
+
+            bool naturalPair(ENoteData note, ESliderData existingChain) // left notes (0) on the left of right notes (1). if on the same line, then that is natural no matter which is on top or bottom.
+            {
+                if (note.line == existingChain.line) // Same column → vertical stack; don't treat this as “crossed hands”.
+                    return true;
+                if (note.colorType == existingChain.colorType)
+                    return false;
+
+                if ((note.line < existingChain.line && note.colorType == ColorType.ColorA) ||
+                    (note.line > existingChain.line && note.colorType == ColorType.ColorB))
+                    return true;
+
+                return false;
+            }
+
+
 
             // Helper: Determines if a direction is diagonal.
             bool IsDiagonal(NoteCutDirection dir) =>
@@ -1775,6 +2104,16 @@ namespace AutoBS
             {
                 if (d1 == d2) return true;
 
+                // Up-left + up-right, down-left + down-right, in any order.
+                if ((d1 == NoteCutDirection.UpRight && d2 == NoteCutDirection.UpLeft) ||
+                    (d1 == NoteCutDirection.UpLeft && d2 == NoteCutDirection.UpRight) ||
+                    (d1 == NoteCutDirection.DownRight && d2 == NoteCutDirection.DownLeft) ||
+                    (d1 == NoteCutDirection.DownLeft && d2 == NoteCutDirection.DownRight))
+                {
+                    return true;
+                }
+                //opposite diagonal” pairs -- too difficult to hit so removed!!!!
+                /*
                 if ((d1 == NoteCutDirection.UpRight && d2 == NoteCutDirection.DownLeft) ||
                     (d1 == NoteCutDirection.DownLeft && d2 == NoteCutDirection.UpRight) ||
                     (d1 == NoteCutDirection.DownRight && d2 == NoteCutDirection.UpLeft) ||
@@ -1782,6 +2121,18 @@ namespace AutoBS
                 {
                     return true;
                 }
+                */
+                // WITH THIS ADDED there are NO BAD DIAGONAL PAIRS!!! so better to just rely of position for all diagonal 
+                // Same horizontal sense (both right-going or both left-going)
+                // For your vertical pairs: UpRight + DownRight, UpLeft + DownLeft.
+                if ((d1 == NoteCutDirection.UpRight && d2 == NoteCutDirection.DownRight) ||
+                    (d1 == NoteCutDirection.DownRight && d2 == NoteCutDirection.UpRight) ||
+                    (d1 == NoteCutDirection.UpLeft && d2 == NoteCutDirection.DownLeft) ||
+                    (d1 == NoteCutDirection.DownLeft && d2 == NoteCutDirection.UpLeft))
+                {
+                    return true;
+                }
+                Plugin.LogDebug("[TryCreateDoubleChain] IsValidDiagonalPair FALSE");
                 return false;
             }
             bool IsValidPositionalPair(ENoteData candidate)
@@ -1810,6 +2161,83 @@ namespace AutoBS
                 }
                 return true;
             }
+            bool IsValidDiagonalSpacing(ENoteData candidate, ESliderData existingChain)
+            {
+                int x1 = candidate.line;
+                int y1 = (int)candidate.layer;
+
+                int x2 = existingChain.line;
+                int y2 = existingChain.layer;
+
+                int dx = Math.Abs(x1 - x2);
+                int dy = Math.Abs(y1 - y2);
+
+                Plugin.LogDebug(
+                    $"[IsValidDiagonalSpacing] {candidate.time:F} Note: x{x1} y{y1} " +
+                    $"ExistingChain: x{x2} y{y2} -- dx: {dx} dy: {dy}");
+
+                // Same exact head cell → nonsense for a double
+                if (dx == 0 && dy == 0)
+                    return false;
+
+                // Helper: horizontal direction of a diagonal (returns +1 for right, -1 left, 0 otherwise)
+                int HorizDiag(NoteCutDirection d) => d switch 
+                {
+                    NoteCutDirection.UpRight => 1,
+                    NoteCutDirection.DownRight => 1,
+                    NoteCutDirection.UpLeft => -1,
+                    NoteCutDirection.DownLeft => -1,
+                    _ => 0
+                };
+
+                int h1 = HorizDiag(candidate.cutDirection);
+                int h2 = HorizDiag(existingChain.cutDirection);
+
+                // -----------------------------
+                // Case 1: same row (dy == 0)
+                // -----------------------------
+                if (dy == 0)
+                {
+                    // Identify which head is left and which is right
+                    bool candidateIsLeft = x1 <= x2;
+                    int hLeft = candidateIsLeft ? h1 : h2;
+                    int hRight = candidateIsLeft ? h2 : h1;
+
+                    // Converging if left goes right and right goes left
+                    bool converging = (hLeft > 0 && hRight < 0);
+
+                    if (converging)
+                    {
+                        // Heads are aiming toward each other → require a gap so long chains
+                        // don't form a tight X without room to uncross.
+                        return dx >= 2;
+                    }
+
+                    // Parallel (same direction) or diverging (left goes left, right goes right)
+                    // → adjacency is fine.
+                    return dx >= 1;
+                }
+
+                // -----------------------------
+                // Case 2: same column (dx == 0)
+                // -----------------------------
+                if (dx == 0)
+                {
+                    // Vertical stacking of diagonals (same column) is generally fine.
+                    // dy >= 1 already holds here.
+                    return true;
+                }
+
+                // -----------------------------
+                // Case 3: both x and y differ
+                // -----------------------------
+                // For now, allow them: they’re already filtered by IsValidDiagonalPair,
+                // and UncrossLongDoubleChainsIfNeeded will clean up true X crossings for long chains.
+                return true;
+            }
+
+
+
 
         }
 

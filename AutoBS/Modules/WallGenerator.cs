@@ -94,7 +94,7 @@ namespace AutoBS
 
         public static bool IsMappingExtensionsInstalled = GameplaySetupView.IsMappingExtensionsInstalled;
 
-        public static float BeatDuration =  60f / TransitionPatcher.bpm;
+        public static float BeatDuration = 60f / TransitionPatcher.bpm;
 
         private static bool IsCityScapeMode => ToggleCityScape == 0; // 1 in 3
         private static bool IsSpiresMode => ToggleSpires == 0;    // 1 in 4
@@ -154,7 +154,7 @@ namespace AutoBS
                 Plugin.LogDebug($"[WallGenerator][ResetWalls] - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty} - Standard maps get all wall multipliers reduced by {mult}.");
             }
 
-            divisorCounter = 0; 
+            divisorCounter = 0;
 
             lastProcessedIndex = 0; // make the loop more efficient
 
@@ -165,7 +165,7 @@ namespace AutoBS
             }
 
             //Plugin.LogDebug($"[WallGenerator][ResetWalls] StartTime: {_startTime:F}, EndTime: {_endTime:F} - ColorNotes.Count: {eData.ColorNotes.Count()} - Obstacles.Count: {eData.Obstacles.Count()}");
-            
+
 
             tempOriginalAndStandardWalls.Clear();
             foreach (var obstacle in originalWalls) // Clear existing obstacles from BeatmapData so obstacles are empty
@@ -268,21 +268,21 @@ namespace AutoBS
             int standardWallsMinDistance = (int)Config.Instance.StandardWallsMinDistance;
 
             int offsetRightWall = 0; // used to offset randomly right or left wall by 2 so they both will not be at 0 offset, otherwise that is 2 leaning walls touching each other with no gap between.
-            int offsetLeftWall  = 0;
+            int offsetLeftWall = 0;
             if (standardWallsMinDistance == 0)
             {
                 offsetRightWall = TransitionPatcher.RepeatableRandom.Next(2) == 0 ? 2 : 0; // if false, will offset left wall instead. if i use 1 offset, then there is a tiny 1 lane tunnel between 2 walls. but if use 2 then one wall is lean and the other either -1 or 4.
                 offsetLeftWall = offsetRightWall == 2 ? 0 : 2;
             }
 
-                if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE || TransitionPatcher.SelectedSerializedName == "360Degree" || TransitionPatcher.SelectedSerializedName == "90Degree") // was not setting this for 360 before
+            if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE || TransitionPatcher.SelectedSerializedName == "360Degree" || TransitionPatcher.SelectedSerializedName == "90Degree") // was not setting this for 360 before
             {
                 minDistanceBetweenNotesAndWalls = Config.Instance.MinDistanceBetweenNotesAndWalls * Config.Instance.RotationSpeedMultiplier; // was .5f then .7f
                 wallTime += minDistanceBetweenNotesAndWalls;
             }
             {
                 minDistanceBetweenNotesAndWalls = .2f;
-                wallTime += minDistanceBetweenNotesAndWalls/2;
+                wallTime += minDistanceBetweenNotesAndWalls / 2;
             }
 
             //Plugin.Log.Info($"WallGen: i: {i} wallTime: {wallTime:F} wallDuration: {wallDuration:F} afterLastNote: {afterLastNote?.time:F} notesInBarBeat.Count: {notesInBarBeat.Count} notesInBar.Count: {notesInBar.Count}");
@@ -302,7 +302,7 @@ namespace AutoBS
             //    CreateExtensionWalls(i, wallTime, wallDuration, generatedWall, generatedBigWall);
 
             divisorCounter++;
-            int divisor = (int)(100/StandardWallsMultiplier); // Get the divisor based on the user input percentage
+            int divisor = (int)(100 / StandardWallsMultiplier); // Get the divisor based on the user input percentage
             if (divisorCounter % divisor != 0) return;
 
             //Plugin.Log.Info($"Config.Instance.StandardWallsMultiplier: {Config.Instance.StandardWallsMultiplier} divisor: {divisor}");
@@ -371,7 +371,7 @@ namespace AutoBS
                     if (afterLastNote.line == 3 && !(wallHeightR == 1 && afterLastNote.layer == 0))
                     {
                         rDur = afterLastNote.time - WallBackCut - rStart;
-                        if (rDur < minWallDuration) goto LEFT_WALLS; 
+                        if (rDur < minWallDuration) goto LEFT_WALLS;
                     }
 
                     // clamp against in-bar and next-bar guards (RIGHT uses nextNoteRightTime)
@@ -396,7 +396,7 @@ namespace AutoBS
                 }
 
                 // ===== LEFT WALLS =====
-                LEFT_WALLS:
+            LEFT_WALLS:
                 if (!notesInBarBeat.Any(e => e.line == 0))
                 {
                     int widthLeft = 1;
@@ -447,15 +447,15 @@ namespace AutoBS
                         tempOriginalAndStandardWalls.Insert(idxL, customObsDataL);
                     }
                 }
-                
+
                 //EXT_WALLS:
                 //if (Config.Instance.EnableMappingExtensionsWallsGenerator)
                 //{
-                    // Use original wallTime/wallDuration beat anchoring for extension walls;
-                    // they no longer get unintentionally trimmed by the other side.
-                    //CreateExtensionWalls(i, wallTime, wallDuration, generatedWall, generatedBigWall);
+                // Use original wallTime/wallDuration beat anchoring for extension walls;
+                // they no longer get unintentionally trimmed by the other side.
+                //CreateExtensionWalls(i, wallTime, wallDuration, generatedWall, generatedBigWall);
                 //}
-                
+
 
             }
             //Plugin.Log.Info($"WallTime: {wallTime} GeneratedWall: {generatedWall} Time: Count: {genWallCount} - GenderatedBigWall: {generatedBigWall} Count: {genBigWallCount}");
@@ -484,7 +484,7 @@ namespace AutoBS
         public static void CreateExtensionWalls(int i, float wallTime, float wallDuration, string alreadyHasGenWall, string alreadyHasBigWall) // big walls (not particle walls) - using walltime so on the beat
         {
             //v1.42 allow these walls without Mapping Extensions mod
-            
+
             //if (!Utils.IsEnabledExtensionWalls()) return;
 
             // give the appearance of randomness
@@ -600,7 +600,7 @@ namespace AutoBS
                         if (!IsMappingExtensionsInstalled) hiLineIndx *= 3; // if Mapping Extensions not enabled, move walls further out since collide with standard walls otherwise
 
                         lineIndex = sign * hiLineIndx;
-                        
+
                         customObsData = EObstacleData.Create(wallTime, lineIndex, hiLayer, duration, hiWidth1, height1);
                         if (lineIndex < 2)
                         {
@@ -646,11 +646,11 @@ namespace AutoBS
 
             int paneWidth = windowPaneWallSize[(int)wallTime % windowPaneWallSize.Length];// using HASH caused only 2 options to be selected always from entire list  same for every song !!!!
 
-            int divisorCol    = Math.Max((int)Math.Round(15 / ColumnWallsMultiplier), 1);
-            int divisorRow    = Math.Max((int)Math.Round(17 / RowWallsMultiplier), 1);
+            int divisorCol = Math.Max((int)Math.Round(15 / ColumnWallsMultiplier), 1);
+            int divisorRow = Math.Max((int)Math.Round(17 / RowWallsMultiplier), 1);
             int divisorTunnel = Math.Max((int)Math.Round(5 / TunnelWallsMultiplier), 1);
-            int divisorGrid   = Math.Max((int)Math.Round(18 / GridWallsMultiplier), 1);// was 21
-            int divisorPane   = Math.Max((int)Math.Round(9 / WindowPaneWallsMultiplier), 1);
+            int divisorGrid = Math.Max((int)Math.Round(18 / GridWallsMultiplier), 1);// was 21
+            int divisorPane = Math.Max((int)Math.Round(9 / WindowPaneWallsMultiplier), 1);
 
             //Plugin.Log.Info($"[GridWalls DEBUG] hash: {hash}, divisorGrid: {divisorGrid}, hash % divisorGrid: {hash % divisorGrid}");
             //Plugin.Log.Info($"Hash Outcomes - numOfColumns: {numberOfColumns}, Hash: {hash}, Hash % 4: {hash % 4}, Hash % numOfColumns.Length: {hash % numOfColumns.Length}");
@@ -1041,8 +1041,8 @@ namespace AutoBS
 
                             if (layer > 6) h = 1; // above layer 6, reduce height to 1 since layers are weird up high
 
-                                // Apply MaxLayer as a STOP, not a clamp (prevents top-layer pile-ups)
-                                if (MaxLayer > 0 && layer > MaxLayer)
+                            // Apply MaxLayer as a STOP, not a clamp (prevents top-layer pile-ups)
+                            if (MaxLayer > 0 && layer > MaxLayer)
                                 break; // k only increases, so we can stop making higher rows for this column
                         }
 
@@ -1078,10 +1078,10 @@ namespace AutoBS
                             layer = ClampInt(k * (h + 1), 0, 4);
 
                             if (layer > 6) h = 1; // above layer 6, reduce height to 1 since layers are weird up high
-                        
+
                             // Stop at MaxLayer
                             if (MaxLayer > 0 && layer > MaxLayer)
-                            break;
+                                break;
                         }
 
                         //Plugin.Log.Info($"Grid Wall EXTENSION Rt: Time: {adjustedWallTime}, Index:{x}, Layer: {y}, Dur: {randomDuration}, Width: {w}, Height: {h}");
@@ -1138,11 +1138,11 @@ namespace AutoBS
                         EObstacleData customObsData = EObstacleData.Create(newWallStartTime, 0, topLineLayer, .03f * durationMult, 4500, 1010); // top wall  //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                         generatedExtensionWalls.Add(customObsData);
                         //Plugin.Log.Info($"[TunnelWalls] TOP Time: {newWallStartTime:F2}, line: 0, Layer: {topLineLayer}, Width: 4500, Height: 1010");
-                 
+
                         tunnelCount++;
                     }
                     // left wall
-                    if (alreadyHasGenWall != "left" && alreadyHasBigWall != "left") 
+                    if (alreadyHasGenWall != "left" && alreadyHasBigWall != "left")
                     {
                         EObstacleData customObsData = EObstacleData.Create(newWallStartTime, -leftLineIndex, 0, .03f * durationMult, 1010, height1); // left wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                         generatedExtensionWalls.Add(customObsData);
@@ -1153,13 +1153,13 @@ namespace AutoBS
                             customObsData = EObstacleData.Create(newWallStartTime, -leftLineIndex, layer2, .03f * durationMult, 1010, height1); // left wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                             generatedExtensionWalls.Add(customObsData);
                             //Plugin.Log.Info($"[TunnelWalls] Left Time: {newWallStartTime:F2}, line: {-leftLineIndex}, Layer: {layer2}, Width: 1010, Height: {height1}");
-                           
+
                             tunnelCount++;
-                        }   
+                        }
 
                     }
                     // right wall
-                    if (alreadyHasGenWall != "right" && alreadyHasBigWall != "right") 
+                    if (alreadyHasGenWall != "right" && alreadyHasBigWall != "right")
                     {
                         EObstacleData customObsData = EObstacleData.Create(newWallStartTime, rightLineIndex, 0, .03f * durationMult, 1010, height1); // right wall //Plugin.Log.Info($"Wall EXTENSION Hi Lt: Time: {wallTime}, Index:{-indexx}, Layer: {hiLayer}, Dur: {duration}, Width: {hiWidth1}, Height: {height1}");
                         generatedExtensionWalls.Add(customObsData);
@@ -1221,7 +1221,7 @@ namespace AutoBS
 
             if (windowPaneTallToggle == 0)
             {
-                leftLineIndex  = (int)Config.Instance.WindowPaneWallsMinDistance + 1;
+                leftLineIndex = (int)Config.Instance.WindowPaneWallsMinDistance + 1;
                 rightLineIndex = (int)Config.Instance.WindowPaneWallsMinDistance + 4;
                 layer = 0;
                 width = 1;
@@ -1356,7 +1356,7 @@ namespace AutoBS
 
             // Cycle through predetermined values instead of random generation
             int[] lineLayers = { 9, 1, 2, 7, 6, 8, 3, 4, 5 }; // { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // all line layers
-            int[] lineLayersNonME = { 1, 2, 4, 6, 7, 3, 4, 8 , 9, 2}; //5 are ceiling tiles. 6 is short flat but ok. 7, 8, 9 get taller and taller 
+            int[] lineLayersNonME = { 1, 2, 4, 6, 7, 3, 4, 8, 9, 2 }; //5 are ceiling tiles. 6 is short flat but ok. 7, 8, 9 get taller and taller 
             int[] lineIndexes1 = { 11, 3, -3, -8, 5, 7, 8, -9, 0, 4, -2, 13, -1, 9, -7, 6, 1, 10, 2, -5, -6, 12, -4 }; // { -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }; // all line indexes
             int[] lineIndexes2 = { -4, 13, -3, 5, 9, -9, 11, 6, -7, 7, 8, 12, -8, -1, -2, -5, 10, -6 }; // { -9, -8, -7, -6, -5, -4, -3, -2, -1, 5, 6, 7, 8, 9, 10, 11, 12, 13 }; // line indexes outside of the main area
 
@@ -1386,7 +1386,7 @@ namespace AutoBS
                 variableWHD = TransitionPatcher.RepeatableRandom.Next(-11, 12) + i;
                 widthAndHeight = widthAndHeightNonME;
             }
-           
+
             if (i % 5 == 0)
                 dur = dur1;
 
@@ -1468,7 +1468,7 @@ namespace AutoBS
             //Plugin.Log.Info($"Wall EXTENSION Lo Rt: Time: {wallTime}, Index:{indexx}, Layer: {loLayer}, Dur: {duration}, Width: {loWidth}, Height: {height1}");
 
             particleWalls.Add(customObsData);
-           //Plugin.Log.Info($"[ParticleWalls] Time: {time:F}, Line:{line}, Layer: {layer}, Dur: {duration}, Width/Height: {widthHeight}");
+            //Plugin.Log.Info($"[ParticleWalls] Time: {time:F}, Line:{line}, Layer: {layer}, Dur: {duration}, Width/Height: {widthHeight}");
         }
 
         public static void FloorWalls(List<TimeGap> gaps, int repeatLimit = -1) // not using wallTime so not on the beat
@@ -1562,7 +1562,7 @@ namespace AutoBS
                                 //float time1 = time;
                                 //if (IsEnabledExtensionWalls)
                                 //    time1 = time + BeatDuration / 2; // prevent these walls from lining up with particle walls so they don't overlap as much
-                                
+
 
                                 if (time < _endTime) //(IsEnabledExtensionWalls && time < _endTime || !IsEnabledExtensionWalls && floorWallToggleCityScape == 0)
                                 {
@@ -1708,12 +1708,12 @@ namespace AutoBS
 
         }
 
-        
+
         private static void AddFloorWall(float time, int j, List<TimeGap> gaps, int line, int[] activeLineList, HashSet<int> generatedSkyRows)
         {
             // floor walls
-            float[] dur   = { .04f, .02f, .02f, .08f };
-            int[] widths  = { 1900, 2900, 1400 };//, { 2000, 3000 };
+            float[] dur = { .04f, .02f, .02f, .08f };
+            int[] widths = { 1900, 2900, 1400 };//, { 2000, 3000 };
             int[] heights = { 1001 };
             //int[] lineIndexes1 = { -8, -6, -4, -2, 0, 2, 4, 6, 8, 10 }; // narrow
             //int[] lineIndexes2 = { -14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18 }; //wide
@@ -1729,7 +1729,7 @@ namespace AutoBS
                 if (!IsMappingExtensionsInstalled)
                 {
                     heights = new int[] { 1, 2, 3, 1, 1, 2, -1, -2, -3 }; // negative without ME forces partially below floor and is longer the gr
-                    widths  = new int[] { 1, 2, 1 }; // not using since 2 is too wide sometimes
+                    widths = new int[] { 1, 2, 1 }; // not using since 2 is too wide sometimes
                 }
                 //lineIndexes1 = new int[] { -6, -4, -2, 4, 6, 8 }; // removed center player area
                 //lineIndexes2 = new int[] { -14, -12, -10, -8, -6, -4, -2, 4, 6, 8, 10, 12, 14, 16, 18 };
@@ -1772,7 +1772,7 @@ namespace AutoBS
 
             bool skip = false;
 
-            
+
 
             if (IsMappingExtensionsInstalled)
             {
@@ -1818,7 +1818,7 @@ namespace AutoBS
             if (TransitionPatcher.RequiresNoodle)
                 customObsData = ConvertToNoodleWall(customObsData);
 
-            
+
 
             //Plugin.Log.Info($"-- Wall Floor: Time: {time}, Index:{lineIndex}, Layer: 0, Dur: {duration}, Width: {width}, Height: {height}");
 
@@ -1843,8 +1843,8 @@ namespace AutoBS
 
                 if (!skyTileV1) // Random style placement
                 {
-                    int skyWidth  = IsMappingExtensionsInstalled ? 1500 : 1;
-                    int skyLayer  = IsMappingExtensionsInstalled ? 8 : 5; //8500
+                    int skyWidth = IsMappingExtensionsInstalled ? 1500 : 1;
+                    int skyLayer = IsMappingExtensionsInstalled ? 8 : 5; //8500
                     int skyHeight = IsMappingExtensionsInstalled ? 1001 : 1;
 
                     skyLayer += minDis;
@@ -1908,7 +1908,7 @@ namespace AutoBS
             lastHeight = height;
 
         }
-        
+
 
         private static float lastNonExtRowTime = float.NegativeInfinity;
         private static HashSet<int> occupiedColsForRow = new HashSet<int>();
@@ -2120,7 +2120,7 @@ namespace AutoBS
                 float windowStart = MathF.Max(g.StartTime + EdgeBuffer, _startTime);
                 float windowEnd = MathF.Min(g.EndTime - EdgeBuffer, _endTime);
 
-               
+
                 if (windowEnd <= windowStart) continue; // too small after buffering
 
                 if (noSpawnUntil > windowStart) windowStart = noSpawnUntil;
@@ -2145,8 +2145,8 @@ namespace AutoBS
                     if ((int)t % divisor == 0)
                     {
                         // Create right and left mega walls at the same time
-                        var right = EObstacleData.Create(t,  4, 0, .02f, 50, 50);
-                        var left  = EObstacleData.Create(t, -50, 0, .02f, 50, 50);
+                        var right = EObstacleData.Create(t, 4, 0, .02f, 50, 50);
+                        var left = EObstacleData.Create(t, -50, 0, .02f, 50, 50);
                         generatedStandardWalls.Add(right);
                         generatedStandardWalls.Add(left);
 
@@ -2164,7 +2164,7 @@ namespace AutoBS
                         {
                             maxPairCount += 3;       // double the allowed total
                             noSpawnUntil = t + coolDownTime;  // skip searching until this time
-                                                     // Jump t to the cooldown end to avoid pointless iterations
+                                                              // Jump t to the cooldown end to avoid pointless iterations
                             if (noSpawnUntil > t) t = noSpawnUntil;
                         }
 
@@ -2217,7 +2217,7 @@ namespace AutoBS
 
 
         // ------------ Wall Alter and Remove ---- They occur in this order ---------------------------------------------------------------------------------------------
-        
+
         /// <summary>
         /// Removes Lean and Crouch Walls for Standard and 360/90 Degree Maps if EnableWallsGen... is enabled. Can turn off all walls individually and it still removes the lean and crouch walls
         /// </summary>
@@ -2280,7 +2280,7 @@ namespace AutoBS
             else
                 return false;
         }
-        
+
         public static bool MoveWallsBlockingChainTail(EditableCBD eData) // works with _originalWalls and _generatedStandardWalls only
         {
             List<ESliderData> chains = eData.Chains;
@@ -2327,7 +2327,7 @@ namespace AutoBS
 
             allWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
-            Plugin.LogDebug($"[MoveWallsBlockingChainTail] ADJUSTING {allWalls.Count} Walls now for {chains.Count} chains.");
+            Plugin.LogDebug($"[MoveWallsBlockingChainTail] Potentially ADJUSTING {allWalls.Count} Walls now for {chains.Count} chains.");
 
             int adjustedCount = 0;
 
@@ -2386,7 +2386,7 @@ namespace AutoBS
                         adjustedCount++;
 
                         //string rot = chainHasRotation.Count() > 0 ? $" - has rotation: {chainHasRotation[i].Item2}" : "";
-                        //Plugin.Log.Info($" -- Chain {i} ADJUSTED wall at time {ob.time:F} (dur: {ob.duration:F}) for chain at {chains[i].time:F}. Old lineIndex: {ob.lineIndex}, new: {newLineIndex} {rot}")
+                        //Plugin.Log.Info($" -- Chain {i} ADJUSTED wall at time {ob.time:F} w: {ob.width} (dur: {ob.duration:F}) for chain at {chains[i].time:F}. Old x: {ob.line}, new x: {newLineIndex} -- y: {ob.layer} ");
                     }
                 }
             }
@@ -2397,9 +2397,98 @@ namespace AutoBS
             else
                 return false;
         }
+        public static bool RemoveCrouchWallsBlockingChains(EditableCBD eData)
+        {
+            // If user globally disallows crouch walls, you are already removing them elsewhere.
+            if (!Config.Instance.AllowCrouchWalls)
+                return false;
+
+            if (eData.Chains == null || eData.Chains.Count == 0 || originalWallCount == 0)
+                return false;
+
+            bool isBeatSageMap = TransitionPatcher.IsBeatSageMap;
+            if (!isBeatSageMap && eData.MapAlreadyUsesChains) // only remove generated chains
+                return false;
+
+            //Plugin.LogDebug("[RemoveCrouchWallsBlockingChains] called...");
+
+            // Define what a “crouch wall” is in your scheme
+            bool IsCrouchWall(EObstacleData ob) =>
+                ob.line == 0 &&            // starts at far left
+                ob.width > 2 &&            // spans across center
+                ob.width < 1000 &&         // not an ME precision monster
+                ob.layer == 2;             // top layer (classic crouch)
+
+            // Collect crouch walls from the obstacles actually in play
+            var crouchWalls = originalWalls
+                .Where(IsCrouchWall)
+                .ToList();
+
+            if (crouchWalls.Count == 0)
+                return false;
+
+            int removedCrouchWalls = 0;
+            int removedChains = 0;
+
+            foreach (var wall in crouchWalls)
+            {
+                float wallStart = wall.time;
+                float wallEnd = wall.time + wall.duration;
+
+                // Find all chains whose [headTime, tailTime] overlaps this wall.
+                var blockingChains = eData.Chains
+                    .Where(chain =>
+                    {
+                        float chainStart = chain.time;
+                        float chainEnd = chain.tailTime;
+                        // simple interval overlap test (non-touching is OK)
+                        return chainEnd > wallStart && chainStart < wallEnd;
+                    })
+                    .ToList();
+
+                if (blockingChains.Count == 0)
+                    continue;
+
+                if (isBeatSageMap)
+                {
+                    Plugin.LogDebug($"[RemoveCrouchWallsBlockingChains] -- Removed Crouch Wall blocking chains: {wall.time:F} Dur: {wall.duration:F}."); 
+                    // Beat Sage: keep the chains, delete the crouch wall.
+                    originalWalls?.Remove(wall);
+                    allWalls?.Remove(wall);
+                    removedCrouchWalls++;
+                }
+                else
+                {
+                    // Non-BeatSage: keep the crouch wall, delete the overlapping chains.
+                    foreach (var chain in blockingChains)
+                    {
+                        if (chain.headNote != null)
+                        {
+                             chain.headNote.headNoteChain = null;
+                             chain.headNote.scoringType   = NoteData.ScoringType.Normal;
+                             chain.headNote.gameplayType  = NoteData.GameplayType.Normal;
+                        }
+                        Plugin.LogDebug($"[RemoveCrouchWallsBlockingChains] -- Removed Chain under crouch wall: {wall.time:F} Dur: {wall.duration:F} -- Chain: {chain.time:F}");
+
+                        eData.Chains.Remove(chain);
+                        removedChains++;
+                    }
+                }
+            }
+            if (removedCrouchWalls > 0)
+                Plugin.LogDebug($"[RemoveCrouchWallsBlockingChains] removed {removedCrouchWalls} crouch walls (Beat Sage map)");
+            else if (removedChains > 0)
+                Plugin.LogDebug($"[RemoveCrouchWallsBlockingChains] removed {removedChains} chains (non-beat sage map)");
+
+            if (removedCrouchWalls > 0) eData.ObstaclesChanged = true;
+
+            return removedCrouchWalls > 0;
+        }
 
 
-       
+
+
+
         public static bool MoveWallsBlockingArc(EditableCBD eData)
         {
             // Retrieve all arcs (normal sliders) from the beatmap.

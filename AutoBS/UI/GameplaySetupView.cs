@@ -533,6 +533,12 @@ namespace AutoBS.UI
             get => Config.Instance.ChainTimeBumper;
             set => Config.Instance.ChainTimeBumper = value;
         }
+        [UIValue("DisallowChainsOnCrossedPairs")]
+        public bool DisallowChainsOnCrossedPairs
+        {
+            get => Config.Instance.DisallowChainsOnCrossedPairs;
+            set => Config.Instance.DisallowChainsOnCrossedPairs = value;
+        }
         [UIValue("EnableLongChains")]
         public bool EnableLongChains
         {

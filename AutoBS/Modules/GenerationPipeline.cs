@@ -436,6 +436,7 @@ namespace AutoBS
 
                 bool leanCrouchWallRemoval = false;
                 bool moveWallsBlockingChainTail = false;
+                bool removeCrouchWallsBlockingChains = false;
                 bool moveWallsBlockingArc = false;
 
                 if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE || // will remove 1 width lean walls from all gen maps even if user allows lean walls!!!!!!!!!!!!!!!
@@ -452,11 +453,14 @@ namespace AutoBS
                     eData.RotationEvents = WallGenerator.RemoveCrouchWallRotations(eData);
 
                 if (Utils.IsEnabledChains())// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))
+                {
                     moveWallsBlockingChainTail = WallGenerator.MoveWallsBlockingChainTail(eData);
+                    removeCrouchWallsBlockingChains = WallGenerator.RemoveCrouchWallsBlockingChains(eData);
+                }
                 else
                 {
                     Plugin.LogDebug(
-                        $"[MoveWallsBlockingChainTail] NOT CALLED!!");
+                        $"[MoveWallsBlockingChainTail] & [RemoveCrouchWallsBlockingChains] NOT CALLED!!");
                 }
 
                 if (Utils.IsEnabledArcs())// && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles)// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))

@@ -74,6 +74,8 @@ namespace AutoBS
             /// </summary>
             float SpinCooldown = 10f;
 
+            ESliderData currentActiveChain = null;
+
             RotationSpeedMultiplier = Config.Instance.RotationSpeedMultiplier;
             //Plugin.LogDebug($"[RotationGenerator] Using RotationSpeedMultiplier={RotationSpeedMultiplier} for this run.");
 
@@ -361,6 +363,42 @@ namespace AutoBS
                 if (IsLeftish(d)) return -1;
                 return 0; // Any/Up/Down -> neutral
             }
+            // Any chain with duration >= this is considered “long” for rotation clamping.
+            const float MIN_LONG_CHAIN_DURATION = .2f;
+            bool clampLongChainsRotations = Config.Instance.EnableLongChains && Config.Instance.LongChainMaxDuration >= MIN_LONG_CHAIN_DURATION;
+
+            const int CLAMPED_STEP_SIZE = 1; // clamp to this rotation step size. could do 2 for 30 degrees or even 0 to remove all rotations.
+
+            // --- Long-chain rotation guard setup ---
+            var longChains = eData.Chains
+                .Where(ch => (ch.tailTime - ch.time) > MIN_LONG_CHAIN_DURATION)
+                .OrderBy(ch => ch.time)
+                .ToList();
+
+            // Cursor so we can scan protectedLongChains in O(totalChains + totalRotations)
+            int longChainCursor = 0; // pointer that always moves forward in time, never backward, reduces iterations
+
+            //find rotations that cause the tail to be at a different rotation than the head making it hard to hit the tail slice if the rotation is in the wrong direction.
+            ESliderData GetActiveLongChain(float time)
+            {
+                // Skip chains that end before this time
+                while (longChainCursor < longChains.Count &&
+                       longChains[longChainCursor].tailTime < time)
+                {
+                    longChainCursor++;
+                }
+
+                if (longChainCursor < longChains.Count)
+                {
+                    var ch = longChains[longChainCursor];
+                    if (ch.time <= time && time <= ch.tailTime) // trying instead of this ch.time <= time && time <= ch.tailTime
+                        return ch;
+                }
+
+                return null;
+            }
+
+
 
             // Deterministic RNG based on song identity (or map seed)
             int seed = TransitionPatcher.SelectedPlayKey.GetHashCode();
@@ -726,6 +764,58 @@ namespace AutoBS
 
                     #endregion
 
+                    #region Chain Rotation Clamp
+
+                    if (clampLongChainsRotations)
+                    {
+                        // --- Long-chain rotation clamp ---
+                        // While we are inside a long chain, suppress >15° steps unless (and only allow 1 time)
+                        // they “help” the chain: positive for rightish, negative for leftish.
+                        
+
+                        ESliderData activeChain = GetActiveLongChain(lastNote.time);
+                        if (activeChain != null)
+                        {
+                            int chainPol = DirPolarity(activeChain.cutDirection);   // +1, -1 or 0
+                            int stepSign = Math.Sign(rotationStep);
+                            int stepMag = Math.Abs(rotationStep);
+
+                            bool wrongDirection = (chainPol == 0 || chainPol != stepSign) ? true : false;
+
+                            if (currentActiveChain != activeChain)
+                            {
+                                if (stepMag > 1) // more than 15°
+                                {
+                                    // Only allow big steps if they align with the chain's horizontal polarity.
+                                    // Otherwise, clamp to ±1 so we never exceed 15° “against” the chain.
+                                    if (wrongDirection)
+                                    {
+                                        // chainPol == 0 → Up/Down chain → always clamp
+                                        // chainPol != stepSign → step is against chain direction → clamp
+                                        rotationStep = stepSign * CLAMPED_STEP_SIZE;
+                                        Plugin.LogDebug($"[RotationGenerator] Long Chain: {activeChain.time:F} dur: {(activeChain.tailTime - activeChain.time):F} {activeChain.cutDirection} reduced rotation at: {lastNote.time:F} {stepMag * stepSign * 15} --> {rotationStep * 15}.");
+                                    }
+                                    // else: chainPol == stepSign → allowed, keep 30/45/60° as-is
+                                }
+                            }
+                            else if (wrongDirection)
+                            {
+                                Plugin.LogDebug($"[RotationGenerator] -- Same Chain reduced rotation at: {lastNote.time:F} {stepMag * stepSign * 15} --> 0.");
+                                rotationStep = 0;
+                            }
+                            else
+                                Plugin.LogDebug($"[RotationGenerator] -- Same Chain allowed full rotation at: {lastNote.time:F} {stepMag * stepSign * 15}.");
+
+                            currentActiveChain = activeChain;
+                        }
+                        else
+                        {
+                            // No long chain active at this time: reset tracker
+                            currentActiveChain = null;
+                        }
+                    }
+                    #endregion
+
                     //***********************************
                     //Finally rotate - possible values here are -3,-2,-1,0,1,2,3 but in testing I only see -2 to 2
                     //The condition for setting rotationCount to 3 is that timeDiff (the time difference between afterLastNote and lastNote) is greater than or equal to barLength. If your test data rarely or never satisfies this condition, you won't see rotation values of -3 or 3.
@@ -826,7 +916,7 @@ namespace AutoBS
 
                     int ro = Math.Abs(rot.rotation);
                     //if (ro == 0) d0++; if (ro == 15) d15++; if (ro == 30) d30++; if (ro == 45) d45++; if (ro == 60) d60++; if (ro == 75) d75++; if (ro == 90) d90++; if (ro == 120) d120++;
-                    //if (rot.time < 20)
+                    //if (rot.time > 200)
                     //    Plugin.Log.Info($"2 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
                 }
                 Plugin.Log.Info($"[RotationGenerator] Rotation Count: {allRotations.Count}, Largest '-' Rot: {low.accumRot} (time: {low.time:F}), Largest '+' Rot: {high.accumRot} (time: {high.time:F}), Final Rotation: {endRot} --- Wireless360: {Config.Instance.Wireless360}, LimitRot: {Config.Instance.LimitRotations360}, AddExtraRot: {Config.Instance.AddExtraRotation}, RotSpeedMult: {RotationSpeedMultiplier}, MinRotSize: {Config.Instance.MinRotationSize}, MaxRotSize: {Config.Instance.MaxRotationSize}, FOV: {Config.Instance.FOV}, TimeWin: {Config.Instance.TimeWindow}");

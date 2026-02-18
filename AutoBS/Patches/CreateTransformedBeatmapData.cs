@@ -164,14 +164,14 @@ namespace AutoBS.Patches
                             $"rotation events (in-line per object) {eData.RotationEvents.Count}");
                     // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
-                    //ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 157f, 162f);
+                    //ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 205, 220);
                     /*
                     Plugin.LogDebug($"Final Note Rotations:");
                     foreach (var note in __result.allBeatmapDataItems
                     .OfType<NoteData>()
-                    .Where(n => n.time >= 0f && n.time <= 60f))
+                    .Where(n => n.time >= 204f && n.time <= 300f))
                     {
-                        Plugin.LogDebug($"Note: {note.time:F} Rot: {note.rotation}");
+                        Plugin.LogDebug($"Note: {note.time:F} {note.cutDirection} Rot: {note.rotation}");
                     }
                     */
                     /*
