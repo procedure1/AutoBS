@@ -36,7 +36,13 @@ Wireless headset users can use the `Wireless 360` menu setting, which has no rot
 
 Rotation size and frequency can be adjusted in the menu, and headset FOV limits can be set so that rotations don't move outside your peripheral vision.
 
-***HINT: For challenging rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier`, `Min Rotation Size` and/or `Max Rotation Size`. If you set `Max Rotation Size` > 30, then your must set `FOV` to 90 or greater (otherwise those rotations will be removed. Higher than 90 on a Quest will allow rotations you cannot see). I like to use Mult = 1.6x, Min Rotation = 15, Max Rotation = 45 and FOV = 90 for my Quest3 headset. To go even bigger set Min Rotation = 30. You can start trimming around the edges of your peripheral vision with `FOV Time Window`. Increase it a bit to reduce a little of the large jumps at the periphery.***
+***HINT: For challenging rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier`, `Min Rotation Size` and/or `Max Rotation Size`. If you set `Max Rotation Size` > 30, then your must set `FOV` to 90 or greater (otherwise 45° rotations will be removed. Higher than 90° FOV on a Quest will allow rotations you cannot see).***
+
+***Option 1: Raise `Rot Speed Multiplier` to your desired value and increase `Min Rotation Size` to 30. leave `Max Rotation Size` and `FOV` at default. This creates fast frequent rotations all at 30°.*** 
+
+***Option 2: I like to use `Rot Speed Multiplier` = 1.6x, `Min Rotation Size` = 15 (default), `Max Rotation Size` = 45 and `FOV` = 90 for my Quest3 headset. This creates fast frequent rotations with the occational big 45° rotation.***
+
+***Option 3: To go even bigger, use Option 2 and set `Min Rotation Size` = 30. You will likely need to reduce `Rot Speed Multiplier` quite a bit. You can start trimming around the edges of your peripheral vision with `FOV Time Window`. Increase it a bit to reduce a little of the large jumps at the periphery.***
 
 ## Arcitect Arc + Chain Maker
 
