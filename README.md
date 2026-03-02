@@ -260,6 +260,8 @@ NOTE: v3 360 maps may need some minor cleanup due to some vision blocking walls 
 
 NOTE: v4 will be the most exact match to the in-game generated map. Outputs beatmapV4, lightshow, audioData and 'Info.AutoBS.dat' files. v4 doesn't really support customData so all customData will be lost (for Noodle etc). `Mapping Extensions` precision placement does still function.
 
+NOTE: If you have `Mapping Extensions` installed and walls are generated, then of course `Mapping Extensions` walls will be added to the beatmap. If you prefer not have them, then uninstall `Mapping Extensions` before outputing the JSON file.
+
 To enable JSON file output, edit the `Beat Saber/UserData/AutoBS.json` config file in Notepad or other text editor. The last 5 settings in the config file are the ones to edit. 
 
 Set:
