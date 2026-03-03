@@ -26,6 +26,8 @@ namespace AutoBS
         public static int preferredArcCount = 1;
         public static float arcMultiplier = 1f;
 
+        public static Config.ArcSwingModeType ArcSwingMode = Config.Instance.ArcSwingMode;
+
         public static float lowestPossibleMinDurationAdjustment = 0.4f;
 
         public static NoteLineLayer headBeforeJumpLineLayer = 0; // set automatically in game from json maps but must set it since i'm creating arcs. 
@@ -49,8 +51,6 @@ namespace AutoBS
         public static bool pauseDetection = true; // algorithm type
 
         public static int doubleChainCount = 0;
-
-        //public static List<ENoteData> TempLongChainTails = new List<ENoteData>(); // used by ApplyWallVisionBlockingFix() to alter walls for chain tails
 
         public static CustomBeatmapData data;
 
@@ -86,7 +86,7 @@ namespace AutoBS
             
             float songDuration = (eData.ColorNotes.Last().time - eData.ColorNotes.First().time) / 60; // minutes between 1st and last note
 
-            Plugin.LogDebug($"Arcitect: Song Duration: {songDuration} sec. ColorNote Count: {eData.ColorNotes.Count()} 1st Note at: {eData.ColorNotes.First().time} last note at: {eData.ColorNotes.Last().time}");
+            Plugin.LogDebug($"[Arcitect] Song Duration: {songDuration} sec. ColorNote Count: {eData.ColorNotes.Count()} 1st Note at: {eData.ColorNotes.First().time} last note at: {eData.ColorNotes.Last().time}");
 
             preferredArcCount = (int)(songDuration * Config.Instance.PreferredArcCountPerMin);
             preferredChainCount = (int)(songDuration * Config.Instance.PreferredChainCountPerMin);
@@ -114,6 +114,8 @@ namespace AutoBS
             {
                 Plugin.LogDebug($"Preferred Arc Count: {preferredArcCount}.");
 
+                ArcSwingMode = Config.Instance.ArcSwingMode;
+
                 eData.Arcs = SetPreferredArcCount(colorA, colorB);
 
                 eData.Arcs = eData.Arcs.OrderBy(o => o.time).ToList(); // must do it this way with the =
@@ -128,22 +130,22 @@ namespace AutoBS
             }
             else
             {
-                Plugin.LogDebug($"Arcitect: Map already has {eData.Arcs.Count} arcs so will not add any.");
+                Plugin.LogDebug($"[Arcitect] Map already has {eData.Arcs.Count} arcs so will not add any.");
                 arcs = eData.Arcs; // save arcs to static variable for chains to use
             }
 
             if (eData.Chains.Count == 0 && Utils.IsEnabledChains())//only add chains if map doesn't have any
             {
-                Plugin.LogDebug($"Preferred Chain Count: {preferredChainCount}.");
+                Plugin.LogDebug($"[Arcitect] Preferred Chain Count: {preferredChainCount}.");
 
                 if (pauseDetection) // USING THIS <-------------------------------------------------------
                 {
-                    Plugin.LogDebug($"Chain - Pause Detection Algorithm.");
+                    Plugin.LogDebug($"[Arcitect] Chain - Pause Detection Algorithm.");
                     eData.Chains = SetPreferredChainCountPauseDetection(colorA, colorB);
                 }
                 else
                 {
-                    Plugin.LogDebug($"Chain - Tempo Change Algorithm.");
+                    Plugin.LogDebug($"[Arcitect] Chain - Tempo Change Algorithm.");
                     eData.Chains = SetPreferredChainCountTempoChange(colorA, colorB);
                 }
 
@@ -160,12 +162,12 @@ namespace AutoBS
             }
             else
             {
-                Plugin.LogDebug($"Arcitect: Map already has {eData.Chains.Count} chains so will not add any.");
+                Plugin.LogDebug($"[Arcitect] Map already has {eData.Chains.Count} chains so will not add any.");
 
                 ScoreSubmissionDisableText = "";
             }
 
-            Plugin.LogDebug($"Arcitect after Creation: Arcs Count: {eData.Arcs.Count}. Chains Count: {eData.Chains.Count}.");
+            Plugin.LogDebug($"[Arcitect] after Creation: Arcs Count: {eData.Arcs.Count}. Chains Count: {eData.Chains.Count}.");
         }
 
         public static List<ESliderData> SetPreferredArcCount(List<ENoteData> colorA, List<ENoteData> colorB) // https://github.com/Loloppe/Lolighter/blob/master/Lolighter/Algorithm/Arc.cs
@@ -186,7 +188,7 @@ namespace AutoBS
 
             if (arcs.Count < preferredArcCount) // check if produced too few arcs
             {
-                Plugin.LogDebug($"Using arcMultiplier: {arcMult} minDuration: {minDur} - Not enough arcs produced: {arcs.Count} which is {preferredArcCount - arcs.Count} less than desired.");
+                Plugin.LogDebug($"[Arcitect] Using arcMultiplier: {arcMult} minDuration: {minDur} - Not enough arcs produced: {arcs.Count} which is {preferredArcCount - arcs.Count} less than desired.");
 
                 //reduce minDur
                 minDur = Config.Instance.MinArcDuration - lowestPossibleMinDurationAdjustment / 2;
@@ -202,7 +204,7 @@ namespace AutoBS
 
                 if (arcs.Count < preferredArcCount) // check if produced too few arcs
                 {
-                    Plugin.LogDebug($"Using arcMultiplier: {arcMult} minDuration: {minDur} - Not enough arcs produced: {arcs.Count} which is {preferredArcCount - arcs.Count} less than desired.");
+                    Plugin.LogDebug($"[Arcitect] Using arcMultiplier: {arcMult} minDuration: {minDur} - Not enough arcs produced: {arcs.Count} which is {preferredArcCount - arcs.Count} less than desired.");
 
                     //reduce minDur again
                     minDur = Config.Instance.MinArcDuration - lowestPossibleMinDurationAdjustment;
@@ -220,12 +222,12 @@ namespace AutoBS
 
             if (arcs.Count > preferredArcCount) // check if there are too many arcs
             {
-                Plugin.LogDebug($"Using arcMultiplier: {arcMult} minDuration: {minDur} - Too many arcs produced: {arcs.Count}  which is {arcs.Count - preferredArcCount} more than desired so will adjust arcMultiplier.");
+                Plugin.LogDebug($"[Arcitect] Using arcMultiplier: {arcMult} minDuration: {minDur} - Too many arcs produced: {arcs.Count}  which is {arcs.Count - preferredArcCount} more than desired so will adjust arcMultiplier.");
 
                 // Reduce arcMultiplier to decrease the number of arcs to the perfect amount
                 arcMult = (float)Math.Max(0.1, arcMultiplier * (preferredArcCount / (float)arcs.Count));
 
-                Plugin.LogDebug($"Using arcMultiplier: {arcMult} minDuration: {minDur} - should produce the preferred count of {preferredArcCount}.");
+                Plugin.LogDebug($"[Arcitect] Using arcMultiplier: {arcMult} minDuration: {minDur} - should produce the preferred count of {preferredArcCount}.");
 
                 //4th pass maybe: add arcs to arcs list using reduced arcMult and latest minDur
                 arcs.Clear();
@@ -235,12 +237,12 @@ namespace AutoBS
                 if (colorB.Count > 1)
                     arcs.AddRange(CreateArcs(colorB, arcMult, minDur));
 
-                Plugin.LogDebug($"Arc Count is: {arcs.Count} which is {arcs.Count - preferredArcCount} more than desired.");
+                Plugin.LogDebug($"[Arcitect] Arc Count is: {arcs.Count} which is {arcs.Count - preferredArcCount} more than desired. Arc Swing Mode: {ArcSwingMode}.");
             }
             else if (arcs.Count == preferredArcCount)
-                Plugin.LogDebug($"Arc Count is: {arcs.Count}. That is the desired goal!");
+                Plugin.LogDebug($"[Arcitect] Arc Count is: {arcs.Count}. That is the desired goal! Arc Swing Mode: {ArcSwingMode}.");
             else
-                Plugin.LogDebug($"Using arcMultiplier: {arcMult} minDuration: {minDur} - Not enough arcs produced :( But we reached the limit so we are done! Final count: {arcs.Count}");
+                Plugin.LogDebug($"[Arcitect] Using arcMultiplier: {arcMult} minDuration: {minDur} - Not enough arcs produced :( But we reached the limit so we are done! Final count: {arcs.Count}. Arc Swing Mode: {ArcSwingMode}.");
 
 
             return arcs;
@@ -332,73 +334,196 @@ namespace AutoBS
                 if (tailIsDot && !allowDotTail) return false;
 
                 // If we get here, any present dots are allowed by config
-                Plugin.LogDebug($"IsCompatibleForArc: Dot allowed. head={note1.cutDirection} tail={note2.cutDirection} t1={note1.time:F3} t2={note2.time:F3}");
+                Plugin.LogDebug($"[Arcitect] IsCompatibleForArc: Dot allowed. head={note1.cutDirection} tail={note2.cutDirection} t1={note1.time:F3} t2={note2.time:F3}");
                 return true; // if your policy is "dots bypass contrary checks"
             }
 
-            return Config.Instance.ForceNaturalArcs
-                ? IsContraryLikeDirectionBetweenSwings(note1, note2)
-                : IsContrarySwingsBy135Degrees(note1, note2); // less natural less restrictive
+            if (ArcSwingMode == Config.ArcSwingModeType.Curated180and135)
+                return IsContraryLikeDirectionBetweenSwings180and135(note1, note2);
+            else if (ArcSwingMode == Config.ArcSwingModeType.Curated180and135and90)
+                return IsContraryLikeDirectionBetweenSwings180and135and90(note1, note2);
+            else if (ArcSwingMode == Config.ArcSwingModeType.All180and135)
+                return IsContraryByDegrees(note1, note2, 135);
+            else
+                return IsContraryByDegrees(note1, note2, 90);
+            //return Config.Instance.ForceNaturalArcs
+            //    ? IsContraryByDegrees(note1, note2, 135) //IsContraryLikeDirectionBetweenSwings(note1, note2)
+            //    : IsContraryByDegrees(note1, note2, 90); // less natural less restrictive
         }
-
-        public static bool IsContraryLikeDirectionBetweenSwings(ENoteData note1, ENoteData note2) // new BW version that takes into account how it feels to reverse the swing of each hand
+        public static bool IsContraryLikeDirectionBetweenSwings180and135and90(ENoteData n1, ENoteData n2)
         {
-            if (note1.colorType == ColorType.ColorA) // right blue notes - right favors right and down
+            if (n1.cutDirection == NoteCutDirection.Any || n2.cutDirection == NoteCutDirection.Any)
+                return true; // always good
+
+            Vector2 d1 = n1.cutDirection.Direction(); // returns vector from NoteCutDirectionExtensions decompiled code
+            Vector2 d2 = n2.cutDirection.Direction();
+            if (d1 == Vector2.zero || d2 == Vector2.zero) // means has NO actual direction
+                return false;
+
+            int diff = Mathf.Clamp(Mathf.RoundToInt(Vector2.Angle(d1, d2)), 0, 180);
+
+            if (diff == 180) return true;
+
+            if (diff != 90 && diff != 135) return false;
+
+            if (diff == 135) return IsContraryBy135Degrees(n1, n2);
+
+            if (diff == 90) return IsContraryBy90Degrees(n1, n2);
+
+            return false;
+        }
+        public static bool IsContraryBy90Degrees(ENoteData n1, ENoteData n2)
+        {
+            if (n2.cutDirection == NoteCutDirection.Up || n2.cutDirection == NoteCutDirection.UpLeft || n2.cutDirection == NoteCutDirection.UpRight)
+                return false;
+            else
+                return true; // allows 90 degree for all other variations
+        }
+        public static bool IsContraryBy135Degrees(ENoteData n1, ENoteData n2)
+        {
+            if (n1.colorType == ColorType.ColorA) // right blue notes - right favors right and down
             {
-                switch (note1.cutDirection)
+                switch (n1.cutDirection)
                 {
                     case NoteCutDirection.Up:
                         {
-                            if (note2.cutDirection == NoteCutDirection.Down || note2.cutDirection == NoteCutDirection.DownRight)
+                            if (n2.cutDirection == NoteCutDirection.DownRight) // Missing: Up → DownLeft
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.Down:
                         {
-                            if (note2.cutDirection == NoteCutDirection.Up || note2.cutDirection == NoteCutDirection.UpRight)
+                            if (n2.cutDirection == NoteCutDirection.UpRight) // Missing: Down → UpLeft
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.Left:
                         {
-                            if (note2.cutDirection == NoteCutDirection.Right || note2.cutDirection == NoteCutDirection.DownRight)
+                            if (n2.cutDirection == NoteCutDirection.DownRight) // Missing: Left → UpRight
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.Right:
                         {
-                            if (note2.cutDirection == NoteCutDirection.Left || note2.cutDirection == NoteCutDirection.DownLeft)
+                            if (n2.cutDirection == NoteCutDirection.DownLeft) // Missing: Right → UpLeft
+                                return true;
+                            else
+                                return false;
+                        }
+                    case NoteCutDirection.UpLeft: // Missing: UpLeft → Right, UpLeft → Down
+                    case NoteCutDirection.UpRight: // Missing: UpRight → Left, UpRight → Down
+                    case NoteCutDirection.DownLeft: // Missing: DownLeft → Right, DownLeft → Up
+                    case NoteCutDirection.DownRight: // Missing: DownRight → Left, DownRight → Up
+                    default: // For any other cases
+                        {
+                            return false;
+                        }
+                }
+            }
+            else // left red notes left favors left and down
+            {
+                switch (n1.cutDirection)
+                {
+                    case NoteCutDirection.Up:
+                        {
+                            if (n2.cutDirection == NoteCutDirection.DownLeft) // all these are missing the same strokes as above
+                                return true;
+                            else
+                                return false;
+                        }
+                    case NoteCutDirection.Down:
+                        {
+                            if (n2.cutDirection == NoteCutDirection.UpLeft)
+                                return true;
+                            else
+                                return false;
+                        }
+                    case NoteCutDirection.Left:
+                        {
+                            if (n2.cutDirection == NoteCutDirection.DownRight)
+                                return true;
+                            else
+                                return false;
+                        }
+                    case NoteCutDirection.Right:
+                        {
+                            if (n2.cutDirection == NoteCutDirection.DownLeft)
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.UpLeft:
-                        {
-                            if (note2.cutDirection == NoteCutDirection.DownRight)
-                                return true;
-                            else
-                                return false;
-                        }
                     case NoteCutDirection.UpRight:
-                        {
-                            if (note2.cutDirection == NoteCutDirection.DownLeft)
-                                return true;
-                            else
-                                return false;
-                        }
                     case NoteCutDirection.DownLeft:
+                    case NoteCutDirection.DownRight:
+                    default:
                         {
-                            if (note2.cutDirection == NoteCutDirection.UpRight)
+                            return false;
+                        }
+                }
+            }
+        }
+        public static bool IsContraryLikeDirectionBetweenSwings180and135(ENoteData n1, ENoteData n2) // new BW curated version that takes into account how it feels to reverse the swing of each hand
+        {
+            if (n1.colorType == ColorType.ColorA) // right blue notes - right favors right and down
+            {
+                switch (n1.cutDirection)
+                {
+                    case NoteCutDirection.Up:
+                        {
+                            if (n2.cutDirection == NoteCutDirection.Down || n2.cutDirection == NoteCutDirection.DownRight) // Missing: Up → DownLeft
                                 return true;
                             else
                                 return false;
                         }
-                    case NoteCutDirection.DownRight:
+                    case NoteCutDirection.Down:
                         {
-                            if (note2.cutDirection == NoteCutDirection.UpLeft)
+                            if (n2.cutDirection == NoteCutDirection.Up || n2.cutDirection == NoteCutDirection.UpRight) // Missing: Down → UpLeft
+                                return true;
+                            else
+                                return false;
+                        }
+                    case NoteCutDirection.Left:
+                        {
+                            if (n2.cutDirection == NoteCutDirection.Right || n2.cutDirection == NoteCutDirection.DownRight) // Missing: Left → UpRight
+                                return true;
+                            else
+                                return false;
+                        }
+                    case NoteCutDirection.Right:
+                        {
+                            if (n2.cutDirection == NoteCutDirection.Left || n2.cutDirection == NoteCutDirection.DownLeft) // Missing: Right → UpLeft
+                                return true;
+                            else
+                                return false;
+                        }
+                    case NoteCutDirection.UpLeft: // Missing: UpLeft → Right, UpLeft → Down
+                        {
+                            if (n2.cutDirection == NoteCutDirection.DownRight)// || note2.cutDirection == NoteCutDirection.UpRight) // added 2/22
+                                return true;
+                            else
+                                return false;
+                        }
+                    case NoteCutDirection.UpRight: // Missing: UpRight → Left, UpRight → Down
+                        {
+                            if (n2.cutDirection == NoteCutDirection.DownLeft)// || note2.cutDirection == NoteCutDirection.DownRight) // added 2/22
+                                return true;
+                            else
+                                return false;
+                        }
+                    case NoteCutDirection.DownLeft: // Missing: DownLeft → Right, DownLeft → Up
+                        {
+                            if (n2.cutDirection == NoteCutDirection.UpRight)// || note2.cutDirection == NoteCutDirection.DownRight) // added 2/22
+                                return true;
+                            else
+                                return false;
+                        }
+                    case NoteCutDirection.DownRight: // Missing: DownRight → Left, DownRight → Up
+                        {
+                            if (n2.cutDirection == NoteCutDirection.UpLeft)// || note2.cutDirection == NoteCutDirection.DownLeft) // added 2/22
                                 return true;
                             else
                                 return false;
@@ -415,60 +540,60 @@ namespace AutoBS
             }
             else // left red notes left favors left and down
             {
-                switch (note1.cutDirection)
+                switch (n1.cutDirection)
                 {
                     case NoteCutDirection.Up:
                         {
-                            if (note2.cutDirection == NoteCutDirection.Down || note2.cutDirection == NoteCutDirection.DownLeft)
+                            if (n2.cutDirection == NoteCutDirection.Down || n2.cutDirection == NoteCutDirection.DownLeft) // all these are missing the same strokes as above
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.Down:
                         {
-                            if (note2.cutDirection == NoteCutDirection.Up || note2.cutDirection == NoteCutDirection.UpLeft)
+                            if (n2.cutDirection == NoteCutDirection.Up || n2.cutDirection == NoteCutDirection.UpLeft)
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.Left:
                         {
-                            if (note2.cutDirection == NoteCutDirection.Right || note2.cutDirection == NoteCutDirection.DownRight)
+                            if (n2.cutDirection == NoteCutDirection.Right || n2.cutDirection == NoteCutDirection.DownRight)
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.Right:
                         {
-                            if (note2.cutDirection == NoteCutDirection.Left || note2.cutDirection == NoteCutDirection.DownLeft)
+                            if (n2.cutDirection == NoteCutDirection.Left || n2.cutDirection == NoteCutDirection.DownLeft)
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.UpLeft:
                         {
-                            if (note2.cutDirection == NoteCutDirection.DownRight)
+                            if (n2.cutDirection == NoteCutDirection.DownRight)// || note2.cutDirection == NoteCutDirection.UpRight) // added 2/22
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.UpRight:
                         {
-                            if (note2.cutDirection == NoteCutDirection.DownLeft)
+                            if (n2.cutDirection == NoteCutDirection.DownLeft)// || note2.cutDirection == NoteCutDirection.DownRight) // added 2/22
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.DownLeft:
                         {
-                            if (note2.cutDirection == NoteCutDirection.UpRight)
+                            if (n2.cutDirection == NoteCutDirection.UpRight)// || note2.cutDirection == NoteCutDirection.DownRight) // added 2/22
                                 return true;
                             else
                                 return false;
                         }
                     case NoteCutDirection.DownRight:
                         {
-                            if (note2.cutDirection == NoteCutDirection.UpLeft)
+                            if (n2.cutDirection == NoteCutDirection.UpLeft)// || note2.cutDirection == NoteCutDirection.DownLeft) // added 2/22
                                 return true;
                             else
                                 return false;
@@ -484,22 +609,53 @@ namespace AutoBS
                 }
             }
         }
-
-        public static bool IsContrarySwingsBy135Degrees(ENoteData note1, ENoteData note2) // i changed it but original version actually returns true is direction is similar not contrary
+        
+        /// <summary>
+        /// Caluculates angle of each input direction and checks if the difference in angle between the two directions is greater than or equal to the specified minimum swing separation in degrees. This allows for more flexibility in what counts as "contrary" directions, while still ensuring that they are sufficiently different to create a satisfying arc swing. For example, with a minSeparationDeg of 90, a note with an up cut direction could be paired with a note with a left cut direction, but not with another note with an upLeft cut direction.
+        /// Suggested inputs are 180, 135, and 90.
+        /// </summary>
+        /// <param name="n1"></param>
+        /// <param name="n2"></param>
+        /// <param name="minSwingDeg"></param>
+        /// <returns></returns>
+        public static bool IsContraryByDegrees(ENoteData n1, ENoteData n2, int minSwingDeg)
         {
-            //if (note1.cutDirection == NoteCutDirection.Any || note2.cutDirection == NoteCutDirection.Any) return false;
-            //else
-            {
-                float angleDiff = note1.cutDirection.RotationAngle() - note2.cutDirection.RotationAngle();
-                if (Mathf.Abs(angleDiff) < 135f)
-                    return false;
-                else
-                {
-                    //Plugin.LogDebug($"IsContraryDirectionBetweenSwings: COMPATIBLE!!! Note1: {note1.cutDirection} Note2: {note2.cutDirection} Angle Diff: {angleDiff}.");
-                    return true;
-                }
-            }
+            if (n1.cutDirection == NoteCutDirection.Any || n2.cutDirection == NoteCutDirection.Any)
+                return true; // always good
+
+            Vector2 d1 = n1.cutDirection.Direction(); // returns vector from NoteCutDirectionExtensions decompiled code
+            Vector2 d2 = n2.cutDirection.Direction();
+
+            // Safety: if Any maps to (0,0) in your extension, avoid bogus angles
+            if (d1 == Vector2.zero || d2 == Vector2.zero) // means has NO actual direction
+                return false;
+
+            float diff = Vector2.Angle(d1, d2); // 0..180
+
+            return diff >= minSwingDeg; //diff >= minSwingDeg
         }
+        
+        /*
+        public static bool IsContraryByDegreesTest(ENoteData n1, ENoteData n2, int minSwingDeg)
+        {
+            if (n2.cutDirection == NoteCutDirection.Up || n2.cutDirection == NoteCutDirection.UpLeft || n2.cutDirection == NoteCutDirection.UpRight)
+                return false;
+
+            if (n1.cutDirection == NoteCutDirection.Any || n2.cutDirection == NoteCutDirection.Any )
+                return true; // always good
+
+            Vector2 d1 = n1.cutDirection.Direction(); // returns vector from NoteCutDirectionExtensions decompiled code
+            Vector2 d2 = n2.cutDirection.Direction();
+
+            // Safety: if Any maps to (0,0) in your extension, avoid bogus angles
+            if (d1 == Vector2.zero || d2 == Vector2.zero) // means has NO actual direction
+                return false;
+
+            float diff = Vector2.Angle(d1, d2); // 0..180
+
+            return diff == 90 || diff == 135;// minSwingDeg; //diff >= minSwingDeg
+        }
+        */
         // allows 180 degree difference and some at 135     
 
         public static bool IsOppositeBetweenSwings(ENoteData note1, NoteData note2) // may be the best option
@@ -676,7 +832,7 @@ namespace AutoBS
             int counter = 1;
             int maxIterations = 10;
 
-            Plugin.LogDebug($"currentChainsCount: {currentChainsCount}, preferredChainCount: {preferredChainCount}");
+            Plugin.LogDebug($"[Arcitect] currentChainsCount: {currentChainsCount}, preferredChainCount: {preferredChainCount}");
 
             // Iteratively adjust pauseThresholdMultiplier to get closer to preferredChainCount
             while (Math.Abs(currentChainsCount - preferredChainCount) >= 5 && counter < maxIterations) // 5 is a threshold for acceptable difference
@@ -749,7 +905,7 @@ namespace AutoBS
             }
             */
 
-            Plugin.LogDebug($"Chains Count: {currentChainsCount} with pauseMultiplier: {pauseThresholdMultiplier} took {counter} iterations. -- pause detection -- LongChainMaxDuration: {Config.Instance.LongChainMaxDuration} First chain at: {chainNotes.First().time:F}"); //Double Chains Count: { doubleChainNotes.Count}
+            Plugin.LogDebug($"[Arcitect] Chains Count: {currentChainsCount} with pauseMultiplier: {pauseThresholdMultiplier} took {counter} iterations. -- pause detection -- LongChainMaxDuration: {Config.Instance.LongChainMaxDuration} First chain at: {chainNotes.First().time:F}"); //Double Chains Count: { doubleChainNotes.Count}
 
             return CreateChains(chainNotes);
         }
@@ -787,12 +943,12 @@ namespace AutoBS
                 }
                 else if (chainsCount > preferredChainCount)
                 {
-                    Plugin.LogDebug($"Chains Count (Too Many) : {chainsCount}, Threshold: {threshold}, Iteration# {iterationCount}");
+                    Plugin.LogDebug($"[Arcitect] Chains Count (Too Many) : {chainsCount}, Threshold: {threshold}, Iteration# {iterationCount}");
                     threshold *= 1.2f;// Too many chains, increase threshold
                 }
                 else if (forceMoreChains && ChainNotes.Count < preferredChainCount)//user can decide if wnat to force more chains
                 {
-                    Plugin.LogDebug($"Chains Count (Too Few): {chainsCount}, Threshold: {threshold}, Iteration# {iterationCount}");
+                    Plugin.LogDebug($"[Arcitect] Chains Count (Too Few): {chainsCount}, Threshold: {threshold}, Iteration# {iterationCount}");
                     threshold *= 0.8f;// Too few chains, decrease threshold
                 }
 
@@ -802,7 +958,7 @@ namespace AutoBS
             //AlterNotes();
 
             //chains.AddRange(doubleChainNotes);
-            Plugin.LogDebug($"Double Chain Notes:");
+            Plugin.LogDebug($"[Arcitect] Double Chain Notes:");
             //foreach (ENoteData doubleNote in doubleChainNotes)
             //{
             //    Plugin.LogDebug($"---- Double Chain: {doubleNote.time:F} - cutDirection: {doubleNote.cutDirection}");
@@ -811,7 +967,7 @@ namespace AutoBS
 
             //MoveWallsBlockingChainTail();
 
-            Plugin.LogDebug($"Final Chains Count: {ChainNotes.Count}, Final Threshold: {threshold}, Iterations: {iterationCount} - Tempo Change Algorithm.");
+            Plugin.LogDebug($"[Arcitect] Final Chains Count: {ChainNotes.Count}, Final Threshold: {threshold}, Iterations: {iterationCount} - Tempo Change Algorithm.");
 
             return CreateChains(ChainNotes);
         }
@@ -1025,7 +1181,7 @@ namespace AutoBS
 
                 if (existingChainAtSameTime != null)
                 {
-                    Plugin.LogDebug($"[CreateChains] ChainNote: {chainNote.time:F} {chainNote.cutDirection} x: {chainNote.line} y: {chainNote.layer} -- Found existingChainAtSameTime {existingChainAtSameTime.cutDirection} x: {existingChainAtSameTime.line} y: {existingChainAtSameTime.layer} dur: {(existingChainAtSameTime.tailTime - existingChainAtSameTime.time):F}");
+                    Plugin.LogDebug($"[Arcitect][CreateChains] ChainNote: {chainNote.time:F} {chainNote.cutDirection} x: {chainNote.line} y: {chainNote.layer} -- Found existingChainAtSameTime {existingChainAtSameTime.cutDirection} x: {existingChainAtSameTime.line} y: {existingChainAtSameTime.layer} dur: {(existingChainAtSameTime.tailTime - existingChainAtSameTime.time):F}");
 
                     if (TryCreateDoubleChain(chainNote, existingChainAtSameTime, MED_CHAIN_DUR, out var matchingChain))
                     {
@@ -1251,7 +1407,7 @@ namespace AutoBS
                                 tailTime = ClampTailToNextNote(chainNote, tailTime);
                                 
                                 Plugin.LogDebug(
-                                    $"Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} {chainNote.cutDirection} " +
+                                    $"[Arcitect][CreateChains] Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} {chainNote.cutDirection} " +
                                     $"x: {chainNote.line} xTail: {tailLineIndex} - y: {(int)chainNote.layer} yTail: {tailLineLayer} " +
                                     $"Dur: {longChainDuration:F3} slices: {sliceCount} (jumpDur={jumpDuration:F3}, maxLong={maxLongChainAllowed:F3})"
                                 );
@@ -1351,7 +1507,7 @@ namespace AutoBS
                 rightChain.tailLayer = sharedTailLayer;
 
                 Plugin.LogDebug(
-                    $"[UncrossLongDoubleChainsIfNeeded] Uncrossed by lineIndex at t={chainA.time:F3}: " +
+                    $"[Arcitect][UncrossLongDoubleChainsIfNeeded] Uncrossed by lineIndex at t={chainA.time:F3}: " +
                     $"L tail=({leftChain.tailLine},{leftChain.tailLayer}) " +
                     $"R tail=({rightChain.tailLine},{rightChain.tailLayer})");
             }
@@ -1382,7 +1538,7 @@ namespace AutoBS
                 // (if you want to pull both inward horizontally too, you can adjust lineIndex here as well)
 
                 Plugin.LogDebug(
-                    $"[UncrossLongDoubleChainsIfNeeded] Uncrossed by layer at t={chainA.time:F3}: " +
+                    $"[Arcitect][UncrossLongDoubleChainsIfNeeded] Uncrossed by layer at t={chainA.time:F3}: " +
                     $"Low tail=({lowChain.tailLine},{lowChain.tailLayer}) " +
                     $"High tail=({highChain.tailLine},{highChain.tailLayer})");
             }
@@ -1710,7 +1866,7 @@ namespace AutoBS
 
         private static bool BombBlocksChain(ENoteData bomb, ENoteData chainNote)
         {
-            Plugin.LogDebug($"[BombBlocksChain] Checking chainNote {chainNote.time:F} x:{chainNote.line} y:{chainNote.layer} -- bomb {bomb.time:F} x:{bomb.line} y:{bomb.layer}");
+            Plugin.LogDebug($"[Arcitect][BombBlocksChain] Checking chainNote {chainNote.time:F} x:{chainNote.line} y:{chainNote.layer} -- bomb {bomb.time:F} x:{bomb.line} y:{bomb.layer}");
 
             int dx = bomb.line - chainNote.line;
             int dy = (int)bomb.layer - (int)chainNote.layer;
@@ -1927,7 +2083,7 @@ namespace AutoBS
         // attempt diagonal double chains
         private static bool TryCreateDoubleChain(ENoteData note, ESliderData existingChain, float MED_CHAIN_DUR, out ESliderData matchingChain)
         {
-            Plugin.LogDebug($"[TryCreateDoubleChain] Called...");
+            //Plugin.LogDebug($"[Arcitect][TryCreateDoubleChain] Called...");
 
             int matchingTailIndex = -1;
             int matchingTailLayer = -1;
@@ -1945,7 +2101,7 @@ namespace AutoBS
 
                 bool safeDoubleLongChain = true;
 
-                Plugin.LogDebug($"[TryCreateDoubleChain] -- Long chain: pairOnNaturalSides: {pairOnNaturalSides}");
+                //Plugin.LogDebug($"[Arcitect][TryCreateDoubleChain] -- Long chain: pairOnNaturalSides: {pairOnNaturalSides}");
 
                 if (!pairOnNaturalSides)
                 {
@@ -1953,12 +2109,12 @@ namespace AutoBS
                     bool sameLayer = note.layer == existingChain.layer;
                     if (bothVertical && adjacentColumns && sameLayer) safeDoubleLongChain = true; else safeDoubleLongChain = false;
 
-                    Plugin.LogDebug($"[TryCreateDoubleChain] ---- Long chain: bothVertical && adjacentColumns && sameLayer: {safeDoubleLongChain}");
+                    //Plugin.LogDebug($"[Arcitect][TryCreateDoubleChain] ---- Long chain: bothVertical && adjacentColumns && sameLayer: {safeDoubleLongChain}");
                 }
 
                 if (!safeDoubleLongChain) // wrong side notes must be up or down only.
                 {
-                    Plugin.LogDebug($"[TryCreateDoubleChain] ---- Long Chain failed to produce double chain.");
+                    //Plugin.LogDebug($"[Arcitect][TryCreateDoubleChain] ---- Long Chain failed to produce double chain.");
                     matchingChain = null;
                     return false;
                 }
@@ -2061,15 +2217,15 @@ namespace AutoBS
 
                 doubleChainCount++;
 
-                Plugin.LogDebug($"[TryCreateDoubleChain] {doubleChainCount} Double chain at {mirroredChain.time:F}");
-                Plugin.LogDebug($"[TryCreateDoubleChain] --- {existingChain.colorType} {existingChain.cutDirection} x: {existingChain.line} y: {(int)existingChain.layer} -- tail -- x: {existingChain.tailLine} y: {existingChain.layer} - dur: {(existingChain.tailTime - existingChain.time):F}");
-                Plugin.LogDebug($"[TryCreateDoubleChain] --- {mirroredChain.colorType} {mirroredChain.cutDirection} x: {mirroredChain.line} y: {(int)mirroredChain.layer} -- tail -- x: {mirroredChain.tailLine} y: {mirroredChain.layer} - dur: {(mirroredChain.tailTime - mirroredChain.time):F}");
+                //Plugin.LogDebug($"[Arcitect][TryCreateDoubleChain] {doubleChainCount} Double chain at {mirroredChain.time:F}");
+                //Plugin.LogDebug($"[Arcitect][TryCreateDoubleChain] --- {existingChain.colorType} {existingChain.cutDirection} x: {existingChain.line} y: {(int)existingChain.layer} -- tail -- x: {existingChain.tailLine} y: {existingChain.layer} - dur: {(existingChain.tailTime - existingChain.time):F}");
+                //Plugin.LogDebug($"[Arcitect][TryCreateDoubleChain] --- {mirroredChain.colorType} {mirroredChain.cutDirection} x: {mirroredChain.line} y: {(int)mirroredChain.layer} -- tail -- x: {mirroredChain.tailLine} y: {mirroredChain.layer} - dur: {(mirroredChain.tailTime - mirroredChain.time):F}");
 
                 matchingChain = mirroredChain;
                 return true;
             }
             else
-                Plugin.LogDebug("[TryCreateDoubleChain] failed to produce double chain.");
+                //Plugin.LogDebug("[Arcitect][TryCreateDoubleChain] failed to produce double chain.");
 
             matchingChain = null;
             return false;
@@ -2132,7 +2288,7 @@ namespace AutoBS
                 {
                     return true;
                 }
-                Plugin.LogDebug("[TryCreateDoubleChain] IsValidDiagonalPair FALSE");
+                Plugin.LogDebug("[Arcitect][TryCreateDoubleChain] IsValidDiagonalPair FALSE");
                 return false;
             }
             bool IsValidPositionalPair(ENoteData candidate)
@@ -2173,7 +2329,7 @@ namespace AutoBS
                 int dy = Math.Abs(y1 - y2);
 
                 Plugin.LogDebug(
-                    $"[IsValidDiagonalSpacing] {candidate.time:F} Note: x{x1} y{y1} " +
+                    $"[Arcitect][IsValidDiagonalSpacing] {candidate.time:F} Note: x{x1} y{y1} " +
                     $"ExistingChain: x{x2} y{y2} -- dx: {dx} dy: {dy}");
 
                 // Same exact head cell → nonsense for a double
@@ -2478,7 +2634,7 @@ namespace AutoBS
                 if (cur.Count > 0) arcGroups.Add(cur);
             }
 
-            //Plugin.LogDebug($"[ArcFix] Start: arcs={arcs.Count}, groups={arcGroups.Count}, rotBefore={rotations.Count}, " +
+            //Plugin.LogDebug($"[Arcitect][ArcFix] Start: arcs={arcs.Count}, groups={arcGroups.Count}, rotBefore={rotations.Count}, " +
             //                $"addedHeads={addedHeads}, addedTails={addedTails}, allowedCumulativeRots={allowedCumulativeRots}, " +
             //                $"mode={(rotationModeLate ? "Late" : "Early")}");
 
@@ -2685,7 +2841,7 @@ namespace AutoBS
                     }
                     else
                     {
-                        //Plugin.LogDebug($"[ArcFix][Seg] {segStart:F3}s → {segEnd:F3}s, covered={covered}, events=0 (nothing to adjust).");
+                        //Plugin.LogDebug($"[Arcitect][ArcFix][Seg] {segStart:F3}s → {segEnd:F3}s, covered={covered}, events=0 (nothing to adjust).");
                     }
 
                     segStart = segEnd;
@@ -3029,7 +3185,7 @@ namespace AutoBS
             // ---------------- FINAL: RECOMPUTE accumRotation ----------------
             result = ERotationEventData.RecalculateAccumulatedRotations(result);
 
-            Plugin.LogDebug($"[ArcFix] Done: Rotation Final Count={result.Count} (reduced={reduced}, removed={removed}, unchanged={unchanged}). " +
+            Plugin.LogDebug($"[Arcitect][ArcFix] Done: Rotation Final Count={result.Count} (reduced={reduced}, removed={removed}, unchanged={unchanged}). " +
                             $"ArcRotationMode={Config.Instance.ArcRotationMode}, allowedCumul={allowedCumulativeRots}, mode={(rotationModeLate ? "Late" : "Early")}");
 
             // Engine-accurate sanity check: show only assumed accumRotation at arc HEAD and TAIL.
@@ -3074,7 +3230,7 @@ namespace AutoBS
                     tail = AccumInclusive(a.tailTime);
                     mismatch = (head != tail) ? "<<< MISMATCH!" : "";
 
-                    Plugin.LogDebug($"[ArcFix][Check] EARLY head={head} tail={tail} @ {a.time:F3}->{a.tailTime:F3} {mismatch}");
+                    Plugin.LogDebug($"[Arcitect][ArcFix][Check] EARLY head={head} tail={tail} @ {a.time:F3}->{a.tailTime:F3} {mismatch}");
                 }
                 else
                 {
@@ -3082,7 +3238,7 @@ namespace AutoBS
                     tail = AccumBefore(a.tailTime);
                     mismatch = (head != tail) ? "<<< MISMATCH!" : "";
 
-                    Plugin.LogDebug($"[ArcFix][Check] LATE head={head} tail={tail} @ {a.time:F3}->{a.tailTime:F3} {mismatch}");
+                    Plugin.LogDebug($"[Arcitect][ArcFix][Check] LATE head={head} tail={tail} @ {a.time:F3}->{a.tailTime:F3} {mismatch}");
                 }
             }
         }

@@ -489,12 +489,21 @@ namespace AutoBS.UI
             "No Restriction"   // Arcs can have rotations
         };
 
+        /*
         [UIValue("ForceNaturalArcs")]
         public bool ForceNaturalArcs
         {
             get => Config.Instance.ForceNaturalArcs;
             set => Config.Instance.ForceNaturalArcs = value;
         }
+        */
+        public List<object> NaturalArcChoices { get; set; } = new List<object>
+        {
+            "Curated",      
+            "135",        
+            "90"   
+        };
+
         [UIValue("PreferredArcCountPerMin")]
         public float PreferredArcCountPerMin
         {
@@ -1136,6 +1145,11 @@ namespace AutoBS.UI
             _arcRotationModes.Add(_arcRotationModeLabels[Config.ArcRotationModeType.NetZero]);
             _arcRotationModes.Add(_arcRotationModeLabels[Config.ArcRotationModeType.NoRestriction]);
 
+            _arcSwingModes.Add(_arcSwingModeLabels[Config.ArcSwingModeType.Curated180and135]);
+            _arcSwingModes.Add(_arcSwingModeLabels[Config.ArcSwingModeType.Curated180and135and90]);
+            _arcSwingModes.Add(_arcSwingModeLabels[Config.ArcSwingModeType.All180and135]);
+            _arcSwingModes.Add(_arcSwingModeLabels[Config.ArcSwingModeType.All180and135and90]);
+
             _autoNjsModes.Add(_autoNjsFixerModeLabels[Config.AutoNjsFixerModeType.PreserveTravelTime]);
             _autoNjsModes.Add(_autoNjsFixerModeLabels[Config.AutoNjsFixerModeType.SetNoteSpeed]);
         }
@@ -1176,6 +1190,32 @@ namespace AutoBS.UI
                 {
                     var mode = _arcRotationModeLabels.First(kv => kv.Value == value).Key;
                     Config.Instance.ArcRotationMode = mode;
+                    SafeNotify(); // updates the UI
+                }
+            }
+        }
+
+        private readonly Dictionary<Config.ArcSwingModeType, string> _arcSwingModeLabels = new Dictionary<Config.ArcSwingModeType, string>
+        {
+            { Config.ArcSwingModeType.Curated180and135,      "Curated 135 & 180" },
+            { Config.ArcSwingModeType.Curated180and135and90, "Curated 90, 135 & 180" },
+            { Config.ArcSwingModeType.All180and135,          "Unrestricted 135 & 180" },
+            { Config.ArcSwingModeType.All180and135and90,     "Unrestricted 90, 135 & 180" }
+        };
+
+        [UIValue("ArcSwingChoices")]
+        private List<object> _arcSwingModes = new List<object>();
+
+        [UIValue("ArcSwingMode")]
+        public string ArcSwingMode
+        {
+            get => _arcSwingModeLabels[Config.Instance.ArcSwingMode];
+            set
+            {
+                if (_arcSwingModeLabels.ContainsValue(value))
+                {
+                    var mode = _arcSwingModeLabels.First(kv => kv.Value == value).Key;
+                    Config.Instance.ArcSwingMode = mode;
                     SafeNotify(); // updates the UI
                 }
             }

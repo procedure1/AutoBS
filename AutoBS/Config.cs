@@ -72,7 +72,10 @@ namespace AutoBS
         public virtual bool ArcFixFull { get; set; } = true;//removes rotations between sliders head and tail
         public enum ArcRotationModeType { ForceZero, NetZero, NoRestriction }
         public virtual ArcRotationModeType ArcRotationMode { get; set; } = ArcRotationModeType.NetZero;
-        public virtual bool ForceNaturalArcs { get; set; } = true; //False will allow more variety in arc connections between the head and tail notes. Some of these arcs will take a less natural path since they are 135 degree changes instead of 180 degree changes.
+
+        public enum ArcSwingModeType { Curated180and135, Curated180and135and90, All180and135, All180and135and90 }
+        public virtual ArcSwingModeType ArcSwingMode { get; set; } = ArcSwingModeType.Curated180and135;
+        //public virtual bool ForceNaturalArcs { get; set; } = true; //False will allow more variety in arc connections between the head and tail notes. Some of these arcs will take a less natural path since they are 135 degree changes instead of 180 degree changes.
         public virtual float PreferredArcCountPerMin { get; set; } = 12.0f;//how many arcs per minute to aim for.
         public virtual float MinArcDuration { get; set; } = 0.9f;
         public virtual float MaxArcDuration { get; set; } = 2.5f;

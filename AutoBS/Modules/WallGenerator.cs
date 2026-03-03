@@ -1348,6 +1348,8 @@ namespace AutoBS
         {
             //int width = 1; int height = 1; float duration = 0.03f;
 
+            int minDis = (int)Config.Instance.ParticleWallsMinDistance;
+
             int[] widthAndHeight = { 1050, 1010, 1300, 1300, 1300, 1500, 2500, 1300, 1400, 1100, 1500, 1200 }; // { 1100, 1200, 1300, 1500, 1700, 1, 2500 }; // 1100 = .1, 1700 = .7, 1 or 2000 = 1, 2500 = 1.5
             int[] widthAndHeight1 = { 2500, 1010, 1200, 1400, 1500, 1050, 1300, 1100, 1200, 1300, 1100 };
             int[] widthAndHeightNonME = { 1, 2, 1, 1, 1, 1, 2 };
@@ -1357,7 +1359,7 @@ namespace AutoBS
             // Cycle through predetermined values instead of random generation
             int[] lineLayers = { 9, 1, 2, 7, 6, 8, 3, 4, 5 }; // { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // all line layers
             int[] lineLayersNonME = { 1, 2, 4, 6, 7, 3, 4, 8, 9, 2 }; //5 are ceiling tiles. 6 is short flat but ok. 7, 8, 9 get taller and taller 
-            int[] lineIndexes1 = { 11, 3, -3, -8, 5, 7, 8, -9, 0, 4, -2, 13, -1, 9, -7, 6, 1, 10, 2, -5, -6, 12, -4 }; // { -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }; // all line indexes
+            int[] lineIndexes1 = { 11, 3, -3, -8, 5, 7, 8, -9, 0, 4, -2, 13, -1, 9, -7, 6, 1, 10, 3, -5, -6, 12, -4 }; // { -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }; // all line indexes
             int[] lineIndexes2 = { -4, 13, -3, 5, 9, -9, 11, 6, -7, 7, 8, 12, -8, -1, -2, -5, 10, -6 }; // { -9, -8, -7, -6, -5, -4, -3, -2, -1, 5, 6, 7, 8, 9, 10, 11, 12, 13 }; // line indexes outside of the main area
 
             // Utilizing an oscillation function of wallTime for variability
@@ -1392,10 +1394,10 @@ namespace AutoBS
 
             // Calculating cycle indexes
             int cycleIndexForLineLayer = Math.Abs(variableLayer) % lineLayers.Length;
-            int layer = lineLayersNonME[cycleIndexForLineLayer] + (int)Config.Instance.ParticleWallsMinDistance;
+            int layer = lineLayersNonME[cycleIndexForLineLayer] + minDis;
             if (IsMappingExtensionsInstalled)
             {
-                layer = lineLayers[cycleIndexForLineLayer] + (int)Config.Instance.ParticleWallsMinDistance;
+                layer = lineLayers[cycleIndexForLineLayer] + minDis;
                 if (layer == 5) layer = 6; // never 5. that is a ceiling tile for floor walls
             }
 
@@ -1412,9 +1414,9 @@ namespace AutoBS
                 line = lineIndexes1[cycleIndexForLineIndex];
             }
             if (line < 2)
-                line -= (int)Config.Instance.ParticleWallsMinDistance;
+                line -= (int)minDis;
             else
-                line += (int)Config.Instance.ParticleWallsMinDistance;
+                line += (int)minDis;
 
             int cycleIndexForWidthHeight = Math.Abs(variableWHD) % widthAndHeight.Length;
             int cycleIndexForDuration = Math.Abs(variableWHD) % dur.Length;

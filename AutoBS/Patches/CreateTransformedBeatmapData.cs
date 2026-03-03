@@ -162,27 +162,49 @@ namespace AutoBS.Patches
                             $"color boosts: {__result.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()}, " +
                             $"bpm events: {__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}, " +
                             $"rotation events (in-line per object) {eData.RotationEvents.Count}");
-                    // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
+                    
+                // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
-                    //ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 205, 220);
-                    /*
-                    Plugin.LogDebug($"Final Note Rotations:");
-                    foreach (var note in __result.allBeatmapDataItems
-                    .OfType<NoteData>()
-                    .Where(n => n.time >= 204f && n.time <= 300f))
-                    {
-                        Plugin.LogDebug($"Note: {note.time:F} {note.cutDirection} Rot: {note.rotation}");
-                    }
-                    */
-                    /*
-                    foreach (var evt in __result.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>())
-                    {
-                        if (evt.time > 0 && evt.time < 85)
-                            Plugin.LogDebug($"Light: {evt.time:F3} {(EventType)evt.basicBeatmapEventType} {(EventValue)evt.value} float: {evt.floatValue}");
-                    }
-                    */
+                //ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 186, 189);
+                /*
+                int arc180 = 0;
+                int arc135 = 0;
+                int arc90 = 0;
+                foreach (var arc in eData.Arcs)
+                {
+                    ENoteData tailNote = arc.tailNote;
+                    UnityEngine.Vector2 d1 = arc.cutDirection.Direction(); // returns vector from NoteCutDirectionExtensions decompiled code
+                    UnityEngine.Vector2 d2 = tailNote.cutDirection.Direction();
+                    float diff = UnityEngine.Vector2.Angle(d1, d2);
+                        
+                    if (diff == 180) arc180++;
+                    if (diff == 135) arc135++;
+                    if (diff == 90)  arc90++;
 
-                    JsonOutputConverter.ToJsonFile(__result as CustomBeatmapData, eData);
+                    string color = arc.colorType == ColorType.ColorA ? "RED" : "BLU";
+
+                    Plugin.LogDebug($"Arc: {arc.time:F} AngleBetweenHeadAndTail: {diff} {color} head: {arc.cutDirection} x:{arc.line} y:{arc.layer} --- tail: {tailNote.cutDirection} x:{tailNote.line} y:{tailNote.layer}");
+                }
+                Plugin.LogDebug($"Arc Summary: Total Count: {eData.Arcs.Count} -- 180: {arc180}, 135: {arc135}, 90: {arc90}");
+                */
+                /*
+                Plugin.LogDebug($"Final Note Rotations:");
+                foreach (var note in __result.allBeatmapDataItems
+                .OfType<NoteData>()
+                .Where(n => n.time >= 204f && n.time <= 300f))
+                {
+                    Plugin.LogDebug($"Note: {note.time:F} {note.cutDirection} Rot: {note.rotation}");
+                }
+                */
+                /*
+                foreach (var evt in __result.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>())
+                {
+                    if (evt.time > 0 && evt.time < 85)
+                        Plugin.LogDebug($"Light: {evt.time:F3} {(EventType)evt.basicBeatmapEventType} {(EventValue)evt.value} float: {evt.floatValue}");
+                }
+                */
+
+                JsonOutputConverter.ToJsonFile(__result as CustomBeatmapData, eData);
 
                 }
                 else
@@ -225,8 +247,8 @@ namespace AutoBS.Patches
                 }
                 */
             }
-                
-                //Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");
+
+            //Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");
 
             //BeatmapLightingLogger.LogGLSLightingEvents(HarmonyPatches.CurrentBeatmapSaveData);
         }

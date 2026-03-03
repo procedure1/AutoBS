@@ -1,4 +1,5 @@
 ﻿using AutoBS.Patches;
+using AutoBS.UI;
 using BeatmapSaveDataVersion3;
 using CustomJSONData.CustomBeatmap;
 using Newtonsoft.Json;
@@ -269,7 +270,7 @@ namespace AutoBS
 
             root["_obstacles"] = obs;
 
-            // v2 wall filter + legacy type mapping, now using EObstacleData
+            // v2 wall filter + legacy type mapping, now using EObstacleData. outputs type 0,1,2 walls so cannot have any ME style walls.
             bool RemoveMappingExtensionWalls(EObstacleData obstacle, out int legacyType)
             {
                 legacyType = 0;
@@ -421,6 +422,8 @@ namespace AutoBS
             var rotationEventsData = eData.RotationEvents;
             var colorBoostEventsData = eData.ColorBoostEvents;
 
+            bool isMappingExtensionsInstalled = GameplaySetupView.IsMappingExtensionsInstalled;
+
             // ---- v3.3.0 format ----
             var root = new JObject();
             root["version"] = new Version(3, 3, 0).ToString();
@@ -468,22 +471,59 @@ namespace AutoBS
 
             // 3. Obstacles
             var obs = new JArray();
-            foreach (var w in data.beatmapObjectDatas.OfType<CustomObstacleData>())
+
+            foreach (var w in data.beatmapObjectDatas.OfType<CustomObstacleData>()
+                         .OrderBy(o => o.time)
+                         .ThenBy(o => o.lineIndex)
+                         .ThenBy(o => (int)o.lineLayer))
             {
+                // If ME is NOT installed, skip ME-style obstacles
+                if (!isMappingExtensionsInstalled && IsMappingExtensionsObstacle(w))
+                    continue;
+
                 var o = new JObject
                 {
                     ["b"] = R4(w.time * timeMult),
                     ["x"] = w.lineIndex,
                     ["y"] = (int)w.lineLayer,
-                    ["d"] = R4(Math.Max(w.duration * timeMult, 0.001f)), // for window pane walls. thinner than this causes a gray wall glitch
+                    ["d"] = R4(Math.Max(w.duration * timeMult, 0.001f)),
                     ["w"] = w.width,
                     ["h"] = w.height
                 };
-                if (w.customData.Count > 0)
+
+                if (w.customData != null && w.customData.Count > 0)
                     o["customData"] = JObject.FromObject(w.customData);
+
                 obs.Add(o);
             }
+
             root["obstacles"] = obs;
+
+            // This is needed since v2 and v3 customBeatmaps will not work with any ME walls without ME. This is confusing since using the mod in-game I can create out-of-range line and layer obs. but those same obs will not load properly from a json file.
+            // v4 maps will work from json if patch BeatmapTypeConverters.ConvertObstacleLineLayer!
+            static bool IsMappingExtensionsObstacle(CustomObstacleData o)
+            {
+                int x = o.lineIndex;
+                int y = (int)o.lineLayer;
+                int w = o.width;
+                int h = o.height;
+
+                // ME "precise" horizontal positioning/size
+                if (Math.Abs(x) >= 1000) return true;
+                if (Math.Abs(w) >= 1000) return true;
+
+                // ME height coding (common for particles)
+                if (h >= 1000 || h <= -1000) return true;
+
+                // Extended vertical layers beyond vanilla 0..2 often need ME to behave consistently
+                if (y < 0 || y > 2) return true;
+
+                // Extended / unusual heights can also be ME-ish
+                // (optional; keep only if you see issues)
+                // if (h > 5) return true;
+
+                return false;
+            }
 
             var boosts = new JArray();
             foreach (var bo in colorBoostEventsData)//data.beatmapObjectDatas.OfType<CustomColorBoostBeatmapEventData>()) // color boost stripped out from cbd not sure why. must use eData

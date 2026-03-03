@@ -14,7 +14,6 @@ using UnityEngine;
 
 namespace AutoBS.Patches
 {
-
     // !!!!!!!!!!! This should be in Mapping Extentions not AutoBS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //
     //
@@ -28,11 +27,13 @@ namespace AutoBS.Patches
     {
         static bool Prefix(int layer, ref NoteLineLayer __result)
         {
+            if (!Config.Instance.EnablePlugin) return true;
+
             // Preserve raw obstacle layer for Mapping Extensions / out-of-range values.
             // Keep normal mappings for the common values (optional).
             if (layer >= 0 && layer <= 4)
                 return true; // let original handle 0..4
-
+            //Plugin.LogDebug($"[ConvertObstacleLineLayer] patched out-of-range wall - y: {layer}");
             __result = (NoteLineLayer)layer;
             return false; // skip original (prevents defaulting to Base)
         }
