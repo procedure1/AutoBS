@@ -36,7 +36,13 @@ Wireless headset users can use the `Wireless 360` menu setting, which has no rot
 
 Rotation size and frequency can be adjusted in the menu, and headset FOV limits can be set so that rotations don't move outside your peripheral vision.
 
-***HINT: For challenging rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier`, `Min Rotation Size` and/or `Max Rotation Size`. If you set `Max Rotation Size` > 30, then your must set `FOV` to 90 or greater (otherwise those rotations will be removed. Higher than 90 on a Quest will allow rotations you cannot see). I like to use Mult = 1.6x, Min Rotation = 15, Max Rotation = 45 and FOV = 90 for my Quest3 headset. To go even bigger set Min Rotation = 30. You can start trimming around the edges of your peripheral vision with `FOV Time Window`. Increase it a bit to reduce a little of the large jumps at the periphery.***
+***HINT: For challenging rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier`, `Min Rotation Size` and/or `Max Rotation Size`. If you set `Max Rotation Size` > 30, then your must set `FOV` to 90 or greater (otherwise 45° rotations will be removed. Higher than 90° FOV on a Quest will allow rotations you cannot see).***
+
+***Option 1: Raise `Rot Speed Multiplier` to your desired value and increase `Min Rotation Size` to 30. leave `Max Rotation Size` and `FOV` at default. This creates fast frequent rotations all at 30°.*** 
+
+***Option 2: I like to use `Rot Speed Multiplier` = 1.6x, `Min Rotation Size` = 15 (default), `Max Rotation Size` = 45 and `FOV` = 90 for my Quest3 headset. This creates fast frequent rotations with the occational big 45° rotation.***
+
+***Option 3: To go even bigger, use Option 2 and set `Min Rotation Size` = 30. You will likely need to reduce `Rot Speed Multiplier` quite a bit. You can start trimming around the edges of your peripheral vision with `FOV Time Window`. Increase it a bit to reduce a little of the large jumps at the periphery.***
 
 ## Arcitect Arc + Chain Maker
 
@@ -98,8 +104,8 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 | Option                        | Description                                                                                                                                                                                                                                                                                |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Arc Rotation Mode**         | Default: **Net Zero**. Controls how arcs behave during rotations. **Force Zero** disables rotations during arcs. **Net Zero** allows rotations that sum to net 0° over the arc duration. **No Restrictions** allows full rotations during arcs, which can be more challenging. * ***No Restrictions is more challenging and more fun!***|
-| **Force Natural Arc Swings**  | Default: **True**. Forces 180° relationships between head and tail cut directions so arcs feel more natural. Turning this off allows more variety in arc shapes (135° and 180°) but can produce some less natural-feeling swings.                                                 |
-| **Pref Count per Minute** | Default: **12**. Attempts to create this many arcs per minute. This is an asperation only and could create many more or less than this number.                                                                                                     |
+| **Arc Swing Mode**  | Default: **Curated 135 & 180**. 'Curated' means some perhaps awkward 90° and/or 135° swings between head and tail note cut directions have been restricted (some upward tail cut directions have been disallowed). 'All' means any combination of note cut directions are allowed which can produce some awkward swings. **Curated 135 & 180** is the easiest mode. **Curated 90, 135 & 180** is more challenging and my favorite.                                                |
+| **Pref Count per Minute** | Default: **12**. Attempts to create this many arcs per minute. This is an aspiration only and could create many more or less than this number.                                                                                                     |
 | **Min Duration**       | Default: **0.9 s**. Shortest allowed arc duration. This value may be relaxed internally if needed to better match your preferred arc count.                                                                                                                                                |
 | **Max Duration**       | Default: **2.5 s**. Longest allowed arc duration. Longer arcs than this will not be generated.                                                                                                                                                                                             |
 
@@ -109,7 +115,7 @@ NOTE: The JSON config file has an `AllowArcHeadDotNotes` and `AllowArcTailDotNot
 
 | Option                          | Description                                                                                                                                        |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pref Count per Minute** | Default: **10**. Attempts to create this many chains per minute. This is an asperation only and could create many more or less than this number. To create more chains, reduce `Chain Time Bumper` and reduce arcs or turn them off.     |
+| **Pref Count per Minute** | Default: **10**. Attempts to create this many chains per minute. This is an aspiration only and could create many more or less than this number. To create more chains, reduce `Chain Time Bumper` and reduce arcs or turn them off.     |
 | **Chain Time Bumper**           | Default: **0.2 s**. Minimum allowed time between a chain and surrounding notes. |
 | **Enable Long Chains**          | Default: **True**. Enables long chains that behave similarly to arcs in terms of duration and feel.
 | **Long Chain Max Duration**     | Default: **0.35 s**. Maximum allowed duration for a chain. Chain slices become awkward to hit on longer chains.        |
@@ -254,6 +260,8 @@ NOTE: v3 360 maps may need some minor cleanup due to some vision blocking walls 
 
 NOTE: v4 will be the most exact match to the in-game generated map. Outputs beatmapV4, lightshow, audioData and 'Info.AutoBS.dat' files. v4 doesn't really support customData so all customData will be lost (for Noodle etc). `Mapping Extensions` precision placement does still function.
 
+NOTE: If you have `Mapping Extensions` installed and walls are generated, then of course `Mapping Extensions` walls will be added to the beatmap. If you prefer not have them, then uninstall `Mapping Extensions` before outputing the JSON file.
+
 To enable JSON file output, edit the `Beat Saber/UserData/AutoBS.json` config file in Notepad or other text editor. The last 5 settings in the config file are the ones to edit. 
 
 Set:
@@ -270,7 +278,7 @@ Start Beat Saber and simply begin to play any map difficulty and the file(s) wil
 
 By default, the `TurnOffJSONDatOutputAfterOneMapPlay` config setting is set to `true`. This means all the output settings will revert to `false` after one play. You can set this to `false` if you want to generate multiple files in one session every time you play a difficulty. After quitting Beat Saber, this will revert back to `true` and all outputs to `false`. This makes sure you don't accidentally leave this on. If you generate consecutive maps for the same song, it will overwrite the 'Info.AutoBS.dat' file each time. You will need to edit 'Info.AutoBS.dat' to replace the original beatmap file names with the generated file names. 
 
-For all output versions, you must also set the `OutputJsonSongSampleRate` config setting. This is the sample rate of the audio file for the song. It will default to `44100`. The map will be out-of-sync if this is not correct. Most songs are `44100` or `48000`. (In Windows, right click the song, choose PROPERTIES>DETAILS to see the sample rate.)
+For all output versions, you must also set the `OutputJsonSongSampleRate` config setting. This is the sample rate of the audio file for the song. It will default to `44100`. The map will be out-of-sync if this is not correct. Most songs are `44100` or `48000`. (In Windows, right click the song (.egg, .ogg, .mp3, or .wav file), choose PROPERTIES>DETAILS to see the sample rate.)
 
 ***
 
