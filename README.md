@@ -66,7 +66,7 @@ NOTE: Dense walls can be claustrophobic and distracting, but you can disable the
 
 Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence the need for this. You can choose `Preserve Travel Time` if you want to keep the mapper’s intended duration of travel, reaction time and perceived note speed while letting you change the note spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs. (But large speed changes don't work well on maps with high note density.) Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET.
 
-NOTE: If settings cause the note speed to be slower than the mapper intended, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not).
+NOTE: If settings cause the note speed to be slower than the mapper intended, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not). Also, for maps with NJS events, a specified note spawn distance will vary when note speed varies. 
 
 ## Beat Sage Cleaner
 
