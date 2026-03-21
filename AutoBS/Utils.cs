@@ -134,7 +134,7 @@ namespace AutoBS
                 (!Config.Instance.EnableAutoNjsFixerStandard && characteristic != "Generated360Degree" &&
                   characteristic != "360Degree" && characteristic != "90Degree"))
             {
-                Plugin.LogDebug($"[IsEnabledAutoNjsFixer][AutoNjsFixer] disabled for charac: {characteristic}");
+                //Plugin.LogDebug($"[IsEnabledAutoNjsFixer][AutoNjsFixer] disabled for charac: {characteristic}");
                 return false;
             }
             //Plugin.Log.Info($"Lighting enabled for standard:{Config.Instance.EnableLightingStandard} and charac: {characteristic}");

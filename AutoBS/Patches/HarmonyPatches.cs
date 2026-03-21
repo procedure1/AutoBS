@@ -187,21 +187,6 @@ namespace AutoBS.Patches
         {
             if (!Config.Instance.EnablePlugin) return;
             if (!Utils.IsEnabledLighting()) return;
-            /*
-            if (!Config.Instance.EnablePlugin) return;
-
-            // If EnableFeaturesForNonGen360Maps is false and the map is 360Degree or 90Degree, exit
-            if (!Config.Instance.EnableFeaturesForNonGen360Maps &&
-                (TransitionPatcher.characteristicSerializedName == "360Degree" ||
-                 TransitionPatcher.characteristicSerializedName == "90Degree")) return;
-
-            // If EnableFeaturesForStandardMaps is false and the map is a standard map, exit
-            if (!Config.Instance.EnableFeaturesForStandardMaps &&
-                (TransitionPatcher.characteristicSerializedName != "Generated360Degree" &&
-                 TransitionPatcher.characteristicSerializedName != "Generated90Degree" &&
-                 TransitionPatcher.characteristicSerializedName != "360Degree" &&
-                 TransitionPatcher.characteristicSerializedName != "90Degree")) return;
-            */
 
             // Doesn't apply to standard maps
             if (Config.Instance.BrightLights &&
@@ -243,7 +228,7 @@ namespace AutoBS.Patches
         {
             // Get all ParametricBoxController objects in the scene
             //Environment>TopLaser>BoxLight, Environment>DownLaser>BoxLight, Environment/RotatingLaser/Pair/BaseR or BaseL/Laser/BoxLight
-            ParametricBoxController[] boxControllers = GameObject.FindObjectsOfType<ParametricBoxController>();
+            ParametricBoxController[] boxControllers = GameObject.FindObjectsOfType<ParametricBoxController>(); // GameObject.FindObjectsByType<ParametricBoxController>(FindObjectsSortMode....)
 
             int i = 1;
             foreach (ParametricBoxController boxController in boxControllers)
@@ -397,7 +382,7 @@ namespace AutoBS.Patches
 
                 label = go.AddComponent<TextMeshProUGUI>();
                 label.raycastTarget = false;
-                label.enableWordWrapping = false;
+                label.textWrappingMode = TextWrappingModes.NoWrap; //label.enableWordWrapping = false;
                 label.alignment = TextAlignmentOptions.Center;
                 label.fontSize = 3.5f;
 
@@ -452,6 +437,23 @@ namespace AutoBS.Patches
         {
             IsDisabledThisRun = !string.IsNullOrEmpty(reason);
             ReasonThisRun = reason ?? "";
+        }
+        // Adds reason for live njs jd events
+        public static void AddReason(string reason)
+        {
+            if (string.IsNullOrWhiteSpace(reason))
+                return;
+
+            if (string.IsNullOrWhiteSpace(ReasonThisRun))
+            {
+                Set(reason);
+                return;
+            }
+
+            if (ReasonThisRun.Contains(reason)) // will only add it once.
+                return;
+
+            Set($"{ReasonThisRun} | {reason}");
         }
         public static void Clear()
         {

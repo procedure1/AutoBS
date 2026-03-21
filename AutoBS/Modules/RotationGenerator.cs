@@ -74,11 +74,31 @@ namespace AutoBS
             /// </summary>
             float SpinCooldown = 10f;
 
+            List<ENoteData> notesAndBombs = new List<ENoteData>(eData.ColorNotes);
+
+            Plugin.LogDebug($"[RotationGenerator] Notes Count: {notesAndBombs.Count}"); // BW added to see how many notes are in the map
+
+            notesAndBombs.AddRange(eData.BombNotes);//List<ENoteData> notes = data.GetBeatmapDataItems<ENoteData>(0).ToList(); // NOTES CONTAINS NOTES AND BOMBS
+
+            notesAndBombs.Sort((a, b) => a.time.CompareTo(b.time));
+
+            Plugin.LogDebug($"[RotationGenerator] Notes Count after adding bombs: {notesAndBombs.Count}");
+
+            if (notesAndBombs.Count == 0) return;
+
+            /*
+            foreach (var n in notesAndBombs)
+            {
+                Plugin.Log.Info($"Note: Time: {n.time:F} Line: {n.line} Layer: {n.layer} Type: {n.gameplayType} Color: {n.colorType} CutDir: {n.cutDirection}");
+            }
+            */
+
             ESliderData currentActiveChain = null;
 
             RotationSpeedMultiplier = Config.Instance.RotationSpeedMultiplier;
             //Plugin.LogDebug($"[RotationGenerator] Using RotationSpeedMultiplier={RotationSpeedMultiplier} for this run.");
 
+            int d0 = 0; int d15 = 0; int d30 = 0; int d45 = 0; int d60 = 0; int d75 = 0; int d90 = 0; int d120 = 0;
 
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
             {
@@ -132,7 +152,7 @@ namespace AutoBS
 
             List<ERotationEventData> allRotations = eData.RotationEvents.Count == 0 ? new List<ERotationEventData>() : eData.RotationEvents; // added for nonGen360 maps
 
-            Plugin.LogDebug($"0 Rotation List (original) Count: {allRotations.Count}");
+            Plugin.LogDebug($"[RotationGenerator] 0 Rotation List (original) Count: {allRotations.Count}");
             /*
             foreach (var rot in allRotations)
             {
@@ -206,7 +226,7 @@ namespace AutoBS
             int rotationStepOffset = minRotationStep - 1;
 
             float notespersecond = TransitionPatcher.NotesPerSecond;
-            float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
+            float njs = TransitionPatcher.FinalNoteJumpMovementSpeed > 0 ? TransitionPatcher.FinalNoteJumpMovementSpeed : 10; // at least have a fallback
 
             // high speed high density maps can have too many 30 degree rotations which seems excessive. 
             if (Config.Instance.ReduceRotationForHighSpeedHighDensityMaps && notespersecond > Config.Instance.HighNPSThresholdForRotationReduction && njs > Config.Instance.HighNJSThresholdForRotationReduction)
@@ -251,15 +271,7 @@ namespace AutoBS
                     totalRotation += rotationStep;
                     //Plugin.Log.Info($"totalRotation: {totalRotation} at time: {time}.");
                 }
-                /*
-                if (minRotationStep == 2)
-                {
-                    if (rotationStep == 1)
-                        rotationStep = 2;
-                    else if (rotationStep == -1)
-                        rotationStep = -2;
-                }
-                */
+
                 bool matchArcHeadAndTailRotation = false;
 
                 if (matchArcHeadAndTailRotation)
@@ -322,22 +334,6 @@ namespace AutoBS
             //Plugin.LogDebug($"PreferredBarDuration: {PreferredBarDuration} * RotationSpeedMultiplier: {RotationSpeedMultiplier} = {PreferredBarDuration/RotationSpeedMultiplier}");
             //Plugin.LogDebug($"RotationAngleMultiplier: {RotationAngleMultiplier}");
 
-            //All in seconds
-            List<ENoteData> notesAndBombs = new List<ENoteData>(eData.ColorNotes);
-
-            Plugin.LogDebug($"[RotationGenerator] Notes Count: {notesAndBombs.Count}"); // BW added to see how many notes are in the map
-
-            notesAndBombs.AddRange(eData.BombNotes);//List<ENoteData> notes = data.GetBeatmapDataItems<ENoteData>(0).ToList(); // NOTES CONTAINS NOTES AND BOMBS
-
-            notesAndBombs.Sort((a, b) => a.time.CompareTo(b.time));
-
-            Plugin.LogDebug($"[RotationGenerator] Notes Count after adding bombs: {notesAndBombs.Count}");
-            /*
-            foreach (var n in notesAndBombs)
-            {
-                Plugin.Log.Info($"Note: Time: {n.time:F} Line: {n.line} Layer: {n.layer} Type: {n.gameplayType} Color: {n.colorType} CutDir: {n.cutDirection}");
-            }
-            */
 
             List<ENoteData> notesInBar = new List<ENoteData>(); // CONTAINS NOTES AND BOMBS
             List<ENoteData> notesInBarBeat = new List<ENoteData>(); // CONTAINS NOTES AND BOMBS
@@ -345,9 +341,7 @@ namespace AutoBS
             // Align bars to first note, the first note (almost always) identifies the start of the first bar
             float firstBeatmapNoteTime = notesAndBombs[0].time;
 
-#if DEBUG
-            Plugin.Log.Info($"Setup bpm={TransitionPatcher.bpm} beatDuration={beatDuration} barLength={barLength} firstNoteTime={firstBeatmapNoteTime} firstnoteGameplayType={eData.ColorNotes[0].gameplayType} firstnoteColorType={eData.ColorNotes[0].colorType}");
-#endif
+            //Plugin.LogDebug($"Setup bpm={TransitionPatcher.bpm} beatDuration={beatDuration} barLength={barLength} firstNoteTime={firstBeatmapNoteTime} firstnoteGameplayType={eData.ColorNotes[0].gameplayType} firstnoteColorType={eData.ColorNotes[0].colorType}");
             
 
 
@@ -484,13 +478,6 @@ namespace AutoBS
                     IEnumerable<ENoteData> lastNotes =
                         notesInBarBeat.Where((e) => Math.Abs(e.time - lastNote.time) < 0.005f);
 
-                    // new version removed bombs for detecting direction
-                    //IEnumerable<ENoteData> lastNotes =
-                    //    notesInBarBeat.Where(e =>
-                    //        Math.Abs(e.time - lastNote.time) < 0.005f
-                    //        && e.cutDirection != NoteCutDirection.None);
-
-
                     // Amount of notes pointing to the left/right
                     int leftCount = lastNotes.Count((e) =>
                         e.line <= 1 || e.cutDirection == NoteCutDirection.Left ||
@@ -507,28 +494,6 @@ namespace AutoBS
                     // Determine amount to rotate at once
                     int rotationCount = 1;
                     double timeDiff = 0;
-
-                    /*
-                    // OLD Version
-                    if (afterLastNote != null)
-                    {
-
-                        // old version
-                        double barLength8thRound = Math.Round(barLength / 8, 4);
-                        timeDiff = Math.Round(afterLastNote.time - lastNote.time, 4); //BW without any rounding or rounding to 5 or more digits still produces a different rotation between exe and plugin.
-
-                        //double epsilon = 0.00000001;
-                        if (notesInBarBeat.Count >= 1)
-                        {
-                            if (timeDiff >= barLength)
-                                rotationCount = 3;
-                            else if
-                                (timeDiff >=
-                                    barLength8thRound) //barLength / 8 - This is the place where exe vs plugin maps will differ due to rounding between the 2 applications. i added rounding to 4 digits in order to match the output between the 2
-                                rotationCount = 2;
-                        }
-                    }
-                    */
                     
                     if (afterLastNote != null)
                     {
@@ -561,8 +526,6 @@ namespace AutoBS
                     rotationCount = Math.Clamp(rotationCount, minRotationStep, maxRotationStep);
 
                     if (rotationCount == 1) count1++; if (rotationCount == 2) count2++; if (rotationCount == 3) count3++; if (rotationCount == 4) count4++;
-                    //if (rotationCount == 3) Plugin.LogDebug($"[RotationGenerator]  Rotation 45deg: {lastNote.time:F} (attempt to add)");
-                    //if (rotationCount == 4) Plugin.LogDebug($"[RotationGenerator]  Rotation 60deg: {lastNote.time:F} (attempt to add)");
 
                     int rotationStep = 0;
                     if (leftCount > rightCount)
@@ -790,8 +753,6 @@ namespace AutoBS
                                     // Otherwise, clamp to ±1 so we never exceed 15° “against” the chain.
                                     if (wrongDirection)
                                     {
-                                        // chainPol == 0 → Up/Down chain → always clamp
-                                        // chainPol != stepSign → step is against chain direction → clamp
                                         rotationStep = stepSign * CLAMPED_STEP_SIZE;
                                         Plugin.LogDebug($"[RotationGenerator] Long Chain: {activeChain.time:F} dur: {(activeChain.tailTime - activeChain.time):F} {activeChain.cutDirection} reduced rotation at: {lastNote.time:F} {stepMag * stepSign * 15} --> {rotationStep * 15}.");
                                     }
@@ -871,8 +832,6 @@ namespace AutoBS
                     
 
                     //Plugin.LogDebug($"Total Rotations: {totalRotation*15} Time: {lastNote.time:F} Rotation: {rotation*15}");
-
-
                     //Plugin.LogDebug($"[{currentBarBeatStart}] rotationStep: {rotationStep} (notesInBarBeat={notesInBarBeat.Count},leftCount={leftCount},rightCount={rightCount},lastNotes={lastNotes.Count()},rotationTime={lastNote.time},afterLastNote={afterLastNote?.time:F},rotationCount={rotationCount})");
                 }
 
@@ -903,8 +862,6 @@ namespace AutoBS
                 (float accumRot, float time) high = (0, 0);
                 (float accumRot, float time) low = (0, 0);
                 int endRot = 0;
-
-                int d0 = 0;  int d15 = 0; int d30 = 0; int d45 = 0; int d60 = 0; int d75 = 0; int d90 = 0; int d120 = 0;
 
                 foreach (var rot in allRotations)
                 {
@@ -965,7 +922,10 @@ namespace AutoBS
                 int bombsRemoved = originalBombCount - eData.BombNotes.Count;
 
                 if (bombsRemoved > 0)
+                {
                     eData.BombNotesChanged = true;
+                    eData.BombNotes = eData.BombNotes.OrderBy(n => n.time).ToList();
+                }
 
                 // Remove the marked rotation events
                 if (rotsToRemove.Count > 0)
@@ -1104,26 +1064,6 @@ namespace AutoBS
                 }
                 Plugin.LogDebug($"[RotationGenerator] WallCutMoments generated with count: {eData.WallCutMoments.Count}");
 
-                /*
-                List<ENoteData> bombsToRemove = new List<ENoteData>();
-                foreach (var obj in eData.ColorNotes) // bombs get added to colorNotes for loop so need to remove them. this is still needed
-                {
-                    if (obj.cutDirection == NoteCutDirection.None)
-                        bombsToRemove.Add(obj);
-                }
-                //Plugin.Log.Info($" --- Removing {bombsToRemove.Count()} Bombs --- ");
-                eData.ColorNotes.RemoveAll(b => bombsToRemove.Contains(b)); // remove bombs
-                eData.ColorNotes = eData.ColorNotes.OrderBy(n => n.time).ToList();
-                */
-
-
-
-                
-                // bomb removal was here
-
-
-
-
                 Plugin.LogDebug($"[RotationGenerator] 5 Rotation Events Count: {eData.RotationEvents.Count()}");
 
                 //Plugin.LogDebug($"[RotationGenerator] Starting Per Object Rotations after this moment:");
@@ -1135,9 +1075,6 @@ namespace AutoBS
                 }
                 */
             }
-
-
-
 
             /// <summary> ArcFix(), MinRotationSize larger than 15, and FOVFix() cause rotations to move beyond the limits of LimitRotations360</summary> 
             List<ERotationEventData> AdjustRotationsToLimit(List<ERotationEventData> rotations)

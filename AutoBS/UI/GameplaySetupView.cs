@@ -646,20 +646,6 @@ namespace AutoBS.UI
             get => Config.Instance.StandardWallsMinDistance;
             set => Config.Instance.StandardWallsMinDistance = value;
         }
-        //v1.42
-        /*
-        [UIValue("EnableExtensionMappingWallsGenerator")]
-        public bool EnableExtensionMappingWallsGenerator
-        {
-            get => Config.Instance.EnableMappingExtensionsWallsGenerator;
-            set
-            {
-                Config.Instance.EnableMappingExtensionsWallsGenerator = value;
-                UpdateWallGeneratorUI();
-                SafeNotify();
-            }
-        }
-        */
         [UIValue("EnableDistantExtensionWalls")]
         public bool EnableDistantExtensionWalls
         {
@@ -1041,6 +1027,7 @@ namespace AutoBS.UI
 
             SafeNotify(nameof(EnablerAutoNjsFixer));
             SafeNotify(nameof(EnablerDesiredNJS));
+            SafeNotify(nameof(FontColorDesiredNJS));
             SafeNotify(nameof(FontColorAutoNjsFixer));
             SafeNotify(nameof(AutoNjsFixerMode));
         }
@@ -1152,6 +1139,27 @@ namespace AutoBS.UI
 
             _autoNjsModes.Add(_autoNjsFixerModeLabels[Config.AutoNjsFixerModeType.PreserveTravelTime]);
             _autoNjsModes.Add(_autoNjsFixerModeLabels[Config.AutoNjsFixerModeType.SetNoteSpeed]);
+
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Off]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Buttons]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Thumbstick]);
+
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Off]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Buttons]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Thumbstick]);
+
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Off]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Buttons]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Thumbstick]);
+
+            _portalShapes.Add(_portalShapeLabels[true]);   // Round
+            _portalShapes.Add(_portalShapeLabels[false]);  // Rectangular
+
+            _roundHeightModes.Add(_greenScreenHeightModeLabels[Config.GreenScreenHeightMode.CenterAtCustomHeight]);
+            _roundHeightModes.Add(_greenScreenHeightModeLabels[Config.GreenScreenHeightMode.BottomAtFloorLevel]);
+
+            _rectHeightModes.Add(_greenScreenHeightModeLabels[Config.GreenScreenHeightMode.CenterAtCustomHeight]);
+            _rectHeightModes.Add(_greenScreenHeightModeLabels[Config.GreenScreenHeightMode.BottomAtFloorLevel]);
         }
 
         [UIValue("LightStyle")]
@@ -1248,6 +1256,76 @@ namespace AutoBS.UI
             }
         }
 
+        // Live Controller Input
+
+        [UIValue("LiveVolumeControl")]
+        public string LiveVolumeControl
+        {
+            get => _liveControlModeLabels[Config.Instance.LiveVolumeControl];
+            set
+            {
+                if (_liveControlModeLabels.ContainsValue(value))
+                {
+                    var mode = _liveControlModeLabels.First(kv => kv.Value == value).Key;
+                    Config.Instance.LiveVolumeControl = mode;
+                    SafeNotify();
+                }
+            }
+        }
+
+        [UIValue("LiveNoteSpeedControl")]
+        public string LiveNoteSpeedControl
+        {
+            get => _liveControlModeLabels[Config.Instance.LiveNoteSpeedControl];
+            set
+            {
+                if (_liveControlModeLabels.ContainsValue(value))
+                {
+                    var mode = _liveControlModeLabels.First(kv => kv.Value == value).Key;
+                    Config.Instance.LiveNoteSpeedControl = mode;
+                    SafeNotify();
+                }
+            }
+        }
+
+        [UIValue("LiveNoteSpawnDistanceControl")]
+        public string LiveNoteSpawnDistanceControl
+        {
+            get => _liveControlModeLabels[Config.Instance.LiveNoteSpawnDistanceControl];
+            set
+            {
+                if (_liveControlModeLabels.ContainsValue(value))
+                {
+                    var mode = _liveControlModeLabels.First(kv => kv.Value == value).Key;
+                    Config.Instance.LiveNoteSpawnDistanceControl = mode;
+                    SafeNotify();
+                }
+            }
+        }
+
+        public List<object> LiveControlModeChoices => new List<object>
+        {
+            "Off",
+            "Buttons",
+            "Thumbstick"
+        };
+
+        private readonly Dictionary<Config.LiveControlModeType, string> _liveControlModeLabels = new Dictionary<Config.LiveControlModeType, string>
+        {
+            { Config.LiveControlModeType.Off,        "Off" },
+            { Config.LiveControlModeType.Buttons,    "Buttons" },
+            { Config.LiveControlModeType.Thumbstick, "Thumbstick" }
+        };
+
+        [UIValue("LiveVolumeControlChoices")]
+        private List<object> _liveVolumeControlModes = new List<object>();
+
+        [UIValue("LiveNoteSpeedControlChoices")]
+        private List<object> _liveNoteSpeedControlModes = new List<object>();
+
+        [UIValue("LiveNoteSpawnDistanceControlChoices")]
+        private List<object> _liveNoteSpawnDistanceControlModes = new List<object>();
+
         // Based On
 
         [UIValue("available-bases")]
@@ -1298,6 +1376,10 @@ namespace AutoBS.UI
         {
             int intValue = Mathf.RoundToInt(value);
             return $"{intValue}m";
+        }
+        public string DistanceFormatterFloat(float value)
+        {
+            return $"{value:F1}m";
         }
 
 
@@ -1583,38 +1665,238 @@ namespace AutoBS.UI
             get => EnablerDesiredNJS ? OnColor : OffColor;
             set => SafeNotify();
         }
-        /*
-        [UIComponent("AllSettingsContainer")]
-        public VerticalLayoutGroup AllSettingsContainer;
-        public void AllSettingsContainer()
+
+
+
+
+
+
+
+
+
+
+        // Green Screen Mixed Reality Portals ------------------------------------------------------------
+
+
+
+        [UIValue("EnableMixedRealityPortals")]
+        public bool EnableMixedRealityPortals
         {
-            if (AllSettingsContainer != null)
+            get => Config.Instance.EnableGreenScreen;
+            set
             {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(AllSettingsContainer.GetComponent<RectTransform>()); // AI suggested this. It helped a bit.
-                //Plugin.Log.Info("Successfully REFRESHED the vertical layout!");
+                Config.Instance.EnableGreenScreen = value;
+                UpdateMixedRealityPortalsUI();
             }
         }
-        */
 
-    }
-    /*
-    //trying to display the original NJS and NJO in menu but not working
-    public static class OriginalStatsHub
-    {
-        public static event Action<float, float> OriginalsChanged; // (njs, jd)
-
-        public static void SetOriginals(float njs, float jd)
+        [UIValue("EnablerMixedRealityPortals")]
+        public bool EnablerMixedRealityPortals
         {
-            // update your own state if you keep it
-            NoteJumpMovementSpeed = njs;
-            JumpDistance = jd;
-
-            OriginalsChanged?.Invoke(njs, jd);
+            get => Config.Instance.EnablePlugin && Config.Instance.EnableGreenScreen;
+            set
+            {
+                SafeNotify(nameof(FontColorMixedRealityPortals));
+                SafeNotify(nameof(ShowRoundPortalSettings));
+                SafeNotify(nameof(ShowRectPortalSettings));
+                SafeNotify(nameof(ShowCustomHeightSetting));
+            }
         }
 
-        // If you already store these:
-        public static float NoteJumpMovementSpeed { get; set; }
-        public static float JumpDistance { get; set; }
+        [UIValue("FontColorMixedRealityPortals")]
+        public string FontColorMixedRealityPortals
+        {
+            get => !Config.Instance.EnablePlugin
+                ? OffColor
+                : (Config.Instance.EnableGreenScreen ? OnColor : OffColor);
+            set { SafeNotify(); }
+        }
+        private readonly Dictionary<bool, string> _portalShapeLabels = new Dictionary<bool, string>
+        {
+            { true, "Round" },
+            { false, "Rectangular" }
+        };
+
+        [UIValue("available-portal-shapes")]
+        private List<object> _portalShapes = new List<object>();
+
+        [UIValue("MixedRealityPortalShape")]
+        public string MixedRealityPortalShape
+        {
+            get => _portalShapeLabels[Config.Instance.GreenScreenRound];
+            set
+            {
+                if (_portalShapeLabels.ContainsValue(value))
+                {
+                    bool isRound = _portalShapeLabels.First(kv => kv.Value == value).Key;
+                    Config.Instance.GreenScreenRound = isRound;
+
+                    SafeNotify(nameof(ShowRoundPortalSettings));
+                    SafeNotify(nameof(ShowRectPortalSettings));
+                    SafeNotify(nameof(ShowCustomHeightSetting));
+                    SafeNotify();
+                }
+            }
+        }
+        [UIValue("ShowRoundPortalSettings")]
+        public bool ShowRoundPortalSettings
+        {
+            get => Config.Instance.EnablePlugin
+                && Config.Instance.EnableGreenScreen
+                && Config.Instance.GreenScreenRound;
+            set
+            {
+                SafeNotify(nameof(FontColorMixedRealityPortals));
+                SafeNotify(nameof(ShowCustomHeightSetting));
+            }
+        }
+
+        [UIValue("ShowRectPortalSettings")]
+        public bool ShowRectPortalSettings
+        {
+            get => Config.Instance.EnablePlugin
+                && Config.Instance.EnableGreenScreen
+                && !Config.Instance.GreenScreenRound;
+            set
+            {
+                SafeNotify(nameof(FontColorMixedRealityPortals));
+                SafeNotify(nameof(ShowCustomHeightSetting));
+            }
+        }
+        [UIValue("ShowCustomHeightSetting")]
+        public bool ShowCustomHeightSetting
+        {
+            get
+            {
+                if (!Config.Instance.EnablePlugin || !Config.Instance.EnableGreenScreen)
+                    return false;
+
+                if (Config.Instance.GreenScreenRound)
+                    return Config.Instance.GreenScreenRoundHeightMode == Config.GreenScreenHeightMode.CenterAtCustomHeight;
+
+                return Config.Instance.GreenScreenRectHeightMode == Config.GreenScreenHeightMode.CenterAtCustomHeight;
+            }
+            set
+            {
+                SafeNotify(nameof(FontColorMixedRealityPortals));
+            }
+        }
+        [UIValue("GreenScreenRoundDiameter")]
+        public float GreenScreenRoundDiameter
+        {
+            get => Config.Instance.GreenScreenRoundDiameter;
+            set => Config.Instance.GreenScreenRoundDiameter = value;
+        }
+
+        [UIValue("GreenScreenRectWidth")]
+        public float GreenScreenRectWidth
+        {
+            get => Config.Instance.GreenScreenRectWidth;
+            set => Config.Instance.GreenScreenRectWidth = value;
+        }
+
+        [UIValue("GreenScreenRectHeight")]
+        public float GreenScreenRectHeight
+        {
+            get => Config.Instance.GreenScreenRectHeight;
+            set => Config.Instance.GreenScreenRectHeight = value;
+        }
+
+        [UIValue("GreenScreen360Diameter")]
+        public float GreenScreen360Diameter
+        {
+            get => Config.Instance.GreenScreen360Diameter;
+            set => Config.Instance.GreenScreen360Diameter = value;
+        }
+
+        [UIValue("GreenScreenMenuZOffset")]
+        public float GreenScreenMenuZOffset
+        {
+            get => Config.Instance.GreenScreenMenuZOffset;
+            set => Config.Instance.GreenScreenMenuZOffset = value;
+        }
+
+        [UIValue("GreenScreenGamePlayZOffset")]
+        public float GreenScreenGamePlayZOffset
+        {
+            get => Config.Instance.GreenScreenGamePlayZOffset;
+            set => Config.Instance.GreenScreenGamePlayZOffset = value;
+        }
+
+        [UIValue("GreenScreenCustomCenterHeight")]
+        public float GreenScreenCustomCenterHeight
+        {
+            get => Config.Instance.GreenScreenCustomCenterHeight;
+            set => Config.Instance.GreenScreenCustomCenterHeight = value;
+        }
+
+        private readonly Dictionary<Config.GreenScreenHeightMode, string> _greenScreenHeightModeLabels =
+            new Dictionary<Config.GreenScreenHeightMode, string>
+        {
+            { Config.GreenScreenHeightMode.CenterAtCustomHeight, "Center At Custom Height" },
+            { Config.GreenScreenHeightMode.BottomAtFloorLevel, "Bottom At Floor Level" }
+        };
+
+        [UIValue("available-round-height-modes")]
+        private List<object> _roundHeightModes = new List<object>();
+
+        [UIValue("available-rect-height-modes")]
+        private List<object> _rectHeightModes = new List<object>();
+
+        [UIValue("MixedRealityRoundHeightMode")]
+        public string MixedRealityRoundHeightMode
+        {
+            get => _greenScreenHeightModeLabels[Config.Instance.GreenScreenRoundHeightMode];
+            set
+            {
+                if (_greenScreenHeightModeLabels.ContainsValue(value))
+                {
+                    var mode = _greenScreenHeightModeLabels.First(kv => kv.Value == value).Key;
+                    Config.Instance.GreenScreenRoundHeightMode = mode;
+
+                    SafeNotify(nameof(ShowCustomHeightSetting));
+                    SafeNotify();
+                }
+            }
+        }
+
+        [UIValue("MixedRealityRectHeightMode")]
+        public string MixedRealityRectHeightMode
+        {
+            get => _greenScreenHeightModeLabels[Config.Instance.GreenScreenRectHeightMode];
+            set
+            {
+                if (_greenScreenHeightModeLabels.ContainsValue(value))
+                {
+                    var mode = _greenScreenHeightModeLabels.First(kv => kv.Value == value).Key;
+                    Config.Instance.GreenScreenRectHeightMode = mode;
+
+                    SafeNotify(nameof(ShowCustomHeightSetting));
+                    SafeNotify();
+                }
+            }
+        }
+        private void UpdateMixedRealityPortalsUI()
+        {
+            SafeNotify(nameof(EnableMixedRealityPortals));
+            SafeNotify(nameof(EnablerMixedRealityPortals));
+            SafeNotify(nameof(FontColorMixedRealityPortals));
+
+            SafeNotify(nameof(MixedRealityPortalShape));
+            SafeNotify(nameof(ShowRoundPortalSettings));
+            SafeNotify(nameof(ShowRectPortalSettings));
+
+            SafeNotify(nameof(MixedRealityRoundHeightMode));
+            SafeNotify(nameof(MixedRealityRectHeightMode));
+            SafeNotify(nameof(ShowCustomHeightSetting));
+
+            SafeNotify(nameof(GreenScreenRoundDiameter));
+            SafeNotify(nameof(GreenScreenRectWidth));
+            SafeNotify(nameof(GreenScreenRectHeight));
+            SafeNotify(nameof(GreenScreen360Diameter));
+            SafeNotify(nameof(GreenScreenMenuZOffset));
+            SafeNotify(nameof(GreenScreenGamePlayZOffset));
+            SafeNotify(nameof(GreenScreenCustomCenterHeight));
+        }
     }
-    */
 }

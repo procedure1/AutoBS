@@ -5,6 +5,7 @@ using IPA.Config.Stores;
 using IPA.Config.Stores.Attributes;
 using IPA.Config.Stores.Converters;
 using Microsoft.Identity.Client;
+using UnityEngine;
 
 
 [assembly: InternalsVisibleTo(GeneratedStore.AssemblyVisibilityTarget)]
@@ -246,6 +247,45 @@ namespace AutoBS
 
 
         //------------------------
+
+        public enum LiveControlModeType
+        {
+            Off,
+            Buttons,
+            Thumbstick
+        }
+        public virtual LiveControlModeType LiveVolumeControl { get; set; } = LiveControlModeType.Thumbstick;
+        public virtual LiveControlModeType LiveNoteSpeedControl { get; set; } = LiveControlModeType.Off;
+        public virtual LiveControlModeType LiveNoteSpawnDistanceControl { get; set; } = LiveControlModeType.Off;
+
+
+        // Green Screen Passthrough portal
+
+        public virtual bool EnableGreenScreen { get; set; } = true;
+        public virtual bool GreenScreenRound { get; set; } = true;
+        public virtual float GreenScreenRoundDiameter { get; set; } = 2.8f;
+        public virtual float GreenScreenRectWidth { get; set; } = 3.8f;
+        public virtual float GreenScreenRectHeight { get; set; } = 3.1f;
+        public virtual float GreenScreen360Diameter { get; set; } = 6f; // set to 0 to turn off
+        public virtual bool GreenScreen360HasCeiling { get; set; } = true; // set to 0 to turn off
+
+        public virtual float GreenScreenMenuZOffset { get; set; } = 0.3f;
+        //public virtual float GreenScreenGamePlayYOffset { get; set; } = 0f;
+        public virtual float GreenScreenGamePlayZOffset { get; set; } = 1.7f;
+
+        public enum GreenScreenHeightMode
+        {
+            CenterAtCustomHeight,
+            BottomAtFloorLevel,
+        }
+        public virtual GreenScreenHeightMode GreenScreenRoundHeightMode { get; set; } = GreenScreenHeightMode.CenterAtCustomHeight;
+        public virtual GreenScreenHeightMode GreenScreenRectHeightMode { get; set; }  = GreenScreenHeightMode.BottomAtFloorLevel;
+
+        public virtual float GreenScreenCustomCenterHeight { get; set; } = 1.8f; //meters - for centering passthroughj portal. use player height 1.8f
+
+        public virtual Color GreenScreenColor { get; set; } = new Color(0f, 2f, 0f, 1f); // needs to be 2f or higher to avoid shadows in the corners
+
+        public virtual bool MixedRealityModeTest { get; set; } = false; // huge green screen behind everything. but it looks terrible. all objects get a green glow around them.
 
         // Output JASON files
 

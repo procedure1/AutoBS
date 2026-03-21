@@ -10,7 +10,7 @@ namespace AutoBS
 {
     public class AutoNjsFixer
     {
-        public static string ScoreSubmissionDisableText = "";
+        //public static string ScoreSubmissionDisableText = "";
         public static (float finalNjs, float finalJD, float originalJD) Calculate(float originalNJS, float originalNJO, float bpm) // Calculate AutoNjsFixerFinalNJS here since we need NJS for other patches
         {
             //if (!Utils.IsEnabledAutoNjsFixer()) return (0,0); // called before TransitionPatcher so can't use this.
@@ -24,9 +24,6 @@ namespace AutoBS
 
             float desiredJD = Config.Instance.DesiredJD > 0 ? Config.Instance.DesiredJD : originalJD;
             float finalJD = desiredJD;
-
-
-            Plugin.LogDebug($"[AutoNjsFixer] Called... originalNJS: {originalNJS}, originalNJO: {originalNJO} originalJD: {originalJD}, desiredNJS: {desiredNJS}, desiredJD: {desiredJD}");
 
             bool preserveJumpDuration = (Config.Instance.AutoNjsFixerMode == Config.AutoNjsFixerModeType.PreserveTravelTime) ? true : false; // if false , it's ForceNJS mode
 
@@ -45,7 +42,11 @@ namespace AutoBS
 
             string mode = "Set Note Speed";
             if (preserveJumpDuration) mode = "Preserve Travel Time";
-            Plugin.Log.Info($"[AutoNjsFixer] originalNJS: {originalNJS}, originalJD: {originalJD} => finalNJS: {finalNJS}, finalJD: {finalJD} (mode: {mode})");
+
+            if (Utils.IsEnabledAutoNjsFixer())
+                Plugin.Log.Info($"[AutoNjsFixer] originalNJS: {originalNJS}, originalNJO: {originalNJO}, originalJD: {originalJD} ==> finalNJS: {finalNJS}, finalJD: {finalJD} (mode: {mode})");
+            else
+                Plugin.LogDebug($"[AutoNjsFixer] originalNJS: {originalNJS}, originalNJO: {originalNJO}, originalJD: {originalJD} ==> (AutoNjsFixer disabled, no changes applied)"); 
 
             return (finalNJS, finalJD, originalJD);
         }

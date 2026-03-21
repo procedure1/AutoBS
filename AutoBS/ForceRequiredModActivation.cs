@@ -27,9 +27,6 @@ namespace AutoBS
             var t = AccessTools.TypeByName("Chroma.Modules.FeaturesModule");
             if (t == null) { Plugin.LogDebug("[ForceActivate] Chroma FeaturesModule not found."); return; }
 
-            // Chroma has 2 Condition variants across versions:
-            //   private bool Condition(Capabilities capabilities)
-            //   private bool Condition(IDifficultyBeatmap db, Capabilities capabilities)   // PRE_V1_37_1
             var targets = t.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
                            .Where(m => m.Name == "Condition")
                            .ToArray();
@@ -147,7 +144,6 @@ namespace AutoBS
                 Plugin.Log.Info("[ForceActivate] Mapping Extensions - ForceActivateForSong method invoked successfully.");
                 //SongCore.Collections.RegisterCapability("Mapping Extensions");
             }
-
         }
     }
 }

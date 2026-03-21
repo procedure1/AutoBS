@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
+/*
 namespace AutoBS
 {
     // Add Directional Markers to Menu Environment so player can easily face the menus
@@ -29,17 +29,17 @@ namespace AutoBS
 
         private void Start()
         {
-            Plugin.LogDebug("[GlassEnvironmentFinder] Start method called. Will try to add directional markers for players to know what direction to face.");
+            //Plugin.LogDebug("[GlassEnvironmentFinder] Start method called. Will try to add directional markers for players to know what direction to face.");
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            Plugin.LogDebug($"[GlassEnvironmentFinder] {scene.name} checking environment to add markers potentially if its a 360 environment...");
+            //Plugin.LogDebug($"[GlassEnvironmentFinder] {scene.name} checking environment to add markers potentially if its a 360 environment...");
 
             if (scene.name.Contains("GlassDesertEnvironment"))
             {
-                Plugin.LogDebug($"{scene.name} scene loaded.");
+                //Plugin.LogDebug($"[GlassEnvironmentFinder] {scene.name} scene loaded.");
                 GameObject environment = FindEnvironment(scene);
                 if (environment != null)
                 {
@@ -55,7 +55,7 @@ namespace AutoBS
             {
                 if (menuMarkersAdded)
                 {
-                    Plugin.LogDebug($"[GlassEnvironmentFinder] Removing markers since scene is: {scene.name}.");
+                    //Plugin.LogDebug($"[GlassEnvironmentFinder] Removing markers since scene is: {scene.name}.");
                     RemoveMarkers();
                 }
             }
@@ -69,7 +69,7 @@ namespace AutoBS
                 {
                     if (obj.name.EndsWith("Environment"))
                     {
-                        Plugin.LogDebug($"[GlassEnvironmentFinder] {obj.name} found in scene: {scene.name}");
+                        //Plugin.LogDebug($"[GlassEnvironmentFinder] {obj.name} found in scene: {scene.name}");
                         return obj;
                     }
                 }
@@ -88,7 +88,7 @@ namespace AutoBS
             }
             markers.Clear();
             menuMarkersAdded = false;
-            Plugin.LogDebug("[GlassEnvironmentFinder] Direction markers removed.");
+            //Plugin.LogDebug("[GlassEnvironmentFinder] Direction markers removed.");
         }
 
         public void AddMarker(GameObject marker)
@@ -114,7 +114,7 @@ namespace AutoBS
         {
             if (GlassEnvironmentFinder.Instance.menuMarkersAdded)
             {
-                Plugin.LogDebug("[AddDirectionalMarkersToMenu] Markers already exist. Skipping creation.");
+                //Plugin.LogDebug("[AddDirectionalMarkersToMenu] Markers already exist. Skipping creation.");
                 return;
             }
 
@@ -141,7 +141,7 @@ namespace AutoBS
 
                         if (noteArrow == null || noteArrowGlow == null)
                         {
-                            Plugin.LogDebug("[AddDirectionalMarkersToMenu] NoteArrow or NoteArrowGlow not found.No directional markers added!!!");
+                            //Plugin.LogDebug("[AddDirectionalMarkersToMenu] NoteArrow or NoteArrowGlow not found.No directional markers added!!!");
                             //AddDirectionMarkerSpheresToMenu(root);
                             return;
                         }
@@ -149,7 +149,7 @@ namespace AutoBS
                 }
             }
 
-            Plugin.LogDebug("[AddDirectionalMarkersToMenu] Adding direction markers to Menu...");
+            //Plugin.LogDebug("[AddDirectionalMarkersToMenu] Adding direction markers to Menu...");
 
             float radius = 4.2f; // Radial distance of 4.2m
             float height = 1.3f; // Height off the ground floor
@@ -202,6 +202,7 @@ namespace AutoBS
             float z = Mathf.Cos(radian) * radius;
             return new Vector3(x, height, z);
         }
+*/
 
         // spheres
         /*
@@ -251,5 +252,5 @@ namespace AutoBS
             Plugin.LogDebug("[AddDirectionalMarkersToMenu] Sphere Direction markers added.");
         }
         */
-    }
-}
+    //}
+//}

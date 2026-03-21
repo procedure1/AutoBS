@@ -159,33 +159,6 @@ namespace AutoBS
                                 indicesToRemove.Add(i);
                                 Plugin.LogDebug($"Beat Sage 2 - remove left note side-by-side with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
                             }
-
-                            /*
-                            // OLD VERSION - 2 side-by-side notes of different colors - Check if the leftmost note has cutDirection Left and the rightmost note has cutDirection Right - and other impossible configurations
-                            else if (currentNote.line < nextNote.line)
-                            {
-
-                                if ((currentNote.cutDirection == NoteCutDirection.Left) ||
-                                    (currentNote.cutDirection == NoteCutDirection.Right) ||
-                                   ((currentNote.cutDirection == NoteCutDirection.DownLeft) && (nextNote.cutDirection != NoteCutDirection.DownLeft && nextNote.cutDirection != NoteCutDirection.UpRight)) ||
-                                   ((currentNote.cutDirection == NoteCutDirection.UpLeft) && (nextNote.cutDirection != NoteCutDirection.UpLeft && nextNote.cutDirection != NoteCutDirection.DownRight)))
-                                {
-                                    indicesToRemove.Add(i);
-                                    Plugin.LogDebug($"Beat Sage 2 - remove left note side-by-side with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
-                                }
-                            }
-                            else
-                            {
-                                if ((currentNote.cutDirection == NoteCutDirection.Left) ||
-                                    (currentNote.cutDirection == NoteCutDirection.Right) ||
-                                   ((currentNote.cutDirection == NoteCutDirection.DownRight) && (nextNote.cutDirection != NoteCutDirection.DownRight && nextNote.cutDirection != NoteCutDirection.UpLeft)) ||
-                                   ((currentNote.cutDirection == NoteCutDirection.UpRight) && (nextNote.cutDirection != NoteCutDirection.UpRight && nextNote.cutDirection != NoteCutDirection.DownLeft)))
-                                {
-                                    indicesToRemove.Add(i);
-                                    Plugin.LogDebug($"Beat Sage 3 - remove right note side-by-side with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
-                                }
-                            }
-                            */
                         }
                         // Check for ONE-ABOVE-THE-OTHER Notes. -- Check if the two notes (not any bombs) have the same index, and different layer (they may be one-above-the-other)
                         else if (currentNote.line == nextNote.line && // Check for same index
@@ -214,31 +187,6 @@ namespace AutoBS
                                 indicesToRemove.Add(i);
                                 Plugin.LogDebug($"Beat Sage 2 - remove bottom note one-above-the-other of DIFFERENT COLORS with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
                             }
-                            /*
-                            // 2 OLD VERSION ONE-ABOVE-THE-OTHER notes of different colors - Check if the bottommost note has cutDirection Down and the uppermost note has cutDirection Up - and other impossible configurations
-                            else if (currentNote.layer < nextNote.layer)
-                            {
-                                if ((currentNote.cutDirection == NoteCutDirection.Down) ||
-                                    (currentNote.cutDirection == NoteCutDirection.Up) ||
-                                   ((currentNote.cutDirection == NoteCutDirection.DownLeft) && (nextNote.cutDirection != NoteCutDirection.DownLeft && nextNote.cutDirection != NoteCutDirection.UpRight)) ||
-                                   ((currentNote.cutDirection == NoteCutDirection.DownRight) && (nextNote.cutDirection != NoteCutDirection.DownRight && nextNote.cutDirection != NoteCutDirection.UpLeft)))
-                                {
-                                    indicesToRemove.Add(i);
-                                    Plugin.LogDebug($"Beat Sage 2 - remove bottom note one-above-the-other of DIFFERENT COLORS with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
-                                }
-                            }
-                            else
-                            {
-                                if ((currentNote.cutDirection == NoteCutDirection.Down) ||
-                                    (currentNote.cutDirection == NoteCutDirection.Up) ||
-                                   ((currentNote.cutDirection == NoteCutDirection.UpLeft) && (nextNote.cutDirection != NoteCutDirection.UpLeft && nextNote.cutDirection != NoteCutDirection.DownRight)) ||
-                                   ((currentNote.cutDirection == NoteCutDirection.UpRight) && (nextNote.cutDirection != NoteCutDirection.UpRight && nextNote.cutDirection != NoteCutDirection.DownLeft)))
-                                {
-                                    indicesToRemove.Add(i);
-                                    Plugin.LogDebug($"Beat Sage 3 - remove top note one-above-the-other of DIFFERENT COLORS with another note in impossible cutDirection at {currentNote.time:F}/{nextNote.time:F} - {currentNote.cutDirection} - {nextNote.cutDirection}");
-                                }
-                            }
-                            */
                         }
                         // Check for OVERLAPPING NOTES. -- Check if the two notes have the same lineIndex, and noteLineLayer
                         else if (currentNote.line == nextNote.line &&
@@ -294,7 +242,7 @@ namespace AutoBS
                 if (notesRemoved > 0) eData.ColorNotesChanged = true;
                 if (bombsRemoved > 0) eData.BombNotesChanged = true;
 
-                Plugin.LogDebug($"[BeatSageCleanUp] Notes Removed: {notesRemoved}, Bombs Removed: {bombsRemoved} - Remaining notes and bombs: {eData.ColorNotes.Count + eData.BombNotes.Count}");
+                Plugin.Log.Info($"[BeatSageCleanUp] Notes Removed: {notesRemoved}, Bombs Removed: {bombsRemoved} - Remaining notes and bombs: {eData.ColorNotes.Count + eData.BombNotes.Count}");
             }
                 
             return eData;
@@ -381,8 +329,7 @@ namespace AutoBS
                                 float oldStartTime = startTime;
                                 startTime = note.time + minTimeBetweenWallsAndNotes;
 
-                                //Plugin.LogDebug(
-                                //    $"--- {obCnt} Beat Sage Map NEW START TIME - wall: {oldStartTime:F} dur: {duration:F} had a note too close to the beginning of a wall. note: {note.time:F} and will cut beginning of the wall to start at: {startTime:F}");
+                                //Plugin.LogDebug($"--- {obCnt} Beat Sage Map NEW START TIME - wall: {oldStartTime:F} dur: {duration:F} had a note too close to the beginning of a wall. note: {note.time:F} and will cut beginning of the wall to start at: {startTime:F}");
                                 wallAlteredCtnt++;
                                 customObstacle = EObstacleData.Create(startTime,
                                     line, ob.layer, duration, ob.width, ob.height
@@ -391,15 +338,13 @@ namespace AutoBS
                             }
                             else
                             {
-                                //Plugin.LogDebug(
-                                //    $"--- {obCnt} Beat Sage Map DELETE WALL -    wall: {startTime:F} dur: {duration:F}  had a note too close to the beginning of a wall. note: {note.time:F}. New duration is too short so DELETING WALL!!!!1");
+                                //Plugin.LogDebug($"--- {obCnt} Beat Sage Map DELETE WALL -    wall: {startTime:F} dur: {duration:F}  had a note too close to the beginning of a wall. note: {note.time:F}. New duration is too short so DELETING WALL!!!!1");
                                 break; // no need to check anymore notes on the deleted ob
                             }
                         }
                         else
                         {
-                            //Plugin.LogDebug(
-                            //       $"--- {obCnt} Beat Sage Map DELETE WALL -    wall: {startTime:F} dur: {duration:F} had a note too close to the beginning of a wall. note: {note.time:F}. New duration is too short so DELETING WALL!!!!2");
+                            //Plugin.LogDebug($"--- {obCnt} Beat Sage Map DELETE WALL -    wall: {startTime:F} dur: {duration:F} had a note too close to the beginning of a wall. note: {note.time:F}. New duration is too short so DELETING WALL!!!!2");
                             break;
                         }
 
@@ -422,16 +367,14 @@ namespace AutoBS
                                 duration = newDuration;
 
                                 wallAlteredCtnt++;
-                                //Plugin.LogDebug(
-                                //    $"--- {obCnt} Beat Sage Map NEW DURATION -   wall: {startTime:F} dur: {oldDuration:F} had a note too close to the end of a wall. wall end: {endTime} note: {note.time:F} New duration: {duration:F}");
+                                //Plugin.LogDebug($"--- {obCnt} Beat Sage Map NEW DURATION -   wall: {startTime:F} dur: {oldDuration:F} had a note too close to the end of a wall. wall end: {endTime} note: {note.time:F} New duration: {duration:F}");
                                 customObstacle = EObstacleData.Create(startTime,
                                     line, ob.layer, duration, ob.width, ob.height);
 
                             }
                             else
                             {
-                                //Plugin.LogDebug(
-                                //    $"--- {obCnt} Beat Sage Map DELETE WALL -    wall: {startTime:F} dur: {duration:F} had a note too close to the end of a wall. wall end: {endTime} note: {note.time:F}. New duration is too short so DELETING WALL!!!!");
+                                //Plugin.LogDebug($"--- {obCnt} Beat Sage Map DELETE WALL -    wall: {startTime:F} dur: {duration:F} had a note too close to the end of a wall. wall end: {endTime} note: {note.time:F}. New duration is too short so DELETING WALL!!!!");
                                 break;
                             }
                         }
@@ -447,8 +390,7 @@ namespace AutoBS
                             //newObstacleEndTime = note.time - .3f;
                             //newDuration = newObstacleEndTime - newStartTime;
                             wallAlteredCtnt++;
-                            //Plugin.LogDebug(
-                            //        $"--- {obCnt} Beat Sage Map NEW LINE INDEX - wall: {startTime:F} dur: {duration:F} had a note/bomb inside a left wall. note: {note.time:F} and will move wall to lineIndex: {line}");// shorten wall to end here: {newObstacleEndTime}");
+                            //Plugin.LogDebug($"--- {obCnt} Beat Sage Map NEW LINE INDEX - wall: {startTime:F} dur: {duration:F} had a note/bomb inside a left wall. note: {note.time:F} and will move wall to lineIndex: {line}");// shorten wall to end here: {newObstacleEndTime}");
                             customObstacle = EObstacleData.Create(startTime,
                                 line, ob.layer, duration, ob.width, ob.height);
                         }
@@ -459,8 +401,7 @@ namespace AutoBS
                             //newObstacleEndTime = note.time - .3f;
                             //newDuration = newObstacleEndTime - newStartTime;
                             wallAlteredCtnt++;
-                            //Plugin.LogDebug(
-                            //       $"--- {obCnt} Beat Sage Map NEW LINE INDEX - wall: {startTime:F} dur: {duration:F} had a note/bomb inside a right wall. note: {note.time:F} and will move wall to lineIndex: {line}");// shorten wall to end here: {newObstacleEndTime}");
+                            //Plugin.LogDebug($"--- {obCnt} Beat Sage Map NEW LINE INDEX - wall: {startTime:F} dur: {duration:F} had a note/bomb inside a right wall. note: {note.time:F} and will move wall to lineIndex: {line}");// shorten wall to end here: {newObstacleEndTime}");
                             customObstacle = EObstacleData.Create(startTime,
                                 line, ob.layer, duration, ob.width, ob.height);
                         }
@@ -481,16 +422,14 @@ namespace AutoBS
                     ((line == 0 && ob.width > 2) || (line == 1 && ob.width > 1)))
                 {
                     isCrouchWall = true;
-                    //Plugin.LogDebug(
-                    //    $"--- {obCnt} Beat Sage Map ---------------- Found CROUCH Wall - wall: {startTime:F} duration: {duration:F} i: {line} w:{ob.width} l: {(int)ob.lineLayer} h: {ob.height}");
+                    //Plugin.LogDebug($"--- {obCnt} Beat Sage Map ---------------- Found CROUCH Wall - wall: {startTime:F} duration: {duration:F} i: {line} w:{ob.width} l: {(int)ob.lineLayer} h: {ob.height}");
                 }
                 else if ((ob.width > 1 && line == 2) ||
                          (ob.width == 2 && line == 0) ||
                          (ob.width == 1 && (line == 1 || line == 2)))
                 {
                     isLeanWall = true;
-                    //Plugin.LogDebug(
-                    //    $"--- {obCnt} Beat Sage Map ---------------- Found LEAN Wall - wall: {startTime:F} duration: {duration:F} i: {line} w:{ob.width} l: {(int)ob.line} h: {ob.height}");
+                    //Plugin.LogDebug($"--- {obCnt} Beat Sage Map ---------------- Found LEAN Wall - wall: {startTime:F} duration: {duration:F} i: {line} w:{ob.width} l: {(int)ob.line} h: {ob.height}");
                 }
 
                 // Make sure lean or crouch walls are not close together and positioned, so it's hard for the player to move between them.
@@ -539,8 +478,7 @@ namespace AutoBS
                         }
                         else
                         {
-                            //Plugin.LogDebug(
-                            //        $"--- {obCnt} Beat Sage Map DELETED WALL -   wall: {startTime:F} dur: {duration:F} is too close to another wall.  New duration is too short!!!!!!!");
+                            //Plugin.LogDebug($"--- {obCnt} Beat Sage Map DELETED WALL -   wall: {startTime:F} dur: {duration:F} is too close to another wall.  New duration is too short!!!!!!!");
                             break;
                         }
 
@@ -741,7 +679,7 @@ namespace AutoBS
                         totalBombRemoved += removedBombsThisPass;
                         eData.BombNotesChanged = true;
 
-                        Plugin.LogDebug(
+                        Plugin.Log.Info(
                             $"[BeatSageCleanUp][StrayNoteCleaner] Bomb cleanup: " +
                             $"removed {leadingBombsRemoved} leading bomb(s) " +
                             $"and {trailingBombsRemoved} trailing bomb(s) " +

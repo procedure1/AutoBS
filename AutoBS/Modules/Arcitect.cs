@@ -86,7 +86,7 @@ namespace AutoBS
             
             float songDuration = (eData.ColorNotes.Last().time - eData.ColorNotes.First().time) / 60; // minutes between 1st and last note
 
-            Plugin.LogDebug($"[Arcitect] Song Duration: {songDuration} sec. ColorNote Count: {eData.ColorNotes.Count()} 1st Note at: {eData.ColorNotes.First().time} last note at: {eData.ColorNotes.Last().time}");
+            Plugin.LogDebug($"[Arcitect][CreateSliders] Song Duration: {songDuration} sec. ColorNote Count: {eData.ColorNotes.Count()} 1st Note at: {eData.ColorNotes.First().time} last note at: {eData.ColorNotes.Last().time}");
 
             preferredArcCount = (int)(songDuration * Config.Instance.PreferredArcCountPerMin);
             preferredChainCount = (int)(songDuration * Config.Instance.PreferredChainCountPerMin);
@@ -112,7 +112,7 @@ namespace AutoBS
             }
             if (eData.Arcs.Count == 0 && Utils.IsEnabledArcs())//only add arcs if map doesn't have any
             {
-                Plugin.LogDebug($"Preferred Arc Count: {preferredArcCount}.");
+                Plugin.LogDebug($"[Arcitect][CreateSliders] Preferred Arc Count: {preferredArcCount}.");
 
                 ArcSwingMode = Config.Instance.ArcSwingMode;
 
@@ -130,22 +130,22 @@ namespace AutoBS
             }
             else
             {
-                Plugin.LogDebug($"[Arcitect] Map already has {eData.Arcs.Count} arcs so will not add any.");
+                Plugin.LogDebug($"[Arcitect][CreateSliders] Map already has {eData.Arcs.Count} arcs so will not add any.");
                 arcs = eData.Arcs; // save arcs to static variable for chains to use
             }
 
             if (eData.Chains.Count == 0 && Utils.IsEnabledChains())//only add chains if map doesn't have any
             {
-                Plugin.LogDebug($"[Arcitect] Preferred Chain Count: {preferredChainCount}.");
+                Plugin.LogDebug($"[Arcitect][CreateSliders] Preferred Chain Count: {preferredChainCount}.");
 
                 if (pauseDetection) // USING THIS <-------------------------------------------------------
                 {
-                    Plugin.LogDebug($"[Arcitect] Chain - Pause Detection Algorithm.");
+                    Plugin.LogDebug($"[Arcitect][CreateSliders] Chain - Pause Detection Algorithm.");
                     eData.Chains = SetPreferredChainCountPauseDetection(colorA, colorB);
                 }
                 else
                 {
-                    Plugin.LogDebug($"[Arcitect] Chain - Tempo Change Algorithm.");
+                    Plugin.LogDebug($"[Arcitect][CreateSliders] Chain - Tempo Change Algorithm.");
                     eData.Chains = SetPreferredChainCountTempoChange(colorA, colorB);
                 }
 
@@ -162,12 +162,12 @@ namespace AutoBS
             }
             else
             {
-                Plugin.LogDebug($"[Arcitect] Map already has {eData.Chains.Count} chains so will not add any.");
+                Plugin.LogDebug($"[Arcitect][CreateSliders] Map already has {eData.Chains.Count} chains so will not add any.");
 
                 ScoreSubmissionDisableText = "";
             }
 
-            Plugin.LogDebug($"[Arcitect] after Creation: Arcs Count: {eData.Arcs.Count}. Chains Count: {eData.Chains.Count}.");
+            Plugin.LogDebug($"[Arcitect][CreateSliders] after Creation: Arcs Count: {eData.Arcs.Count}. Chains Count: {eData.Chains.Count}.");
         }
 
         public static List<ESliderData> SetPreferredArcCount(List<ENoteData> colorA, List<ENoteData> colorB) // https://github.com/Loloppe/Lolighter/blob/master/Lolighter/Algorithm/Arc.cs
@@ -634,30 +634,7 @@ namespace AutoBS
 
             return diff >= minSwingDeg; //diff >= minSwingDeg
         }
-        
-        /*
-        public static bool IsContraryByDegreesTest(ENoteData n1, ENoteData n2, int minSwingDeg)
-        {
-            if (n2.cutDirection == NoteCutDirection.Up || n2.cutDirection == NoteCutDirection.UpLeft || n2.cutDirection == NoteCutDirection.UpRight)
-                return false;
-
-            if (n1.cutDirection == NoteCutDirection.Any || n2.cutDirection == NoteCutDirection.Any )
-                return true; // always good
-
-            Vector2 d1 = n1.cutDirection.Direction(); // returns vector from NoteCutDirectionExtensions decompiled code
-            Vector2 d2 = n2.cutDirection.Direction();
-
-            // Safety: if Any maps to (0,0) in your extension, avoid bogus angles
-            if (d1 == Vector2.zero || d2 == Vector2.zero) // means has NO actual direction
-                return false;
-
-            float diff = Vector2.Angle(d1, d2); // 0..180
-
-            return diff == 90 || diff == 135;// minSwingDeg; //diff >= minSwingDeg
-        }
-        */
-        // allows 180 degree difference and some at 135     
-
+       
         public static bool IsOppositeBetweenSwings(ENoteData note1, NoteData note2) // may be the best option
         {
             if (note1.cutDirection == NoteCutDirection.Any || note2.cutDirection == NoteCutDirection.Any) return false;
@@ -668,147 +645,6 @@ namespace AutoBS
             else
             {
                 return false;
-            }
-        }
-
-        // less restrictive version - allows 180 degree difference and more 135 degree difference options
-        public static bool IsContraryLikeDirectionBetweenSwings_NOT_NEEEDED_SAME_AS_ContrarySwings135Degree(ENoteData note1, NoteData note2) // new BW version that takes into account how it feels to reverse the swing of each hand
-        {
-            if (note1.cutDirection == NoteCutDirection.Any || note2.cutDirection == NoteCutDirection.Any) return false;
-            else
-            {
-                if (note1.colorType == ColorType.ColorA) // right blue notes - right favors right (and down usually)
-                {
-                    switch (note1.cutDirection)
-                    {
-                        case NoteCutDirection.Up: // added new last one
-                            {
-                                if (note2.cutDirection == NoteCutDirection.Down || note2.cutDirection == NoteCutDirection.DownRight || note2.cutDirection == NoteCutDirection.DownLeft)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.Down: // added new last one
-                            {
-                                if (note2.cutDirection == NoteCutDirection.Up || note2.cutDirection == NoteCutDirection.UpRight || note2.cutDirection == NoteCutDirection.DownLeft)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.Left: // added new last one
-                            {
-                                if (note2.cutDirection == NoteCutDirection.Right || note2.cutDirection == NoteCutDirection.DownRight || note2.cutDirection == NoteCutDirection.UpRight)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.Right: // added new last one
-                            {
-                                if (note2.cutDirection == NoteCutDirection.Left || note2.cutDirection == NoteCutDirection.DownLeft || note2.cutDirection == NoteCutDirection.UpLeft)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.UpLeft: // added new last two
-                            {
-                                if (note2.cutDirection == NoteCutDirection.DownRight || note2.cutDirection == NoteCutDirection.Down || note2.cutDirection == NoteCutDirection.Right)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.UpRight:  // added new last two
-                            {
-                                if (note2.cutDirection == NoteCutDirection.DownLeft || note2.cutDirection == NoteCutDirection.Down || note2.cutDirection == NoteCutDirection.Left)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.DownLeft:  // added new last two
-                            {
-                                if (note2.cutDirection == NoteCutDirection.UpRight || note2.cutDirection == NoteCutDirection.Up || note2.cutDirection == NoteCutDirection.Right)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.DownRight:  // added new last two
-                            {
-                                if (note2.cutDirection == NoteCutDirection.UpLeft || note2.cutDirection == NoteCutDirection.Up || note2.cutDirection == NoteCutDirection.Left)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        default: // For Dot Note or any other cases
-                            {
-                                return false;
-                            }
-                    }
-                }
-                else // left red notes - left favors left (and down usually)
-                {
-                    switch (note1.cutDirection)
-                    {
-                        case NoteCutDirection.Up: // added new last one
-                            {
-                                if (note2.cutDirection == NoteCutDirection.Down || note2.cutDirection == NoteCutDirection.DownLeft || note2.cutDirection == NoteCutDirection.DownRight)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.Down:// added new last one
-                            {
-                                if (note2.cutDirection == NoteCutDirection.Up || note2.cutDirection == NoteCutDirection.UpLeft || note2.cutDirection == NoteCutDirection.UpRight)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.Left:// added new last one
-                            {
-                                if (note2.cutDirection == NoteCutDirection.Right || note2.cutDirection == NoteCutDirection.DownRight || note2.cutDirection == NoteCutDirection.UpRight)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.Right:// added new last one
-                            {
-                                if (note2.cutDirection == NoteCutDirection.Left || note2.cutDirection == NoteCutDirection.DownLeft || note2.cutDirection == NoteCutDirection.UpLeft)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.UpLeft:// added new last two
-                            {
-                                if (note2.cutDirection == NoteCutDirection.DownRight || note2.cutDirection == NoteCutDirection.Down || note2.cutDirection == NoteCutDirection.Right)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.UpRight:// added new last two
-                            {
-                                if (note2.cutDirection == NoteCutDirection.DownLeft || note2.cutDirection == NoteCutDirection.Down || note2.cutDirection == NoteCutDirection.Left)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.DownLeft:// added new last two
-                            {
-                                if (note2.cutDirection == NoteCutDirection.UpRight || note2.cutDirection == NoteCutDirection.Up || note2.cutDirection == NoteCutDirection.Right)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        case NoteCutDirection.DownRight:// added new last two
-                            {
-                                if (note2.cutDirection == NoteCutDirection.UpLeft || note2.cutDirection == NoteCutDirection.Up || note2.cutDirection == NoteCutDirection.Left)
-                                    return true;
-                                else
-                                    return false;
-                            }
-                        default: // For Dot Note or any other cases
-                            {
-                                return false;
-                            }
-                    }
-                }
             }
         }
 
@@ -904,8 +740,9 @@ namespace AutoBS
                 Plugin.LogDebug($"---- Chain Note: {note.time:F} - cutDirection: {note.cutDirection} line: {note.line} layer: {note.layer} color: {note.colorType} ");
             }
             */
+            float firstChainTime = chainNotes.Count > 0 ? chainNotes.First().time : 0f;
 
-            Plugin.LogDebug($"[Arcitect] Chains Count: {currentChainsCount} with pauseMultiplier: {pauseThresholdMultiplier} took {counter} iterations. -- pause detection -- LongChainMaxDuration: {Config.Instance.LongChainMaxDuration} First chain at: {chainNotes.First().time:F}"); //Double Chains Count: { doubleChainNotes.Count}
+            Plugin.LogDebug($"[Arcitect] Chains Count: {currentChainsCount} with pauseMultiplier: {pauseThresholdMultiplier} took {counter} iterations. -- pause detection -- LongChainMaxDuration: {Config.Instance.LongChainMaxDuration} First chain at: {firstChainTime:F}"); //Double Chains Count: { doubleChainNotes.Count}
 
             return CreateChains(chainNotes);
         }
@@ -1181,7 +1018,7 @@ namespace AutoBS
 
                 if (existingChainAtSameTime != null)
                 {
-                    Plugin.LogDebug($"[Arcitect][CreateChains] ChainNote: {chainNote.time:F} {chainNote.cutDirection} x: {chainNote.line} y: {chainNote.layer} -- Found existingChainAtSameTime {existingChainAtSameTime.cutDirection} x: {existingChainAtSameTime.line} y: {existingChainAtSameTime.layer} dur: {(existingChainAtSameTime.tailTime - existingChainAtSameTime.time):F}");
+                    //Plugin.LogDebug($"[Arcitect][CreateChains] ChainNote: {chainNote.time:F} {chainNote.cutDirection} x: {chainNote.line} y: {chainNote.layer} -- Found existingChainAtSameTime {existingChainAtSameTime.cutDirection} x: {existingChainAtSameTime.line} y: {existingChainAtSameTime.layer} dur: {(existingChainAtSameTime.tailTime - existingChainAtSameTime.time):F}");
 
                     if (TryCreateDoubleChain(chainNote, existingChainAtSameTime, MED_CHAIN_DUR, out var matchingChain))
                     {
@@ -1248,8 +1085,7 @@ namespace AutoBS
                             bool awkwardLongChain = false;
                             bool limitMaxDuration = false;
 
-                            // --- Tail positioning rules (kept, with one critical fix) ---
-                            // IMPORTANT: don’t force tailLineLayer=0 for ALL down-ish notes; only do it when you intend.
+                            // --- Tail positioning rules ---
                             // Your current code forces tailLineLayer = 0 for any Down/DownLeft/DownRight regardless of head layer.
                             // If you want original behaviour, gate it on head layer == 2:
                             if ((chainNote.cutDirection == NoteCutDirection.Up ||
@@ -1582,254 +1418,6 @@ namespace AutoBS
 
             return false;
         }
-
-
-        /*
-        private static List<ESliderData> CreateChains(List<ENoteData> chainNotes)
-        {
-            List<ESliderData> chains = new List<ESliderData>();
-
-            int longChainCount = 1; // use to avoid adding chains at the same or almost the same time. let Double chains do that.
-            
-            float njs = MathF.Max(1f, TransitionPatcher.FinalNoteJumpMovementSpeed);
-
-            // Reset the lastCheckedIndex at the beginning of the processing
-            _lastCheckedIndex = 0;
-
-            const float REF_NJS = 16f; // pick the NJS where test values look right to me
-            const float CHAIN_MIN = 0.0001f; // seconds
-            const float CHAIN_MAX = 10f; //seconds
-            float ScaleTailTimeByNjs(float baseSeconds, float exponent = 1f)
-            {
-                float njs = MathF.Max(1f, TransitionPatcher.FinalNoteJumpMovementSpeed);
-
-                // Stronger than linear: higher NJS shrinks time more aggressively
-                float factor = MathF.Pow(REF_NJS / njs, exponent);
-
-                float scaled = baseSeconds * factor;
-                return Math.Clamp(scaled, CHAIN_MIN, CHAIN_MAX);
-            }
-
-            float minGapAfterLongChain = ScaleTailTimeByNjs(0.30f);
-            float minLongChainAllowed  = ScaleTailTimeByNjs(0.10f);
-            float maxLongChainAllowed  = ScaleTailTimeByNjs(Config.Instance.LongChainMaxDuration);
-
-            int chance = Mathf.Clamp((int)Config.Instance.LongChainChanceMultiplier, 0, 10);
-            bool longChainChance = TransitionPatcher.RepeatableRandom.Next(10) < chance; // 0..10  ->  0%..100%, chance=0 → Next(10) < 0 → never, chance=5 → 50%, chance=10 → always
-
-
-            foreach (ENoteData chainNote in chainNotes)
-            {
-                int sliceCount = 4;
-
-                float tailTime = chainNote.time + ScaleTailTimeByNjs(0.01f);
-
-                (int headLineLayer, int headLineIndex, int tailLineLayer, int tailLineIndex) = CalculateTailPosition(chainNote);
-                NoteLineLayer tailBeforeJumpLineLayer = (NoteLineLayer)tailLineLayer;
-
-                // Set sliceCount to 6 only if the absolute difference between head and tail positions is 2
-                if (Math.Abs(tailLineIndex - chainNote.line) == 2 || Math.Abs(tailLineLayer - (int)chainNote.layer) == 2)
-                {
-                   if ((Math.Abs(tailLineIndex - chainNote.line) == 2 && Math.Abs(tailLineLayer - (int)chainNote.layer) == 1) ||
-                       (Math.Abs(tailLineIndex - chainNote.line) == 1 && Math.Abs(tailLineLayer - (int)chainNote.layer) == 2))
-                            sliceCount = 5; // seems too bunched up
-                   else
-                        sliceCount = 6;
-
-                    tailTime = chainNote.time + ScaleTailTimeByNjs(0.05f);
-                }
-
-                // This is a single chain being added. However, its possible there has been another single chain added to a different note at the same time by chance. This can produce illegitimate double chains that are hard for the player to hit
-                // To avoid this problem, if this is an accidental double chain, then check if its compatible. If not, skip this chain.
-                bool shouldAddChain = true;
-
-                // check if there is already a chain added 
-                ESliderData existingChainAtSameTime = chains.FirstOrDefault(a => Math.Abs(a.time - chainNote.time) < 0.01f);
-                // or a.time == note.time but can have rounding errors
-
-                // if there is another chain added already...
-                if (existingChainAtSameTime != null)
-                {
-                    ESliderData matchingChain;
-
-                    if (TryCreateDoubleChain(chainNote, existingChainAtSameTime, out matchingChain)) // Attempt to generate a matching mirrored chain
-                    {
-                        if (!chains.Contains(matchingChain))
-                        {
-                            chains.Add(matchingChain);
-                            chainsTemp.Add(matchingChain); // optional: for MoveWallsBlockingChainTail()
-
-                            //Plugin.LogDebug($"[Double Chain] Added matching chain at {matchingChain.time}");
-                        }
-
-                        // A double chain has been added — skip creating a new one
-                        shouldAddChain = false;
-                    }
-                    else
-                    {
-                        // Not a good double chain match; proceed with normal single-chain creation
-                        shouldAddChain = true;
-                    }
-
-                }
-
-                if (shouldAddChain)
-                {
-                    #region Long Chain
-
-                    // Add LONG CHAIN potentially
-                    if (Config.Instance.EnableLongChains && chainNotes.IndexOf(chainNote) < chainNotes.Count - 1 && longChainChance) // chainNotes.IndexOf(chainNote) % 3 == 0 && 
-                    {
-                        ENoteData nextChain = chainNotes[chainNotes.IndexOf(chainNote) + 1];
-
-                        if (//gapBetweenChains >= .5f && // Check for .5 second or longer gap between chainNotes 
-                            ((chainNote.layer == 0 && // make sure the note is far edge note at the very top, bottom, left or right etc
-                              (chainNote.cutDirection == NoteCutDirection.Up || chainNote.cutDirection == NoteCutDirection.UpLeft || chainNote.cutDirection == NoteCutDirection.UpRight)) ||
-                             (chainNote.layer == 2 &&
-                             chainNote.cutDirection == NoteCutDirection.Down) || 
-                             ((chainNote.layer == 1 || chainNote.layer == 2) &&
-                             (chainNote.cutDirection == NoteCutDirection.DownLeft || chainNote.cutDirection == NoteCutDirection.DownRight)) ||
-                             (chainNote.line == 3 &&
-                              (chainNote.cutDirection == NoteCutDirection.Left || chainNote.cutDirection == NoteCutDirection.DownLeft || chainNote.cutDirection == NoteCutDirection.UpLeft)) ||
-                             (chainNote.line == 0 &&
-                              (chainNote.cutDirection == NoteCutDirection.Right || chainNote.cutDirection == NoteCutDirection.DownRight || chainNote.cutDirection == NoteCutDirection.UpRight))))
-                        {
-
-                            float timeUntilNextNote = GetTimeUntilNextNote(notes, chainNote.time);// relevantNotes, chainNote.time);
-
-                            if (timeUntilNextNote > minGapAfterLongChain + minLongChainAllowed)
-                            {
-                                float longChainDuration = Math.Min(timeUntilNextNote - minGapAfterLongChain, maxLongChainAllowed);
-
-                                bool awkwardLongChain = false;
-                                bool limitMaxDuration = false;
-                                
-
-                                // make sure long chains get max width between head and tail - not good for diagonal chains that are not in a corner
-                                if ((chainNote.cutDirection == NoteCutDirection.Up || chainNote.cutDirection == NoteCutDirection.UpLeft || chainNote.cutDirection == NoteCutDirection.UpRight) &&
-                                    chainNote.layer == 0) tailLineLayer = 2;
-                                else if ((chainNote.cutDirection == NoteCutDirection.Down || chainNote.cutDirection == NoteCutDirection.DownLeft || chainNote.cutDirection == NoteCutDirection.DownRight))// &&
-                                      tailLineLayer = 0; //chainNote.layer == 2) tailLineLayer = 0;
-                                if ((chainNote.cutDirection == NoteCutDirection.Right || chainNote.cutDirection == NoteCutDirection.DownRight || chainNote.cutDirection == NoteCutDirection.UpRight) &&
-                                    chainNote.line == 0) tailLineIndex = 3;
-                                else if ((chainNote.cutDirection == NoteCutDirection.Left || chainNote.cutDirection == NoteCutDirection.DownLeft || chainNote.cutDirection == NoteCutDirection.UpLeft) &&
-                                         chainNote.line == 3) tailLineIndex = 0;
-
-                                if (chainNote.cutDirection == NoteCutDirection.Down)
-                                {
-                                    //awkwardLongChain = true;
-                                    //TEST
-                                    limitMaxDuration = true;
-                                    tailLineIndex = chainNote.line;// Keep the same lineIndex
-
-                                    if ((chainNote.colorType == ColorType.ColorA && chainNote.line > 1) || // right note (blue) are on the left which is awkward
-                                        (chainNote.colorType == ColorType.ColorB && chainNote.line < 2))   // left note (red) are on the right which is awkward
-                                    {
-                                        awkwardLongChain = true;
-                                    }
-                                    //----------------------
-
-                                }
-                                else if (chainNote.cutDirection == NoteCutDirection.Up)
-                                {
-                                    tailLineIndex = chainNote.line;// Keep the same lineIndex
-
-                                    if ((chainNote.colorType == ColorType.ColorA && chainNote.line > 1) || // right note (blue) are on the left which is awkward
-                                        (chainNote.colorType == ColorType.ColorB && chainNote.line < 2))   // left note (red) are on the right which is awkward
-                                    {
-                                        awkwardLongChain = true;
-                                    }
-                                }
-                                else if (chainNote.cutDirection == NoteCutDirection.Left || chainNote.cutDirection == NoteCutDirection.Right)
-                                {
-                                    tailLineLayer = (int)chainNote.layer; // Keep the same layer
-                                    limitMaxDuration = true;
-                                }
-                                else if (chainNote.cutDirection == NoteCutDirection.UpRight &&
-                                         chainNote.line == 0 && chainNote.layer == 0)
-                                {
-                                    tailLineIndex = 3;
-                                    tailLineLayer = (int)2;
-                                    sliceCount = 8; // long diagonal
-                                    limitMaxDuration = true;
-                                }
-                                else if (chainNote.cutDirection == NoteCutDirection.UpLeft &&
-                                         chainNote.line == 3 && chainNote.layer == 0)
-                                {
-                                    tailLineIndex = 0;
-                                    tailLineLayer = (int)2;
-                                    sliceCount = 8; // long diagonal
-                                    limitMaxDuration = true;
-                                }
-                                else if (chainNote.cutDirection == NoteCutDirection.DownRight &&
-                                         chainNote.line == 0 && (chainNote.layer == 2) )
-                                {
-                                    tailLineIndex = 3;
-                                    tailLineLayer = (int)0;
-                                    sliceCount = 8; // long diagonal
-                                    limitMaxDuration = true;
-                                }
-                                else if (chainNote.cutDirection == NoteCutDirection.DownLeft &&
-                                         chainNote.line == 3 && chainNote.layer == 2)
-                                {
-                                    tailLineIndex = 0;
-                                    tailLineLayer = (int)0;
-                                    sliceCount = 8; // long diagonal
-                                    limitMaxDuration = true;
-                                }
-                                else
-                                {
-                                    awkwardLongChain = true; // notes that arrive on their opposite side and notes that are not on the far edges of the player area (notes in the middle are awkward long chains since the movement distance is short
-                                }
-
-                                if (!awkwardLongChain)
-                                {
-                                    if (limitMaxDuration && longChainDuration == maxLongChainAllowed) // skipped by up chains since those get max duration possibly since they are not awkward and are not limited. all other long chains need limiting
-                                    {
-                                        longChainDuration -= ScaleTailTimeByNjs(0.03f);
-                                    }
-                                    if (chainNote.cutDirection == NoteCutDirection.Down)
-                                        longChainDuration = Math.Min(longChainDuration, ScaleTailTimeByNjs(0.08f)); // same as short chain since super awkward to hit long curving down chain
-
-                                    longChainDuration = Math.Max(longChainDuration, 0.0001f); // safety
-                                    tailTime = chainNote.time + longChainDuration;
-                                        
-                                    sliceCount = Math.Max((int)(longChainDuration * 30f * (TransitionPatcher.FinalNoteJumpMovementSpeed / 16f)), 8);//sliceCount = Math.Max((int)(longChainDuration * 17), 6); // more segments depending on the length of time with min of 6
-                                    //Plugin.LogDebug($"gapBetweenChains: {gapBetweenChains}");
-                                    Plugin.LogDebug($"Long Chain {longChainCount}: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} Dur: {longChainDuration:F3} slices: {sliceCount} maxLongChainAllowed(scaled by njs): {maxLongChainAllowed}");
-                                    longChainCount++;
-                                }
-
-                            }
-                        }
-                    }
-                    #endregion
-                    Plugin.LogDebug($"Chain: {chainNote.time:F} {chainNote.colorType} dir: {chainNote.cutDirection} H index: {chainNote.line} T index: {tailLineIndex} - H layer: {(int)chainNote.layer} T layer: {tailLineLayer} Dur: {(tailTime - chainNote.time):F3} slices: {sliceCount}");
-
-                    // needs to be ESliderData or will get chroma errors missing customData i think
-                    var newChain = ESliderData.CreateChain(
-                        chainNote.colorType, 
-                        chainNote.time, headLineIndex, headLineLayer, chainNote.cutDirection,
-                        tailTime, tailLineIndex,tailLineLayer,
-                        sliceCount, squishAmount,
-                        chainNote);
-
-                    if (chains.Contains(newChain)) continue;
-
-                    chains.Add(newChain);
-
-                    chainNote.headNoteChain = newChain; chainNote.scoringType = NoteData.ScoringType.ChainHead; chainNote.gameplayType = NoteData.GameplayType.BurstSliderHead;
-
-                    chainsTemp.Add(newChain);// used by MoveWallsBlockingChainTail()
-                }
-
-                //Plugin.LogDebug($"Chain: {note.time:F} color: {note.colorType} index: {note.lineIndex} layer: {note.layer} cut dir: {note.cutDirection}");
-                //Plugin.LogDebug($"ALREADY HAVE a double chain here: {note.time:F} color: {note.colorType} other color: {matchingNoteInOtherColor.colorType} note index: {note.lineIndex} other index: {matchingNoteInOtherColor.lineIndex} note layer: {note.layer} other layer: {matchingNoteInOtherColor.layer} cut dir: {note.cutDirection} other cut dir: {matchingNoteInOtherColor.cutDirection}");
-
-            }
-            return chains;
-        }
-        */
         private static float GetTimeUntilNextNote(List<ENoteData> notesAndBombs, ENoteData chainNote)
         {
             float currentTime = chainNote.time;
@@ -1880,37 +1468,28 @@ namespace AutoBS
                 case NoteCutDirection.Left:
                     // Must be strictly to the left, and roughly in the same row
                     if (dx >= 0) return false; else return true;
-                    //return Math.Abs(dy) <= 1;
 
                 case NoteCutDirection.Right:
                     if (dx <= 0) return false; else return true;
-                    //return Math.Abs(dy) <= 1;
 
                 case NoteCutDirection.Up:
                     if (dy <= 0) return false; else return true;
-                    //return Math.Abs(dx) <= 1;
 
                 case NoteCutDirection.Down:
                     if (dy >= 0) return false; else return true;
-                    //return Math.Abs(dx) <= 1;
 
                 case NoteCutDirection.UpLeft:
                     // Must be up AND left of the head
                     if (dx >= 0 || dy <= 0) return false; else return true;
-                    // Either strictly on the diagonal, or close to it
-                    //return Math.Abs(dx) == Math.Abs(dy) || (Math.Abs(dx) <= 2 && Math.Abs(dy) <= 2);
 
                 case NoteCutDirection.UpRight:
                     if (dx <= 0 || dy <= 0) return false; else return true;
-                    //return Math.Abs(dx) == Math.Abs(dy) || (Math.Abs(dx) <= 2 && Math.Abs(dy) <= 2);
 
                 case NoteCutDirection.DownLeft:
                     if (dx >= 0 || dy >= 0) return false; else return true;
-                    //return Math.Abs(dx) == Math.Abs(dy) || (Math.Abs(dx) <= 2 && Math.Abs(dy) <= 2);
 
                 case NoteCutDirection.DownRight:
                     if (dx <= 0 || dy >= 0) return false; else return true;
-                    //return Math.Abs(dx) == Math.Abs(dy) || (Math.Abs(dx) <= 2 && Math.Abs(dy) <= 2);
 
                 default:
                     return false;
@@ -3161,25 +2740,6 @@ namespace AutoBS
                     reduced++;
                     result.Add(ERotationEventData.Create(r.time, val, 0, r.customData));
                 }
-
-                /*
-                // OLD version added 0 value rotations 
-                if (val == 0 && !isBoundary)
-                {
-                    removed++;
-                    // drop interior zero
-                }
-                else if (val == r.rotation)
-                {
-                    unchanged++;
-                    result.Add(r);
-                }
-                else
-                {
-                    reduced++;
-                    result.Add(ERotationEventData.Create(r.time, val, 0, r.customData));
-                }
-                */
             }
 
             // ---------------- FINAL: RECOMPUTE accumRotation ----------------
@@ -3192,55 +2752,6 @@ namespace AutoBS
             //SanityCheckHeadsTails_EngineView(result, arcs, TOL, rotationModeLate);
 
             return result;
-        }
-        
-        // ---- Engine-accurate sanity: print ONLY accumRotation seen at arc HEAD and TAIL ----
-        // Early: objects at boundary see INCLUSIVE (post-boundary) state
-        // Late:  objects at boundary see EXCLUSIVE (pre-boundary) state
-        private static void SanityCheckHeadsTails_EngineView(List<ERotationEventData> rotations, List<ESliderData> arcs, float TOL, bool rotationModeLate)
-        {
-            int AccumInclusive(float t)
-            {
-                int s = 0;
-                foreach (var r in rotations)
-                {
-                    if (r.time <= t + TOL) s += r.rotation;
-                    else break;
-                }
-                return s;
-            }
-            int AccumBefore(float t)
-            {
-                int s = 0;
-                foreach (var r in rotations)
-                {
-                    if (r.time < t - TOL) s += r.rotation;
-                    else break;
-                }
-                return s;
-            }
-
-            foreach (var a in arcs)
-            {
-                int head, tail;
-                string mismatch = "";
-                if (!rotationModeLate)
-                {
-                    head = AccumInclusive(a.time);
-                    tail = AccumInclusive(a.tailTime);
-                    mismatch = (head != tail) ? "<<< MISMATCH!" : "";
-
-                    Plugin.LogDebug($"[Arcitect][ArcFix][Check] EARLY head={head} tail={tail} @ {a.time:F3}->{a.tailTime:F3} {mismatch}");
-                }
-                else
-                {
-                    head = AccumBefore(a.time);
-                    tail = AccumBefore(a.tailTime);
-                    mismatch = (head != tail) ? "<<< MISMATCH!" : "";
-
-                    Plugin.LogDebug($"[Arcitect][ArcFix][Check] LATE head={head} tail={tail} @ {a.time:F3}->{a.tailTime:F3} {mismatch}");
-                }
-            }
         }
     }
 }

@@ -28,15 +28,6 @@ namespace AutoBS
             return new Stats();
         }
     }
-
-    //v1.42 could have done this for v1.40. Decide if need boosts when eData is generated and count how many env color boost events there are
-    /*
-    public static class AlreadyUsingEnvColorBoostRegistry
-    {
-        public static Dictionary<BeatmapKey, bool> findByKey
-            = new Dictionary<BeatmapKey, bool>();
-    }
-    */
     public static class MapAlreadyUsesChainsRegistry
     {
         public static Dictionary<BeatmapKey, bool> findByKey
@@ -48,6 +39,11 @@ namespace AutoBS
             = new Dictionary<BeatmapKey, bool>();
     }
     public static class NotesPerSecRegistry
+    {
+        public static Dictionary<BeatmapKey, float> findByKey
+            = new Dictionary<BeatmapKey, float>();
+    }
+    public static class NJSRegistry
     {
         public static Dictionary<BeatmapKey, float> findByKey
             = new Dictionary<BeatmapKey, float>();
@@ -114,15 +110,6 @@ namespace AutoBS
         }
     }
 
-
-    // Stores metadata about all available (including custom) difficulty sets for each level ID.
-    /*
-    public static class CustomBeatmapMetadataRegistry //v1.40 Stores IDifficultyBeatmapSet (doesn't exist in 1.40 so i re-created it) by levelID
-    {
-        // Stores metadata about all available (including custom) difficulty sets for each level ID.
-        public static readonly Dictionary<string, List<IDifficultyBeatmapSet>> CustomSetsByLevelID = new Dictionary<string, List<IDifficultyBeatmapSet>>();
-    }
-    */
     public class IDifficultyBeatmapSet //v1.40 IDifficultyBeatmapSet no longer exists so replaced with this so could keep my code similar to old version
     {
         public BeatmapCharacteristicSO characteristic;

@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
 using UnityEngine;
+using static AutoBS.Patches.BeatmapDataTransformHelperPatcher;
 using static BeatSaberMarkupLanguage.Components.KEYBOARD;
 using static PyramidBloomRendererSO;
 using DiffData = SongCore.Data.SongData.DifficultyData;
@@ -46,7 +47,7 @@ namespace AutoBS.Patches
         public static PlayerSpecificSettings PlayerSpecificSettings;
 
         public static readonly Dictionary<string, BeatmapKey> GeneratedToStandardKey = new Dictionary<string, BeatmapKey>(StringComparer.Ordinal);
-        public static string KeyStr(in BeatmapKey k) => k.SerializedName(); // stable string key
+        //public static string KeyStr(in BeatmapKey k) => k.SerializedName(); // stable string key
 
         public static string[] Mappers  = Array.Empty<string>();
         public static string[] Lighters = Array.Empty<string>();
@@ -84,10 +85,10 @@ namespace AutoBS.Patches
 
 
             // === Add Directional Markers to Menu Environment
-            if (GlassEnvironmentFinder.Instance == null)
-            {
-                new UnityEngine.GameObject("GlassEnvironmentFinder").AddComponent<GlassEnvironmentFinder>();
-            }
+            //if (GlassEnvironmentFinder.Instance == null)
+            //{
+            //    new UnityEngine.GameObject("GlassEnvironmentFinder").AddComponent<GlassEnvironmentFinder>();
+            //}
 
         }
 
@@ -118,9 +119,6 @@ namespace AutoBS.Patches
             else
             {
                 Plugin.LogDebug("[CreateGen360DifficultySet] Vanilla Built-in level Found.");
-
-                //v.1.42 can't get asset bundles from built-in levels so can't read JSON directly. the error is attempting to load assset that is already loaded as a cache but we can't access the cache directly.
-                //BuiltInMapJsonLoader.PrimeBuiltInLevel(level.levelID);
             }
 
             // === BASESET LOGIC ===
@@ -165,13 +163,10 @@ namespace AutoBS.Patches
                 if (contributorMappers.Length > 0) Mappers = contributorMappers;
                 var contributorLighters = songCoreExtraData.contributors.Where(c => c._role?.ToLower() == "lighter").Select(c => c._name).ToArray();
                 if (contributorLighters.Length > 0) Lighters = contributorLighters;
-                //var contributorAuthors = songCoreExtraData.contributors.Where(c => c._role?.ToLower() == "author").Select(c => c._name).ToArray();
-                //if (contributorAuthors.Length > 0) authors = contributorAuthors;
             }
 
             if (Mappers.Length > 0 & Lighters.Length == 0) Lighters = Mappers;
 
-            //Plugin.Log.Info($"[CreateGen360DifficultySet] Authors: {string.Join(", ", authors)}");
             Plugin.LogDebug($"[CreateGen360DifficultySet] Mappers: {string.Join(", ", Mappers)}, Lighters: {string.Join(", ", Lighters)}"); //empty for vanilla
 
 
@@ -286,23 +281,6 @@ namespace AutoBS.Patches
                     GeneratedToStandardKey[genKey.SerializedName()] = stdKey;
 
                     Plugin.LogDebug($"[CreateGen360DifficultySet] -- mapped GEN→STD: {genKey.beatmapCharacteristic.serializedName}-{genKey.difficulty} → {stdKey.beatmapCharacteristic.serializedName}-{stdKey.difficulty}");
-
-
-                    //v1.42
-                    /*
-                    if (songCoreExtraData != null && songCoreExtraData._difficulties != null &&
-                        (difficultyData._envColorLeftBoost != null || difficultyData._envColorRightBoost != null))
-                    {
-                        Plugin.LogDebug($"[CreateGen360DifficultySet] -- {difficulty} Author already uses _envColorLeftBoost/_envColorRightBoost.");
-                        AlreadyUsingEnvColorBoostRegistry.findByKey[genKey] = true; AlreadyUsingEnvColorBoostRegistry.findByKey[stdKey] = true;
-                    }
-                    else
-                    {
-                        Plugin.LogDebug($"[CreateGen360DifficultySet] -- {difficulty} Author NOT using _envColorLeftBoost/_envColorRightBoost.");
-                        AlreadyUsingEnvColorBoostRegistry.findByKey[genKey] = false; AlreadyUsingEnvColorBoostRegistry.findByKey[stdKey] = false;
-                    }
-                    */
-
 
                     //v1.42
                     string beatmapJson = ""; string lightshowJson = ""; string audioDataJson = ""; Version version = new Version();
@@ -629,10 +607,11 @@ namespace AutoBS.Patches
                         if (origBasicData.noteJumpMovementSpeed == 0)
                             Plugin.LogDebug($"[CreateGen360DifficultySet] -- original default NJS from json: 0 so must be computed from difficulty chart.");
 
-                        originalNJS = NoteJumpMovementSpeed(difficulty, origBasicData.noteJumpMovementSpeed); // some built-in levels send a default of 0
+                        originalNJS = GetNoteJumpMovementSpeed(difficulty, origBasicData.noteJumpMovementSpeed); // some built-in levels send a default of 0
                         originalNJO = origBasicData.noteJumpStartBeatOffset;
 
-                        NJORegistry.findByKey[genKey] = originalNJO;
+                        NJSRegistry.findByKey[stdKey] = originalNJS; NJSRegistry.findByKey[genKey] = originalNJS;
+                        NJORegistry.findByKey[stdKey] = originalNJO; NJORegistry.findByKey[genKey] = originalNJO;
 
                         notesPerSecond = (songLength > 0f) ? (noteCount / songLength) : 0f;
 
@@ -787,7 +766,8 @@ namespace AutoBS.Patches
                         originalNJS = vanillaBasicData.noteJumpMovementSpeed;
                         originalNJO = vanillaBasicData.noteJumpStartBeatOffset;
 
-                        NJORegistry.findByKey[genKey] = originalNJO;
+                        NJSRegistry.findByKey[stdKey] = originalNJS; NJSRegistry.findByKey[genKey] = originalNJS;
+                        NJORegistry.findByKey[stdKey] = originalNJO; NJORegistry.findByKey[genKey] = originalNJO;
 
                         MapAlreadyUsesArcsRegistry.findByKey[stdKey] = false; //don't know yet i think
                         MapAlreadyUsesArcsRegistry.findByKey[genKey] = false;
@@ -999,8 +979,8 @@ namespace AutoBS.Patches
             return version;
         }
 
-        // directly taken from BeatmapDifficultyMethods() v1.40. chatGPT says fastNotes is no longer used and always false. it is still present in GameplayModifiers
-        public static float NoteJumpMovementSpeed(BeatmapDifficulty difficulty, float noteJumpMovementSpeed, bool fastNotes = false)
+        // directly taken from BeatmapDifficultyMethods() v1.40. (but renamed Get...). chatGPT says fastNotes is no longer used and always false. it is still present in GameplayModifiers
+        public static float GetNoteJumpMovementSpeed(BeatmapDifficulty difficulty, float noteJumpMovementSpeed, bool fastNotes = false)
         {
             if (fastNotes)
             {
@@ -1541,59 +1521,9 @@ namespace AutoBS.Patches
             yield break;
         }
 
-        public void InsertActivateOnStartEvents(BeatmapData beatmapData)
+        public void InsertActivateOnStartEvents(BeatmapData beatmapData) // must keep this!
         {
             // no-op
         }
     }
-    //v1.40.0 old
-    /*
-    // No namespace here on purpose — matches a global-namespace interface
-    internal sealed class NoOpLightEventConverter : global::IBeatmapLightEventConverter
-    {
-        public void ConvertBasicBeatmapEvent(
-            System.Collections.Generic.List<BeatmapEventData> output,
-            int subtypeIdentifier,
-            float time,
-            global::BasicBeatmapEventType basicBeatmapEventType,
-            int value,
-            float floatValue)
-        {
-            // no-op
-        }
-
-        public void ConvertLightColorBeatmapEvent(
-            System.Collections.Generic.List<BeatmapEventData> output,
-            int subtypeIdentifier,
-            float time,
-            int groupId,
-            int elementId,
-            bool usePreviousValue,
-            global::EaseType easeType,
-            global::EnvironmentColorType colorType,
-            float brightness,
-            int strobeBeatFrequency,
-            float strobeBrightness,
-            bool strobeFade)
-        {
-            // no-op
-        }
-
-        public void ConvertLightRotationBeatmapEvent(
-            System.Collections.Generic.List<BeatmapEventData> output,
-            int subtypeIdentifier,
-            float time,
-            int groupId,
-            int elementId,
-            bool usePreviousEventValue,
-            global::EaseType easeType,
-            global::LightAxis axis,
-            float rotation,
-            int loopCount,
-            global::LightRotationDirection rotationDirection)
-        {
-            // no-op
-        }
-    }
-    */
 }

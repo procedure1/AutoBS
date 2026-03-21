@@ -105,15 +105,6 @@ namespace AutoBS
             //Time=0.000, Type=BACK, Value=BLUE_ON, Time=0.000, Type=RING, Value=BLUE_ON, Time=0.000, Type=LEFT, Value=BLUE_ON, Type=RIGHT, Value=BLUE_ON, Type=CENTER, Value=BLUE_ON
             //EDMEnvironment will have 2 events even if not added by user  when using OVERRIDE. Not present otherwise.
 
-            /*
-            // 1
-            if (envName == "TheSecondEnvironment" && bools.Count(b => !b) == 5)
-            {
-                needsBACK = needsRING = needsLEFT = needsRIGHT = needsCENTER = true;
-                bools[0] = bools[1] = bools[2] = bools[3] = bools[4] = true;
-            }
-            */
-
             int existingLightTypes = allLightTypes.Count(b => !b);
             Plugin.LogDebug($"[AutoLights] - Existing Light Types: {existingLightTypes} count");
 
@@ -158,27 +149,6 @@ namespace AutoBS
 
             eData.BasicEventsChanged = false;
             if (v2lights.Count > 0) eData.BasicEventsChanged = true;
-
-            /*
-            // 2
-            //  "Light Parser" for  "Cross Environment Compatible Lightshows" for ALL environments announced in Beat Games Dev Blog 12/2024. So don't need this hopefully.
-            if (!IsV2Environment(envName) || envName.Contains("Second"))
-            {
-                // Instead of inserting the v2 events, convert them to GLS events.
-                Plugin.LogDebug($"[AutoLights] Converting v2 events into GLS events for environment '{envName}'");
-                GLSConverter.ConvertToGLSEvents(v2lights, envName);
-                return;
-            }
-            */
-            /*
-            // Important change!!!!! Test this. with this removed, now only new lights from missing types will be added and original lights will still exist.
-            foreach (var e in originalLightEvents)
-            {
-                data.allBeatmapDataItems.Remove(e);
-            }
-            */
-
-
 
             /*
             int lightCounter = 1;
@@ -662,32 +632,17 @@ namespace AutoBS
 
             StrobeMode ChooseStrobeMode(System.Random rng)
             {
-                //return StrobeMode.Back;
-                // Pick uniformly
-                /*if (TransitionPatcher.IsGen360)
+                StrobeMode mode = rng.Next(4) switch
                 {
-                    StrobeMode mode = rng.Next(3) switch
-                    {
-                        0 => StrobeMode.Back,
-                        1 => StrobeMode.FrontBoth,
-                        _ => StrobeMode.FrontAlternating
-                    };
-                    return mode;
-                }
-                else*/
-                {
-                    StrobeMode mode = rng.Next(4) switch
-                    {
-                        0 => StrobeMode.Back,   
-                        1 => StrobeMode.Center, //Center is invisible in 360
-                        2 => StrobeMode.FrontBoth,
-                        _ => StrobeMode.FrontAlternating
-                    };
-                    if (isTheFirstEnvironment && mode == StrobeMode.Back) //Back is very low key using TheFirst
-                        mode = StrobeMode.Center;
+                    0 => StrobeMode.Back,   
+                    1 => StrobeMode.Center, //Center is invisible in 360
+                    2 => StrobeMode.FrontBoth,
+                    _ => StrobeMode.FrontAlternating
+                };
+                if (isTheFirstEnvironment && mode == StrobeMode.Back) //Back is very low key using TheFirst
+                    mode = StrobeMode.Center;
 
-                    return mode;
-                }
+                return mode;
             }
 
 
@@ -1695,23 +1650,5 @@ namespace AutoBS
                 (list[n - 1], list[k]) = (list[k], list[n - 1]);
             }
         }
-        
-
-        /*
-        public static void Shuffle<T>(this IList<T> list)
-        {
-            RandomNumberGenerator rng = RandomNumberGenerator.Create();
-            int n = list.Count;
-            while (n > 1)
-            {
-                byte[] box = new byte[1];
-                do rng.GetBytes(box);
-                while (!(box[0] < n * (Byte.MaxValue / n)));
-                int k = (box[0] % n);
-                n--;
-                (list[n], list[k]) = (list[k], list[n]);
-            }
-        }
-        */
     }
 }

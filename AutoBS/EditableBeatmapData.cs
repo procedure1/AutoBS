@@ -1471,78 +1471,6 @@ namespace AutoBS
                 LinkList(Chains, isChain: true);
         }
 
-        /*
-        /// <summary>
-        /// Links arc with a head note and tail note based on matching time, color, line, and layer. This is needed to add per object rotations to notes linked to arcs on maps that have arcs already
-        /// </summary>
-        private void LinkArcEndpointsToNotes()
-        {
-            if (Arcs == null || Arcs.Count == 0) return;
-            if (ColorNotes == null || ColorNotes.Count == 0) return;
-
-            const float TOL = 0.0005f;
-
-            // ColorNotes are already ordered by time in your constructor
-            var notes = ColorNotes;
-            int noteIdx = 0;
-
-            foreach (var arc in Arcs)
-            {
-                ENoteData head = null;
-                ENoteData tail = null;
-
-                float headTime = arc.time;
-                float tailTime = arc.tailTime;
-
-                // Move noteIdx up to just before head time (small lookbehind)
-                while (noteIdx < notes.Count && notes[noteIdx].time < headTime - 0.1f)
-                    noteIdx++;
-
-                // ---- HEAD ----
-                for (int i = noteIdx; i < notes.Count; i++)
-                {
-                    var n = notes[i];
-                    if (n.time > headTime + 0.1f) break; // too far in future
-
-                    if (Math.Abs(n.time - headTime) <= TOL
-                        && n.colorType == arc.colorType
-                        && n.line == arc.line
-                        && n.layer == arc.layer)
-                    {
-                        head = n;
-                        break;
-                    }
-                }
-
-                // ---- TAIL ----
-                if (head != null)
-                {
-                    for (int i = noteIdx; i < notes.Count; i++)
-                    {
-                        var n = notes[i];
-                        if (n.time > tailTime + 0.1f) break;
-
-                        if (Math.Abs(n.time - tailTime) <= TOL
-                            && n.colorType == arc.colorType
-                            && n.line == arc.tailLine
-                            && n.layer == arc.tailLayer)
-                        {
-                            tail = n;
-                            break;
-                        }
-                    }
-                }
-
-                arc.headNote = head;
-                arc.tailNote = tail;
-
-                //built-in maps may have arcs without tail notes!
-                //Plugin.Log.Info($"[LinkArcEndpointsToNotes] Arc @{arc.time:F3}s linked head note: {(head != null ? head.time.ToString("F3") : "null")}, tail note: {(tail != null ? tail.time.ToString("F3") : "null")}");
-            }
-        }
-        */
-
-
         /// <summary>
         /// Builds rotation events from inline 'r' rotation values in notes and obstacles for v4 built-in or possibly v4 custom maps. These are "early" rotation events.
         /// </summary>
@@ -1600,48 +1528,7 @@ namespace AutoBS
 
             return rotations;// returns reference so  //MergeAndDedupeRotations(rotations);
         }
-        /*
-        /// <summary>
-        /// Merge, dedupe by beat with list created from notes and obstacles,
-        /// then collapse consecutive duplicates with same rotation.
-        /// </summary>
-        private static List<ERotationEventData> MergeAndDedupeRotations(List<ERotationEventData> src)
-        {
-            const float EPS = 1e-4f;
-
-            // 1) sort by time (then stable by input order)
-            var list = src.OrderBy(e => e.time).ToList();
-
-            // 2) dedupe by beat (prefer last seen in same-beat cluster)
-            var byBeat = new List<ERotationEventData>();
-            foreach (var e in list)
-            {
-                if (byBeat.Count == 0) { byBeat.Add(e); continue; }
-                var last = byBeat[^1];
-                if (Math.Abs(e.time - last.time) <= EPS)
-                {
-                    // same beat: replace the last with the newer one
-                    byBeat[^1] = e;
-                }
-                else
-                {
-                    byBeat.Add(e);
-                }
-            }
-
-            // 3) remove consecutive duplicates (same rotation value)
-            var compressed = new List<ERotationEventData>(byBeat.Count);
-            foreach (var e in byBeat)
-            {
-                if (compressed.Count == 0 || compressed[^1].rotation != e.rotation)
-                    compressed.Add(e);
-            }
-
-            compressed = ERotationEventData.RecalculateAccumulatedRotations(compressed);
-
-            return compressed;
-        }
-        */
+        
         public static (bool NoodleProblemNotes, bool NoodleProblemObstacles) TestForNoodleCustomData(EditableCBD eData)
         {
             bool NoodleProblemNotes = false;
@@ -2133,16 +2020,6 @@ namespace AutoBS
                 //if (evt.time > 55 && evt.time < 65) Plugin.Log.Info($"[RotationApplier] Rotation: {evt.time:F} Rot: {evt.rotation} Accum: {evt.accumRotation}");
             }
 
-            /*
-            // better to update rotationEvents with 0 initial event i think during RotationGenerator instead of doing it here
-            float firstObjectTime = float.PositiveInfinity;
-            if (eData.ColorNotes.Count > 0) firstObjectTime = Math.Min(firstObjectTime, eData.ColorNotes[0].time);
-            if (eData.BombNotes.Count > 0) firstObjectTime = Math.Min(firstObjectTime, eData.BombNotes[0].time);
-            if (eData.Obstacles.Count > 0) firstObjectTime = Math.Min(firstObjectTime, eData.Obstacles[0].time);
-            // this is the accumulated rotation of the 1st object.
-            int baseline = rotationModeLate ? 0 : GetAccumRotationAt(firstObjectTime); // Early: include events at time == firstObjectTime
-            */
-
             //the last cumulative rotation at or before t - equivalent to v2 "early" rotation events
             const float EPS = 0.0005f; // same spirit as your TOL
 
@@ -2207,8 +2084,6 @@ namespace AutoBS
 
                 //if (chain.time < 20) Plugin.Log.Info($"[RotationApplier] Chain @{chain.time:F2}s → head rot: {headRot}, tail rot: {tailRot}");
             }
-
-            //ApplyArcTailAccumOverridesToRotationEvents(eData.RotationEvents, arcTailAccumRotationOverride);
 
             // 4) Apply to all obstacles
             (bool noodleProblemNotes, bool noodleProblemObstacles) = EditableCBD.TestForNoodleCustomData(eData);
@@ -2333,8 +2208,8 @@ namespace AutoBS
         // This is the new WallRemovalForRotations() 
         public static void ApplyWallVisionBlockingFix(EditableCBD eData) // COMBO Method seems to allow more walls on both sides during turns 
         {
-            float inPointLog  = 160f; // seconds for log only
-            float outPointLog = 161.75f;
+            //float inPointLog  = 160f; // seconds for log only
+            //float outPointLog = 161.75f;
 
             bool allowPlayerCrossingWalls = Config.Instance.AllowPlayerCrossingWalls; //true allows walls to cross in front of the player as long as they do not block the vision of an upcoming note. we only delete or shorten the wall if it appears in the gap of time that would block the view of the next object. so with AllowPlayerCrossingWalls false we now stop allowing those walls. so no wall cross in front of the player
 
@@ -2361,7 +2236,7 @@ namespace AutoBS
 
             if (njs <= 0 || jd <= 0)
             {
-                Plugin.LogDebug("[ApplyWallVisionBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, skipping wall blocking fix.");
+                Plugin.Log.Error("[ApplyWallVisionBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, skipping wall blocking fix.");
                 return;
             }
 
@@ -2374,24 +2249,6 @@ namespace AutoBS
 
             bool rotationEventsSubsetUsed = false; // if you ever add the "subset" optimization again
 
-            //old
-            /*
-            int GetAccumRotationAt(float t)
-            {
-                int lo = 0, hi = rotations.Count - 1, ans = -1;
-                while (lo <= hi)
-                {
-                    int mid = (lo + hi) >> 1;
-                    if (rotations[mid].time <= t) // was < 
-                    {
-                        ans = mid;
-                        lo = mid + 1;
-                    }
-                    else hi = mid - 1;
-                }
-                return ans >= 0 ? rotations[ans].accumRotation : 0;
-            }
-            */
             int GetAccumRotationAt(float t) //recognizes early/late 1 of 2
             {
                 int lo = 0, hi = rotations.Count - 1, ans = -1;
@@ -2439,18 +2296,8 @@ namespace AutoBS
                 if (deltaRot > 0) return rightSide;  // right turn blocks if wall touches right half
                 return false;
             }
-            /*
-            bool WouldBlockOld(EObstacleData obs, int direction)
-            {
-                int lineIndex = obs.line;
-
-                if (lineIndex < 2 && direction < 0) return true; // left wall, left turn
-                if (lineIndex > 1 && direction > 0) return true; // right wall, right turn
-                return false;
-            }
-            */
+            
             // --- Gaze points related to per object Note rotation (from style2) ------------------------------------
-
             var gazePoints = new List<ENoteData>();
 
             if (eData.ColorNotes != null)
@@ -2504,7 +2351,6 @@ namespace AutoBS
             }
 
             // --- Per-wall Syle1 logic (as a helper) --------------------------
-
             static float LeadScaleForAbsDelta(int absDelta)
             {
                 absDelta = Math.Abs(absDelta); 
@@ -2546,27 +2392,7 @@ namespace AutoBS
                 float visibleStart = obsTime;
                 //float visibleEnd = obs.endTime + lead; // old version not accounting for angle size
                 float visibleEnd = obs.endTime + lead * 3f; // accounts for angle size to decide if blocking by matching LeadScaleForAbsDelta clamp
-
-                /* old
-                var blockEvents = rotations
-                    .Where(dt =>
-                        dt.time >= visibleStart && // was > KEEP THIS
-                        dt.time <= visibleEnd &&
-                        WouldBlock(obs, dt.rotation))
-                    .Select(dt => dt.time)
-                    .OrderBy(t => t)
-                    .ToList();
-                */
-                // OLD VERSION but almost always good! had problem with jump to fall expl 160s 2w vision blocking wall.
-                /*
-                var blockEvents = rotations
-                    .Where(dt =>
-                        InBlockWindow(dt.time, visibleStart, visibleEnd, rotationModeLate) &&
-                        WouldBlock(obs, dt.rotation))
-                    .Select(dt => dt.time)
-                    .OrderBy(t => t)
-                    .ToList();
-                */
+                
                 int wallRotHead = RotationForSegmentStart(obs, obs.time);
 
                 var blockEvents = rotations
@@ -2673,10 +2499,6 @@ namespace AutoBS
 
             // --- Style2 Side helpers  -------------------------------- for walls near arcs not in ForceZero mode
 
-            //old version before ME detection
-            //bool IsRightSide(int line) => line > 1; // 2,3
-            //bool IsLeftSide(int line) => line < 2; // 0,1
-
             bool boostedWalls = Config.Instance.AllowV2BoostedWalls;
             const float MAX_EXTENSION = 2f;
 
@@ -2700,9 +2522,6 @@ namespace AutoBS
                 bool leftSide = rightEdge <= 2;
                 bool rightSide = leftEdge >  2;
                 //------------------------------------------
-                // old version
-                //bool wallRight = IsRightSide(obs.line);
-                //bool wallLeft = IsLeftSide(obs.line);
 
                 float? blockTime = null;
                 ENoteData blockNote = null;
@@ -2840,7 +2659,7 @@ namespace AutoBS
                         Plugin.LogDebug($"[ApplyWallVisionBlockingFix] -- Discarded Wall!");
                 }
                 */
-                    obsCount++;
+                obsCount++;
             }
 
             Plugin.LogDebug($"[ApplyWallVisionBlockingFix] Total output obstacles: {kept.Count} kept out of {obstacles.Count} using RotationModeLate: {rotationModeLate}");
@@ -2911,20 +2730,6 @@ namespace AutoBS
                 combinedList.Add((wall.time, "wall", wall));
             }
 
-            // Helper: accumulated rotation at time t (prefer your stored accumRotation if you have it)
-            /*
-            int GetAccumRotationAt(float t)
-            {
-                int lo = 0, hi = rotations.Count - 1, ans = -1;
-                while (lo <= hi)
-                {
-                    int mid = (lo + hi) >> 1;
-                    if (rotations[mid].time < t) { ans = mid; lo = mid + 1; } // was <= t
-                    else { hi = mid - 1; }
-                }
-                return ans >= 0 ? rotations[ans].accumRotation : 0;
-            }
-            */
             var ordered = combinedList
                 .OrderBy(x => x.time)
                 .ThenBy(x => x.type)
@@ -3133,64 +2938,5 @@ namespace AutoBS
             return events;
         }
         */
-        /*
-        /// <summary>
-        /// UNUSED When arc tail rotation overrides exist where I had to force the tail to match the head, apply them to the rotation events list. strangely this didn't help.
-        /// </summary>
-        /// <param name="rotations"></param>
-        /// <param name="arcTailAccumRotationOverride"></param>
-        /// <returns></returns>
-        static List<(float time, int total)> ApplyArcTailAccumOverridesToRotationEvents(
-            List<ERotationEventData> rotations,
-            List<ERotationEventData> arcTailAccumRotationOverride)
-        {
-            const float EPS = 0.0005f;
-
-            if (rotations == null || rotations.Count == 0)
-                return new List<(float time, int total)>();
-
-            // Apply overrides only if we have any; otherwise just fall through
-            if (arcTailAccumRotationOverride != null && arcTailAccumRotationOverride.Count > 0)
-            {
-                foreach (var ov in arcTailAccumRotationOverride)
-                {
-                    if (Math.Abs(ov.rotation) < float.Epsilon)
-                        continue; // nothing to do
-
-                    var existing = rotations.FirstOrDefault(r => Math.Abs(r.time - ov.time) < EPS);
-
-                    if (existing != null)
-                    {
-                        existing.rotation += ov.rotation;
-                    }
-                    else
-                    {
-                        rotations.Add(ERotationEventData.Create(ov.time, ov.rotation, 0, new CustomData()));
-                    }
-                }
-
-                // Sort if we inserted new events
-                rotations = rotations.OrderBy(r => r.time).ToList();
-
-                // Recalc accumRotation for the entire list
-                rotations = ERotationEventData.RecalculateAccumulatedRotations(rotations);
-            }
-
-            // Build accumulated from the (possibly updated) rotations
-            var accumulated = new List<(float time, int total)>();
-            int runningTotal = 0;
-            foreach (var evt in rotations)
-            {
-                runningTotal += evt.rotation;
-                accumulated.Add((evt.time, runningTotal));
-            }
-
-            return accumulated;
-        } 
-        */
-
-
     }
-
-
 }

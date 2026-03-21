@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Linq;
+using UnityEngine;
 using static System.Windows.Forms.LinkLabel;
 
 namespace AutoBS.Patches
@@ -122,14 +123,11 @@ namespace AutoBS.Patches
                     if (obs.time > 32 && obs.time < 33)
                         Plugin.LogDebug($"Original Obstacle - Time: {obs.time:F} - Line: {obs.line} - Layer: {obs.layer} - Height: {obs.height} - width: {obs.width} - Dur: {obs.duration}");
                 }
-                
-    #if DEBUG
                 foreach (var rot in eData.RotationEvents)
                 {
                     if (rot.time < 30)
                         Plugin.LogDebug($"Original Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
                 }
-    #endif
                 */
                 Plugin.LogDebug($"[CreateTransformedBeatmapData] Converted (Custom)BeatmapData to EditableCBD map version: {eData.Version.Major} - notes: {eData.ColorNotes.Count}, bombs: {eData.BombNotes.Count}, obstacles: {eData.Obstacles.Count}, arcs: {eData.Arcs.Count}, chains: {eData.Chains.Count}, rotations: {eData.RotationEvents.Count}, basic events: {eData.BasicEvents.Count}, customEvents: {eData.CustomEvents.Count}, color boosts: {eData.ColorBoostEvents.Count}.");
 
@@ -149,8 +147,6 @@ namespace AutoBS.Patches
 
                 if (outp.IsCustom)
                 {
-                    //__result = outp.Custom!;
-
                     Plugin.Log.Info($"[CreateTransformedBeatmapData] Final CustomBeatmapData: " +
                             $"notes: {__result.cuttableNotesCount}, " +
                             $"bombs: {__result.bombsCount}, " +
@@ -166,6 +162,8 @@ namespace AutoBS.Patches
                 // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
                 //ConvertEditableCBD.PerObjectRotationLog(__result as CustomBeatmapData, eData, 186, 189);
+                
+                
                 /*
                 int arc180 = 0;
                 int arc135 = 0;
@@ -187,15 +185,15 @@ namespace AutoBS.Patches
                 }
                 Plugin.LogDebug($"Arc Summary: Total Count: {eData.Arcs.Count} -- 180: {arc180}, 135: {arc135}, 90: {arc90}");
                 */
+
                 /*
                 Plugin.LogDebug($"Final Note Rotations:");
-                foreach (var note in __result.allBeatmapDataItems
-                .OfType<NoteData>()
-                .Where(n => n.time >= 204f && n.time <= 300f))
+                foreach (var note in __result.allBeatmapDataItems.OfType<NoteData>().Where(n => n.time >= 204f && n.time <= 300f))
                 {
                     Plugin.LogDebug($"Note: {note.time:F} {note.cutDirection} Rot: {note.rotation}");
                 }
                 */
+
                 /*
                 foreach (var evt in __result.allBeatmapDataItems.OfType<CustomBasicBeatmapEventData>())
                 {
@@ -209,8 +207,6 @@ namespace AutoBS.Patches
                 }
                 else
                 {
-                    //__result = outp.Vanilla!;
-
                     Plugin.Log.Info($"[CreateTransformedBeatmapData] Final Vanilla BeatmapData v{TransitionPatcher.SelectedBeatmapVersion}: " +
                         $"notes: {__result.cuttableNotesCount}, " +
                         $"bombs: {__result.bombsCount}, " +
@@ -235,10 +231,9 @@ namespace AutoBS.Patches
                     {
                         Plugin.LogDebug($"NJS Event: {evt.time:F} relative NJS: {evt.relativeNoteJumpSpeed} EaseType: {evt.easeType} usePreviousValue: {evt.usePreviousValue}");
                     }
-
-
                 } 
                 */
+
                 /*
                 foreach (var obs in __result.allBeatmapDataItems.OfType<ObstacleData>())
                 {
@@ -251,50 +246,9 @@ namespace AutoBS.Patches
             //Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");
 
             //BeatmapLightingLogger.LogGLSLightingEvents(HarmonyPatches.CurrentBeatmapSaveData);
+            //if (Config.Instance.UseGreenScreen)
+            //    EnvironmentGreenScreenBootstrap.EnsureCreated();
         }
-
-        public static string DetermineScoreSubmissionReason(bool beatSageDisableScoreSubmission, bool mapAlreadyUsesChains, int chainsCount)
-        {
-            string str = "";
-
-            if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
-            {
-                if (Config.Instance.BasedOn != Config.Base.Standard)
-                {
-                    str = "Base Map Not Standard";
-                }
-                if (Config.Instance.RotationSpeedMultiplier < 0.3f)
-                {
-                    str += (str != "" ? ", " : "") + "Rotation Mult Low";
-                }
-                if (!Config.Instance.Wireless360 && Config.Instance.LimitRotations360 < 90)
-                {
-                    str += (str != "" ? ", " : "") + "Rotations Limited";
-                }
-            }
-
-            if (BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Standard &&
-                Utils.IsEnabledAutoNjsFixer() &&
-                !TransitionPatcher.AutoNJSDisabledByConflictingMod &&
-                TransitionPatcher.OriginalNoteJumpMovementSpeed > TransitionPatcher.FinalNoteJumpMovementSpeed)
-            {
-                str += (str != "" ? ", " : "") + "Auto NJS Fixer";
-            }
-
-            if (Utils.IsEnabledChains() && !mapAlreadyUsesChains && chainsCount > 0)
-            {
-                str += (str != "" ? ", " : "") + "Architect Chains";
-            }
-
-            if (Config.Instance.EnableCleanBeatSage && (TransitionPatcher.IsBeatSageMap) && beatSageDisableScoreSubmission) 
-            {
-                str += (str != "" ? ", " : "") + "Beat Sage Cleaner";
-            }
-
-            if (str != "")
-                str = "AutoBS—" + str; // prefix once
-
-            return str;
-        }
+        
     }
 }

@@ -48,20 +48,14 @@ namespace AutoBS.Patches
         public static float OriginalNoteJumpMovementSpeed = 0;
         public static float OrginalJumpDistance;
         public static float OriginalNoteJumpOffset = 0; //noteJumpStartBeatOffset
+
         public static float FinalNoteJumpMovementSpeed = 0;
-        
         public static float FinalJumpDistance;
         public static bool AutoNJSDisabledByConflictingMod = false;
         public static bool AutoNJSPracticeModeDisabledByConflictingMod = false;
 
         public static float bpm;
         public static float NotesPerSecond;
-
-
-        //v1.42 moved to EdibleCBD
-        //public static bool MapAlreadyUsesEnvColorBoost = false;
-        //public static bool MapAlreadyUsesChains = false;
-        //public static bool MapAlreadyUsesArcs   = false;
 
         public static bool IsBeatSageMap = false;
 
@@ -104,6 +98,8 @@ namespace AutoBS.Patches
 
             if (!Utils.IsEnabledForGeneralFeatures()) return; // have to have the serialized name from TransitionPatcher for this to work
 
+            AutoNjsRuntimeState.AutoNjsFixerEnabled = Utils.IsEnabledAutoNjsFixer();
+
             ScoreGate.Clear();
 
             IsCustomLevel = beatmapLevel.levelID.StartsWith("custom_level_");
@@ -113,6 +109,7 @@ namespace AutoBS.Patches
             SelectedPlayKey = beatmapKey;
             bpm = beatmapLevel.beatsPerMinute;
 
+            OriginalNoteJumpMovementSpeed = NJSRegistry.findByKey.TryGetValue(SelectedPlayKey, out var njs) ? njs : 0f;
             OriginalNoteJumpOffset = NJORegistry.findByKey.TryGetValue(SelectedPlayKey, out var n) ? n : 0f; // used by JsonOutputConverter so only needed for generated map. this will not work anyway for non generated maps.
 
             IsGen360 = SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
@@ -433,32 +430,6 @@ namespace AutoBS.Patches
                 Plugin.Log.Error($"[LogSongCoreForKey] Exception while logging SongCore data: {ex}");
             }
         }
-
-        public static void ProbeSongCoreEntry(string levelId)
-        {
-            var hashFromSC = SongCore.Collections.GetCustomLevelHash(levelId);
-            Plugin.Log.Info($"[Probe] levelId={levelId}");
-            Plugin.Log.Info($"[Probe] hashFromSC={hashFromSC ?? "<null>"}  AreSongsLoaded={SongCore.Loader.AreSongsLoaded}");
-
-            // Fallback parser (robust vs casing/prefix)
-            string parsed = null;
-            const string prefix = "custom_level_";
-            if (!string.IsNullOrEmpty(levelId) && levelId.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                parsed = levelId.Substring(prefix.Length);
-
-            var hashUpper = parsed?.ToUpperInvariant();
-            var hashLower = parsed?.ToLowerInvariant();
-
-            // Try all three ways to get SongData
-            var extrasA = hashFromSC != null ? SongCore.Collections.GetCustomLevelSongData(hashFromSC) : null;
-            var extrasB = hashUpper != null ? SongCore.Collections.GetCustomLevelSongData(hashUpper) : null;
-            var extrasC = hashLower != null ? SongCore.Collections.GetCustomLevelSongData(hashLower) : null;
-
-            Plugin.Log.Info($"[Probe] extrasA(bySC)={(extrasA != null)} extrasB(UPPER)={(extrasB != null)} extrasC(lower)={(extrasC != null)}");
-        }
-
-
-
     }
     #endregion
 

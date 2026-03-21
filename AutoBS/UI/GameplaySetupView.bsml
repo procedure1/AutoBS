@@ -47,9 +47,9 @@
           <vertical preferred-width='40' pad-left='2'>
             <text text="Auto NJS Fixer" align="Center" fontSize="5" font-color="#FF2121" underlined='true' />
             <text text="Automated version of NJS Fixer. Set it and forget it! &#xA;Set note speed and note spawn distance." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
-            <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableAutoNjsFixerGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable note speed and spawn distance manipulation for 360fyer-generated maps. Short spawn distances make notes difficult to see in 360. Disabled by the real NJSFixer and JDFixer if they are installed (enabled or not). Thanks to Kylemc! NJS Events don't work with this enabled."></toggle-setting>
-            <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableAutoNjsFixerNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable note speed and spawn distance manipulation for non-generated 360/90 maps. Short spawn distances make notes difficult to see coming in 360. Disabled by the real NJSFixer and JDFixer if they are installed (enabled or not). Thanks to Kylemc! NJS Events don't work with this enabled."></toggle-setting>
-            <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableAutoNjsFixerStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable note speed and spawn distance manipulation for Standard, One Saber maps, etc. Short spawn. Disabled by the real NJSFixer and JDFixer if they are installed (enabled or not). Thanks to Kylemc! NJS Events don't work with this enabled."></toggle-setting>
+            <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableAutoNjsFixerGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable note speed and spawn distance manipulation for 360fyer-generated maps. Short spawn distances make notes difficult to see in 360. Disabled by the real NJSFixer and JDFixer if they are installed (enabled or not). Thanks to Kylemc!"></toggle-setting>
+            <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableAutoNjsFixerNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable note speed and spawn distance manipulation for non-generated 360/90 maps. Short spawn distances make notes difficult to see coming in 360. Disabled by the real NJSFixer and JDFixer if they are installed (enabled or not). Thanks to Kylemc!"></toggle-setting>
+            <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableAutoNjsFixerStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable note speed and spawn distance manipulation for Standard, One Saber maps, etc. Short spawn. Disabled by the real NJSFixer and JDFixer if they are installed (enabled or not). Thanks to Kylemc!"></toggle-setting>
           </vertical>
           
         <!-- RIGHT Activation: Lights -->
@@ -148,8 +148,8 @@
             <!--<toggle-setting text='Force More Chains' apply-on-change='true' value='ForceMoreChains' bind-value='true' font-size="3.1" font-color='~FontColorChains' interactable="~EnablerChains" hover-hint="True-will try and match preferred count if too few. False-will not produce more chains if fewer than preferred count."></toggle-setting>-->
             <toggle-setting text='Disallow Chains On Crossed Note Pairs' apply-on-change='true' value='DisallowChainsOnCrossedPairs' bind-value='true' font-size="3.1" font-color='~FontColorChains' interactable="~EnablerChains" hover-hint="Default: True. Prevents chains occuring on note pairs where a left color note is on the right of the other color note (with the exception of easier vertical side-by-side note pairs which are always allowed)."></toggle-setting>
             <slider-setting text="Chain Time Bumper" apply-on-change="true" value="ChainTimeBumper" bind-value="true" show-buttons="true" increment=".025" min="0" max="4" font-size="3.1" formatter="TimeFormatter" font-color='~FontColorChains' interactable="~EnablerChains" hover-hint="Default: .2 sec. The amount of time required between a chain and surrounding notes. Increase to reduce chains or decrease to allow more potential chains." rich-text='true'></slider-setting>
-            <toggle-setting text='Enable Long Chains' apply-on-change='true' value='EnableLongChains' bind-value='true' font-size="3.1" font-color='~FontColorChains' interactable="~EnablerChains" hover-hint="Default: True. Enable long chains that are similar to arcs."></toggle-setting>
-            <slider-setting text="Long Chain Max Duration" apply-on-change="true" value="LongChainMaxDuration" bind-value="true" show-buttons="true" increment=".025" min="0" max="4" font-size="3.1" formatter="TimeFormatter" font-color='~FontColorChains' interactable="~EnablerChains" hover-hint="Default: .35 sec. The max duration allowed for a long chain. Chain segments become awkward to hit on longer chains." rich-text='true'></slider-setting>
+            <toggle-setting text='Enable Long Chains' apply-on-change='true' value='EnableLongChains' bind-value='true' font-size="3.1" font-color='~FontColorChains' interactable="~EnablerChains" hover-hint="Default: True. Enable long chains that are similar to arcs. Best with Beat Saber > Settings > Graphics > Max Shockwave Particles 0 or maybe 1 since particles will sometimes destroy long chain segments."></toggle-setting>
+            <slider-setting text="Long Chain Max Duration" apply-on-change="true" value="LongChainMaxDuration" bind-value="true" show-buttons="true" increment=".025" min="0" max="4" font-size="3.1" formatter="TimeFormatter" font-color='~FontColorChains' interactable="~EnablerChains" hover-hint="Default: .425 sec. The max duration allowed for a long chain. Chain segments become awkward to hit on longer chains." rich-text='true'></slider-setting>
             <!--<toggle-setting text='Pause Dectection' apply-on-change='true' value='PauseDetection' bind-value='true' hover-hint="True-Uses pause detection. False-Uses tempo change"></toggle-setting>-->
             <!--<toggle-setting text='Alter Notes' apply-on-change='true' value='AlterNotes' bind-value='true' hover-hint="Will move a note so its compatible with a chain."></toggle-setting>-->
           </vertical>
@@ -168,13 +168,240 @@
             apply-on-change="true"
             font-color="~FontColorAutoNjsFixer"
             interactable="~EnablerAutoNjsFixer"
-            hover-hint="Default: PRESERVE TRAVEL TIME. Use PRESERVE TRAVEL TIME to keep a similar perceived note speed and keep the same duration of travel intended by the map while letting you change the note spawn distance. Use SET NOTE SPEED to set your desired note speed. It's difficult to see notes coming in 360 with short note spawn distances."
+            hover-hint="Default: PRESERVE TRAVEL TIME. Use PRESERVE TRAVEL TIME to keep the same duration of travel and reaction time intended by the map (and keep a somewhat similar perceived note speed) while letting you change the note spawn distance. Use SET NOTE SPEED to set your desired note speed. It's difficult to see notes coming in 360 with short note spawn distances."
           />
-
+          
           <slider-setting text="Note Speed" apply-on-change="true" value="DesiredNJS" bind-value="true" fontSize="3"  show-buttons="true" increment="1" min="0" max="60" formatter="SpeedFormatter" font-color='~FontColorDesiredNJS' interactable="~EnablerDesiredNJS" hover-hint="Default: 10. The map's note speed is overridden with this value. 0 will revert to the map's original speed. Scoring will be disabled for speeds set lower than the original." rich-text='true'></slider-setting>
           <slider-setting text="Note Spawn Distance" apply-on-change="true" value="DesiredJD" bind-value="true" fontSize="3"  show-buttons="true" increment="1" min="0" max="32" formatter="DistanceFormatter" font-color='~FontColorAutoNjsFixer' interactable="~EnablerAutoNjsFixer" hover-hint="Default: 30. Overrides the map's note spawn distance with this value. 0 will revert to use the map's original distance. It's difficult to see notes coming in 360 with short note spawn distances." rich-text='true'></slider-setting>
+          
+          <text text="The controls below work even with Auto NJS Fixer disabled." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+
+          <dropdown-list-setting
+            text="Live Note Speed Control"
+            value="LiveNoteSpeedControl"
+            choices="LiveNoteSpeedControlChoices"
+            bind-value="true"
+            apply-on-change="true"
+            font-color="~FontColorEnablePlugin"
+            interactable="~EnablerEnablePlugin"
+            hover-hint="Change the Note Speed live during gameplay. Default: OFF. THUMBSTICK uses RIGHT Controller Up/Down. BUTTONS use Y/B. -1/+1 NJS. Works during pause but HUD is only displayed after you start playing again. This is only tested on Quest3."
+            />
+          
+          <dropdown-list-setting
+              text="Live Note Spawn Distance Control"
+              value="LiveNoteSpawnDistanceControl"
+              choices="LiveNoteSpawnDistanceControlChoices"
+              bind-value="true"
+              apply-on-change="true"
+              font-color="~FontColorEnablePlugin"
+              interactable="~EnablerEnablePlugin"
+              hover-hint="Change the Note Spawn Distance live during gameplay. Default: OFF. THUMBSTICK uses RIGHT Controller Left/Right. BUTTONS use Y/B. -2m/+2m JD. Works during pause but HUD is only displayed after you start playing again. This is only tested on Quest3."
+              />
+          </vertical>
+
+        <!-- Live Controller Input Section -->
+        <text text="Live Volume Control" align="Center" fontSize="5" font-color="#57fffb" underlined='true' />
+        <text text="Change the volume during gameplay. This reverts to default volume after a map is finished." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+        <text text="Careful not to harm your ears or your headset!" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+        <vertical pad-left='2'>
+          <dropdown-list-setting
+           text="Live Volume Control"
+           value="LiveVolumeControl"
+           choices="LiveVolumeControlChoices"
+           bind-value="true"
+           apply-on-change="true"
+           font-color='~FontColorEnablePlugin' 
+           interactable="~EnablerEnablePlugin"
+           hover-hint="Default: THUMBSTICK. THUMBSTICK uses LEFT Controller Up/Down. BUTTONS use Y/B. -2db/+2db volume. This is only tested on Quest3."
+           />
 
         </vertical>
+
+
+
+
+        <!-- Mixed Reality Portals Section -->
+        <text text="Mixed Reality Portals" align="Center" fontSize="5" font-color="#80ff10" underlined="true" />
+        <text text="Creates menu and gameplay passthrough portals using Virtual Desktop > Streaming > VR Passthrough Environment." align="Center" fontSize="2.3" font-color="#BBBBBB" />
+        <text text="Default Color Green (r:0, g:255, b:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%." align="Center" fontSize="2.3" font-color="#BBBBBB" />
+        <vertical pad-left="2">
+          <toggle-setting
+              text="Enable Mixed Reality Portals"
+              apply-on-change="true"
+              value="EnableMixedRealityPortals"
+              bind-value="true"
+              font-size="3.2"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="true"
+              hover-hint="Default: True. Enables the mixed reality portal system."
+          ></toggle-setting>
+
+          <dropdown-list-setting
+              text="Portal Shape"
+              value="MixedRealityPortalShape"
+              choices="available-portal-shapes"
+              bind-value="true"
+              apply-on-change="true"
+              fontSize="3"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="~EnablerMixedRealityPortals"
+              hover-hint="Choose whether the portal aperture is round or rectangular."
+          />
+
+          <slider-setting
+              text="Round Portal Diameter"
+              apply-on-change="true"
+              value="GreenScreenRoundDiameter"
+              bind-value="true"
+              show-buttons="true"
+              increment="0.1"
+              min="0.1"
+              max="20"
+              formatter="DistanceFormatterFloat"
+              font-size="3.2"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="~ShowRoundPortalSettings"
+              hover-hint="Diameter of the round portal."
+              rich-text="true"
+          ></slider-setting>
+
+          <slider-setting
+              text="Rectangular Portal Width"
+              apply-on-change="true"
+              value="GreenScreenRectWidth"
+              bind-value="true"
+              show-buttons="true"
+              increment="0.1"
+              min="0.1"
+              max="20"
+              formatter="DistanceFormatterFloat"
+              font-size="3.2"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="~ShowRectPortalSettings"
+              hover-hint="Width of the rectangular portal."
+              rich-text="true"
+          ></slider-setting>
+
+          <slider-setting
+              text="Rectangular Portal Height"
+              apply-on-change="true"
+              value="GreenScreenRectHeight"
+              bind-value="true"
+              show-buttons="true"
+              increment="0.1"
+              min="0.1"
+              max="20"
+              formatter="DistanceFormatterFloat"
+              font-size="3.2"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="~ShowRectPortalSettings"
+              hover-hint="Height of the rectangular portal."
+              rich-text="true"
+          ></slider-setting>
+
+          <slider-setting
+              text="360 Portal Diameter"
+              apply-on-change="true"
+              value="GreenScreen360Diameter"
+              bind-value="true"
+              show-buttons="true"
+              increment="0.1"
+              min="0"
+              max="40"
+              formatter="DistanceFormatterFloat"
+              font-size="3.2"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="~EnablerMixedRealityPortals"
+              hover-hint="Default: 12. Diameter of the surrounding green shell used for 360 capture. Set to 0 to disable."
+              rich-text="true"
+          ></slider-setting>
+
+          <slider-setting
+              text="Menu Portal Forward Offset"
+              apply-on-change="true"
+              value="GreenScreenMenuZOffset"
+              bind-value="true"
+              show-buttons="true"
+              increment="0.1"
+              min="-10"
+              max="10"
+              formatter="DistanceFormatterFloat"
+              font-size="3.2"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="~EnablerMixedRealityPortals"
+              hover-hint="Moves the portal forward or backward in the menu."
+              rich-text="true"
+          ></slider-setting>
+
+          <slider-setting
+              text="Gameplay Portal Forward Offset"
+              apply-on-change="true"
+              value="GreenScreenGamePlayZOffset"
+              bind-value="true"
+              show-buttons="true"
+              increment="0.1"
+              min="-10"
+              max="10"
+              formatter="DistanceFormatterFloat"
+              font-size="3.2"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="~EnablerMixedRealityPortals"
+              hover-hint="Moves the portal forward or backward during gameplay."
+              rich-text="true"
+          ></slider-setting>
+
+          <dropdown-list-setting
+              text="Round Portal Height Mode"
+              value="MixedRealityRoundHeightMode"
+              choices="available-round-height-modes"
+              bind-value="true"
+              apply-on-change="true"
+              fontSize="3"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="~ShowRoundPortalSettings"
+              hover-hint="Center At Custom Height places the round portal center at the chosen custom height. Bottom At Floor Level places its bottom at floor level."
+           />
+
+          <dropdown-list-setting
+              text="Rectangular Portal Height Mode"
+              value="MixedRealityRectHeightMode"
+              choices="available-rect-height-modes"
+              bind-value="true"
+              apply-on-change="true"
+              fontSize="3"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="~ShowRectPortalSettings"
+              hover-hint="Center At Custom Height places the rectangular portal center at the chosen custom height. Bottom At Floor Level places its bottom at floor level."
+          />
+
+          <slider-setting
+              text="Portal Custom Center Height"
+              apply-on-change="true"
+              value="GreenScreenCustomCenterHeight"
+              bind-value="true"
+              show-buttons="true"
+              increment="0.1"
+              min="-10"
+              max="10"
+              formatter="DistanceFormatterFloat"
+              font-size="3.2"
+              font-color="~FontColorMixedRealityPortals"
+              interactable="~ShowCustomHeightSetting"
+              hover-hint="Used when the selected height mode is Center At Custom Height. Can set to your approximate height to center the portal in front of you."
+              rich-text="true"
+          ></slider-setting>
+        </vertical>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
         <!-- Lighting Section -->
         <text text="Auto Lighting" align="Center" fontSize="5" font-color="#0600f8" underlined='true' /> 

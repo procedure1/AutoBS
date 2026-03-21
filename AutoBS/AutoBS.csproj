@@ -43,7 +43,10 @@
     <DisableZipRelease>True</DisableZipRelease>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AddDirectionalMarkersToMenu.cs" />
+    <Compile Include="UNUSED_AddDirectionalMarkersToMenu.cs" />
+    <Compile Include="Modules\EnvironmentMarkersAndGreenScreen.cs" />
+    <Compile Include="LiveAdjustHud.cs" />
+    <Compile Include="LiveGameplayInputListener.cs" />
     <Compile Include="Modules\Arcitect.cs" />
     <Compile Include="Modules\AutoNjsFixer.cs" />
     <Compile Include="Modules\BeatSageCleanUp.cs" />
@@ -69,7 +72,7 @@
     <Compile Include="Plugin.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UNUSED_SoundChanger.cs" />
+    <Compile Include="AudioChanger.cs" />
     <Compile Include="UI\GameplaySetupView.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Modules\WallGenerator.cs" />
@@ -426,6 +429,10 @@
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\BSManager\BSInstances\1.42.0\Beat Saber_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <Private>False</Private>
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.UI.dll</HintPath>
@@ -435,6 +442,10 @@
       <Private>False</Private>
       <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.UIModule.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="UnityEngine.XRModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>D:\BSManager\BSInstances\1.42.0\Beat Saber_Data\Managed\UnityEngine.XRModule.dll</HintPath>
     </Reference>
     <Reference Include="Zenject, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

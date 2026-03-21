@@ -15,17 +15,17 @@ namespace AutoBS
         private static Dictionary<string, BeatmapCharacteristicSO> customGamesModes = new Dictionary<string, BeatmapCharacteristicSO>();
 
         public const string GENERATED_360DEGREE_MODE = "Generated360Degree";
-        public const string GENERATED_90DEGREE_MODE = "Generated90Degree";
+        //public const string GENERATED_90DEGREE_MODE = "Generated90Degree";
 
         public static BeatmapCharacteristicSO GetGenerated360GameMode()
         {
             return GetCustomGameMode(GENERATED_360DEGREE_MODE, GetDefault360Mode().icon, "GEN360", "Generated 360 mode");
         }
 
-        public static BeatmapCharacteristicSO GetGenerated90GameMode()
-        {
-            return GetCustomGameMode(GENERATED_90DEGREE_MODE, GetDefault90Mode().icon, "GEN90", "Generated 90 mode");
-        }
+        //public static BeatmapCharacteristicSO GetGenerated90GameMode()
+        //{
+        //    return GetCustomGameMode(GENERATED_90DEGREE_MODE, GetDefault90Mode().icon, "GEN90", "Generated 90 mode");
+        //}
 
         public static BeatmapCharacteristicSO GetCustomGameMode(string serializedName, Sprite icon, string name, string description, bool requires360Movement = true, bool containsRotationEvents = true, int numberOfColors = 2)
         {
@@ -83,6 +83,5 @@ namespace AutoBS
         {
             return GetDefaultGameModes().GetBeatmapCharacteristicBySerializedName("90Degree");
         }
-
     }
 }

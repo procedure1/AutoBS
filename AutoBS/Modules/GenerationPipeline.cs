@@ -15,6 +15,25 @@ namespace AutoBS
         public BeatmapData Vanilla;
     }
 
+    /// <summary>
+    /// Per-run pipeline context.
+    /// This makes hidden dependencies more explicit and reduces reliance on stale static state.
+    /// </summary>
+    internal sealed class PipelineContext
+    {
+        public float OriginalNjs;
+        public float OriginalJd;
+        public float originalNjo;
+
+        public float AutoNjsFixerNjs;
+        public float AutoNjsFixerJd;
+       
+        // Useful if you want to inspect/debug which modules produced shared data this run.
+        public bool njsAndNjoDataInitialized;
+        public bool AutoNjsApplied;
+    }
+
+
     internal static class GenerationPipeline
     {
         internal static PipelineResult Run(EditableCBD eData)
@@ -27,22 +46,18 @@ namespace AutoBS
 
             int originalWallCount = eData.Obstacles.Count;
 
-            // This replaces RunState.wallCutMoments.
-            // RotationGenerator can fill it (or you can fill it elsewhere).
-            var wallCutMoments = new List<(float time, int rotationSteps)>();
+            // Per-run shared context for values that multiple modules may depend on.
+            var ctx = new PipelineContext();
 
-            eData.RotationEventsChanged = false;// this will cause Color Notes, Bomb Notes, Arcs, and Chains to change since will add per object rotations
-            
-            eData.ColorNotesChanged = false;
-            eData.BombNotesChanged = false;
-            eData.ObstaclesChanged = false;
-            eData.ArcsChanged = false;
-            eData.ChainsChanged = false;
-            eData.BasicEventsChanged = false; 
-            eData.ColorBoostEventsChanged = false;
+            // ----- Reset per-run state FIRST -----
+            // Important: disabled modules should not leave stale values from a previous run.
+            ResetRunState(eData);
+
+            // ----- Always initialize baseline movement data for the current map used by some modules like walls and rotations and vision blocking fix, etc -----
+            InitializeNJSandJD(ctx);
 
             // ----- Run pipeline modules (mutates eData) -----
-            RunAutoNjsFixer(); // this one can be anywhere on the list
+            RunAutoNjsFixer(ctx); // can be anywhere on the list. but njs and jd are needed by many modules.
             RunBeatSageCleanup(eData); // must be first since it may delete notes/walls
             RunArcitect(eData); // best before rotations since i have some code to fix arcs with rotations in rotation generator. runs ArcFix for non-gen 360/90 maps
             RunLightAutoMapper(eData);
@@ -50,6 +65,16 @@ namespace AutoBS
             RunRotationGenerator(eData); // runs ArcFix for gen 360 maps
             RunWallGenerator(eData);
             FinalNormalize(eData);
+
+
+            ScoreGate.Clear();
+            AutoNjsRuntimeState.ResetLive(); // these reset for live njs disabled text.
+            LiveAudioRuntimeState.ResetLive();
+            LiveGameplayRuntimeState.Reset();
+            string disabledText = DetermineScoreSubmissionReason(eData);
+            if (!string.IsNullOrEmpty(disabledText))
+                ScoreGate.Set(disabledText);
+
 
             (float accumRot, float time) high = (0, 0);
             (float accumRot, float time) low = (0, 0);
@@ -102,7 +127,7 @@ namespace AutoBS
                 if (eData.Obstacles.Count > 0)  eData.ObstaclesChanged = true;
             }
 
-            Plugin.LogDebug($"[PipelineResult] ColorNotesChanged: {eData.ColorNotesChanged}, BombNotesChanged: {eData.BombNotesChanged}, ObstaclesChanged: {eData.ObstaclesChanged}, ArcsChanged: {eData.ArcsChanged}, BasicEventsChanged: {eData.ArcsChanged}, ColorBoostEventsChanged: {eData.ColorBoostEventsChanged}, RotationEventsChanged: {eData.RotationEventsChanged}, CustomEventsChanged: {eData.CustomEventsChanged}");
+            Plugin.LogDebug($"[PipelineResult] ColorNotesChanged: {eData.ColorNotesChanged}, BombNotesChanged: {eData.BombNotesChanged}, ObstaclesChanged: {eData.ObstaclesChanged}, ArcsChanged: {eData.ArcsChanged}, BasicEventsChanged: {eData.BasicEventsChanged}, ColorBoostEventsChanged: {eData.ColorBoostEventsChanged}, RotationEventsChanged: {eData.RotationEventsChanged}, CustomEventsChanged: {eData.CustomEventsChanged}");
 
             if (eData.RotationEventsChanged) // this adds per object rotation to all objects so they are altered
             {
@@ -149,31 +174,113 @@ namespace AutoBS
             };
         }
 
-        private static void RunAutoNjsFixer()
+        /// <summary>
+        /// Reset per-run state that can otherwise leak across maps or when optional modules are disabled.
+        /// </summary>
+        private static void ResetRunState(EditableCBD eData)
         {
+            // This replaces RunState.wallCutMoments.
+            // RotationGenerator can fill it (or you can fill it elsewhere).
+            // IMPORTANT: must be reset per run or old values can affect gap/wall logic.
+            if (eData.WallCutMoments == null)
+                eData.WallCutMoments = new List<(float time, int rotationSteps)>();
+            else
+                eData.WallCutMoments.Clear();
+
+            eData.RotationEventsChanged = false;// this will cause Color Notes, Bomb Notes, Arcs, and Chains to change since will add per object rotations
+
+            eData.ColorNotesChanged = false;
+            eData.BombNotesChanged = false;
+            eData.ObstaclesChanged = false;
+            eData.ArcsChanged = false;
+            eData.ChainsChanged = false;
+            eData.BasicEventsChanged = false;
+            eData.ColorBoostEventsChanged = false;
+            eData.CustomEventsChanged = false;
+
+            // Reset module-level/static flags that can otherwise go stale between runs.
+            // These are safe even if some module is disabled this run.
+            LightsGenerator.LightEventsAdded = false;
+            BeatSageCleanUp.DisableScoreSubmission = false;
+
+            // Always initialize these to baseline-safe values later in InitializeMovementData().
+            // Doing a reset here helps avoid stale data if initialization returns early.
+            TransitionPatcher.FinalNoteJumpMovementSpeed = 0f;
+            TransitionPatcher.FinalJumpDistance = 0f;
+
+            // Optional: if WallGenerator has internal static lists, this is the correct place to hard reset them.
+            // Add a method like WallGenerator.ResetRunState() and call it here.
+        }
+
+        /// <summary>
+        /// Always compute the movement values for the current map, even if AutoNjsFixer is disabled.
+        /// Optional modules should not be responsible for required shared initialization.
+        /// </summary>
+        private static void InitializeNJSandJD(PipelineContext ctx)
+        {
+            /*
             var level = TransitionPatcher.SelectedBeatmapLevel;
             var characteristic = TransitionPatcher.SelectedCharacteristicSO;
             var difficulty = TransitionPatcher.SelectedDifficulty;
 
             if (level == null || characteristic == null)
+            {
+                Plugin.LogDebug("[InitializeMovementData] skipped because level or characteristic was null.");
                 return;
+            }
 
             var basic = level.GetDifficultyBeatmapData(characteristic, difficulty);
             if (basic == null)
+            {
+                Plugin.LogDebug("[InitializeMovementData] skipped because difficulty beatmap data was null.");
                 return;
+            }
 
-            float originalNjs = SetContent.NoteJumpMovementSpeed(difficulty, basic.noteJumpMovementSpeed);
+            float originalNjs = SetContent.GetNoteJumpMovementSpeed(difficulty, basic.noteJumpMovementSpeed);
             float njo = basic.noteJumpStartBeatOffset;
+            */
 
-            (float fixedNjs, float fixedJd, float originalJd) = AutoNjsFixer.Calculate(originalNjs, njo, TransitionPatcher.bpm);
+            float originalNjs = TransitionPatcher.OriginalNoteJumpMovementSpeed;
+            if (originalNjs == 0f) return; // this means we never got valid data for the current map, so skip initialization to avoid writing stale data.
 
+            float originalNjo = TransitionPatcher.OriginalNoteJumpOffset;
+
+            // Reuse your existing calculation path so original JD matches your current logic.
+            (float finalNjs, float finalJd, float originalJd) = AutoNjsFixer.Calculate(originalNjs, originalNjo, TransitionPatcher.bpm);
+
+            ctx.OriginalNjs = originalNjs;
+            ctx.OriginalJd = originalJd;
+            ctx.originalNjo = originalNjo;
+
+            ctx.AutoNjsFixerNjs = finalNjs; // set even though may not be used if auto njs fixer is disabled and thus not applied to TransitionPatcher.FinalNoteJumpMovementSpeed
+            ctx.AutoNjsFixerJd = finalJd;   // set even though may not be used if auto njs fixer is disabled and thus not applied to TransitionPatcher.FinalJumpDistance
+            
+            ctx.njsAndNjoDataInitialized = true;
+
+            // This is starting as though AutoNJS is disabled.
             TransitionPatcher.OriginalNoteJumpMovementSpeed = originalNjs;
-            TransitionPatcher.FinalNoteJumpMovementSpeed = fixedNjs;
-            TransitionPatcher.FinalJumpDistance = fixedJd;
+            TransitionPatcher.FinalNoteJumpMovementSpeed = originalNjs; // <- orginal still applied as default.
+            TransitionPatcher.FinalJumpDistance = originalJd;           // <- orginal still applied as default.
 
-            Plugin.LogDebug(
-                $"[AutoNjs] Original NJS:{originalNjs} NJO:{njo}, Original JD:{originalJd} -> AutoNjsFixer NJS:{fixedNjs}, AutoNjsFixer JD:{fixedJd}"
-            );
+            //Plugin.LogDebug($"[InitializeMovementData] Baseline NJS init -> Original NJS:{originalNjs} NJO:{originalNjo}, Original JD:{originalJd} (Final defaults to original when AutoNjsFixer disabled)");
+        }
+
+        private static void RunAutoNjsFixer(PipelineContext ctx)
+        {
+            if (!ctx.njsAndNjoDataInitialized)
+            {
+                Plugin.LogDebug("[RunAutoNjsFixer] skipped because movement data was not initialized.");
+                return;
+            }
+
+            if (!Utils.IsEnabledAutoNjsFixer()) return;
+
+            ctx.AutoNjsApplied = true;
+
+            TransitionPatcher.FinalNoteJumpMovementSpeed = ctx.AutoNjsFixerNjs;
+            TransitionPatcher.FinalJumpDistance = ctx.AutoNjsFixerJd;
+
+            Plugin.LogDebug($"[AutoNjs] Original NJS:{ctx.OriginalNjs} NJO:{ctx.originalNjo}, Original JD:{ctx.OriginalJd} -> AutoNjsFixer NJS:{ctx.AutoNjsFixerNjs}, AutoNjsFixer JD:{ctx.AutoNjsFixerJd}");
         }
 
         private static void RunBeatSageCleanup(EditableCBD eData)
@@ -196,15 +303,6 @@ namespace AutoBS
             if (!addArcs && !addChains) return;
 
             Arcitect.CreateSliders(eData);
-
-            string disabledText = BeatmapDataTransformHelperPatcher.DetermineScoreSubmissionReason(
-                BeatSageCleanUp.DisableScoreSubmission,
-                eData.MapAlreadyUsesChains,
-                eData.Chains.Count
-            );
-
-            if (!string.IsNullOrEmpty(disabledText))
-                ScoreGate.Set(disabledText);
 
             if (addArcs &&
                 Config.Instance.ArcFixFull &&
@@ -254,16 +352,13 @@ namespace AutoBS
         {
             if (TransitionPatcher.SelectedSerializedName != GameModeHelper.GENERATED_360DEGREE_MODE) return;
 
-            RotationGenerator.Generate(eData);
-
-            // you mentioned rotation gen can remove bomb notes
-            eData.BombNotes = eData.BombNotes.OrderBy(n => n.time).ToList();
+            RotationGenerator.Generate(eData);      
         }
 
         private static void RunWallGenerator(EditableCBD eData)
         {
             if (!Utils.IsEnabledWalls()) return;
-            if (eData.Obstacles != null && eData.Obstacles.Count >= 5000) return;
+            if (eData.Obstacles != null && eData.Obstacles.Count >= 1000) return;
 
             Config cfg = Config.Instance;
 
@@ -459,16 +554,14 @@ namespace AutoBS
                 }
                 else
                 {
-                    Plugin.LogDebug(
-                        $"[MoveWallsBlockingChainTail] & [RemoveCrouchWallsBlockingChains] NOT CALLED!!");
+                    Plugin.LogDebug($"[MoveWallsBlockingChainTail] & [RemoveCrouchWallsBlockingChains] NOT CALLED!!");
                 }
 
                 if (Utils.IsEnabledArcs())// && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles)// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))
                     moveWallsBlockingArc = WallGenerator.MoveWallsBlockingArc(eData);
                 else
                 {
-                    Plugin.LogDebug(
-                        $"[MoveWallsBlockingArc] NOT CALLED!!");
+                    Plugin.LogDebug($"[MoveWallsBlockingArc] NOT CALLED!!");
                 }
 
                 //Plugin.LogDebug($" ------- MoveWallsBlockingChainTail() & MoveWallsBlockingArc() time elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}");
@@ -510,6 +603,50 @@ namespace AutoBS
             eData.BasicEvents = eData.BasicEvents.OrderBy(e => e.time).ToList();
             eData.Arcs = eData.Arcs.OrderBy(a => a.time).ToList();
             eData.Chains = eData.Chains.OrderBy(c => c.time).ToList();
+        }
+
+        public static string DetermineScoreSubmissionReason(EditableCBD eData)
+        {
+            string str = "";
+
+            if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
+            {
+                if (Config.Instance.BasedOn != Config.Base.Standard)
+                {
+                    str = "Base Map Not Standard";
+                }
+                if (Config.Instance.RotationSpeedMultiplier < 0.3f)
+                {
+                    str += (str != "" ? " | " : "") + "Rotation Mult Low";
+                }
+                if (!Config.Instance.Wireless360 && Config.Instance.LimitRotations360 < 90)
+                {
+                    str += (str != "" ? " | " : "") + "Rotations Limited";
+                }
+            }
+
+            if (BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Standard &&
+                Utils.IsEnabledAutoNjsFixer() &&
+                !TransitionPatcher.AutoNJSDisabledByConflictingMod &&
+                TransitionPatcher.OriginalNoteJumpMovementSpeed > TransitionPatcher.FinalNoteJumpMovementSpeed)
+            {
+                str += (str != "" ? " | " : "") + "Auto NJS Fixer";
+            }
+
+            if (Utils.IsEnabledChains() && !eData.MapAlreadyUsesChains && eData.Chains.Count > 0)
+            {
+                str += (str != "" ? " | " : "") + "Architect Chains";
+            }
+
+            if (Config.Instance.EnableCleanBeatSage && (TransitionPatcher.IsBeatSageMap) && BeatSageCleanUp.DisableScoreSubmission)
+            {
+                str += (str != "" ? " | " : "") + "Beat Sage Cleaner";
+            }
+
+            if (str != "")
+                str = "AutoBS—" + str; // prefix once
+
+            return str;
         }
     }
 }

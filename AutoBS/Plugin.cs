@@ -1,22 +1,23 @@
-﻿using HarmonyLib;
+﻿using AutoBS.Patches;
+using AutoBS.UI;//BW UI
+using BeatSaberMarkupLanguage.GameplaySetup;
+using HarmonyLib;
 using IPA;
 using IPA.Config.Stores;
-using AutoBS.UI;//BW UI
-using IPALogger = IPA.Logging.Logger;
-using IPAConfig = IPA.Config.Config;
-using Zenject;
-using SiraUtil.Zenject;//needed to get Zenjector for installer
 using JetBrains.Annotations;
-using System.Linq;
-using UnityEngine;
+using SiraUtil.Zenject;//needed to get Zenjector for installer
+using SongCore;
 using System;
 using System.Collections.Generic;
-using AutoBS.Patches;
-using System.Reflection;
-using BeatSaberMarkupLanguage.GameplaySetup;
-using UnityEngine.SceneManagement;
-using SongCore;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using Zenject;
+using static AutoBS.Patches.BeatmapDataTransformHelperPatcher;
+using IPAConfig = IPA.Config.Config;
+using IPALogger = IPA.Logging.Logger;
 
 namespace AutoBS
 {
@@ -50,11 +51,25 @@ namespace AutoBS
 
             harmony.PatchAll();
 
-
+            EnvironmentVisualsBootstrap.Create();
 
             //Disabled Overlay numbers on notes and walls
             //Plugin.Log?.Info("[WallTimeOverlayDebug] OnApplicationStart()");
             //SceneManager.activeSceneChanged += OnActiveSceneChanged;
+        }
+        internal static class EnvironmentVisualsBootstrap
+        {
+            internal static void Create()
+            {
+                if (UnityEngine.Object.FindObjectOfType<EnvironmentMarkersAndGreenScreen>() != null)
+                    return;
+
+                GameObject go = new GameObject("EnvironmentVisualsManager");
+                UnityEngine.Object.DontDestroyOnLoad(go);
+                go.AddComponent<EnvironmentMarkersAndGreenScreen>();
+
+                Plugin.Log.Info("[EnvGreen] Created persistent EnvironmentVisualsManager");
+            }
         }
 
         // Only for adding text labels to walls/notes for debugging
