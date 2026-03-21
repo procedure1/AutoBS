@@ -1,5 +1,5 @@
 # AutoBS — Beat Saber Automation Mod
-# Featuring 360fyer, Arcitect Arc + Chain Maker, Auto Lights, Auto Walls, Auto NJS Fixer, and MR Portals
+# Featuring 360fyer, Arcitect Arc + Chain Maker, Auto Lights, Auto Walls, Auto NJS Fixer, and Mixed Reality Portals
 
 ## For Beat Saber PC Version v1.42
 
@@ -11,7 +11,7 @@ NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time.
 
-This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without the included `Auto Lights`. `Boost lighting events` add more color to maps that don't have them. `Auto Lights` power larger and brighter lasers and optional strobe events. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more intereseting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps.
+This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without the included `Auto Lights`. `Boost lighting events` add more color to maps that don't have them. `Auto Lights` power larger and brighter lasers and optional strobe events. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more intereseting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps and adds portals to see Beat Saber through a floating mixed reality window (requires `Virtual Desktop App`.)
 
 Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
@@ -70,7 +70,11 @@ NOTE: If settings cause the note speed to be slower than the mapper intended, sc
 
 ## Mixed Reality Portals
 Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. 
-NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Environment. These Virtual Desktop setting work well for me: Default Color Green (r:0, g:255, b:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%.  Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file lets you change the passthrough color if you like.)
+
+NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Environment. 
+
+These Virtual Desktop setting work well for me: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%.
+Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file lets you change the passthrough color if you prefer another color.)
 
 ## Beat Sage Cleaner
 
