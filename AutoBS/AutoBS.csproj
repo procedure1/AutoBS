@@ -43,6 +43,9 @@
     <DisableZipRelease>True</DisableZipRelease>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Modules\DifficultyReducer.cs" />
+    <Compile Include="Modules\NoteSection.cs" />
+    <Compile Include="Modules\NoteSwing.cs" />
     <Compile Include="UNUSED_AddDirectionalMarkersToMenu.cs" />
     <Compile Include="Modules\EnvironmentMarkersAndGreenScreen.cs" />
     <Compile Include="LiveAdjustHud.cs" />
@@ -54,7 +57,7 @@
     <Compile Include="Modules\GenerationPipeline.cs" />
     <Compile Include="Modules\RotationGenerator.cs" />
     <Compile Include="UNUSED_BuiltInMapJsonLoader.cs" />
-    <Compile Include="JsonOutputConverter.cs" />
+    <Compile Include="Modules\JsonOutputConverter.cs" />
     <Compile Include="DataRegistry.cs" />
     <Compile Include="EditableBeatmapData.cs" />
     <Compile Include="ForceRequiredModActivation.cs" />
@@ -67,12 +70,12 @@
     <Compile Include="GameModeHelper.cs" />
     <Compile Include="UNUSED_GLSConverter.cs" />
     <Compile Include="Modules\LightsGenerator.cs" />
-    <Compile Include="OptimizeRotationsToFOV.cs" />
+    <Compile Include="Modules\OptimizeRotationsToFOV.cs" />
     <Compile Include="Patches\HarmonyPatches.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="AudioChanger.cs" />
+    <Compile Include="Modules\AudioChanger.cs" />
     <Compile Include="UI\GameplaySetupView.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Modules\WallGenerator.cs" />

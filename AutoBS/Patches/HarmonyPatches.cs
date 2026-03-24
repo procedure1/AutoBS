@@ -391,7 +391,7 @@ namespace AutoBS.Patches
                 rt.anchorMin = new Vector2(0.5f, 0f);
                 rt.anchorMax = new Vector2(0.5f, 0f);
                 rt.pivot = new Vector2(0.5f, 0f);
-                rt.anchoredPosition = new Vector2(0f, 35f);
+                rt.anchoredPosition = new Vector2(0f, 25f); //35 TEST
 
                 // If the banner hierarchy is odd on first run, fall back to rankText’s parent
                 if (!label.isActiveAndEnabled && ____rankText && ____rankText.transform is RectTransform rankRT)

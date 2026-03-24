@@ -80,6 +80,24 @@ namespace AutoBS
             return true;
         }
 
+        public static bool IsEnabledGameplayMixedReality() // not menus MR
+        {
+            string characteristic = TransitionPatcher.SelectedSerializedName;
+
+            bool is360Mode =
+                characteristic == "Generated360Degree" ||
+                characteristic == "360Degree" ||
+                characteristic == "90Degree";
+
+            if ((!Config.Instance.EnableMixedReality360 && is360Mode) ||
+                (!Config.Instance.EnableMixedRealityStandard && !is360Mode))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public static bool IsEnabledWalls()
         {
             string characteristic = TransitionPatcher.SelectedSerializedName;

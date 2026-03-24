@@ -10,6 +10,7 @@ using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.Windows;
 using UnityEngine.XR;
+using static UnityEngine.EventSystems.EventTrigger;
 
 namespace AutoBS
 {
@@ -48,20 +49,20 @@ namespace AutoBS
         private bool _isGameplayLoaded;
 
         const float menuFloorHeight = 0.001f; // the menu floor is very close to 0, but we add a small offset to ensure the floor quad renders above it and doesn't z-fight
-        const float gameplayFloorHeight = 0.02f;//-0.05f; // this lowers the floor just below the feet graphic so its still visible. gamplay has no floor.
+        const float gameplayFloorHeight = 0.005f; // this higher than the player contruction area. but spooky environment has bricks that are maybe 2 or 3 inches higher than the floor.
 
         //private Transform _menuCameraTransform;
 
         private void Start()
         {
-            Plugin.Log.Info($"[EnvGreen] Start go={gameObject.name} scene={gameObject.scene.name} activeInHierarchy={gameObject.activeInHierarchy}");
+            Plugin.Log.Info($"[MixedReality] Start go={gameObject.name} scene={gameObject.scene.name} activeInHierarchy={gameObject.activeInHierarchy}");
 
             _isMainMenuLoaded = false;
             _isGameplayLoaded = false;
 
-            if (!Config.Instance.EnableGreenScreen)
+            if (!Utils.IsEnabledGameplayMixedReality() && !Config.Instance.EnableMixedRealityMenus)
             {
-                Plugin.Log.Info("[EnvGreen] Green screen disabled at Start, clearing any existing shells");
+                Plugin.Log.Info("[MixedReality] Mixed reality disabled at Start, clearing any existing shells");
                 ClearAllGreenScreens();
                 return;
             }
@@ -79,42 +80,39 @@ namespace AutoBS
                     _isGameplayLoaded = true;
             }
 
-            if (_isMainMenuLoaded)
+            if (_isMainMenuLoaded && Config.Instance.EnableMixedRealityMenus)
             {
-                Plugin.Log.Info("[EnvGreen] MainMenu already loaded, ensuring menu greenscreen immediately");
+                Plugin.Log.Info("[MixedReality] MainMenu already loaded, ensuring menu greenscreen immediately");
                 EnsureMenuGreenScreen();
             }
-            else if (_isGameplayLoaded)
+            else if (_isGameplayLoaded && Utils.IsEnabledGameplayMixedReality())
             {
-                Plugin.Log.Info("[EnvGreen] GameCore already loaded, starting scan immediately");
+                Plugin.Log.Info("[MixedReality] GameCore already loaded, starting scan immediately");
                 _gameRoutine = StartCoroutine(InitialWaitAndCheck());
             }
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            Plugin.Log.Info($"[EnvGreen] Scene loaded: {scene.name}");
+            Plugin.Log.Info($"[MixedReality] Scene loaded: {scene.name}");
 
-            if (!Config.Instance.EnableGreenScreen)
-            {
-                Plugin.Log.Info("[EnvGreen] Scene loaded while green screen disabled, clearing shells");
-                ClearAllGreenScreens();
-                return;
-            }
+            if (scene.name.Contains("GlassDesertEnvironment"))
+                AddDirectionalMarkersIfNeeded();
+            else if (scene.name.Contains("Environment"))
+                RemoveDirectionalMarkers();
 
+            // Always track actual scene state, regardless of feature toggles
             if (scene.name == "MainMenu")
                 _isMainMenuLoaded = true;
 
             if (scene.name.Contains("GameCore") || scene.name.Contains("StandardGameplay"))
                 _isGameplayLoaded = true;
 
-            if (scene.name.Contains("GlassDesertEnvironment"))
+            if (!Utils.IsEnabledGameplayMixedReality() && !Config.Instance.EnableMixedRealityMenus)
             {
-                AddDirectionalMarkersIfNeeded();
-            }
-            else if (scene.name.Contains("Environment"))
-            {
-                RemoveDirectionalMarkers();
+                Plugin.Log.Info("[MixedReality] Scene loaded while green screen disabled, clearing shells");
+                ClearAllGreenScreens();
+                return;
             }
 
             if (scene.name.Contains("GameCore"))
@@ -122,10 +120,10 @@ namespace AutoBS
                 ResetRunState();
                 ResetMenuState();
 
-                if (!Config.Instance.EnableGreenScreen)
+                if (!Utils.IsEnabledGameplayMixedReality())
                     return;
 
-                Plugin.Log.Info("[EnvGreen] GameCore detected, starting scan");
+                Plugin.Log.Info("[MixedReality] GameCore detected, starting scan");
 
                 if (_gameRoutine != null)
                     StopCoroutine(_gameRoutine);
@@ -134,16 +132,16 @@ namespace AutoBS
                 return;
             }
 
-            if (!_isGameplayLoaded && scene.name == "MainMenu")
+            if (!_isGameplayLoaded && scene.name == "MainMenu" && Config.Instance.EnableMixedRealityMenus)
             {
-                Plugin.Log.Info("[EnvGreen] MainMenu detected, ensuring menu greenscreen");
+                Plugin.Log.Info("[MixedReality] MainMenu detected, ensuring menu greenscreen");
                 EnsureMenuGreenScreen();
             }
         }
 
         private void OnSceneUnloaded(Scene scene)
         {
-            Plugin.Log.Info($"[EnvGreen] Scene unloaded: {scene.name}");
+            Plugin.Log.Info($"[MixedReality] Scene unloaded: {scene.name}");
 
             if (scene.name == "MainMenu")
             {
@@ -158,15 +156,31 @@ namespace AutoBS
 
                 ResetRunState();
 
-                if (_isMainMenuLoaded && Config.Instance.EnableGreenScreen)
+                if (_isMainMenuLoaded && Config.Instance.EnableMixedRealityMenus)
                     EnsureMenuGreenScreen();
 
                 return;
             }
 
             if (scene.name.Contains("GlassDesertEnvironment"))
-            {
                 ResetRunState();
+        }
+
+        private void OnEnable()
+        {
+            Plugin.Log.Info($"[MixedReality] OnEnable go={gameObject.name} scene={gameObject.scene.name} activeInHierarchy={gameObject.activeInHierarchy}");
+
+            if (!_subscribed)
+            {
+                SceneManager.sceneLoaded += OnSceneLoaded;
+                SceneManager.sceneUnloaded += OnSceneUnloaded;
+                _subscribed = true;
+            }
+
+            if (!Utils.IsEnabledGameplayMixedReality() && !Config.Instance.EnableMixedRealityMenus)
+            {
+                Plugin.Log.Info("[MixedReality] OnEnable while disabled, clearing shells");
+                ClearAllGreenScreens();
             }
         }
         private void ResetRunState()
@@ -206,22 +220,7 @@ namespace AutoBS
 
         private bool _subscribed;
 
-        private void OnEnable()
-        {
-            Plugin.Log.Info($"[EnvGreen] OnEnable go={gameObject.name} scene={gameObject.scene.name} activeInHierarchy={gameObject.activeInHierarchy}");
-
-            if (!_subscribed)
-            {
-                SceneManager.sceneLoaded += OnSceneLoaded;
-                SceneManager.sceneUnloaded += OnSceneUnloaded;
-                _subscribed = true;
-            }
-            if (!Config.Instance.EnableGreenScreen)
-            {
-                Plugin.Log.Info("[EnvGreen] OnEnable while disabled, clearing shells");
-                ClearAllGreenScreens();
-            }
-        }
+       
 
         private void OnDestroy()
         {
@@ -266,7 +265,7 @@ namespace AutoBS
             GameObject wrapper = FindMainMenuWrapper();
             if (wrapper == null)
             {
-                Plugin.LogDebug("[EnvGreen] Wrapper not found. Cannot add directional markers.");
+                Plugin.LogDebug("[AddDirectionalMarkers] Wrapper not found. Cannot add directional markers.");
                 return;
             }
 
@@ -322,7 +321,7 @@ namespace AutoBS
             }
 
             _menuMarkersAdded = true;
-            Plugin.LogDebug("[EnvGreen] Direction markers added.");
+            Plugin.LogDebug("[AddDirectionalMarkers] Direction markers added.");
         }
 
         private void RemoveDirectionalMarkers()
@@ -370,7 +369,7 @@ namespace AutoBS
 
         private void EnsureMenuGreenScreen()
         {
-            if (!Config.Instance.EnableGreenScreen)
+            if (!Config.Instance.EnableMixedRealityMenus)
             {
                 ResetMenuState();
                 return;
@@ -391,13 +390,13 @@ namespace AutoBS
                 _menuRoutine = null;
             }
 
-            Plugin.Log.Info("[EnvGreen] Ensuring menu greenscreen");
+            Plugin.Log.Info("[MixedReality] Ensuring menu greenscreen");
             _menuRoutine = StartCoroutine(SetupMenuGreenScreen());
         }
 
         private IEnumerator InitialWaitAndCheck()
         {
-            if (!Config.Instance.EnableGreenScreen)
+            if (!Config.Instance.EnableMixedRealityStandard)
             {
                 _gameRoutine = null;
                 yield break;
@@ -411,7 +410,7 @@ namespace AutoBS
                 GameObject environment = FindEnvironment();
                 if (environment != null)
                 {
-                    Plugin.Log.Info($"[EnvGreen] Environment found: {environment.name}");
+                    //Plugin.LogDebug($"[MixedReality] Environment found: {environment.name}");
                     //LogRenderers(environment);
                     //LogPossibleNoteRenderers();
                     SetupGamePlayGreenScreen(environment);
@@ -429,21 +428,21 @@ namespace AutoBS
                 yield return new WaitForSecondsRealtime(waitInterval);
             }
 
-            Plugin.Log.Info("[EnvGreen] Environment not found within wait time");
+            //Plugin.LogDebug("[MixedReality] Environment not found within wait time");
             _gameRoutine = null;
             yield break;
 
         }
         private IEnumerator SetupMenuGreenScreen()
         {
-            if (!Config.Instance.EnableGreenScreen)
+            if (!Config.Instance.EnableMixedRealityMenus)
             {
                 ResetMenuState();
                 _menuRoutine = null;
                 yield break;
             }
 
-            Plugin.Log.Info("[EnvGreen] SetupMenuGreenScreen started");
+            //Plugin.LogDebug("[MixedReality] SetupMenuGreenScreen started");
 
             float elapsed = 0f;
 
@@ -453,7 +452,7 @@ namespace AutoBS
 
                 if (environment != null)
                 {
-                    Plugin.Log.Info($"[EnvGreen] Menu environment found: {environment.name} scene={environment.scene.name} path={GetPath(environment.transform, environment.transform.root)}");
+                    //Plugin.LogDebug($"[MixedReality] Menu environment found: {environment.name} scene={environment.scene.name} path={GetPath(environment.transform, environment.transform.root)}");
 
                     if (_menuShell != null)
                     {
@@ -461,10 +460,10 @@ namespace AutoBS
                         _menuShell = null;
                     }
 
-                    Material greenMat = GetGreenMaterial();
+                    Material greenMat = GetGreenScreenMaterial();
                     if (greenMat == null)
                     {
-                        Plugin.Log.Info("[EnvGreen] Could not build green material");
+                        Plugin.LogDebug("[MixedReality] Could not build green material");
                         _menuRoutine = null;
                         yield break;
                     }
@@ -476,19 +475,18 @@ namespace AutoBS
 
                     CreateQuadBox(_menuShell.transform, greenMat); // A box to hide the group of notes on the floor in the menu environment behind the player
 
-                    if (Config.Instance.GreenScreenRound)
-                        CreateRoundAperature(_menuShell.transform, greenMat, depth: 5, zOffset: Config.Instance.GreenScreenMenuZOffset, menuOverrideHeight: true);
+                    if (Config.Instance.MixedRealityPortalShapeRound)
+                        CreateCylinderAperture(_menuShell.transform, greenMat, ceilingRound: true, ceilingRoundType2: true);
+                    //CreateRoundAperature(_menuShell.transform, greenMat, depth: 5, zOffset: Config.Instance.MixedRealityMenuZOffset, menuOverrideHeight: true);
                     else
-                        CreateRectangularAperture(_menuShell.transform, greenMat, width: 7, height: 5, zOffset: Config.Instance.GreenScreenMenuZOffset, menuOverrideHeight: true);
+                        CreateCylinderAperture(_menuShell.transform, greenMat, ceilingRound: true, ceilingRoundType2: false);
+                        //CreateRectangularAperture(_menuShell.transform, greenMat, width: 7, height: 5, zOffset: Config.Instance.MixedRealityMenuZOffset, menuOverrideHeight: true);
 
                     //_lastMenuCircular = Config.Instance.GreenScreenCircular;
                     //_lastMenuYOffset  = Config.Instance.GreenScreenMenuYOffset;
                     //_lastMenuZOffset  = Config.Instance.GreenScreenMenuZOffset;
 
-                    Plugin.Log.Info(
-                        $"[EnvGreen] Menu shell worldPos={_menuShell.transform.position} " +
-                        $"localPos={_menuShell.transform.localPosition} " +
-                        $"parent={_menuShell.transform.parent?.name}");
+                    //Plugin.LogDebug($"[MixedReality] Menu shell worldPos={_menuShell.transform.position} localPos={_menuShell.transform.localPosition} parent={_menuShell.transform.parent?.name}");
 
                     _menuRoutine = null;
 
@@ -505,7 +503,7 @@ namespace AutoBS
                 elapsed += 0.25f;
             }
 
-            Plugin.Log.Info("[EnvGreen] SetupMenuGreenScreen timed out");
+            Plugin.LogDebug("[MixedReality] SetupMenuGreenScreen timed out");
             _menuRoutine = null;
         }
 
@@ -524,7 +522,7 @@ namespace AutoBS
                     if (root.name != "Wrapper")
                         continue;
 
-                    Plugin.Log.Info("[EnvGreen] ===== UI CANDIDATES START =====");
+                    Plugin.LogDebug("[MixedReality] ===== UI CANDIDATES START =====");
 
                     var transforms = root.GetComponentsInChildren<Transform>(true);
                     foreach (var t in transforms)
@@ -546,12 +544,12 @@ namespace AutoBS
                                 lower.Contains("sprite") ||
                                 lower.Contains("renderer"))
                             {
-                                Plugin.Log.Info($"[EnvGreen] GO: {t.gameObject.name} | Path: {GetPathFromRoot(t, root.transform)} | Component: {typeName}");
+                                Plugin.LogDebug($"[MixedReality] GO: {t.gameObject.name} | Path: {GetPathFromRoot(t, root.transform)} | Component: {typeName}");
                             }
                         }
                     }
 
-                    Plugin.Log.Info("[EnvGreen] ===== UI CANDIDATES END =====");
+                    Plugin.LogDebug("[MixedReality] ===== UI CANDIDATES END =====");
                     return;
                 }
             }
@@ -618,15 +616,15 @@ namespace AutoBS
                 if (!scene.isLoaded)
                     continue;
 
-                //Plugin.Log.Info($"[EnvGreen] Checking scene: {scene.name}");
+                //Plugin.LogDebug($"[MixedReality] Checking scene: {scene.name}");
 
                 foreach (GameObject obj in scene.GetRootGameObjects())
                 {
-                    //Plugin.Log.Info($"[EnvGreen] Root: {obj.name}");
+                    //Plugin.LogDebug($"[MixedReality] Root: {obj.name}");
 
                     if (obj.name == "Environment")
                     {
-                        Plugin.Log.Info($"[EnvGreen] Exact Environment root found in scene {scene.name}");
+                        //Plugin.LogDebug($"[MixedReality] Exact Environment root found in scene {scene.name}");
                         return obj;
                     }
                 }
@@ -643,19 +641,19 @@ namespace AutoBS
                 _gameplayShell = null;
             }
 
-            Plugin.Log.Info("[EnvGreen] Applying selective green test");
+            //Plugin.LogDebug("[MixedReality] Applying selective green test");
 
             OffsetPlayerFeetSymbol(root.transform, 1.2f);
 
             var renderers = root.GetComponentsInChildren<Renderer>(true);
 
-            Material greenMat = GetGreenMaterial();
+            Material greenMat = GetGreenScreenMaterial();
             if (greenMat == null)
             {
-                Plugin.Log.Info("[EnvGreen] Could not build green material");
+                Plugin.LogDebug("[MixedReality] Could not build green material");
                 return;
             }
-
+            /*
             Renderer playersPlaceConstruction = null;
             Renderer playersPlaceMirror = null;
 
@@ -669,45 +667,47 @@ namespace AutoBS
                 if (path == "Environment/PlayersPlace/Mirror")
                     playersPlaceMirror = r;
             }
+            
             if (playersPlaceConstruction != null)
             {
                 playersPlaceConstruction.enabled = false;
-                Plugin.Log.Info("[EnvGreen] Disabled PlayersPlace/Construction");
+                Plugin.LogDebug("[MixedReality] Disabled PlayersPlace/Construction");
             }
 
             if (playersPlaceMirror != null)
             {
                 playersPlaceMirror.enabled = false;
-                Plugin.Log.Info("[EnvGreen] Disabled PlayersPlace/Mirror");
+                Plugin.LogDebug("[MixedReality] Disabled PlayersPlace/Mirror");
             }
-
+            */
             if (root.scene.name == "GlassDesertEnvironment")
             {
-                if (Config.Instance.GreenScreen360Diameter <= 0) return;
+                if (Config.Instance.MixedReality360Diameter <= 0) return;
 
-                Plugin.Log.Info("[EnvGreen] GlassDesertEnvironment detected.");
+                //Plugin.LogDebug("[MixedReality] GlassDesertEnvironment detected.");
 
                 _gameplayShell = CreateRadialFloorFan(
                     root.transform,
                     greenMat,
-                    diameter: Config.Instance.GreenScreen360Diameter,
-                    createCeiling: Config.Instance.GreenScreen360HasCeiling,
+                    diameter: Config.Instance.MixedReality360Diameter,
+                    ceilingHeight: Config.Instance.MixedReality360CeilingHeight,
                     blades: 36,
-                    floorHeight: 0.001f);
+                    floorHeight: gameplayFloorHeight);
 
-                Plugin.Log.Info("[EnvGreen] Spawned 360 floor green screen.");
+                //Plugin.LogDebug("[MixedReality] Spawned 360 floor green screen.");
             }
             else
             {
-                if (Config.Instance.GreenScreenRound)
+                if (Config.Instance.MixedRealityPortalShapeRound)
                 {
-                    //greenMat = BuildChromaMaterial(noteArrowRenderer);
-                    //_spawnedShell = CreateInwardQuadBox(root.transform, greenMat, 130f);
-                    _gameplayShell = CreateRoundAperature(root.transform, greenMat, diameter: Config.Instance.GreenScreenRoundDiameter, zOffset: Config.Instance.GreenScreenGamePlayZOffset);
+                    if (Config.Instance.MixedRealityRoundDiameter <= 0) return;
+
+                    _gameplayShell = CreateRoundAperature(root.transform, greenMat, diameter: Config.Instance.MixedRealityRoundDiameter, zOffset: Config.Instance.MixedRealityGamePlayRoundZOffset);
                 }
                 else
                 {
-                    _gameplayShell = CreateRectangularAperture(root.transform, greenMat, width: Config.Instance.GreenScreenRectWidth, height: Config.Instance.GreenScreenRectHeight, zOffset: Config.Instance.GreenScreenGamePlayZOffset);
+                    if (Config.Instance.MixedRealityRectHeight <= 0 || Config.Instance.MixedRealityRectWidth <= 0) return;
+                    _gameplayShell = CreateRectangularAperture(root.transform, greenMat, width: Config.Instance.MixedRealityRectWidth, height: Config.Instance.MixedRealityRectHeight, zOffset: Config.Instance.MixedRealityGamePlayRectZOffset);
                 }
             }
         }
@@ -739,7 +739,6 @@ namespace AutoBS
             float diameter = 10f,
             int blades = 36,
             float floorHeight = 0.001f,              // floor height
-            bool createCeiling = true,
             float ceilingHeight = 2.8f
         )
         {
@@ -779,7 +778,7 @@ namespace AutoBS
                     new Vector3(bladeWidth, bladeLength, 1f),
                     mat);
 
-                if (createCeiling)
+                if (ceilingHeight > 0)
                 {
                     // Ceiling: same blade, moved up, normals flipped toward playspace
                     CreateQuad(
@@ -815,8 +814,8 @@ namespace AutoBS
                 root.transform.SetParent(parent, false);
 
             const float minOuterHeight = 2.5f;
-
-            if (Config.Instance.MixedRealityModeTest)
+            /*
+            if (Config.Instance.MixedRealityFullModeTest)
             {
                 if (menuOverrideHeight)
                 {
@@ -834,7 +833,7 @@ namespace AutoBS
                 zOffset = depth - 10f;
                 menuOverrideHeight = false;
             }
-
+            */
             if (diameter > outerDiameter)
                 outerDiameter = diameter;
 
@@ -843,18 +842,32 @@ namespace AutoBS
             float outerHalfW = outerWidth * 0.5f;
 
             float halfDepth = depth * 0.5f;
-            float frontZ = +halfDepth;
-            float backZ = -halfDepth;
 
-            bool useCustomHeight =
-                Config.Instance.GreenScreenRoundHeightMode == Config.GreenScreenHeightMode.CenterAtCustomHeight;
+            float frontZ;
+            float backZ;
+            float rootZ;
 
-            float customCenterHeight = Config.Instance.GreenScreenCustomCenterHeight;
+            if (zOffset >= 0f)
+            {
+                // Front stays exactly at zOffset in world space.
+                // Box grows forward from its old back position.
+                frontZ = halfDepth + zOffset;
+                backZ = -halfDepth;
+                rootZ = -halfDepth;
+            }
+            else
+            {
+                // Whole box shifts backward, unchanged size.
+                frontZ = +halfDepth;
+                backZ = -halfDepth;
+                rootZ = zOffset - halfDepth;
+            }
+
+            float apertureBottomHeight = Config.Instance.MixedRealityRoundYOffset;
 
             if (menuOverrideHeight)
             {
-                useCustomHeight = true;
-                customCenterHeight = 2f; // aperture bottom is below floor. i like this look for menus
+                apertureBottomHeight = -2f; // changed to set to bottom of aperture
             }
 
             // Real floor level of the box
@@ -863,16 +876,7 @@ namespace AutoBS
                 : gameplayFloorHeight;
 
             // Aperture center can now be anywhere, including below floor
-            float apertureCenterYWorld;
-            if (useCustomHeight)
-            {
-                apertureCenterYWorld = customCenterHeight;
-            }
-            else
-            {
-                // default: circle sits on floor
-                apertureCenterYWorld = floorWorld + apertureRadius;
-            }
+            float apertureCenterYWorld = apertureBottomHeight + apertureRadius;
 
             float apertureTopWorld = apertureCenterYWorld + apertureRadius;
 
@@ -1022,11 +1026,11 @@ namespace AutoBS
                     mat);
             }
 
-            root.transform.localPosition = new Vector3(0f, centerHeight, zOffset - halfDepth);
+            root.transform.localPosition = new Vector3(0f, centerHeight, rootZ);
             root.transform.localRotation = Quaternion.identity;
             root.transform.localScale = Vector3.one;
 
-            Plugin.Log.Info($"[EnvGreen] Spawned round aperture with rectangular outer box ({segments} iris segments)");
+            Plugin.LogDebug($"[MixedReality] Spawned round aperture with rectangular outer box ({segments} iris segments)");
             return root;
         }
 
@@ -1049,11 +1053,27 @@ namespace AutoBS
             if (parent != null)
                 root.transform.SetParent(parent, false);
 
-            const float floorOffset = 0.003f;
-
             float halfDepth = depth * 0.5f;
-            float frontZ = +halfDepth;
-            float backZ = -halfDepth;
+
+            float frontZ;
+            float backZ;
+            float rootZ;
+
+            if (zOffset >= 0f)
+            {
+                // Front stays exactly at zOffset in world space.
+                // Box grows forward from its old back position.
+                frontZ = halfDepth + zOffset;
+                backZ = -halfDepth;
+                rootZ = -halfDepth;
+            }
+            else
+            {
+                // Whole box shifts backward, unchanged size.
+                frontZ = +halfDepth;
+                backZ = -halfDepth;
+                rootZ = zOffset - halfDepth;
+            }
 
             float innerHalfW = width * 0.5f;
             float innerHalfH = height * 0.5f;
@@ -1061,24 +1081,25 @@ namespace AutoBS
             // Outer box must at least contain the aperture width
             outerWidth = Mathf.Max(outerWidth, width);
 
-            bool useCustomHeight =
-                Config.Instance.GreenScreenRectHeightMode == Config.GreenScreenHeightMode.CenterAtCustomHeight;
-
-            if (menuOverrideHeight)
-                useCustomHeight = false;
-
             // Aperture world-space placement
             float apertureCenterYWorld;
             float apertureBottomWorld;
 
-            if (useCustomHeight)
+            float floorOffset;
+
+            if (menuOverrideHeight)
             {
-                apertureCenterYWorld = Config.Instance.GreenScreenCustomCenterHeight;
-                apertureBottomWorld = apertureCenterYWorld - innerHalfH;
+                floorOffset = menuFloorHeight;
+                apertureBottomWorld = floorOffset;
+                apertureCenterYWorld = apertureBottomWorld + innerHalfH;
+
             }
             else
             {
-                apertureBottomWorld = floorOffset;
+                floorOffset = gameplayFloorHeight;
+                //apertureCenterYWorld = Config.Instance.MixedRealityRectCenterHeight; // sets center of portal
+                //apertureBottomWorld = apertureCenterYWorld - innerHalfH;
+                apertureBottomWorld = Config.Instance.MixedRealityRectYOffset; // changed this to set bottom of portal instead of center
                 apertureCenterYWorld = apertureBottomWorld + innerHalfH;
             }
 
@@ -1213,11 +1234,253 @@ namespace AutoBS
             }
 
             // Front opening sits at zOffset
-            root.transform.localPosition = new Vector3(0f, centerHeight, zOffset - halfDepth);
+            root.transform.localPosition = new Vector3(0f, centerHeight, rootZ);
             root.transform.localRotation = Quaternion.identity;
             root.transform.localScale = Vector3.one;
 
-            Plugin.Log.Info("[EnvGreen] Spawned inward rectangular aperture tunnel");
+            Plugin.LogDebug("[MixedReality] Spawned inward rectangular aperture tunnel");
+            return root;
+        }
+
+        private static GameObject CreateCylinderAperture(
+            Transform parent,
+            Material mat,
+            float diameter = 7.5f,
+            float height = 2.9f,//3
+            float zOffset = 0,                 // front of cylinder opening sits at zOffset
+            int segments = 42,
+            float frontOpeningAngleDeg = 180f,   // centered on forward; 90 = open from -45 to +45
+            bool createFloor = true,
+            bool createCeiling = true,
+            bool ceilingRound = true, // rect works now with straight line across top
+            bool ceilingRoundType2 = false
+        )
+        {
+            GameObject root = new GameObject("EnvGreen_VerticalCylinderAperture");
+
+            if (parent != null)
+                root.transform.SetParent(parent, false);
+
+            float radius = diameter * 0.5f;
+            float halfHeight = height * 0.5f;
+            float angleStep = 360f / segments;
+
+            // Put the cylinder so its front-most point is at zOffset, same idea as your other methods.
+            // Since the front-most point of the circle is +radius in local Z, shift root back by radius.
+            root.transform.localPosition = new Vector3(0f, halfHeight + menuFloorHeight, zOffset);
+            root.transform.localRotation = Quaternion.identity;
+            root.transform.localScale = Vector3.one;
+
+            float halfOpen = Mathf.Clamp(frontOpeningAngleDeg, 0f, 360f) * 0.5f;
+
+            bool IsAngleInFrontOpening(float angleDeg)
+            {
+                // Normalize to [-180, 180]
+                float a = Mathf.Repeat(angleDeg + 180f, 360f) - 180f;
+                return a >= -halfOpen && a <= halfOpen;
+            }
+
+            // ----- Vertical cylinder wall blades -----
+            for (int i = 0; i < segments; i++)
+            {
+                float angleDeg0 = i * angleStep;
+                float angleDeg1 = (i + 1) * angleStep;
+                float angleMidDeg = (angleDeg0 + angleDeg1) * 0.5f;
+
+                // Convert so 0 deg = front (+Z), matching your requested opening
+                float frontCenteredDeg = Mathf.Repeat(90f - angleMidDeg + 180f, 360f) - 180f;
+
+                if (frontOpeningAngleDeg > 0.0001f && IsAngleInFrontOpening(frontCenteredDeg))
+                    continue;
+
+                float angleRad0 = angleDeg0 * Mathf.Deg2Rad;
+                float angleRad1 = angleDeg1 * Mathf.Deg2Rad;
+                float angleRadMid = angleMidDeg * Mathf.Deg2Rad;
+
+                Vector3 ring0 = new Vector3(Mathf.Cos(angleRad0) * radius, 0f, Mathf.Sin(angleRad0) * radius);
+                Vector3 ring1 = new Vector3(Mathf.Cos(angleRad1) * radius, 0f, Mathf.Sin(angleRad1) * radius);
+                Vector3 radialMid = new Vector3(Mathf.Cos(angleRadMid), 0f, Mathf.Sin(angleRadMid)).normalized;
+
+                Vector3 bottomA = ring0 + new Vector3(0f, -halfHeight, 0f);
+                Vector3 bottomB = ring1 + new Vector3(0f, -halfHeight, 0f);
+                Vector3 topA = ring0 + new Vector3(0f, +halfHeight, 0f);
+                Vector3 topB = ring1 + new Vector3(0f, +halfHeight, 0f);
+
+                Vector3 topMid = (topA + topB) * 0.5f;
+                Vector3 bottomMid = (bottomA + bottomB) * 0.5f;
+                Vector3 bladeCenter = (topMid + bottomMid) * 0.5f;
+
+                float bladeHeight = Vector3.Distance(topMid, bottomMid);
+                float bladeWidth = Vector3.Distance(bottomA, bottomB) * 1.05f;
+
+                Vector3 up = (topMid - bottomMid).normalized;
+
+                // inward-facing
+                Vector3 forward = radialMid;
+                Vector3 right = Vector3.Cross(up, forward).normalized;
+                forward = Vector3.Cross(right, up).normalized;
+
+                CreateQuad(
+                    root.transform,
+                    $"CylinderBlade_{i}",
+                    bladeCenter,
+                    Quaternion.LookRotation(forward, up),
+                    new Vector3(bladeWidth, bladeHeight, 1f),
+                    mat);
+            }
+
+            // ----- Floor -----
+            if (createFloor)
+            {
+                for (int i = 0; i < segments; i++)
+                {
+                    float angleDeg0 = i * angleStep;
+                    float angleDeg1 = (i + 1) * angleStep;
+
+                    float angleRad0 = angleDeg0 * Mathf.Deg2Rad;
+                    float angleRad1 = angleDeg1 * Mathf.Deg2Rad;
+
+                    Vector3 outer0 = new Vector3(Mathf.Cos(angleRad0) * radius, -halfHeight, Mathf.Sin(angleRad0) * radius);
+                    Vector3 outer1 = new Vector3(Mathf.Cos(angleRad1) * radius, -halfHeight, Mathf.Sin(angleRad1) * radius);
+
+                    Vector3 outerMid = (outer0 + outer1) * 0.5f;
+                    float bladeLength = outerMid.magnitude;
+                    float bladeWidth = Vector3.Distance(outer0, outer1) * 1.05f;
+
+                    CreateQuad(
+                        root.transform,
+                        $"FloorBlade_{i}",
+                        new Vector3(outerMid.x * 0.5f, -halfHeight, outerMid.z * 0.5f),
+                        Quaternion.LookRotation(Vector3.down, new Vector3(outerMid.x, 0f, outerMid.z).normalized),
+                        new Vector3(bladeWidth, bladeLength, 1f),
+                        mat);
+                }
+            }
+            // ----- Ceiling -----
+            if (createCeiling)
+            {
+                if (!ceilingRound)
+                {
+                    float clampedOpen = Mathf.Clamp(frontOpeningAngleDeg, 0f, 360f);
+
+                    float ceilingWidth;
+                    float ceilingDepth;
+                    float ceilingCenterZ;
+
+
+                    if (clampedOpen > 0.0001f && clampedOpen < 360f)
+                    {
+                        float halfOpenRad = halfOpen * Mathf.Deg2Rad;
+
+                        // Front opening chord across the cylinder
+                        float openingFrontZ = radius * Mathf.Cos(halfOpenRad);
+                        float openingChordWidth = 2f * radius * Mathf.Sin(halfOpenRad);
+
+                        // Back of cylinder is at -radius
+                        ceilingDepth = openingFrontZ + radius;
+
+                        // Center the quad between front chord and back edge
+                        ceilingCenterZ = openingFrontZ - ceilingDepth * 0.5f;
+
+                        float tinyOffset = -.265f;// with diameter 7.5f // -.04f with prev diameter; // to get ceiling quad to line up to front of opening
+                        float frontEdgePadding = Vector3.Distance(
+                            new Vector3(Mathf.Cos(0f) * radius, 0f, Mathf.Sin(0f) * radius),
+                            new Vector3(Mathf.Cos(angleStep * Mathf.Deg2Rad) * radius, 0f, Mathf.Sin(angleStep * Mathf.Deg2Rad) * radius)
+                        ) * 0.5f + tinyOffset;
+
+                        // move the ceiling front edge slightly forward to reach the blade inner edge
+                        float targetFrontZ = openingFrontZ + frontEdgePadding;
+
+                        ceilingDepth = targetFrontZ + radius;
+                        ceilingCenterZ = targetFrontZ - ceilingDepth * 0.5f;
+
+                        // Make width match or slightly exceed the chord endpoints
+                        ceilingWidth = openingChordWidth * 1.02f;
+                    }
+                    else
+                    {
+                        // No opening: use full square cap
+                        ceilingWidth = diameter;
+                        ceilingDepth = diameter;
+                        ceilingCenterZ = 0f;
+                    }
+
+                    CreateQuad(
+                        root.transform,
+                        "CeilingCap",
+                        new Vector3(0f, +halfHeight, ceilingCenterZ),
+                        Quaternion.Euler(-90f, 0f, 0f),
+                        new Vector3(ceilingWidth, ceilingDepth, 1f),
+                        mat);
+                }
+                else // radial blades circular
+                {
+                    // BS logo hidden
+                    float startDeg = 0; // full ceiling so hiding BS logo
+                    float endDeg = 360;
+                    int bladeCount = 36;
+
+                    float ceilingZOffset = 0f;
+                    float ceilingRadiusMultiplier = 1.02f;
+                    
+                    if (ceilingRoundType2)
+                    {
+                        startDeg = 325f; // partial opening
+                        endDeg = 35f;
+                        bladeCount = 20; // fewer blades since partial ceiling
+
+                        // added a huge offset partial radial ceiling to give a nice curve above the player.
+                        ceilingZOffset = -7.2f; // move the ceiling backwards
+                        ceilingRadiusMultiplier = 2.2f; // make a huge radius ceiling
+                    }
+
+                    // has 'V' shape in front  of BS logo don't like as much
+                    /*
+                    startDeg = 50; // full ceiling but open in front for bs logo
+                    endDeg = 310;
+                    bladeCount = 36;
+
+                    ceilingZOffset = 0f;
+                    ceilingRadiusMultiplier = 1.02f;
+                    */
+
+                    float ceilingRadius = radius * ceilingRadiusMultiplier;
+
+                    float spanDeg = endDeg - startDeg;
+                    if (spanDeg <= 0f)
+                        spanDeg += 360f;
+
+                    float userAngleStep = spanDeg / bladeCount;
+
+                    for (int i = 0; i < bladeCount; i++)
+                    {
+                        float userAngle0 = startDeg + i * userAngleStep;
+                        float userAngle1 = startDeg + (i + 1) * userAngleStep;
+
+                        float mathAngleDeg0 = 90f - userAngle0;
+                        float mathAngleDeg1 = 90f - userAngle1;
+
+                        float angleRad0 = mathAngleDeg0 * Mathf.Deg2Rad;
+                        float angleRad1 = mathAngleDeg1 * Mathf.Deg2Rad;
+
+                        Vector3 outer0 = new Vector3(Mathf.Cos(angleRad0) * ceilingRadius, +halfHeight, Mathf.Sin(angleRad0) * ceilingRadius);
+                        Vector3 outer1 = new Vector3(Mathf.Cos(angleRad1) * ceilingRadius, +halfHeight, Mathf.Sin(angleRad1) * ceilingRadius);
+
+                        Vector3 outerMid = (outer0 + outer1) * 0.5f;
+                        float bladeLength = new Vector2(outerMid.x, outerMid.z).magnitude;
+                        float bladeWidth = Vector3.Distance(outer0, outer1) * 1.05f;
+
+                        CreateQuad(
+                            root.transform,
+                            $"CeilingBlade_{i}",
+                            new Vector3(outerMid.x * 0.5f, +halfHeight, outerMid.z * 0.5f + ceilingZOffset),
+                            Quaternion.LookRotation(Vector3.up, new Vector3(outerMid.x, 0f, outerMid.z).normalized),
+                            new Vector3(bladeWidth, bladeLength, 1f),
+                            mat);
+                    }
+                }
+            }
+            Plugin.Log.Info($"[EnvGreen] Spawned vertical cylinder aperture with opening {frontOpeningAngleDeg:F1} deg");
             return root;
         }
         /// <summary>
@@ -1290,7 +1553,7 @@ namespace AutoBS
             //    new Vector3(width, depth, 1f),
             //    mat);
 
-            Plugin.Log.Info("[EnvGreen] Menu box to hide back decorative notes.");
+            //Plugin.LogDebug("[MixedReality] Menu box to hide back pile of notes.");
             return boxRoot;
         }
 
@@ -1339,8 +1602,10 @@ namespace AutoBS
             return sb.ToString();
         }
 
-        private static Material GetGreenMaterial()
+        private static Material GetGreenScreenMaterial()
         {
+            UnityEngine.Color chroma = Config.Instance.MixedRealityGreenScreenColor.ToUnityColor();
+
             if (_greenTemplateMat == null)
             {
                 Renderer noteArrowRenderer = FindRendererByNameAcrossScenes("NoteArrow");
@@ -1350,11 +1615,10 @@ namespace AutoBS
                 Material src = noteArrowRenderer.sharedMaterial;
                 Material m = new Material(src);
 
-                UnityEngine.Color chroma = Config.Instance.GreenScreenColor; // new UnityEngine.Color(0f, 5f, 0f, 1f); // very bright green
-
                 if (m.HasProperty("_Color"))
                     m.SetColor("_Color", chroma);
 
+                /*
                 if (m.HasProperty("_BaseColor"))
                     m.SetColor("_BaseColor", chroma);
 
@@ -1372,18 +1636,24 @@ namespace AutoBS
 
                 if (m.HasProperty("_Metallic"))
                     m.SetFloat("_Metallic", 0f);
+                */
 
                 _greenTemplateMat = m;
                 _greenTemplateShaderName = src.shader != null ? src.shader.name : "null";
             }
+            else
+            {
+                if (_greenTemplateMat.HasProperty("_Color"))
+                    _greenTemplateMat.SetColor("_Color", chroma);
+            }
 
-            return new Material(_greenTemplateMat);
+            return _greenTemplateMat;
         }
         private static void OffsetPlayerFeetSymbol(Transform environmentRoot, float inches = 1f)
         {
             if (environmentRoot == null)
                 return;
-
+            inches = -5; // test
             float yOffset = inches * 0.0254f;
 
             Transform feet = environmentRoot.Find("PlayersPlace/Feet");
@@ -1391,7 +1661,7 @@ namespace AutoBS
             {
                 Vector3 p = feet.localPosition;
                 feet.localPosition = new Vector3(p.x, p.y + yOffset, p.z);
-                Plugin.Log.Info($"[EnvGreen] Offset Feet by {yOffset:F4}m");
+                //Plugin.LogDebug($"[MixedReality] Offset Feet by {yOffset:F4}m");
             }
             
             Transform construction = environmentRoot.Find("PlayersPlace/RectangleFakeGlow");
@@ -1399,7 +1669,7 @@ namespace AutoBS
             {
                 Vector3 p = construction.localPosition;
                 construction.localPosition = new Vector3(p.x, p.y + yOffset, p.z);
-                Plugin.Log.Info($"[EnvGreen] Offset Construction by {yOffset:F4}m");
+                //Plugin.LogDebug($"[MixedReality] Offset Construction by {yOffset:F4}m");
             }
             
         }
@@ -1427,13 +1697,13 @@ namespace AutoBS
 
             if (!_isGameplayLoaded && _isMainMenuLoaded && _menuShell == null && _menuRoutine == null)
             {
-                Plugin.Log.Info("[EnvGreen] LateUpdate detected missing menu shell; starting scan");
+                Plugin.LogDebug("[MixedReality] LateUpdate detected missing menu shell; starting scan");
                 _menuRoutine = StartCoroutine(SetupMenuGreenScreen());
             }
 
             if (_isGameplayLoaded && _spawnedShell == null && _gameRoutine == null)
             {
-                Plugin.Log.Info("[EnvGreen] LateUpdate detected missing gameplay shell; starting scan");
+                Plugin.LogDebug("[MixedReality] LateUpdate detected missing gameplay shell; starting scan");
                 _gameRoutine = StartCoroutine(InitialWaitAndCheck());
             }
         }
@@ -1498,15 +1768,15 @@ namespace AutoBS
             {
                 TryFindHeadTransform();
 
-                Plugin.Log.Info(
-                    $"[EnvGreen] Poll t={elapsed:F2} " +
+                Plugin.LogDebug(
+                    $"[MixedReality] Poll t={elapsed:F2} " +
                     $"PlayerTransforms={(_playerTransforms != null)} " +
                     $"headTransform={(_headTransform != null ? _headTransform.name : "null")} " +
                     $"Camera.main={(Camera.main != null ? Camera.main.name + " scene=" + Camera.main.gameObject.scene.name : "null")}");
 
                 if (_playerTransforms != null)
                 {
-                    Plugin.Log.Info("[EnvGreen] Head-follow source found; enabling shell follow");
+                    Plugin.LogDebug("[MixedReality] Head-follow source found; enabling shell follow");
                     _lockShellToHead = true;
                     _tryingToFindHead = false;
                     yield break;
@@ -1516,7 +1786,7 @@ namespace AutoBS
                 elapsed += 0.25f;
             }
 
-            Plugin.Log.Info("[EnvGreen] Failed to find head-follow source in time");
+            Plugin.LogDebug("[MixedReality] Failed to find head-follow source in time");
             _tryingToFindHead = false;
         }
         
@@ -1538,7 +1808,7 @@ namespace AutoBS
                 if (camName == "MenuMainCamera" || sceneName == "MainMenu")
                 {
                     _menuCameraTransform = cam.transform;
-                    Plugin.Log.Info($"[EnvGreen] Menu camera acquired: {cam.name} scene={sceneName}");
+                    Plugin.LogDebug($"[MixedReality] Menu camera acquired: {cam.name} scene={sceneName}");
                     return;
                 }
             }
@@ -1552,18 +1822,18 @@ namespace AutoBS
                 return;
 
             _playerTransforms = FindObjectOfType<PlayerTransforms>();
-            Plugin.Log.Info($"[EnvGreen] FindObjectOfType<PlayerTransforms>() => {(_playerTransforms != null ? "FOUND" : "null")}");
+            Plugin.LogDebug($"[MixedReality] FindObjectOfType<PlayerTransforms>() => {(_playerTransforms != null ? "FOUND" : "null")}");
 
             if (_playerTransforms != null)
             {
-                Plugin.Log.Info("[EnvGreen] PlayerTransforms acquired");
+                Plugin.LogDebug("[MixedReality] PlayerTransforms acquired");
                 _lockShellToHead = true;
             }
         }
        */
         private static void LogPossibleNoteRenderers()
         {
-            Plugin.Log.Info("[EnvGreen] ===== NOTE RENDERER SEARCH START =====");
+            Plugin.LogDebug("[MixedReality] ===== NOTE RENDERER SEARCH START =====");
 
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -1584,14 +1854,14 @@ namespace AutoBS
                         string matName = r.sharedMaterial != null ? r.sharedMaterial.name : "null";
                         string shaderName = r.sharedMaterial?.shader != null ? r.sharedMaterial.shader.name : "null";
 
-                        Plugin.Log.Info(
-                            $"[EnvGreen] Note-like renderer scene={scene.name} go={r.gameObject.name} " +
+                        Plugin.LogDebug(
+                            $"[MixedReality] Note-like renderer scene={scene.name} go={r.gameObject.name} " +
                             $"type={r.GetType().Name} mat={matName} shader={shaderName}");
                     }
                 }
             }
 
-            Plugin.Log.Info("[EnvGreen] ===== NOTE RENDERER SEARCH END =====");
+            Plugin.LogDebug("[MixedReality] ===== NOTE RENDERER SEARCH END =====");
         }
 
         private static void LogHubScreenState()
@@ -1612,39 +1882,39 @@ namespace AutoBS
                     Transform leftScreen = root.transform.Find("MenuCore/UI/ScreenSystem/ScreenContainer/LeftScreen");
                     Transform menuButtonsVC = root.transform.Find("MenuCore/UI/ScreenSystem/ScreenContainer/LeftScreen/MenuButtonsViewController");
 
-                    Plugin.Log.Info("[EnvGreen] ===== Hub Screen State START =====");
+                    Plugin.LogDebug("[MixedReality] ===== Hub Screen State START =====");
 
                     if (mainScreen != null)
-                        Plugin.Log.Info($"[EnvGreen] MainScreen activeSelf={mainScreen.gameObject.activeSelf} activeInHierarchy={mainScreen.gameObject.activeInHierarchy}");
+                        Plugin.LogDebug($"[MixedReality] MainScreen activeSelf={mainScreen.gameObject.activeSelf} activeInHierarchy={mainScreen.gameObject.activeInHierarchy}");
                     else
-                        Plugin.Log.Info("[EnvGreen] MainScreen not found");
+                        Plugin.LogDebug("[MixedReality] MainScreen not found");
 
                     if (mainMenuVC != null)
-                        Plugin.Log.Info($"[EnvGreen] MainMenuViewController activeSelf={mainMenuVC.gameObject.activeSelf} activeInHierarchy={mainMenuVC.gameObject.activeInHierarchy}");
+                        Plugin.LogDebug($"[MixedReality] MainMenuViewController activeSelf={mainMenuVC.gameObject.activeSelf} activeInHierarchy={mainMenuVC.gameObject.activeInHierarchy}");
                     else
-                        Plugin.Log.Info("[EnvGreen] MainMenuViewController not found");
+                        Plugin.LogDebug("[MixedReality] MainMenuViewController not found");
 
                     if (leftScreen != null)
-                        Plugin.Log.Info($"[EnvGreen] LeftScreen activeSelf={leftScreen.gameObject.activeSelf} activeInHierarchy={leftScreen.gameObject.activeInHierarchy}");
+                        Plugin.LogDebug($"[MixedReality] LeftScreen activeSelf={leftScreen.gameObject.activeSelf} activeInHierarchy={leftScreen.gameObject.activeInHierarchy}");
                     else
-                        Plugin.Log.Info("[EnvGreen] LeftScreen not found");
+                        Plugin.LogDebug("[MixedReality] LeftScreen not found");
 
                     if (menuButtonsVC != null)
-                        Plugin.Log.Info($"[EnvGreen] MenuButtonsViewController activeSelf={menuButtonsVC.gameObject.activeSelf} activeInHierarchy={menuButtonsVC.gameObject.activeInHierarchy}");
+                        Plugin.LogDebug($"[MixedReality] MenuButtonsViewController activeSelf={menuButtonsVC.gameObject.activeSelf} activeInHierarchy={menuButtonsVC.gameObject.activeInHierarchy}");
                     else
-                        Plugin.Log.Info("[EnvGreen] MenuButtonsViewController not found");
+                        Plugin.LogDebug("[MixedReality] MenuButtonsViewController not found");
 
-                    Plugin.Log.Info("[EnvGreen] ===== Hub Screen State END =====");
+                    Plugin.LogDebug("[MixedReality] ===== Hub Screen State END =====");
                     return;
                 }
             }
 
-            Plugin.Log.Info("[EnvGreen] Wrapper not found for hub screen state");
+            Plugin.LogDebug("[MixedReality] Wrapper not found for hub screen state");
         }
 
         private static void LogLoadedScenesAndRoots(string tag = "")
         {
-            Plugin.Log.Info($"[EnvGreen] ===== Scene/Root Dump START {tag} =====");
+            Plugin.LogDebug($"[MixedReality] ===== Scene/Root Dump START {tag} =====");
 
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -1652,22 +1922,22 @@ namespace AutoBS
                 if (!scene.isLoaded)
                     continue;
 
-                Plugin.Log.Info($"[EnvGreen] Scene[{i}] name={scene.name} isLoaded={scene.isLoaded}");
+                Plugin.LogDebug($"[MixedReality] Scene[{i}] name={scene.name} isLoaded={scene.isLoaded}");
 
                 foreach (GameObject root in scene.GetRootGameObjects())
                 {
-                    Plugin.Log.Info($"[EnvGreen]   Root: {root.name}");
+                    Plugin.LogDebug($"[MixedReality]   Root: {root.name}");
                 }
             }
 
-            Plugin.Log.Info($"[EnvGreen] ===== Scene/Root Dump END {tag} =====");
+            Plugin.LogDebug($"[MixedReality] ===== Scene/Root Dump END {tag} =====");
         }
         private static void LogHierarchy(Transform root, int maxDepth = 4, string indent = "", int depth = 0)
         {
             if (root == null || depth > maxDepth)
                 return;
 
-            Plugin.Log.Info($"[EnvGreen] {indent}{root.name}");
+            Plugin.LogDebug($"[MixedReality] {indent}{root.name}");
 
             for (int i = 0; i < root.childCount; i++)
                 LogHierarchy(root.GetChild(i), maxDepth, indent + "  ", depth + 1);
@@ -1694,7 +1964,7 @@ namespace AutoBS
 
             if (!foundScene)
             {
-                Plugin.Log.Info("[EnvGreen] MainMenu scene not found");
+                Plugin.LogDebug("[MixedReality] MainMenu scene not found");
                 return;
             }
 
@@ -1702,19 +1972,19 @@ namespace AutoBS
             {
                 if (root.name == "Wrapper")
                 {
-                    Plugin.Log.Info("[EnvGreen] ===== MainMenu Wrapper Hierarchy START =====");
+                    Plugin.LogDebug("[MixedReality] ===== MainMenu Wrapper Hierarchy START =====");
                     LogHierarchy(root.transform, 6);
-                    Plugin.Log.Info("[EnvGreen] ===== MainMenu Wrapper Hierarchy END =====");
+                    Plugin.LogDebug("[MixedReality] ===== MainMenu Wrapper Hierarchy END =====");
                     return;
                 }
             }
 
-            Plugin.Log.Info("[EnvGreen] Wrapper root not found in MainMenu");
+            Plugin.LogDebug("[MixedReality] Wrapper root not found in MainMenu");
         }
 
         private static void LogRenderers(GameObject root)
         {
-            Plugin.Log.Info("[EnvGreen] ===== RENDERER LOG START =====");
+            Plugin.LogDebug("[MixedReality] ===== RENDERER LOG START =====");
 
             var renderers = root.GetComponentsInChildren<Renderer>(true);
             foreach (var r in renderers)
@@ -1731,8 +2001,8 @@ namespace AutoBS
                         shaderName = r.sharedMaterial.shader.name;
                 }
 
-                Plugin.Log.Info(
-                    $"[EnvGreen] Renderer Path: {path} | " +
+                Plugin.LogDebug(
+                    $"[MixedReality] Renderer Path: {path} | " +
                     $"GO: {r.gameObject.name} | " +
                     $"Type: {r.GetType().Name} | " +
                     $"Mat: {materialName} | " +
@@ -1740,7 +2010,7 @@ namespace AutoBS
                     $"Enabled: {r.enabled}");
             }
 
-            Plugin.Log.Info("[EnvGreen] ===== RENDERER LOG END =====");
+            Plugin.LogDebug("[MixedReality] ===== RENDERER LOG END =====");
         }
     }
 

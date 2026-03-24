@@ -812,11 +812,14 @@ namespace AutoBS
         //Using this
         public static List<ENoteData> PauseDetection(List<ENoteData> colorNotes)
         {
+            List<ENoteData> groupBoundaries = new List<ENoteData>();
+
+            if (colorNotes == null || colorNotes.Count < 5)
+                return groupBoundaries;
+
             int frequencyWindowSize = 10; //This sets the size of the window for calculating the average frequency (or rate) of notes.
             int beginningNote = 3;
             bool justDetectedPause = false;  // Flag to indicate a pause was just detected. It's used to prevent the detection of consecutive pauses
-
-            List<ENoteData> groupBoundaries = new List<ENoteData>();
 
             Queue<float> recentTimeDifferences = new Queue<float>(); //This queue holds the time differences between consecutive notes, limited by the frequencyWindowSize.
             float prevNoteTime = colorNotes[beginningNote - 1].time; //Stores the time of the note just before the beginningNote.

@@ -248,44 +248,79 @@ namespace AutoBS
 
         //------------------------
 
+        public virtual bool EnableLiveVolumeControl { get; set; } = true;
+        
         public enum LiveControlModeType
         {
             Off,
-            Buttons,
-            Thumbstick
+            ThumbstickL,
+            ThumbstickR,
+            ButtonsAB,
+            ButtonsXY,
+            ButtonsYB,
+            ButtonsXA
         }
-        public virtual LiveControlModeType LiveVolumeControl { get; set; } = LiveControlModeType.Thumbstick;
+        public virtual LiveControlModeType LiveVolumeControl { get; set; } = LiveControlModeType.ThumbstickL;
         public virtual LiveControlModeType LiveNoteSpeedControl { get; set; } = LiveControlModeType.Off;
         public virtual LiveControlModeType LiveNoteSpawnDistanceControl { get; set; } = LiveControlModeType.Off;
 
 
         // Green Screen Passthrough portal
 
-        public virtual bool EnableGreenScreen { get; set; } = true;
-        public virtual bool GreenScreenRound { get; set; } = true;
-        public virtual float GreenScreenRoundDiameter { get; set; } = 2.8f;
-        public virtual float GreenScreenRectWidth { get; set; } = 3.8f;
-        public virtual float GreenScreenRectHeight { get; set; } = 3.1f;
-        public virtual float GreenScreen360Diameter { get; set; } = 6f; // set to 0 to turn off
-        public virtual bool GreenScreen360HasCeiling { get; set; } = true; // set to 0 to turn off
+        public virtual bool EnableMixedRealityMenus { get; set; } = false;
+        public virtual bool EnableMixedRealityStandard { get; set; } = false;
+        public virtual bool EnableMixedReality360 { get; set; } = false;
 
-        public virtual float GreenScreenMenuZOffset { get; set; } = 0.3f;
-        //public virtual float GreenScreenGamePlayYOffset { get; set; } = 0f;
-        public virtual float GreenScreenGamePlayZOffset { get; set; } = 1.7f;
+        public virtual bool MixedRealityPortalShapeRound { get; set; } = true;
+        public virtual float MixedRealityRoundDiameter { get; set; } = 2.8f;
+        public virtual float MixedRealityRectWidth { get; set; } = 3.8f;
+        public virtual float MixedRealityRectHeight { get; set; } = 3.1f;
 
-        public enum GreenScreenHeightMode
+        public virtual float MixedReality360Diameter { get; set; } = 6f; // set to 0 to turn off
+
+        public virtual float MixedReality360CeilingHeight { get; set; } = 3f; // set to 0 to turn off
+
+        public virtual float MixedRealityMenuZOffset { get; set; } = 0.3f;
+
+        public virtual float MixedRealityGamePlayRoundZOffset { get; set; } = 1.7f;
+        public virtual float MixedRealityGamePlayRectZOffset { get; set; } = 1.7f;
+
+        public virtual float MixedRealityRoundYOffset { get; set; } = 1.8f; //meters - for centering passthroughj portal. use player height 1.8f
+        public virtual float MixedRealityRectYOffset { get; set; } = 1.8f; //meters - for centering passthroughj portal. use player height 1.8f
+
+        public virtual VirtualDesktopColor MixedRealityGreenScreenColor { get; set; } = new VirtualDesktopColor
+        {
+            r = 0,
+            g = 255,
+            b = 0
+        };
+        //public virtual bool MixedRealityFullModeTest { get; set; } = false; // huge green screen behind everything. but it looks terrible. all objects get a green glow around them.
+        /*
+        public enum mRHeightMode
         {
             CenterAtCustomHeight,
             BottomAtFloorLevel,
         }
-        public virtual GreenScreenHeightMode GreenScreenRoundHeightMode { get; set; } = GreenScreenHeightMode.CenterAtCustomHeight;
-        public virtual GreenScreenHeightMode GreenScreenRectHeightMode { get; set; }  = GreenScreenHeightMode.BottomAtFloorLevel;
+        public virtual mRHeightMode mRRoundHeightMode { get; set; } = mRHeightMode.CenterAtCustomHeight;
+        public virtual mRHeightMode mRRectHeightMode { get; set; }  = mRHeightMode.CenterAtCustomHeight;
+        */
 
-        public virtual float GreenScreenCustomCenterHeight { get; set; } = 1.8f; //meters - for centering passthroughj portal. use player height 1.8f
+        // DiffReducer
 
-        public virtual Color GreenScreenColor { get; set; } = new Color(0f, 2f, 0f, 1f); // needs to be 2f or higher to avoid shadows in the corners
+        public virtual bool EnableDiffReducer { get; set; } = true;
+        public virtual bool EnableForAllSongs { get; set; } = false; //EnableOnlyIfSongAboveAveNps
+        public virtual float PreferredFinalNps { get; set; } = 3.3f;
 
-        public virtual bool MixedRealityModeTest { get; set; } = false; // huge green screen behind everything. but it looks terrible. all objects get a green glow around them.
+
+        public virtual bool RepairSwingDirections { get; set; } = false;
+        //public virtual bool ScoredSwingRemovalsUsingMinorSections { get; set; } = true;
+        //public virtual bool SimplifySwingOneByOne { get; set; } = true;
+        
+
+
+
+
+
 
         // Output JASON files
 
@@ -296,5 +331,20 @@ namespace AutoBS
         //at least for beat sage, need to remove in info.dat:  "_environmentNames": [ "DefaultEnvironment" ], AND remove "_environmentNameIdx": 0, from each difficultyBeatmap in order for 360 map to use 360 environment
         public virtual bool OutputV4JsonToSongFolder { get; set; } = false; // outputs perfect map compared to v2 or 3
         public virtual int OutputJsonSongSampleRate { get; set; } = 44100;
+    }
+    public class VirtualDesktopColor
+    {
+        public int r { get; set; } = 0;
+        public int g { get; set; } = 255;
+        public int b { get; set; } = 0;
+
+        public Color ToUnityColor(float alpha = 1f, float multiplier = 1f)
+        {
+            return new Color(
+                Mathf.Clamp(r, 0, 255) / 255f * multiplier,
+                Mathf.Clamp(g, 0, 255) / 255f * multiplier,
+                Mathf.Clamp(b, 0, 255) / 255f * multiplier,
+                alpha);
+        }
     }
 }

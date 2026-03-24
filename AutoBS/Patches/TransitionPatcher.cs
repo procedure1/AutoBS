@@ -54,6 +54,8 @@ namespace AutoBS.Patches
         public static bool AutoNJSDisabledByConflictingMod = false;
         public static bool AutoNJSPracticeModeDisabledByConflictingMod = false;
 
+        public static bool DifficultyReducerRemovedNotes = false;
+
         public static float bpm;
         public static float NotesPerSecond;
 
@@ -133,8 +135,6 @@ namespace AutoBS.Patches
             int seed = StableHash32(beatmapLevel.levelID); // example: custom_level_D812C45C625570F09AD71AB2AE5529D9B28C9B3E so will keep same seed for all levels of same song
             RepeatableRandom = new System.Random(seed); // use for psuedo random 
 
-            
-
 
             Plugin.LogDebug(".");
             Plugin.LogDebug($"[TransitionPatcher] User selected:  {beatmapKey.beatmapCharacteristic.serializedName} {SelectedDifficulty} - ID: {beatmapKey.levelId} -------------------------------------"); // will be solo and standard, Generater360Degree, Generated90Degree, 360Degree, 90Degree, Lightshow, etc
@@ -157,23 +157,25 @@ namespace AutoBS.Patches
 
             EnvironmentName = GetEnvironmentName(beatmapKey, beatmapLevel, overrideEnvironmentSettings);
 
-            // BOTH of these are done in SetContent now for gen360 and basedOn maps. so only need to do it here for nonGen non basedOn maps. so should restore autoNjs registry for those maps only and can also leave beat sage in setcontent
-            //var basic = beatmapLevel.GetDifficultyBeatmapData(SelectedCharacteristicSO, SelectedDifficulty);
-            //if (basic != null) //mappers is always empty unless setContent for Gen360 added it.
-            //    Plugin.LogDebug($"[TransitionPatcher] BasicBeatmapData - Mappers: {string.Join(", ", basic.mappers)}, Lighters: {string.Join(", ", basic.lighters)}, Environment: {basic.environmentName}, BeatmapColorScheme: {basic.beatmapColorScheme}, Notes Count: {basic.notesCount}, Bombs Count: {basic.bombsCount}, cuttableNotes Count: {basic.cuttableObjectsCount}, Obstacles Count: {basic.obstaclesCount}");
-
             IsBeatSageMap = SetContent.IsBeatSageMap;
 
             bool isBasedOn = SelectedSerializedName == basedOn;
-            if (IsGen360 || isBasedOn)
+            if (IsGen360)
             {
-                NotesPerSecond = NotesPerSecRegistry.findByKey.TryGetValue(BasedOnKey, out var nps) ? nps : 0f;
+                NotesPerSecond = NotesPerSecRegistry.findByKey.TryGetValue(BasedOnKey, out var nps) ? nps : 0f; // gen 360 doesn't 
                 SelectedBeatmapVersion = BeatmapVersionRegistry.versionByKey.TryGetValue(BasedOnKey, out var v) ? v : new Version(0, 0, 0);
+
+                //Plugin.LogDebug($"[TransitionPatcher] Gen360 Map NotesPerSecond: {NotesPerSecond} version: {SelectedBeatmapVersion}");
+            }
+            else if (isBasedOn)
+            {
+                NotesPerSecond = NotesPerSecRegistry.findByKey.TryGetValue(SelectedPlayKey, out var nps) ? nps : 0f;
+                SelectedBeatmapVersion = BeatmapVersionRegistry.versionByKey.TryGetValue(SelectedPlayKey, out var v) ? v : new Version(0, 0, 0);
+
+                //Plugin.LogDebug($"[TransitionPatcher] BasedOn Map NotesPerSecond: {NotesPerSecond} version: {SelectedBeatmapVersion}");
             }
             else 
             {
-                NotesPerSecond = 0;
-
                 //v1.42
                 string beatmapJson = ""; string lightshowJson = ""; string audioDataJson = ""; Version version = new Version();
                 if (IsCustomLevel)
@@ -200,9 +202,26 @@ namespace AutoBS.Patches
 
                 NotesPerSecond = (songLength > 0f) ? (noteCount / songLength) : 0f;
 
+                //Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map NotesPerSecond: {NotesPerSecond} version: {SelectedBeatmapVersion}");
+
                 SelectedBeatmapVersion = version;
 
-                Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map - Calculated NotesPerSecond: {NotesPerSecond} from {noteCount} notes over {songLength} seconds.");
+                if (OriginalNoteJumpMovementSpeed <= 0)
+                {
+                    // BOTH of these are done in SetContent now for gen360 and basedOn maps. so only need to do it here for nonGen non basedOn maps. so should restore autoNjs registry for those maps only and can also leave beat sage in setcontent
+                    var basic = beatmapLevel.GetDifficultyBeatmapData(SelectedCharacteristicSO, SelectedDifficulty);
+                    if (basic != null)
+                    {
+                        OriginalNoteJumpMovementSpeed = basic.noteJumpMovementSpeed;
+                        OriginalNoteJumpOffset = basic.noteJumpStartBeatOffset;
+
+                        NJSRegistry.findByKey[SelectedPlayKey] = OriginalNoteJumpMovementSpeed;
+                        NJORegistry.findByKey[SelectedPlayKey] = OriginalNoteJumpOffset;
+                    }
+
+                }
+
+                Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map - Calculated NotesPerSecond: {NotesPerSecond} from {noteCount} notes over {songLength} seconds. version: {SelectedBeatmapVersion}");
             }
 
             Plugin.LogDebug($"[TransitionPatcher] Beat Sage Map: {IsBeatSageMap}");

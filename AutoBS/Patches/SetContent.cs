@@ -291,7 +291,7 @@ namespace AutoBS.Patches
                     {
                         Plugin.LogDebug($"[CreateGen360DifficultySet] -- Difficulty: {difficulty}");
 
-                        BeatmapVersionRegistry.versionByKey[stdKey] = version;  //BeatmapVersionRegistry.versionByKey[genKey] = version; //v1.42 will get from basedOnKey now,
+                        BeatmapVersionRegistry.versionByKey[stdKey] = version;  BeatmapVersionRegistry.versionByKey[genKey] = version; //v1.42 will get from basedOnKey now,
 
                         // Special case when converting v3 map to v3 json file output need to save the json file so can get the GLS lighting content later. Could convert to v4 but going to wait for v4 support in CustomJSONData (not sure that matters since eventBoxes don't end up in customBeatmapData. They are in SaveData i think.)
                         if (version.Major == 3 && Config.Instance.OutputV3JsonToSongFolder)
@@ -799,7 +799,7 @@ namespace AutoBS.Patches
                     }
 
                     //v1.42 register stats moved here for both custom and built-in levels
-                    NotesPerSecRegistry.findByKey[genKey] = notesPerSecond;
+                    NotesPerSecRegistry.findByKey[stdKey] = notesPerSecond; NotesPerSecRegistry.findByKey[genKey] = notesPerSecond;
 
                     MenuDataRegistry.statsByKey[genKey] =
                         new MenuDataRegistry.Stats

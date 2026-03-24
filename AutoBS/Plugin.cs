@@ -51,7 +51,7 @@ namespace AutoBS
 
             harmony.PatchAll();
 
-            EnvironmentVisualsBootstrap.Create();
+            EnvironmentVisualsBootstrap.Create(); // 360 markers and Mixed Reality
 
             //Disabled Overlay numbers on notes and walls
             //Plugin.Log?.Info("[WallTimeOverlayDebug] OnApplicationStart()");

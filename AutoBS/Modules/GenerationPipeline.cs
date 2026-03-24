@@ -1,4 +1,5 @@
-﻿using AutoBS.Patches;
+﻿using AutoBS.Modules;
+using AutoBS.Patches;
 using CustomJSONData.CustomBeatmap;
 using System;
 using System.Collections.Generic;
@@ -52,6 +53,8 @@ namespace AutoBS
             // ----- Reset per-run state FIRST -----
             // Important: disabled modules should not leave stale values from a previous run.
             ResetRunState(eData);
+
+            RunAutoDifficultyReducer(eData);     
 
             // ----- Always initialize baseline movement data for the current map used by some modules like walls and rotations and vision blocking fix, etc -----
             InitializeNJSandJD(ctx);
@@ -208,6 +211,8 @@ namespace AutoBS
             TransitionPatcher.FinalNoteJumpMovementSpeed = 0f;
             TransitionPatcher.FinalJumpDistance = 0f;
 
+            TransitionPatcher.DifficultyReducerRemovedNotes = false;
+
             // Optional: if WallGenerator has internal static lists, this is the correct place to hard reset them.
             // Add a method like WallGenerator.ResetRunState() and call it here.
         }
@@ -264,7 +269,40 @@ namespace AutoBS
 
             //Plugin.LogDebug($"[InitializeMovementData] Baseline NJS init -> Original NJS:{originalNjs} NJO:{originalNjo}, Original JD:{originalJd} (Final defaults to original when AutoNjsFixer disabled)");
         }
+        private static void RunAutoDifficultyReducer(EditableCBD eData)
+        {
+            if (!Config.Instance.EnableDiffReducer) return;
+            
+            bool eligibleHighNpsSong = TransitionPatcher.NotesPerSecond > Config.Instance.PreferredFinalNps;
+            bool enableDiffRed = Config.Instance.EnableForAllSongs || eligibleHighNpsSong;
 
+            if (!enableDiffRed) return;
+
+            int originalCount = eData.ColorNotes.Count;
+            Plugin.LogDebug($"[Pipeline DiffReducer] Inital Note Count: {originalCount}");
+
+            DifficultyReducer.InitialCalculations(eData, TransitionPatcher.bpm, TransitionPatcher.NotesPerSecond);
+
+            eData.ColorNotes = DifficultyReducer.SimplifyBeatmap(eData);
+
+            DifficultyReducer.ApplyArcAndChainEndpointChanges(eData, eData.ColorNotes);
+
+            eData.ColorNotes = eData.ColorNotes.OrderBy(n => n.time).ToList();
+            if (eData.Arcs != null)
+                eData.Arcs = eData.Arcs.OrderBy(a => a.time).ToList();
+
+            if (eData.Chains != null)
+                eData.Chains = eData.Chains.OrderBy(c => c.time).ToList();
+
+            int finalCount = eData.ColorNotes.Count;
+            Plugin.LogDebug($"[Pipeline DiffReducer] Inital Note Count: {originalCount} -- Final Note Count: {eData.ColorNotes.Count}");// ColorA: {eData.ColorNotes.Where(r => r.colorType == ColorType.ColorA).Count()} ColorB: {eData.ColorNotes.Where(r => r.colorType == ColorType.ColorB).Count()}");
+            if (originalCount != finalCount)
+            {
+                eData.ColorNotesChanged = true;
+                TransitionPatcher.DifficultyReducerRemovedNotes = true;
+            }
+
+        }
         private static void RunAutoNjsFixer(PipelineContext ctx)
         {
             if (!ctx.njsAndNjoDataInitialized)
@@ -624,7 +662,11 @@ namespace AutoBS
                     str += (str != "" ? " | " : "") + "Rotations Limited";
                 }
             }
-
+            if (BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Standard &&
+                Config.Instance.EnableDiffReducer && TransitionPatcher.DifficultyReducerRemovedNotes)
+            {
+                str += (str != "" ? " | " : "") + "Auto Diff Reducer";
+            }
             if (BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Standard &&
                 Utils.IsEnabledAutoNjsFixer() &&
                 !TransitionPatcher.AutoNJSDisabledByConflictingMod &&

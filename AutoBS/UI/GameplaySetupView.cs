@@ -70,6 +70,20 @@ namespace AutoBS.UI
             UpdateLightingGeneratorUI();
             UpdateCleanBeatSageUI();
             UpdateAutoNjsFixerUI();
+            UpdateMixedRealityPortalsUI();
+            UpdateLiveVolumeControlUI();
+
+            SafeNotify(nameof(EnablerLiveVolumeControl));
+            SafeNotify(nameof(FontColorLiveVolumeControl));
+
+            SafeNotify(nameof(EnablerMixedRealitySection));
+            SafeNotify(nameof(EnablerMixedRealityMenusControls));
+            SafeNotify(nameof(EnablerMixedRealityGameplayControls));
+            SafeNotify(nameof(EnablerMixedReality360Controls));
+            SafeNotify(nameof(FontColorMixedRealityMenus));
+            SafeNotify(nameof(FontColorMixedRealityStandard));
+            SafeNotify(nameof(FontColorMixedReality360));
+            SafeNotify(nameof(FontColorMixedRealityPortals));
 
             // Master plugin on/off & its visual state
             SafeNotify(nameof(EnablePlugin));
@@ -130,6 +144,8 @@ namespace AutoBS.UI
                 UpdateLightingGeneratorUI(); 
                 UpdateCleanBeatSageUI();
                 UpdateAutoNjsFixerUI();
+                UpdateMixedRealityPortalsUI();
+                UpdateLiveVolumeControlUI();
 
                 ActiveEnablePlugin = !value;
                 SafeNotify();
@@ -174,6 +190,23 @@ namespace AutoBS.UI
                 SafeNotify(nameof(FontColorLightingGenerator));
                 SafeNotify(nameof(EnablerLightAutoMapper));
                 SafeNotify(nameof(FontColorLightAutoMapper));
+
+                SafeNotify(nameof(EnablerLiveVolumeControl));
+                SafeNotify(nameof(FontColorLiveVolumeControl));
+
+                SafeNotify(nameof(EnablerMixedRealitySection));
+                SafeNotify(nameof(EnablerMixedRealityMenusControls));
+                SafeNotify(nameof(EnablerMixedRealityGameplayControls));
+                SafeNotify(nameof(EnablerMixedReality360Controls));
+                SafeNotify(nameof(FontColorMixedRealityMenus));
+                SafeNotify(nameof(FontColorMixedRealityStandard));
+                SafeNotify(nameof(FontColorMixedReality360));
+                SafeNotify(nameof(FontColorMixedRealityPortals));
+
+                SafeNotify(nameof(EnableDiffReducer));
+                SafeNotify(nameof(EnablerDiffReducer));
+                SafeNotify(nameof(FontColorDiffReducer));
+                SafeNotify(nameof(PreferredFinalNps));
             }
         }
 
@@ -1141,25 +1174,37 @@ namespace AutoBS.UI
             _autoNjsModes.Add(_autoNjsFixerModeLabels[Config.AutoNjsFixerModeType.SetNoteSpeed]);
 
             _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Off]);
-            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Buttons]);
-            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Thumbstick]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickL]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickR]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsAB]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXY]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsYB]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXA]);
 
             _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Off]);
-            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Buttons]);
-            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Thumbstick]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickL]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickR]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsAB]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXY]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsYB]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXA]);
 
             _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Off]);
-            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Buttons]);
-            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Thumbstick]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickL]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickR]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsAB]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXY]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsYB]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXA]);
 
             _portalShapes.Add(_portalShapeLabels[true]);   // Round
             _portalShapes.Add(_portalShapeLabels[false]);  // Rectangular
 
-            _roundHeightModes.Add(_greenScreenHeightModeLabels[Config.GreenScreenHeightMode.CenterAtCustomHeight]);
-            _roundHeightModes.Add(_greenScreenHeightModeLabels[Config.GreenScreenHeightMode.BottomAtFloorLevel]);
+            //_roundHeightModes.Add(_greenScreenHeightModeLabels[Config.mRHeightMode.CenterAtCustomHeight]);
+            //_roundHeightModes.Add(_greenScreenHeightModeLabels[Config.mRHeightMode.BottomAtFloorLevel]);
 
-            _rectHeightModes.Add(_greenScreenHeightModeLabels[Config.GreenScreenHeightMode.CenterAtCustomHeight]);
-            _rectHeightModes.Add(_greenScreenHeightModeLabels[Config.GreenScreenHeightMode.BottomAtFloorLevel]);
+            //_rectHeightModes.Add(_greenScreenHeightModeLabels[Config.mRHeightMode.CenterAtCustomHeight]);
+            //_rectHeightModes.Add(_greenScreenHeightModeLabels[Config.mRHeightMode.BottomAtFloorLevel]);
         }
 
         [UIValue("LightStyle")]
@@ -1257,6 +1302,24 @@ namespace AutoBS.UI
         }
 
         // Live Controller Input
+        [UIValue("EnableLiveVolumeControl")]
+        public bool EnableLiveVolumeControl
+        {
+            get => Config.Instance.EnableLiveVolumeControl;
+            set
+            {
+                if (Config.Instance.EnableLiveVolumeControl == value)
+                    return;
+
+                Config.Instance.EnableLiveVolumeControl = value;
+
+                SafeNotify(nameof(EnableLiveVolumeControl));
+                SafeNotify(nameof(FontColorLiveVolumeControl));
+                SafeNotify(nameof(EnablerLiveVolumeControl));
+                SafeNotify(nameof(LiveVolumeControl));
+            }
+        }
+
 
         [UIValue("LiveVolumeControl")]
         public string LiveVolumeControl
@@ -1271,6 +1334,32 @@ namespace AutoBS.UI
                     SafeNotify();
                 }
             }
+        }
+        [UIValue("EnablerLiveVolumeControl")]
+        public bool EnablerLiveVolumeControl
+        {
+            get => Config.Instance.EnablePlugin && Config.Instance.EnableLiveVolumeControl;
+            set
+            {
+                SafeNotify(nameof(FontColorLiveVolumeControl));
+            }
+        }
+
+        [UIValue("FontColorLiveVolumeControl")]
+        public string FontColorLiveVolumeControl
+        {
+            get => !Config.Instance.EnablePlugin
+                ? OffColor
+                : (Config.Instance.EnableLiveVolumeControl ? OnColor : OffColor);
+            set { SafeNotify(); }
+        }
+
+        private void UpdateLiveVolumeControlUI()
+        {
+            SafeNotify(nameof(EnableLiveVolumeControl));
+            SafeNotify(nameof(EnablerLiveVolumeControl));
+            SafeNotify(nameof(FontColorLiveVolumeControl));
+            SafeNotify(nameof(LiveVolumeControl));
         }
 
         [UIValue("LiveNoteSpeedControl")]
@@ -1310,11 +1399,16 @@ namespace AutoBS.UI
             "Thumbstick"
         };
 
-        private readonly Dictionary<Config.LiveControlModeType, string> _liveControlModeLabels = new Dictionary<Config.LiveControlModeType, string>
+        private readonly Dictionary<Config.LiveControlModeType, string> _liveControlModeLabels =
+            new Dictionary<Config.LiveControlModeType, string>
         {
-            { Config.LiveControlModeType.Off,        "Off" },
-            { Config.LiveControlModeType.Buttons,    "Buttons" },
-            { Config.LiveControlModeType.Thumbstick, "Thumbstick" }
+            { Config.LiveControlModeType.Off,         "Off" },
+            { Config.LiveControlModeType.ThumbstickL, "Thumbstick Left" },
+            { Config.LiveControlModeType.ThumbstickR, "Thumbstick Right" },
+            { Config.LiveControlModeType.ButtonsAB,   "Buttons A / B" },
+            { Config.LiveControlModeType.ButtonsXY,   "Buttons X / Y" },
+            { Config.LiveControlModeType.ButtonsYB,   "Buttons Y / B" },
+            { Config.LiveControlModeType.ButtonsXA,   "Buttons X / A" }
         };
 
         [UIValue("LiveVolumeControlChoices")]
@@ -1381,7 +1475,10 @@ namespace AutoBS.UI
         {
             return $"{value:F1}m";
         }
-
+        public string NpsFormatter(float value)
+        {
+            return $"{value:F1}nps";
+        }
 
 
 
@@ -1677,30 +1774,114 @@ namespace AutoBS.UI
 
         // Green Screen Mixed Reality Portals ------------------------------------------------------------
 
-
-
-        [UIValue("EnableMixedRealityPortals")]
-        public bool EnableMixedRealityPortals
+        [UIValue("EnableMixedRealityMenus")]
+        public bool EnableMixedRealityMenus
         {
-            get => Config.Instance.EnableGreenScreen;
+            get => Config.Instance.EnableMixedRealityMenus;
             set
             {
-                Config.Instance.EnableGreenScreen = value;
+                Config.Instance.EnableMixedRealityMenus = value;
                 UpdateMixedRealityPortalsUI();
             }
         }
 
-        [UIValue("EnablerMixedRealityPortals")]
-        public bool EnablerMixedRealityPortals
+        [UIValue("EnableMixedRealityStandard")]
+        public bool EnableMixedRealityStandard
         {
-            get => Config.Instance.EnablePlugin && Config.Instance.EnableGreenScreen;
+            get => Config.Instance.EnableMixedRealityStandard;
+            set
+            {
+                Config.Instance.EnableMixedRealityStandard = value;
+                UpdateMixedRealityPortalsUI();
+            }
+        }
+
+        [UIValue("EnableMixedReality360")]
+        public bool EnableMixedReality360
+        {
+            get => Config.Instance.EnableMixedReality360;
+            set
+            {
+                Config.Instance.EnableMixedReality360 = value;
+                UpdateMixedRealityPortalsUI();
+            }
+        }
+
+        [UIValue("EnablerMixedRealitySection")]
+        public bool EnablerMixedRealitySection
+        {
+            get => Config.Instance.EnablePlugin;
+            set
+            {
+                SafeNotify(nameof(FontColorMixedRealityMenus));
+                SafeNotify(nameof(FontColorMixedRealityStandard));
+                SafeNotify(nameof(FontColorMixedReality360));
+                SafeNotify(nameof(FontColorMixedRealityPortals));
+                SafeNotify(nameof(EnablerMixedRealityMenusControls));
+                SafeNotify(nameof(EnablerMixedRealityGameplayControls));
+                SafeNotify(nameof(EnablerMixedReality360Controls));
+            }
+        }
+
+        [UIValue("EnablerMixedRealityMenusControls")]
+        public bool EnablerMixedRealityMenusControls
+        {
+            get => Config.Instance.EnablePlugin && Config.Instance.EnableMixedRealityMenus;
+            set
+            {
+                SafeNotify(nameof(FontColorMixedRealityMenus));
+            }
+        }
+
+        [UIValue("EnablerMixedRealityGameplayControls")]
+        public bool EnablerMixedRealityGameplayControls
+        {
+            get => Config.Instance.EnablePlugin &&
+                   (Config.Instance.EnableMixedRealityStandard || Config.Instance.EnableMixedReality360);
             set
             {
                 SafeNotify(nameof(FontColorMixedRealityPortals));
                 SafeNotify(nameof(ShowRoundPortalSettings));
                 SafeNotify(nameof(ShowRectPortalSettings));
-                SafeNotify(nameof(ShowCustomHeightSetting));
+                //SafeNotify(nameof(ShowCustomHeightSetting));
             }
+        }
+
+        [UIValue("EnablerMixedReality360Controls")]
+        public bool EnablerMixedReality360Controls
+        {
+            get => Config.Instance.EnablePlugin && Config.Instance.EnableMixedReality360;
+            set
+            {
+                SafeNotify(nameof(FontColorMixedReality360));
+            }
+        }
+
+        [UIValue("FontColorMixedRealityMenus")]
+        public string FontColorMixedRealityMenus
+        {
+            get => !Config.Instance.EnablePlugin
+                ? OffColor
+                : (Config.Instance.EnableMixedRealityMenus ? OnColor : OffColor);
+            set { SafeNotify(); }
+        }
+
+        [UIValue("FontColorMixedRealityStandard")]
+        public string FontColorMixedRealityStandard
+        {
+            get => !Config.Instance.EnablePlugin
+                ? OffColor
+                : (Config.Instance.EnableMixedRealityStandard ? OnColor : OffColor);
+            set { SafeNotify(); }
+        }
+
+        [UIValue("FontColorMixedReality360")]
+        public string FontColorMixedReality360
+        {
+            get => !Config.Instance.EnablePlugin
+                ? OffColor
+                : (Config.Instance.EnableMixedReality360 ? OnColor : OffColor);
+            set { SafeNotify(); }
         }
 
         [UIValue("FontColorMixedRealityPortals")]
@@ -1708,14 +1889,15 @@ namespace AutoBS.UI
         {
             get => !Config.Instance.EnablePlugin
                 ? OffColor
-                : (Config.Instance.EnableGreenScreen ? OnColor : OffColor);
+                : ((Config.Instance.EnableMixedRealityStandard || Config.Instance.EnableMixedReality360) ? OnColor : OffColor);
             set { SafeNotify(); }
         }
+
         private readonly Dictionary<bool, string> _portalShapeLabels = new Dictionary<bool, string>
-        {
-            { true, "Round" },
-            { false, "Rectangular" }
-        };
+{
+    { true, "Round" },
+    { false, "Rectangular" }
+};
 
         [UIValue("available-portal-shapes")]
         private List<object> _portalShapes = new List<object>();
@@ -1723,31 +1905,32 @@ namespace AutoBS.UI
         [UIValue("MixedRealityPortalShape")]
         public string MixedRealityPortalShape
         {
-            get => _portalShapeLabels[Config.Instance.GreenScreenRound];
+            get => _portalShapeLabels[Config.Instance.MixedRealityPortalShapeRound];
             set
             {
                 if (_portalShapeLabels.ContainsValue(value))
                 {
                     bool isRound = _portalShapeLabels.First(kv => kv.Value == value).Key;
-                    Config.Instance.GreenScreenRound = isRound;
+                    Config.Instance.MixedRealityPortalShapeRound = isRound;
 
                     SafeNotify(nameof(ShowRoundPortalSettings));
                     SafeNotify(nameof(ShowRectPortalSettings));
-                    SafeNotify(nameof(ShowCustomHeightSetting));
+                    //SafeNotify(nameof(ShowCustomHeightSetting));
                     SafeNotify();
                 }
             }
         }
+
         [UIValue("ShowRoundPortalSettings")]
         public bool ShowRoundPortalSettings
         {
             get => Config.Instance.EnablePlugin
-                && Config.Instance.EnableGreenScreen
-                && Config.Instance.GreenScreenRound;
+                && (Config.Instance.EnableMixedRealityStandard || Config.Instance.EnableMixedReality360)
+                && Config.Instance.MixedRealityPortalShapeRound;
             set
             {
                 SafeNotify(nameof(FontColorMixedRealityPortals));
-                SafeNotify(nameof(ShowCustomHeightSetting));
+                //SafeNotify(nameof(ShowCustomHeightSetting));
             }
         }
 
@@ -1755,148 +1938,177 @@ namespace AutoBS.UI
         public bool ShowRectPortalSettings
         {
             get => Config.Instance.EnablePlugin
-                && Config.Instance.EnableGreenScreen
-                && !Config.Instance.GreenScreenRound;
+                && (Config.Instance.EnableMixedRealityStandard || Config.Instance.EnableMixedReality360)
+                && !Config.Instance.MixedRealityPortalShapeRound;
             set
             {
                 SafeNotify(nameof(FontColorMixedRealityPortals));
-                SafeNotify(nameof(ShowCustomHeightSetting));
+                //SafeNotify(nameof(ShowCustomHeightSetting));
             }
         }
+        /*
         [UIValue("ShowCustomHeightSetting")]
         public bool ShowCustomHeightSetting
         {
             get
             {
-                if (!Config.Instance.EnablePlugin || !Config.Instance.EnableGreenScreen)
+                if (!Config.Instance.EnablePlugin ||
+                    !(Config.Instance.EnableMixedRealityStandard || Config.Instance.EnableMixedReality360))
                     return false;
 
-                if (Config.Instance.GreenScreenRound)
-                    return Config.Instance.GreenScreenRoundHeightMode == Config.GreenScreenHeightMode.CenterAtCustomHeight;
+                if (Config.Instance.MixedRealityPortalShapeRound)
+                    return Config.Instance.mRRoundHeightMode == Config.mRHeightMode.CenterAtCustomHeight;
 
-                return Config.Instance.GreenScreenRectHeightMode == Config.GreenScreenHeightMode.CenterAtCustomHeight;
+                return Config.Instance.mRRectHeightMode == Config.mRHeightMode.CenterAtCustomHeight;
             }
             set
             {
                 SafeNotify(nameof(FontColorMixedRealityPortals));
             }
         }
-        [UIValue("GreenScreenRoundDiameter")]
-        public float GreenScreenRoundDiameter
+        */
+        [UIValue("MixedRealityRoundDiameter")]
+        public float MixedRealityRoundDiameter
         {
-            get => Config.Instance.GreenScreenRoundDiameter;
-            set => Config.Instance.GreenScreenRoundDiameter = value;
+            get => Config.Instance.MixedRealityRoundDiameter;
+            set => Config.Instance.MixedRealityRoundDiameter = value;
         }
 
-        [UIValue("GreenScreenRectWidth")]
-        public float GreenScreenRectWidth
+        [UIValue("MixedRealityRectWidth")]
+        public float MixedRealityRectWidth
         {
-            get => Config.Instance.GreenScreenRectWidth;
-            set => Config.Instance.GreenScreenRectWidth = value;
+            get => Config.Instance.MixedRealityRectWidth;
+            set => Config.Instance.MixedRealityRectWidth = value;
         }
 
-        [UIValue("GreenScreenRectHeight")]
-        public float GreenScreenRectHeight
+        [UIValue("MixedRealityRectHeight")]
+        public float MixedRealityRectHeight
         {
-            get => Config.Instance.GreenScreenRectHeight;
-            set => Config.Instance.GreenScreenRectHeight = value;
+            get => Config.Instance.MixedRealityRectHeight;
+            set => Config.Instance.MixedRealityRectHeight = value;
         }
 
-        [UIValue("GreenScreen360Diameter")]
-        public float GreenScreen360Diameter
+        [UIValue("MixedReality360Diameter")]
+        public float MixedReality360Diameter
         {
-            get => Config.Instance.GreenScreen360Diameter;
-            set => Config.Instance.GreenScreen360Diameter = value;
+            get => Config.Instance.MixedReality360Diameter;
+            set => Config.Instance.MixedReality360Diameter = value;
+        }
+        [UIValue("MixedReality360CeilingHeight")]
+        public float MixedReality360CeilingHeight
+        {
+            get => Config.Instance.MixedReality360CeilingHeight;
+            set => Config.Instance.MixedReality360CeilingHeight = value;
         }
 
-        [UIValue("GreenScreenMenuZOffset")]
-        public float GreenScreenMenuZOffset
+        [UIValue("MixedRealityMenuZOffset")]
+        public float MixedRealityMenuZOffset
         {
-            get => Config.Instance.GreenScreenMenuZOffset;
-            set => Config.Instance.GreenScreenMenuZOffset = value;
+            get => Config.Instance.MixedRealityMenuZOffset;
+            set => Config.Instance.MixedRealityMenuZOffset = value;
         }
 
-        [UIValue("GreenScreenGamePlayZOffset")]
-        public float GreenScreenGamePlayZOffset
+        [UIValue("MixedRealityGamePlayRoundZOffset")]
+        public float MixedRealityGamePlayRoundZOffset
         {
-            get => Config.Instance.GreenScreenGamePlayZOffset;
-            set => Config.Instance.GreenScreenGamePlayZOffset = value;
+            get => Config.Instance.MixedRealityGamePlayRoundZOffset;
+            set => Config.Instance.MixedRealityGamePlayRoundZOffset = value;
         }
 
-        [UIValue("GreenScreenCustomCenterHeight")]
-        public float GreenScreenCustomCenterHeight
+        [UIValue("MixedRealityGamePlayRectZOffset")]
+        public float MixedRealityGamePlayRectZOffset
         {
-            get => Config.Instance.GreenScreenCustomCenterHeight;
-            set => Config.Instance.GreenScreenCustomCenterHeight = value;
+            get => Config.Instance.MixedRealityGamePlayRectZOffset;
+            set => Config.Instance.MixedRealityGamePlayRectZOffset = value;
         }
 
-        private readonly Dictionary<Config.GreenScreenHeightMode, string> _greenScreenHeightModeLabels =
-            new Dictionary<Config.GreenScreenHeightMode, string>
+        [UIValue("MixedRealityRoundYOffset")]
+        public float MixedRealityRoundYOffset
         {
-            { Config.GreenScreenHeightMode.CenterAtCustomHeight, "Center At Custom Height" },
-            { Config.GreenScreenHeightMode.BottomAtFloorLevel, "Bottom At Floor Level" }
-        };
-
-        [UIValue("available-round-height-modes")]
-        private List<object> _roundHeightModes = new List<object>();
-
-        [UIValue("available-rect-height-modes")]
-        private List<object> _rectHeightModes = new List<object>();
-
-        [UIValue("MixedRealityRoundHeightMode")]
-        public string MixedRealityRoundHeightMode
-        {
-            get => _greenScreenHeightModeLabels[Config.Instance.GreenScreenRoundHeightMode];
-            set
-            {
-                if (_greenScreenHeightModeLabels.ContainsValue(value))
-                {
-                    var mode = _greenScreenHeightModeLabels.First(kv => kv.Value == value).Key;
-                    Config.Instance.GreenScreenRoundHeightMode = mode;
-
-                    SafeNotify(nameof(ShowCustomHeightSetting));
-                    SafeNotify();
-                }
-            }
+            get => Config.Instance.MixedRealityRoundYOffset;
+            set => Config.Instance.MixedRealityRoundYOffset = value;
         }
 
-        [UIValue("MixedRealityRectHeightMode")]
-        public string MixedRealityRectHeightMode
+        [UIValue("MixedRealityRectYOffset")]
+        public float MixedRealityRectYOffset
         {
-            get => _greenScreenHeightModeLabels[Config.Instance.GreenScreenRectHeightMode];
-            set
-            {
-                if (_greenScreenHeightModeLabels.ContainsValue(value))
-                {
-                    var mode = _greenScreenHeightModeLabels.First(kv => kv.Value == value).Key;
-                    Config.Instance.GreenScreenRectHeightMode = mode;
-
-                    SafeNotify(nameof(ShowCustomHeightSetting));
-                    SafeNotify();
-                }
-            }
+            get => Config.Instance.MixedRealityRectYOffset;
+            set => Config.Instance.MixedRealityRectYOffset = value;
         }
+
         private void UpdateMixedRealityPortalsUI()
         {
-            SafeNotify(nameof(EnableMixedRealityPortals));
-            SafeNotify(nameof(EnablerMixedRealityPortals));
+            SafeNotify(nameof(EnableMixedRealityMenus));
+            SafeNotify(nameof(EnableMixedRealityStandard));
+            SafeNotify(nameof(EnableMixedReality360));
+
+            SafeNotify(nameof(EnablerMixedRealitySection));
+            SafeNotify(nameof(EnablerMixedRealityMenusControls));
+            SafeNotify(nameof(EnablerMixedRealityGameplayControls));
+            SafeNotify(nameof(EnablerMixedReality360Controls));
+
+            SafeNotify(nameof(FontColorMixedRealityMenus));
+            SafeNotify(nameof(FontColorMixedRealityStandard));
+            SafeNotify(nameof(FontColorMixedReality360));
             SafeNotify(nameof(FontColorMixedRealityPortals));
 
             SafeNotify(nameof(MixedRealityPortalShape));
+            SafeNotify(nameof(MixedRealityRoundDiameter));
+            SafeNotify(nameof(MixedRealityRectWidth));
+            SafeNotify(nameof(MixedRealityRectHeight));
+            SafeNotify(nameof(MixedReality360Diameter));
+            SafeNotify(nameof(MixedReality360CeilingHeight));
+            SafeNotify(nameof(MixedRealityMenuZOffset));
+            SafeNotify(nameof(MixedRealityGamePlayRoundZOffset));
+            SafeNotify(nameof(MixedRealityGamePlayRectZOffset));
+            SafeNotify(nameof(MixedRealityRoundYOffset));
+            SafeNotify(nameof(MixedRealityRectYOffset));
             SafeNotify(nameof(ShowRoundPortalSettings));
             SafeNotify(nameof(ShowRectPortalSettings));
+            //SafeNotify(nameof(ShowCustomHeightSetting));
+        }
 
-            SafeNotify(nameof(MixedRealityRoundHeightMode));
-            SafeNotify(nameof(MixedRealityRectHeightMode));
-            SafeNotify(nameof(ShowCustomHeightSetting));
 
-            SafeNotify(nameof(GreenScreenRoundDiameter));
-            SafeNotify(nameof(GreenScreenRectWidth));
-            SafeNotify(nameof(GreenScreenRectHeight));
-            SafeNotify(nameof(GreenScreen360Diameter));
-            SafeNotify(nameof(GreenScreenMenuZOffset));
-            SafeNotify(nameof(GreenScreenGamePlayZOffset));
-            SafeNotify(nameof(GreenScreenCustomCenterHeight));
+
+        [UIValue("EnableDiffReducer")]
+        public bool EnableDiffReducer
+        {
+            get => Config.Instance.EnableDiffReducer;
+            set
+            {
+                if (Config.Instance.EnableDiffReducer == value)
+                    return;
+
+                Config.Instance.EnableDiffReducer = value;
+
+                SafeNotify(nameof(EnableDiffReducer));
+                SafeNotify(nameof(EnablerDiffReducer));
+                SafeNotify(nameof(FontColorDiffReducer));
+                SafeNotify(nameof(PreferredFinalNps));
+            }
+        }
+
+        [UIValue("EnablerDiffReducer")]
+        public bool EnablerDiffReducer
+        {
+            get => Config.Instance.EnablePlugin && Config.Instance.EnableDiffReducer;
+        }
+
+        [UIValue("FontColorDiffReducer")]
+        public string FontColorDiffReducer
+        {
+            get => (!Config.Instance.EnablePlugin || !Config.Instance.EnableDiffReducer) ? OffColor : OnColor;
+        }
+
+        [UIValue("PreferredFinalNps")]
+        public float PreferredFinalNps
+        {
+            get => Config.Instance.PreferredFinalNps;
+            set
+            {
+                Config.Instance.PreferredFinalNps = value;
+                SafeNotify(nameof(PreferredFinalNps));
+            }
         }
     }
 }

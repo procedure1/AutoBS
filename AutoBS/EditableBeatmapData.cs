@@ -2234,10 +2234,11 @@ namespace AutoBS
             float njs = TransitionPatcher.FinalNoteJumpMovementSpeed;
             float jd = TransitionPatcher.FinalJumpDistance;
 
+
             if (njs <= 0 || jd <= 0)
             {
-                Plugin.Log.Error("[ApplyWallVisionBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, skipping wall blocking fix.");
-                return;
+                if (njs <= 0) njs = 10; if (jd <= 0) jd = 24;
+                Plugin.Log.Error("[ApplyWallVisionBlockingFix] NoteJumpMovementSpeed or JumpDistance is not set, so used fake njs: 10, jd: 25.");
             }
 
             float wallTravelTime = jd / njs;

@@ -93,7 +93,11 @@ namespace AutoBS // required adding reference to UnityEngine.AudioModule
                 LiveAudioRuntimeState.PendingVolumeSteps = 0;
                 return;
             }
-
+            if (!Config.Instance.EnableLiveVolumeControl)
+            {
+                LiveAudioRuntimeState.PendingVolumeSteps = 0;
+                return;
+            }
             if (Config.Instance.LiveVolumeControl == Config.LiveControlModeType.Off)
             {
                 LiveAudioRuntimeState.PendingVolumeSteps = 0;
@@ -123,7 +127,7 @@ namespace AutoBS // required adding reference to UnityEngine.AudioModule
             float stepSize = (Mathf.Abs(rounded) % 2 == 1) ? 1f : 2f; // will force odd number to be even by bumping by 1 if odd. and 2 if even to stay even.
 
             float deltaDb = steps * stepSize;
-            float newDb = Mathf.Clamp(rounded + deltaDb, -10f, 8f);
+            float newDb = Mathf.Clamp(rounded + deltaDb, -20f, 6f);
 
             if (!Mathf.Approximately(currentDb, newDb))
             {
@@ -180,6 +184,19 @@ namespace AutoBS // required adding reference to UnityEngine.AudioModule
 
 
     // OLD -------------------------------------------------------------
+
+    // UNUSED but works! but changes volume on all sounds
+    /*
+    [HarmonyPatch(typeof(AudioManagerSO), "set_mainVolume")]
+    public class Volume_Changer
+    {
+        static void Prefix(ref float value)
+        {
+            value += Config.Instance.VolumeAdjuster; // changes vol by db
+            Plugin.LogDebug($"Adjusted audio volume {Config.Instance.VolumeAdjuster} dB louder.");
+        }
+    }
+    */
     // USE THIS ONE!!!! WORKS!!! but prefer Verbose Volume
     /*
     public class SoundRemover // from sound replacer -- MADE THIS SINCE WAS NOT WORKING ON LEVEL CLEARED so just replaced all the sounds i wanted and can remove soundreplacer.dll
@@ -242,18 +259,7 @@ namespace AutoBS // required adding reference to UnityEngine.AudioModule
     */
     //}
 
-    // UNUSED but works! but changes volume on all sounds
-    /*
-    [HarmonyPatch(typeof(AudioManagerSO), "set_mainVolume")]
-    public class Volume_Changer
-    {
-        static void Prefix(ref float value)
-        {
-            value += Config.Instance.VolumeAdjuster; // changes vol by db
-            Plugin.LogDebug($"Adjusted audio volume {Config.Instance.VolumeAdjuster} dB louder.");
-        }
-    }
-    */
+
 
 
     // I used this version.

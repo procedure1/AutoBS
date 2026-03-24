@@ -60,6 +60,13 @@ namespace AutoBS
             if (!_initialized || _text == null)
                 return;
 
+            if (!Config.Instance.EnablePlugin)
+            {
+                if (_text.gameObject.activeSelf)
+                    _text.gameObject.SetActive(false);
+                return;
+            }
+
             if (_text.gameObject.activeSelf)
             {
                 if (UseViewLockedMode)

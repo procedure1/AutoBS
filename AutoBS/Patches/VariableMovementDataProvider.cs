@@ -18,10 +18,10 @@ namespace AutoBS.Patches
     {
         internal class State
         {
-            public bool Active;              // patch should manage this provider at all
-            public bool AutoNjsFixerActive;  // true only if AutoNjsFixer actually overrode baseline
+            public bool Active;
+            public bool AutoNjsFixerActive;
 
-            public float OriginalNjs; // to decide whether scoring should be disabled
+            public float OriginalNjs;
             public float FinalBaseNjs;
             public float FinalBaseJd;
             public float BaseJumpDuration;
@@ -29,13 +29,16 @@ namespace AutoBS.Patches
             public bool LiveNjsScoreGateTriggered;
 
             public int LastStepLogBucket = -1;
+
+            // Last values actually pushed into VariableMovementDataProvider
+            public bool HasAppliedValues;
+            public float LastAppliedNjs;
+            public float LastAppliedJd;
         }
 
         internal static readonly ConditionalWeakTable<VariableMovementDataProvider, State> Table =
             new ConditionalWeakTable<VariableMovementDataProvider, State>();
 
-        // true  = keep JD fixed, duration changes with NJS
-        // false = keep duration fixed, JD changes with NJS
         internal static bool FlexibleDuration = true;
 
         internal static float LiveNjsOffset = 0f;
@@ -54,7 +57,7 @@ namespace AutoBS.Patches
             PendingJdSteps = 0;
         }
     }
-    
+
     [HarmonyPatch(typeof(VariableMovementDataProvider), "Init")]
     static class VariableMovementDataProviderInitPatch
     {
@@ -100,6 +103,10 @@ namespace AutoBS.Patches
             state.FinalBaseJd = givenJD;
             state.BaseJumpDuration = givenNJS > 0.01f ? (givenJD / givenNJS) : 0f;
             state.LiveNjsScoreGateTriggered = false;
+
+            state.HasAppliedValues = false;
+            state.LastAppliedNjs = 0f;
+            state.LastAppliedJd = 0f;
 
             // If AutoNjsFixer is not enabled, baseline is enough for live controls.
             if (!autoNjsFixerEnabled)
@@ -238,9 +245,12 @@ namespace AutoBS.Patches
         static readonly AccessTools.FieldRef<VariableMovementDataProvider, Vector3> _jumpEndPosition =
             AccessTools.FieldRefAccess<VariableMovementDataProvider, Vector3>("_jumpEndPosition");
 
+        private const float NjsEpsilon = 0.0001f;
+        private const float JdEpsilon = 0.0001f;
+
         public static void Postfix(VariableMovementDataProvider __instance, float songTime)
         {
-            if (!Config.Instance.EnablePlugin)
+            if (!Config.Instance.EnablePlugin || !LiveGameplayRuntimeState.SongRunning)
             {
                 AutoNjsRuntimeState.PendingNjsSteps = 0;
                 AutoNjsRuntimeState.PendingJdSteps = 0;
@@ -248,7 +258,6 @@ namespace AutoBS.Patches
             }
 
             bool autoNjsFixerEnabled = AutoNjsRuntimeState.AutoNjsFixerEnabled;
-
             bool liveNJSEnabled = Config.Instance.LiveNoteSpeedControl != Config.LiveControlModeType.Off;
             bool liveJDEnabled = Config.Instance.LiveNoteSpawnDistanceControl != Config.LiveControlModeType.Off;
 
@@ -271,8 +280,11 @@ namespace AutoBS.Patches
                 AutoNjsRuntimeState.LiveJdOffset = 0f;
             }
 
-            if (!AutoNjsRuntimeState.Table.TryGetValue(__instance, out var state)) return;
-            if (!state.Active) return;
+            if (!AutoNjsRuntimeState.Table.TryGetValue(__instance, out var state))
+                return;
+
+            if (!state.Active)
+                return;
 
             try
             {
@@ -313,23 +325,51 @@ namespace AutoBS.Patches
                     }
                 }
 
-                float currentNJS = state.FinalBaseNjs + AutoNjsRuntimeState.LiveNjsOffset;
-                if (currentNJS < 0.01f)
-                    currentNJS = 0.01f;
+                float effectiveNjs = state.FinalBaseNjs + AutoNjsRuntimeState.LiveNjsOffset;
+                if (effectiveNjs < 0.01f)
+                    effectiveNjs = 0.01f;
 
-                float currentJD = state.FinalBaseJd + AutoNjsRuntimeState.LiveJdOffset;
-                currentJD = Mathf.Clamp(currentJD, 1f, 100f);
+                float effectiveJd = state.FinalBaseJd + AutoNjsRuntimeState.LiveJdOffset;
+                effectiveJd = Mathf.Clamp(effectiveJd, 1f, 100f);
 
+                bool flexibleDuration = AutoNjsRuntimeState.FlexibleDuration;
+
+                if (!state.LiveNjsScoreGateTriggered && effectiveNjs < state.OriginalNjs - 0.001f)
+                {
+                    state.LiveNjsScoreGateTriggered = true;
+                    ScoreGate.AddReason("Live NJS");
+
+                    Plugin.Log.Info(
+                        $"[ScoreGate] Disabled by live NJS change. " +
+                        $"OriginalNJS:{state.OriginalNjs:F2} CurrentNJS:{effectiveNjs:F2}");
+                }
+
+                bool valuesChanged =
+                    !state.HasAppliedValues ||
+                    Mathf.Abs(state.LastAppliedNjs - effectiveNjs) > NjsEpsilon ||
+                    Mathf.Abs(state.LastAppliedJd - effectiveJd) > JdEpsilon;
+
+                if (!valuesChanged)
+                {
+                    if (showJdHud)
+                        LiveAdjustHudRuntime.Instance?.ShowJdValue(effectiveJd);
+                    else if (showNjsHud)
+                        LiveAdjustHudRuntime.Instance?.ShowNjsValue(effectiveNjs);
+
+                    return;
+                }
+
+                float appliedNjs = effectiveNjs;
                 float jumpDuration;
                 float halfJumpDuration;
                 float jumpDistance;
                 float halfJumpDistance;
 
-                if (AutoNjsRuntimeState.FlexibleDuration)
+                if (flexibleDuration)
                 {
-                    jumpDistance = currentJD;
+                    jumpDistance = effectiveJd;
                     halfJumpDistance = jumpDistance * 0.5f;
-                    jumpDuration = jumpDistance / currentNJS;
+                    jumpDuration = jumpDistance / appliedNjs;
                     halfJumpDuration = jumpDuration * 0.5f;
                 }
                 else
@@ -337,27 +377,18 @@ namespace AutoBS.Patches
                     jumpDuration = state.BaseJumpDuration;
                     halfJumpDuration = jumpDuration * 0.5f;
 
-                    jumpDistance = currentJD;
+                    jumpDistance = effectiveJd;
                     halfJumpDistance = jumpDistance * 0.5f;
 
                     if (jumpDuration > 0.0001f)
-                        currentNJS = jumpDistance / jumpDuration;
-                }
-
-                if (!state.LiveNjsScoreGateTriggered && currentNJS < state.OriginalNjs - 0.001f)
-                {
-                    state.LiveNjsScoreGateTriggered = true;
-
-                    ScoreGate.AddReason("Live NJS");
-
-                    Plugin.Log.Info($"[ScoreGate] Disabled by live NJS change. OriginalNJS:{state.OriginalNjs:F2} CurrentNJS:{currentNJS:F2}");
+                        appliedNjs = jumpDistance / jumpDuration;
                 }
 
                 float prevNjs = _noteJumpMovementSpeed(__instance);
 
                 _prevNoteJumpMovementSpeed(__instance) = prevNjs;
-                _targetNoteJumpMovementSpeed(__instance) = currentNJS;
-                _noteJumpMovementSpeed(__instance) = currentNJS;
+                _targetNoteJumpMovementSpeed(__instance) = appliedNjs;
+                _noteJumpMovementSpeed(__instance) = appliedNjs;
 
                 _jumpDistance(__instance) = jumpDistance;
                 _halfJumpDistance(__instance) = halfJumpDistance;
@@ -374,17 +405,14 @@ namespace AutoBS.Patches
                 _moveEndPosition(__instance) = center + forward * halfJumpDistance;
                 _jumpEndPosition(__instance) = center - forward * halfJumpDistance;
 
+                state.HasAppliedValues = true;
+                state.LastAppliedNjs = effectiveNjs;
+                state.LastAppliedJd = effectiveJd;
+
                 if (showJdHud)
-                    LiveAdjustHudRuntime.Instance?.ShowJdValue(currentJD);
+                    LiveAdjustHudRuntime.Instance?.ShowJdValue(effectiveJd);
                 else if (showNjsHud)
-                    LiveAdjustHudRuntime.Instance?.ShowNjsValue(currentNJS);
-                
-                //if (showNjsHud || showJdHud)
-                //{
-                //    Plugin.Log.Debug($"[VariableMovementDataProvider][AutoNJS][ManualUpdate] AutoNjsFixerActive:{state.AutoNjsFixerActive} BaseNJS:{state.FinalBaseNjs:F2} LiveNjsOffset:{AutoNjsRuntimeState.LiveNjsOffset:F2} FinalNJS:{currentNJS:F2} | " +
-                //    $"BaseJD:{state.FinalBaseJd:F2} LiveJdOffset:{AutoNjsRuntimeState.LiveJdOffset:F2} FinalJD:{currentJD:F2} | FlexibleDuration:{AutoNjsRuntimeState.FlexibleDuration}");
-                //}
-                
+                    LiveAdjustHudRuntime.Instance?.ShowNjsValue(appliedNjs);
             }
             catch (Exception ex)
             {

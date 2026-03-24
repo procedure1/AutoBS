@@ -12,7 +12,7 @@
         <!-- Activation Settings-->
         
         <vertical pad-left='2' pad-bottom='2' preferred-width='60'>
-          <text text="360fyer" align="Center" fontSize="5" font-color="#64ff16" underlined='true' />
+          <text text="360fyer" align="Center" fontSize="5" font-color="#64FF16" underlined='true' />
           <text text="Generates 360 maps from standard maps." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
           <text text="Unlikely to work well with Vivify, Noodle, Mapping Extensions, or maps containing thousands of walls." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
 
@@ -51,37 +51,109 @@
             <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableAutoNjsFixerNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable note speed and spawn distance manipulation for non-generated 360/90 maps. Short spawn distances make notes difficult to see coming in 360. Disabled by the real NJSFixer and JDFixer if they are installed (enabled or not). Thanks to Kylemc!"></toggle-setting>
             <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableAutoNjsFixerStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable note speed and spawn distance manipulation for Standard, One Saber maps, etc. Short spawn. Disabled by the real NJSFixer and JDFixer if they are installed (enabled or not). Thanks to Kylemc!"></toggle-setting>
           </vertical>
-          
-        <!-- RIGHT Activation: Lights -->
-        <vertical preferred-width='40'>
-          <text text="Auto Lighting" align="Center" fontSize="5" font-color="#0600f8" underlined='true' />
-          <text text="Enables light manipulation and generates note-based lighting &#xA;events for maps that don’t have lights." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
-          <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableLightingGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable lighting manipulation and generation for 360fyer-generated maps. Thanks to Loloppe (ChroMapper-AutoMapper)! I tweaked this so any problems are my fault."></toggle-setting>
-          <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableLightingNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable lighting manipulation and generation for non-generated 360/90 maps. Thanks to Loloppe (ChroMapper-AutoMapper)! I tweaked this so any problems are my fault."></toggle-setting>
-          <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableLightingStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable lighting manipulation and generation for Standard, One Saber maps, etc. Thanks to Loloppe (ChroMapper-AutoMapper)! I tweaked this so any problems are my fault."></toggle-setting>
-        </vertical>
+
+          <!-- RIGHT Activation: Live Volume -->
+          <vertical preferred-width='40'>
+            <text text="Live Volume Control" align="Center" fontSize="5" font-color="#57FFFB" underlined='true' />
+            <text text="Change the music volume during &#xA;gameplay with your controller." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+            <toggle-setting text='Enable' apply-on-change='true' value='EnableLiveVolumeControl' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable lighting manipulation and generation for 360fyer-generated maps. Thanks to Loloppe (ChroMapper-AutoMapper)! I tweaked this so any problems are my fault."></toggle-setting>
+          </vertical>
+        </horizontal>
+
+
+        <horizontal pad-left='2' pad-bottom='2' preferred-width='90'>
+
+          <!-- LEFT Activation: Auto Difficulty Reducer -->
+          <vertical preferred-width='40' pad-left='2'>
+            <text text="Auto Difficulty Reducer" align="Center" fontSize="5" font-color="#FF00F8" underlined='true' />
+            <text text="Reduces beatmap note density toward a &#xA;preferred final notes per second." align="Center" fontSize="2.3" font-color="#BBBBBB" />
+
+            <toggle-setting
+                text='Enable'
+                apply-on-change='true'
+                value='EnableDiffReducer'
+                bind-value='true'
+                font-color='~FontColorEnablePlugin'
+                interactable='~EnablerEnablePlugin'
+                hover-hint='Enable beatmap difficulty reduction toward a preferred final notes per second by removing notes. Disables score submission if any notes are removed."'>
+            </toggle-setting>
+          </vertical>
+
+          <!-- RIGHT Activation: Mixed Reality -->
+          <vertical preferred-width='40'>
+            <text text="Mixed Reality Portals" align="Center" fontSize="5" font-color="#33ff33" underlined='true' />
+            <text text="Creates menu and gameplay passthrough portals. &#xA;Requires Virtual Desktop App." align="Center" fontSize="2.3" font-color="#BBBBBB" />
+
+            <toggle-setting
+                text='360/90 Maps'
+                apply-on-change='true'
+                value='EnableMixedReality360'
+                bind-value='true'
+                font-color='~FontColorMixedReality360'
+                interactable='~EnablerMixedRealitySection'
+                hover-hint='Enable mixed reality portals for 360/90 gameplay maps.'>
+            </toggle-setting>
+
+            <toggle-setting
+                text='Standard Maps'
+                apply-on-change='true'
+                value='EnableMixedRealityStandard'
+                bind-value='true'
+                font-color='~FontColorMixedRealityStandard'
+                interactable='~EnablerMixedRealitySection'
+                hover-hint='Enable mixed reality portals for Standard and similar gameplay maps.'>
+            </toggle-setting>
+
+            <toggle-setting
+                text='Menus'
+                apply-on-change='true'
+                value='EnableMixedRealityMenus'
+                bind-value='true'
+                font-color='~FontColorMixedRealityMenus'
+                interactable='~EnablerMixedRealitySection'
+                hover-hint='Enable mixed reality portals in menus.'>
+            </toggle-setting>
+          </vertical>
+
         </horizontal>
 
         <horizontal pad-left='2' pad-bottom='2' preferred-width='90'>
 
-          <!-- RIGHT Activation: Beat Sage Cleaner -->
+          <!-- LEFT Activation: Lights -->
           <vertical preferred-width='40' pad-left='2'>
-            <text text="Beat Sage Cleaner" align="Center" fontSize="5" font-color="#ff00f8" underlined='true' />
-            <text text="Fixes some typical Beat Sage problems like impossible note  &#xA;combinations and endless crouch walls among other things." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+            <text text="Auto Lighting" align="Center" fontSize="5" font-color="#0600F8" underlined='true' />
+            <text text="Enables light manipulation and generates note-based lighting &#xA;events for maps that don’t have lights." align="Center" fontSize="2.3" font-color="#BBBBBB" />
+            <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableLightingGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable lighting manipulation and generation for 360fyer-generated maps. Thanks to Loloppe (ChroMapper-AutoMapper)! I tweaked this so any problems are my fault."></toggle-setting>
+            <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableLightingNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable lighting manipulation and generation for non-generated 360/90 maps. Thanks to Loloppe (ChroMapper-AutoMapper)! I tweaked this so any problems are my fault."></toggle-setting>
+            <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableLightingStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable lighting manipulation and generation for Standard, One Saber maps, etc. Thanks to Loloppe (ChroMapper-AutoMapper)! I tweaked this so any problems are my fault."></toggle-setting>
+          </vertical>
+
+          <!-- RIGHT Activation: Beat Sage Cleaner -->
+          <vertical preferred-width='40'>
+            <text text="Beat Sage Cleaner" align="Center" fontSize="5" font-color="#FF5A00" underlined='true' />
+            <text text="Fixes some typical Beat Sage problems like impossible note &#xA;combinations and endless crouch walls among other things." align="Center" fontSize="2.3" font-color="#BBBBBB" />
             <toggle-setting text='Clean' apply-on-change='true' value='EnableCleanBeatSage' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Removes some problem notes (such as overlapping notes and strays, etc) and walls (such as long crouch walls) typically created by Beat Sage. Disables score submission if any notes are removed."></toggle-setting>
           </vertical>
-          
+
+        </horizontal>
+
+        <horizontal pad-left='2' pad-bottom='2' preferred-width='90'>
+
           <!-- LEFT Activation: Walls -->
-          <vertical preferred-width='40'>
-            <text text="Auto Walls" align="Center" fontSize="5" font-color="#ff5a00" underlined='true' />
-            <text text="Enables wall manipulation and wall generation for visual &#xA;interest. Additional walls are cool, especially in 360." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+          <vertical preferred-width='40' pad-left='2'>
+            <text text="Auto Walls" align="Center" fontSize="5" font-color="#cccc17" underlined='true' />
+            <text text="Enables wall manipulation and wall generation for visual &#xA;interest. Additional walls are cool, especially in 360." align="Center" fontSize="2.3" font-color="#BBBBBB" />
             <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableWallsGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable wall manipulation and generation for 360fyer-generated maps. Walls are cool in 360! No crouch walls are added."></toggle-setting>
             <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableWallsNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable wall manipulation and generation for non-generated 360/90 maps. Walls are cool in 360! No crouch walls are added."></toggle-setting>
             <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableWallsStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable wall manipulation and generation for Standard, One Saber maps, etc. No crouch walls are added."></toggle-setting>
           </vertical>
 
+          <!-- RIGHT Activation: spacer -->
+          <vertical preferred-width='40'>
+          </vertical>
+
         </horizontal>
-      
+        
       </vertical>
 
 
@@ -184,7 +256,7 @@
             apply-on-change="true"
             font-color="~FontColorEnablePlugin"
             interactable="~EnablerEnablePlugin"
-            hover-hint="Change the Note Speed live during gameplay. Default: OFF. THUMBSTICK uses RIGHT Controller Up/Down. BUTTONS use Y/B. -1/+1 NJS. Works during pause but HUD is only displayed after you start playing again. This is only tested on Quest3."
+            hover-hint="Change the Note Speed live during gameplay. Default: OFF. THUMBSTICK Controller Up/Down and several BUTTONS options. -1/+1 NJS. Works during pause as well but HUD is only displayed after you start playing again. This is only tested on Quest3."
             />
           
           <dropdown-list-setting
@@ -195,13 +267,13 @@
               apply-on-change="true"
               font-color="~FontColorEnablePlugin"
               interactable="~EnablerEnablePlugin"
-              hover-hint="Change the Note Spawn Distance live during gameplay. Default: OFF. THUMBSTICK uses RIGHT Controller Left/Right. BUTTONS use Y/B. -2m/+2m JD. Works during pause but HUD is only displayed after you start playing again. This is only tested on Quest3."
+              hover-hint="Change the Note Spawn Distance live during gameplay. Default: OFF. THUMBSTICK Controller Left/Right and several BUTTONS use Y/B. -2m/+2m JD. Works during pause as well but HUD is only displayed after you start playing again. This is only tested on Quest3."
               />
           </vertical>
 
         <!-- Live Controller Input Section -->
-        <text text="Live Volume Control" align="Center" fontSize="5" font-color="#57fffb" underlined='true' />
-        <text text="Change the volume during gameplay. This reverts to default volume after a map is finished." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+        <text text="Live Volume Control" align="Center" fontSize="5" font-color="#57FFFB" underlined='true' />
+        <text text="Change the music volume during gameplay. This reverts to default volume after a map is finished." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
         <text text="Careful not to harm your ears or your headset!" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
         <vertical pad-left='2'>
           <dropdown-list-setting
@@ -210,8 +282,8 @@
            choices="LiveVolumeControlChoices"
            bind-value="true"
            apply-on-change="true"
-           font-color='~FontColorEnablePlugin' 
-           interactable="~EnablerEnablePlugin"
+           font-color='~FontColorLiveVolumeControl' 
+           interactable="~EnablerLiveVolumeControl"
            hover-hint="Default: THUMBSTICK. THUMBSTICK uses LEFT Controller Up/Down. BUTTONS use Y/B. -2db/+2db volume. This is only tested on Quest3."
            />
 
@@ -219,23 +291,42 @@
 
 
 
+        <!-- Auto DiffReducer Section -->
+        <text text="Auto Difficulty Reducer" align="Center" fontSize="5" font-color="#FF00F8" underlined='true' />
+        <text text="Automated version of the Diffreducer mod by Kylemc. Thanks again, Kyle! Set it and forget it! &#xA; The consequence is this alters the original map! Sorry to all the great mappers. &#xA; But now novices can play most any map!" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+        <vertical pad-left='2'>
+
+          <slider-setting
+              text="Preferred Final NPS"
+              apply-on-change="true"
+              value="PreferredFinalNps"
+              bind-value="true"
+              show-buttons="true"
+              increment="0.1"
+              min="0"
+              max="20"
+              formatter="NpsFormatter"
+              font-size="3.2"
+              font-color='~FontColorDiffReducer'
+              interactable='~EnablerDiffReducer'
+              hover-hint="Default: 4 nps. Any map you play over this average notes per second will have notes removed to achieve the preferred nps. Disables score submission if any notes are removed. 0 is OFF. Will not affect maps when their average nps is lower than your preferred nps."
+              rich-text='true'>
+          </slider-setting>
+        </vertical>
+        
+        
+        
+        
+        
+        
+        
+
 
         <!-- Mixed Reality Portals Section -->
-        <text text="Mixed Reality Portals" align="Center" fontSize="5" font-color="#80ff10" underlined="true" />
+        <text text="Mixed Reality Portals" align="Center" fontSize="5" font-color="#33ff33" underlined="true" />
         <text text="Creates menu and gameplay passthrough portals using Virtual Desktop > Streaming > VR Passthrough Environment." align="Center" fontSize="2.3" font-color="#BBBBBB" />
         <text text="Default Color Green (r:0, g:255, b:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%." align="Center" fontSize="2.3" font-color="#BBBBBB" />
-        <vertical pad-left="2">
-          <toggle-setting
-              text="Enable Mixed Reality Portals"
-              apply-on-change="true"
-              value="EnableMixedRealityPortals"
-              bind-value="true"
-              font-size="3.2"
-              font-color="~FontColorMixedRealityPortals"
-              interactable="true"
-              hover-hint="Default: True. Enables the mixed reality portal system."
-          ></toggle-setting>
-
+        
           <dropdown-list-setting
               text="Portal Shape"
               value="MixedRealityPortalShape"
@@ -244,163 +335,220 @@
               apply-on-change="true"
               fontSize="3"
               font-color="~FontColorMixedRealityPortals"
-              interactable="~EnablerMixedRealityPortals"
+              interactable="~EnablerMixedRealityGameplayControls"
               hover-hint="Choose whether the portal aperture is round or rectangular."
           />
 
-          <slider-setting
-              text="Round Portal Diameter"
-              apply-on-change="true"
-              value="GreenScreenRoundDiameter"
-              bind-value="true"
-              show-buttons="true"
-              increment="0.1"
-              min="0.1"
-              max="20"
-              formatter="DistanceFormatterFloat"
-              font-size="3.2"
-              font-color="~FontColorMixedRealityPortals"
-              interactable="~ShowRoundPortalSettings"
-              hover-hint="Diameter of the round portal."
-              rich-text="true"
+          <text text="Round Portals" align="Center"  fontSize="4" font-color="#BBBBBB" />
+          <vertical pad-left='2'>
+
+            <slider-setting
+                text="Diameter"
+                apply-on-change="true"
+                value="MixedRealityRoundDiameter"
+                bind-value="true"
+                show-buttons="true"
+                increment="0.1"
+                min="0"
+                max="50"
+                formatter="DistanceFormatterFloat"
+                font-size="3.2"
+                font-color="~FontColorMixedRealityPortals"
+                interactable="~ShowRoundPortalSettings"
+                hover-hint="Diameter of the round portal. Set to 0 to disable."
+                rich-text="true"
+          ></slider-setting>
+            <!--
+            <dropdown-list-setting
+               text="Round Portal Height Mode"
+               value="MixedRealityRoundHeightMode"
+               choices="available-round-height-modes"
+               bind-value="true"
+               apply-on-change="true"
+               fontSize="3"
+               font-color="~FontColorMixedRealityPortals"
+               interactable="~ShowRoundPortalSettings"
+               hover-hint="Center At Custom Height places the round portal center at the chosen custom height. Bottom At Floor Level places its bottom at floor level."
+           />-->
+            <slider-setting
+                text="Height from Floor"
+                apply-on-change="true"
+                value="MixedRealityRoundYOffset"
+                bind-value="true"
+                show-buttons="true"
+                increment="0.1"
+                min="-50"
+                max="3"
+                formatter="DistanceFormatterFloat"
+                font-size="3.2"
+                font-color="~FontColorMixedRealityPortals"
+                interactable="~ShowRoundPortalSettings"
+                hover-hint="Used when the selected height mode is Center At Custom Height. Can set to your approximate height to center the portal in front of you."
+                rich-text="true"
           ></slider-setting>
 
-          <slider-setting
-              text="Rectangular Portal Width"
-              apply-on-change="true"
-              value="GreenScreenRectWidth"
-              bind-value="true"
-              show-buttons="true"
-              increment="0.1"
-              min="0.1"
-              max="20"
-              formatter="DistanceFormatterFloat"
-              font-size="3.2"
-              font-color="~FontColorMixedRealityPortals"
-              interactable="~ShowRectPortalSettings"
-              hover-hint="Width of the rectangular portal."
-              rich-text="true"
+            <slider-setting
+                text="Forward Offset"
+                apply-on-change="true"
+                value="MixedRealityGamePlayRoundZOffset"
+                bind-value="true"
+                show-buttons="true"
+                increment="0.1"
+                min="-3"
+                max="150"
+                formatter="DistanceFormatterFloat"
+                font-size="3.2"
+                font-color="~FontColorMixedRealityPortals"
+                interactable="~ShowRoundPortalSettings"
+                hover-hint="Moves the portal forward or backward during gameplay."
+                rich-text="true"
+          ></slider-setting>
+            </vertical>
+
+          <text text="Rectangular Portals" align="Center"  fontSize="4" font-color="#BBBBBB" />
+          <vertical pad-left='2'>
+
+            <slider-setting
+                text="Width"
+                apply-on-change="true"
+                value="MixedRealityRectWidth"
+                bind-value="true"
+                show-buttons="true"
+                increment="0.1"
+                min="0"
+                max="50"
+                formatter="DistanceFormatterFloat"
+                font-size="3.2"
+                font-color="~FontColorMixedRealityPortals"
+                interactable="~ShowRectPortalSettings"
+                hover-hint="Width of the rectangular portal. Set to 0 to disable."
+                rich-text="true"
           ></slider-setting>
 
-          <slider-setting
-              text="Rectangular Portal Height"
-              apply-on-change="true"
-              value="GreenScreenRectHeight"
-              bind-value="true"
-              show-buttons="true"
-              increment="0.1"
-              min="0.1"
-              max="20"
-              formatter="DistanceFormatterFloat"
-              font-size="3.2"
-              font-color="~FontColorMixedRealityPortals"
-              interactable="~ShowRectPortalSettings"
-              hover-hint="Height of the rectangular portal."
-              rich-text="true"
+            <slider-setting
+                text="Height"
+                apply-on-change="true"
+                value="MixedRealityRectHeight"
+                bind-value="true"
+                show-buttons="true"
+                increment="0.1"
+                min="0"
+                max="50"
+                formatter="DistanceFormatterFloat"
+                font-size="3.2"
+                font-color="~FontColorMixedRealityPortals"
+                interactable="~ShowRectPortalSettings"
+                hover-hint="Height of the rectangular portal. Set to 0 to disable."
+                rich-text="true"
+          ></slider-setting>
+          <!--
+            <dropdown-list-setting
+                text="Rect Portal Height Mode"
+                value="MixedRealityRectHeightMode"
+                choices="available-rect-height-modes"
+                bind-value="true"
+                apply-on-change="true"
+                fontSize="3"
+                font-color="~FontColorMixedRealityPortals"
+                interactable="~ShowRectPortalSettings"
+                hover-hint="Center At Custom Height places the rectangular portal center at the chosen custom height. Bottom At Floor Level places its bottom at floor level."
+          /> -->
+            <slider-setting
+                text="Height from Floor"
+                apply-on-change="true"
+                value="MixedRealityRectYOffset"
+                bind-value="true"
+                show-buttons="true"
+                increment="0.1"
+                min="0"
+                max="3"
+                formatter="DistanceFormatterFloat"
+                font-size="3.2"
+                font-color="~FontColorMixedRealityPortals"
+                interactable="~ShowRectPortalSettings"
+                hover-hint="Used when the selected height mode is Center At Custom Height. Can set to your approximate height to center the portal in front of you."
+                rich-text="true"
           ></slider-setting>
 
-          <slider-setting
-              text="360 Portal Diameter"
-              apply-on-change="true"
-              value="GreenScreen360Diameter"
-              bind-value="true"
-              show-buttons="true"
-              increment="0.1"
-              min="0"
-              max="40"
-              formatter="DistanceFormatterFloat"
-              font-size="3.2"
-              font-color="~FontColorMixedRealityPortals"
-              interactable="~EnablerMixedRealityPortals"
-              hover-hint="Default: 12. Diameter of the surrounding green shell used for 360 capture. Set to 0 to disable."
-              rich-text="true"
+            <slider-setting
+                text="Forward Offset"
+                apply-on-change="true"
+                value="MixedRealityGamePlayRectZOffset"
+                bind-value="true"
+                show-buttons="true"
+                increment="0.1"
+                min="-3"
+                max="150"
+                formatter="DistanceFormatterFloat"
+                font-size="3.2"
+                font-color="~FontColorMixedRealityPortals"
+                interactable="~ShowRectPortalSettings"
+                hover-hint="Moves the portal forward or backward during gameplay."
+                rich-text="true"
           ></slider-setting>
+         
+          </vertical>
+          <vertical pad-left='2'>
+            <text text="360/90 Map Portals" align="Center"  fontSize="4" font-color="#BBBBBB" />
+            <vertical pad-left='2'>
 
-          <slider-setting
-              text="Menu Portal Forward Offset"
-              apply-on-change="true"
-              value="GreenScreenMenuZOffset"
-              bind-value="true"
-              show-buttons="true"
-              increment="0.1"
-              min="-10"
-              max="10"
-              formatter="DistanceFormatterFloat"
-              font-size="3.2"
-              font-color="~FontColorMixedRealityPortals"
-              interactable="~EnablerMixedRealityPortals"
-              hover-hint="Moves the portal forward or backward in the menu."
-              rich-text="true"
-          ></slider-setting>
+              <slider-setting
+                  text="Diameter"
+                  apply-on-change="true"
+                  value="MixedReality360Diameter"
+                  bind-value="true"
+                  show-buttons="true"
+                  increment="0.1"
+                  min="0"
+                  max="50"
+                  formatter="DistanceFormatterFloat"
+                  font-size="3.2"
+                  font-color="~FontColorMixedReality360"
+                  interactable="~EnablerMixedReality360Controls"
+                  hover-hint="Default: 12. Diameter of the surrounding green shell used for 360 capture. Set to 0 to disable."
+                  rich-text="true"
+            ></slider-setting>
+              <slider-setting
+                  text="Ceiling Height"
+                  apply-on-change="true"
+                  value="MixedReality360CeilingHeight"
+                  bind-value="true"
+                  show-buttons="true"
+                  increment="0.1"
+                  min="0"
+                  max="50"
+                  formatter="DistanceFormatterFloat"
+                  font-size="3.2"
+                  font-color="~FontColorMixedReality360"
+                  interactable="~EnablerMixedReality360Controls"
+                  hover-hint="Default: 2.5m. Set to 0 to disable."
+                  rich-text="true"
+            ></slider-setting>
+            </vertical>
+              <vertical pad-left='2'>
+                <text text="Menu Portals" align="Center"  fontSize="4" font-color="#BBBBBB" />
+              <slider-setting
+                text="MENU Portal Forward Offset"
+                apply-on-change="true"
+                value="MixedRealityMenuZOffset"
+                bind-value="true"
+                show-buttons="true"
+                increment="0.1"
+                min="-3"
+                max="10"
+                formatter="DistanceFormatterFloat"
+                font-size="3.2"
+                font-color="~FontColorMixedRealityMenus"
+                interactable="~EnablerMixedRealityMenusControls"
+                hover-hint="Moves the portal forward or backward in the menu."
+                rich-text="true"
+              ></slider-setting>
+              </vertical>
+          </vertical>
 
-          <slider-setting
-              text="Gameplay Portal Forward Offset"
-              apply-on-change="true"
-              value="GreenScreenGamePlayZOffset"
-              bind-value="true"
-              show-buttons="true"
-              increment="0.1"
-              min="-10"
-              max="10"
-              formatter="DistanceFormatterFloat"
-              font-size="3.2"
-              font-color="~FontColorMixedRealityPortals"
-              interactable="~EnablerMixedRealityPortals"
-              hover-hint="Moves the portal forward or backward during gameplay."
-              rich-text="true"
-          ></slider-setting>
 
-          <dropdown-list-setting
-              text="Round Portal Height Mode"
-              value="MixedRealityRoundHeightMode"
-              choices="available-round-height-modes"
-              bind-value="true"
-              apply-on-change="true"
-              fontSize="3"
-              font-color="~FontColorMixedRealityPortals"
-              interactable="~ShowRoundPortalSettings"
-              hover-hint="Center At Custom Height places the round portal center at the chosen custom height. Bottom At Floor Level places its bottom at floor level."
-           />
 
-          <dropdown-list-setting
-              text="Rectangular Portal Height Mode"
-              value="MixedRealityRectHeightMode"
-              choices="available-rect-height-modes"
-              bind-value="true"
-              apply-on-change="true"
-              fontSize="3"
-              font-color="~FontColorMixedRealityPortals"
-              interactable="~ShowRectPortalSettings"
-              hover-hint="Center At Custom Height places the rectangular portal center at the chosen custom height. Bottom At Floor Level places its bottom at floor level."
-          />
 
-          <slider-setting
-              text="Portal Custom Center Height"
-              apply-on-change="true"
-              value="GreenScreenCustomCenterHeight"
-              bind-value="true"
-              show-buttons="true"
-              increment="0.1"
-              min="-10"
-              max="10"
-              formatter="DistanceFormatterFloat"
-              font-size="3.2"
-              font-color="~FontColorMixedRealityPortals"
-              interactable="~ShowCustomHeightSetting"
-              hover-hint="Used when the selected height mode is Center At Custom Height. Can set to your approximate height to center the portal in front of you."
-              rich-text="true"
-          ></slider-setting>
-        </vertical>
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         
 
         <!-- Lighting Section -->
@@ -428,7 +576,7 @@
 
 
         <!-- Beat Sage Section -->
-        <text text="Beat Sage Cleaner" align="Center" fontSize="5" font-color="#ff00f8" underlined='true' />
+        <text text="Beat Sage Cleaner" align="Center" fontSize="5" font-color="#FF5A00" underlined='true' />
         <text text="Fixes some typical problems for Beat Sage generated maps" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
         <vertical pad-left='2'>
           <slider-setting text="Set Crouch Wall Max Duration" apply-on-change="true" value="MaxCrouchWallDuration" bind-value="true" fontSize="3"  show-buttons="true" increment=".25" min=".25" max="60" formatter="TimeFormatter" font-color='~FontColorCleanBeatSage' interactable="~EnablerCleanBeatSage" hover-hint="Default: .75. Shortens long crouch walls to this duration." rich-text='true'></slider-setting>
@@ -437,7 +585,7 @@
         </vertical>
 
         <!-- Walls Section -->
-        <text text="Auto Walls" align="Center" fontSize="5" font-color="#ff5a00" underlined='true' />
+        <text text="Auto Walls" align="Center" fontSize="5" font-color="#cccc17" underlined='true' />
           <text text="Wall Manipulation" align="Center"  fontSize="4" font-color="#BBBBBB" />
           <text text="Alters walls that already exist in the original base map" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
             <toggle-setting text='Allow Crouch Walls' apply-on-change='true' value='AllowCrouchWalls' bind-value='true' font-color='~FontColorWallGenerator' interactable="~EnablerWallGenerator" hover-hint="It's hard to see these walls coming on faster 360 maps. Will remove original mapped crouch walls."></toggle-setting>
