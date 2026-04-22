@@ -1,5 +1,5 @@
 # AutoBS — Beat Saber Automation Mod
-## Featuring Mixed Reality Portals 
+## Mixed Reality Portals 
 ## Arcitect Arc + Chain Maker, Auto Lights, Auto Walls
 ## Auto Difficulty Reducer
 ## Auto NJS Fixer with Live Tuning
