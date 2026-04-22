@@ -68,6 +68,8 @@ Thanks to Kylemc for allowing me to work from their original code! The original 
 
 NOTE: If settings cause the note speed to be slower than the mapper intended, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not). Also, for maps with NJS events, a specified note spawn distance will vary when note speed varies. 
 
+NOTE: This gets wonky for large NJS or JD changes.
+
 ## Live Volume Control
 I hate reaching for my headset volume button during gameplay every other song to bump up a quiet song. Now you can do it with your controller during gameplay with ease.
 
@@ -96,6 +98,8 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 
 ***360fyer – Rotation Settings***
 
+Thanks to the genius, CodeStix, who built the original 360fyer plugin!
+
 | Option                   | Description                                                                                                                                                                                                                                                                                                      |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Wireless 360**         | Default: **True**. For wireless headsets. When enabled, generated maps have no rotation restrictions and fewer tendencies to reverse direction.|
@@ -107,10 +111,12 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 | **FOV**                  | Default: **80°**. Set to slightly below your headset’s actual field of view. This is used to keep rotations within your peripheral vision over time. 80° is recommended for Quest 2 and 3. * ***90° and higher is required if you allow 45° rotations. 90° still works well for Quest 3.***|
 | **FOV Time Window**      | Default: **0.36 s**. Time window used to evaluate cumulative rotations against your FOV. Prevents multiple small rotations from stacking into a large FOV-breaking turns within this time span. Lower values allow more rapid rotations that can edge toward or outside the periphery.|
 | **Wall Removal Mult**    | Default: **1.0**. Controls how aggressively vision-blocking walls are removed during rotation sequences. Higher values remove more chaotic walls that may pass in front of the player and block visibility.|
-| **Wall Note Dist**       | Default: **0.2 s**. This is the minimum distance allowed between notes and walls. Rotation events can cause notes and walls to appear closer together. Increase this to allow more space between them.|
+| **Wall Note Space**       | Default: **0.2 s**. This is the minimum space in time allowed between notes and walls. Rotation events can cause notes and walls to appear closer together. Increase this to allow more space between them.|
 | **Base Map**             | Default: **Standard**. Chooses which map type is used as the base for 360fyer-generated maps. **Score submission is disabled** if this is not set to Standard, and a Beat Saber restart is required for changes to take effect for maps that have already been selected in the menu.|
 
 ***Architect – Arcs***
+
+Generates Arcs if they do not exist already in a map. These are based on notes.
 
 | Option                        | Description                                                                                                                                                                                                                                                                                |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -124,6 +130,8 @@ NOTE: The JSON config file has an `AllowArcHeadDotNotes` and `AllowArcTailDotNot
 
 ***Architect – Chains***
 
+Generates Chains if they do not already exist in a map. This alters scoring, so scoring will be disabled. These are based on notes.
+
 | Option                          | Description                                                                                                                                        |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Pref Count per Minute** | Default: **10**. Attempts to create this many chains per minute. This is an aspiration only and could create many more or less than this number. To create more chains, reduce `Chain Time Bumper` and reduce arcs or turn them off.     |
@@ -133,6 +141,8 @@ NOTE: The JSON config file has an `AllowArcHeadDotNotes` and `AllowArcTailDotNot
 
 ***Auto NJS Fixer***
 
+Automated version of the classic NJS Fixer mod by Kylemc. Set it and forget it! Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET
+
 | Option                       | Description |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Enable for Practice Mode** | When enabled, Auto NJS Fixer attempts to apply its adjustments in Practice Mode. It will be overridden if `PracticePlugin` is installed (activated or not). |
@@ -140,7 +150,63 @@ NOTE: The JSON config file has an `AllowArcHeadDotNotes` and `AllowArcTailDotNot
 | **Note Speed**               | Default: **10 m/s**. Overrides the map’s note speed (NJS). Setting this to **0** reverts to the map’s original NJS. **Score submission is disabled** if you set this below the map’s original speed. I use this to set my favorite speed for all maps. Doesn't work great on high note density maps sometimes. |
 | **Note Spawn Distance**      | Default: **30 m**. Overrides the map’s note spawn distance (JD). Setting this to **0** uses the map’s original spawn distance. It's difficult to see notes coming in 360 with short note spawn distances. |
 
+***Live Control***
+
+Change the music volume, note speed and note spawn distance during gameplay with your controller. Music reverts to default volume after a map is finished. Careful not to harm your ears or your headset!
+		
+| Option                       | Description |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Live Note Speed Control** | Default: **RIGHT Thumbstick UP/DOWN**. Change the Note Speed live during gameplay. THUMBSTICK Controller Right/Left or Up/Down and several BUTTONS options. -1/+1 NJS. Works during pause as well but HUD is only displayed after you start playing again. This is only tested on Quest3. NOTE: This gets wonky for large changes. |
+| **Live Note Spawn Distance Control** | Default: **RIGHT Thumbstick RIGHT/LEFT**. Change the Note Spawn Distance live during gameplay. THUMBSTICK Controller Right/Left or Up/Down and several BUTTONS options. -2m/+2m JD. Works during pause as well but HUD is only displayed after you start playing again. This is only tested on Quest3. NOTE: This gets wonky for large changes. |
+| **Live Volume Control** | Default: **LEFT THUMBSTICK UP/DOWN**. Change volume live during gameplay. THUMBSTICK uses LEFT Controller Up/Down. BUTTONS use Y/B. -2db/+2db volume. This is only tested on Quest3. |
+
+***Auto Difficulty Reducer***
+
+Automated version of the classic NJS Fixer mod by Kylemc. Set it and forget it! Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET.
+
+| Option                       | Description |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Enable For All Maps** | Default: **FALSE**. When TRUE, this will reduce high note per second moments for any map no matter how low the average nps is. When FALSE, will not affect maps when their average nps is lower than your preferred nps. |
+| **Preferred Final NPS** | Default: **4 nps**. Evaluates the notes per second moment to moment during a map and will remove notes to achieve the preferred nps during those periods. Does not affect areas of maps when nps is lower than the preferred nps. Disables score submission if any notes are removed. 0 is OFF. |
+
+***Mixed Reality Portals***
+
+Creates menu and gameplay passthrough portals using VIRTUAL DESKTOP app > Streaming > VR Passthrough Environment. CONFIGURE - Color Green (r:0, g:255, b:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. And turn ON Passthrough ENVIRONMENT Checkbox.
+
+| Option                       | Description |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Portal Shape** | Default: **Round**. Choose whether the portal aperture is ROUND or RECTANGULAR for Standard maps. |
+
+**Round Portals**
+| Option                       | Description |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Diameter** | Default: 4.2m. Diameter of the round portal. Set to 0 to disable portal. |
+| **Height from Floor** | Default: **0.2 m**. Set the distance from the floor to the bottom of the portal. |
+| **Forward Offset** | Default: **3 m**. Moves the portal forward or backwards. |
+
+**Rectangular Portals**
+| Option                       | Description |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Width** | Default: 3.8m. Width of the rectangular portal. Set to 0 to disable the portal. |
+| **Height** | Default: 3.1m. Height of the rectangular portal. Set to 0 to disable the portal. |
+| **Height from Floor** | Default: **0 m**. Set the distance from the floor to the bottom of the portal. |
+| **Forward Offset** | Default: **3 m**. Moves the portal forward or backwards. |
+
+**360/90 Map Portals**
+| Option                       | Description |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Diameter** | Default: 10m. Diameter of the portal. Set to 0 to disable the portal. |
+| **Ceiling Height** | Default: **3.5 m**. Set the height of the ceiling opening. Set to 0 to disable the ceiling. |
+
+**Menu Portals**
+| Option                       | Description |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Menu Portal Style** | Choose the menu environment mixed reality portal style. |
+| **Style3 Forward Offset** | Default: **0.3 m**. Moves the STYLE3 portal forward or backward in the menu environment. |
+
 ***Auto Lighting***
+
+Thanks to Loloppe (ChroMapper-AutoMapper)! Aeroluna's Technicolor Mod is highly recommended for 360!
 
 | Option                       | Description                                                                                                                                                                                      |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -157,13 +223,17 @@ NOTE: The JSON config file has an `AllowArcHeadDotNotes` and `AllowArcTailDotNot
 
 ***Beat Sage Cleaner***
 
+Fixes some typical problems for Beat Sage generated maps.
+
 | Option                           | Description                                                                                                                                                                                                                         |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Set Crouch Wall Max Duration** | Default: **0.75s**. Shortens long crouch walls created by Beat Sage to this maximum duration. |
 | **Stray Notes Remover**          | Default: **6s**. 0 is OFF. Removes stray notes at the start or end of a map if they are this far away in time from the main note stream. Use with `Intro Skip` mod. |
-| **Max Strays Allowed**          | Default: **5 notes**. 0 is OFF. Removes up to this many stray notes at the start or end of a song. NOTE: All bombs will be removed where clean up occurs. Use with `Intro Skip` mod. |
+| **Max Strays Allowed**           | Default: **5 notes**. 0 is OFF. Removes up to this many stray notes at the start or end of a song. NOTE: All bombs will be removed where clean up occurs. Use with `Intro Skip` mod. |
 
 ***Existing Wall Manipulation***
+
+Alters walls that already exist in the original base map
 
 | Option                 | Description                                                                                                                                                 |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -172,7 +242,7 @@ NOTE: The JSON config file has an `AllowArcHeadDotNotes` and `AllowArcTailDotNot
 
 ***Auto Walls – Generated Walls (Standard & Big)***
 
-No crouch are generated by this system. Walls are primarily for visual effect only but lean walls can be added by setting `Standard and Big Walls Min Dis` to 0.
+No crouch are generated by this system. Walls are primarily for visual effect only but lean walls can be added by setting `Standard and Big Walls Min Dis` to 0. If walls are too chaotic and claustrophobia-inducing, reduce their counts and move them further out from the playspace by increasing `Min Distance`.
 
 | Option                             | Description                                                                                                                                                               |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
