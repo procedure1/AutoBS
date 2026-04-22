@@ -1,12 +1,17 @@
 # AutoBS — Beat Saber Automation Mod
-# Featuring Mixed Reality Portals, Arcitect Arc + Chain Maker, Auto Lights, Auto Walls, Auto NJS Fixer with Live Tuning, and 360fyer
+## Featuring Mixed Reality Portals 
+## Arcitect Arc + Chain Maker, Auto Lights, Auto Walls
+## Auto Difficulty Reducer
+## Auto NJS Fixer with Live Tuning
+## And 360fyer!
+
 
 ## For Beat Saber PC Version v1.42
 
 
-A Beat Saber mod to create Mixed Reality Portals (requires `Virtual Desktop` App) and to automatically generate 360 degree maps from standard maps, and automatically add arcs, chains, lights and walls, and set note speed and spawn distance. Most features fully work on non-generated maps as well. So you can add arcs and walls etc to standard maps too.
+A Beat Saber mod to create Mixed Reality Portals (requires `Virtual Desktop` App) and to automatically generate 360 degree maps from standard maps, and automatically add arcs, chains, lights and walls, and set note speed and spawn distance. Most features fully work on non-generated maps as well. So you can add arcs and walls etc to standard maps too. Auto Difficulty Reducer along with Auto Note Speed and Spawn Distance Fixer can make Expert++ maps into maps a toddler can play!
 
-NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. It can also be used to help line up a virtual and real camera for mixed reality capture along with the `CameraPlus` mod. See the end of this readme file below.
+NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. It can also be used to help line up a virtual and real world camera for mixed reality capture along with the `CameraPlus` mod. See the end of this readme file below.
 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time.
@@ -77,6 +82,9 @@ Thanks to Kylemc for allowing me to work from their original code! The original 
 NOTE: If settings cause the note speed to be slower than the mapper intended, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not). Also, for maps with NJS events, a specified note spawn distance will vary when note speed varies. 
 
 NOTE: This gets wonky for large NJS or JD changes.
+
+## Auto Difficulty Reducer
+And yet again, thanks to Kylemc for allowing me to work from their original code! This new version is automated to reduce difficulty on all maps above the note per second threshold that a user sets. It is also designed to attempt to keep a maps rhythmic structure as much as possible. It's not perfect! This reduces difficulty by removing notes. Sorry to the genius mappers out there! But at least this gives more toddlers like me a chance to play your awesome maps...
 
 ## Live Volume Control
 I hate reaching for my headset volume button during gameplay every other song to bump up a quiet song. Now you can do it with your controller during gameplay with ease.
