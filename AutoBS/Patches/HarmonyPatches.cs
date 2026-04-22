@@ -19,7 +19,7 @@ namespace AutoBS.Patches
     //
     //
     /// <summary>
-    /// !May get fixed by Real Mapping Extensions but they may exclude v4 so would still need this. Method to preserve raw obstacle layer values outside the standard range. Starting v1.42, v4 maps clamp obstcle layers from 0 to 4 which breaks v4 mapping extensions.
+    /// !May get fixed by Real Mapping Extensions but they may exclude v4 so would still need this. Method to preserve raw obstacle layer values outside the standard range. Starting v1.42, v4 maps clamp obstacle layers from 0 to 4 which breaks v4 mapping extensions.
     /// </summary>
     /// <remarks>This patch allows out-of-range obstacle layer values to be retained. For standard layer values (0 to 4), the original method behavior is preserved.</remarks>
     [HarmonyPatch(typeof(BeatmapTypeConverters), nameof(BeatmapTypeConverters.ConvertObstacleLineLayer))]
@@ -27,15 +27,15 @@ namespace AutoBS.Patches
     {
         static bool Prefix(int layer, ref NoteLineLayer __result)
         {
-            if (!Config.Instance.EnablePlugin) return true;
+            //if (!Config.Instance.EnablePlugin) return true;
+            if (!Config.Instance.PatchV4ObstacleExtensionLayers) return true;
 
-            // Preserve raw obstacle layer for Mapping Extensions / out-of-range values.
-            // Keep normal mappings for the common values (optional).
             if (layer >= 0 && layer <= 4)
-                return true; // let original handle 0..4
-            //Plugin.LogDebug($"[ConvertObstacleLineLayer] patched out-of-range wall - y: {layer}");
+                return true;
+
+            Plugin.Log.Debug($"[ConvertObstacleLineLayer] preserving raw obstacle layer {layer}");
             __result = (NoteLineLayer)layer;
-            return false; // skip original (prevents defaulting to Base)
+            return false;
         }
     }
     //

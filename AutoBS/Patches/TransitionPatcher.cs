@@ -174,9 +174,8 @@ namespace AutoBS.Patches
 
                 //Plugin.LogDebug($"[TransitionPatcher] BasedOn Map NotesPerSecond: {NotesPerSecond} version: {SelectedBeatmapVersion}");
             }
-            else 
+            else if (IsCustomLevel) // just added this 4/2/26
             {
-                //v1.42
                 string beatmapJson = ""; string lightshowJson = ""; string audioDataJson = ""; Version version = new Version();
                 if (IsCustomLevel)
                     (beatmapJson, lightshowJson, audioDataJson, version) = GetJsonForCustomLevel(beatmapLevel, SelectedDifficulty, SelectedPlayKey); //no longer works for built-in levels
@@ -255,7 +254,6 @@ namespace AutoBS.Patches
             CheckConflictingMods();
 
             ForceActivatePatches.MappingExtensionsForceActivate();
-
         }
 
 

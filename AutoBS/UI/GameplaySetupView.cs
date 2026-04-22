@@ -207,6 +207,8 @@ namespace AutoBS.UI
                 SafeNotify(nameof(EnablerDiffReducer));
                 SafeNotify(nameof(FontColorDiffReducer));
                 SafeNotify(nameof(PreferredFinalNps));
+
+                EnvironmentMarkersAndGreenScreen.Instance?.RefreshVisualState();
             }
         }
 
@@ -1174,24 +1176,30 @@ namespace AutoBS.UI
             _autoNjsModes.Add(_autoNjsFixerModeLabels[Config.AutoNjsFixerModeType.SetNoteSpeed]);
 
             _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Off]);
-            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickL]);
-            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickR]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickLUpDown]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickLLeftRight]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickRUpDown]);
+            _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickRLeftRight]);
             _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsAB]);
             _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXY]);
             _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsYB]);
             _liveVolumeControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXA]);
 
             _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Off]);
-            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickL]);
-            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickR]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickLUpDown]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickLLeftRight]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickRUpDown]);
+            _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickRLeftRight]);
             _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsAB]);
             _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXY]);
             _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsYB]);
             _liveNoteSpeedControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXA]);
 
             _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.Off]);
-            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickL]);
-            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickR]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickLUpDown]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickLLeftRight]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickRUpDown]);
+            _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ThumbstickRLeftRight]);
             _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsAB]);
             _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsXY]);
             _liveNoteSpawnDistanceControlModes.Add(_liveControlModeLabels[Config.LiveControlModeType.ButtonsYB]);
@@ -1199,6 +1207,10 @@ namespace AutoBS.UI
 
             _portalShapes.Add(_portalShapeLabels[true]);   // Round
             _portalShapes.Add(_portalShapeLabels[false]);  // Rectangular
+
+            MixedRealityMenuStyleChoices.Add(_mixedRealityMenuStyleLabels[Config.MixedRealityMenuModeType.Style1]);
+            MixedRealityMenuStyleChoices.Add(_mixedRealityMenuStyleLabels[Config.MixedRealityMenuModeType.Style2]);
+            MixedRealityMenuStyleChoices.Add(_mixedRealityMenuStyleLabels[Config.MixedRealityMenuModeType.Style3]);
 
             //_roundHeightModes.Add(_greenScreenHeightModeLabels[Config.mRHeightMode.CenterAtCustomHeight]);
             //_roundHeightModes.Add(_greenScreenHeightModeLabels[Config.mRHeightMode.BottomAtFloorLevel]);
@@ -1319,6 +1331,24 @@ namespace AutoBS.UI
                 SafeNotify(nameof(LiveVolumeControl));
             }
         }
+        [UIValue("EnableLiveNjsJdControl")]
+        public bool EnableLiveNjsJdControl
+        {
+            get => Config.Instance.EnableLiveNjsJdControl;
+            set
+            {
+                if (Config.Instance.EnableLiveNjsJdControl == value)
+                    return;
+
+                Config.Instance.EnableLiveNjsJdControl = value;
+
+                SafeNotify(nameof(EnableLiveNjsJdControl));
+                SafeNotify(nameof(EnablerLiveNjsJdControl));
+                SafeNotify(nameof(FontColorLiveNjsJdControl));
+                SafeNotify(nameof(LiveNoteSpeedControl));
+                SafeNotify(nameof(LiveNoteSpawnDistanceControl));
+            }
+        }
 
 
         [UIValue("LiveVolumeControl")]
@@ -1361,17 +1391,44 @@ namespace AutoBS.UI
             SafeNotify(nameof(FontColorLiveVolumeControl));
             SafeNotify(nameof(LiveVolumeControl));
         }
+        private void UpdateLiveNjsJdControlUI()
+        {
+            SafeNotify(nameof(EnableLiveNjsJdControl));
+            SafeNotify(nameof(EnablerLiveNjsJdControl));
+            SafeNotify(nameof(FontColorLiveNjsJdControl));
+            SafeNotify(nameof(LiveNoteSpeedControl));
+            SafeNotify(nameof(LiveNoteSpawnDistanceControl));
+        }
+
+        [UIValue("EnablerLiveNjsJdControl")]
+        public bool EnablerLiveNjsJdControl
+        {
+            get => Config.Instance.EnablePlugin && Config.Instance.EnableLiveNjsJdControl;
+            set
+            {
+                SafeNotify(nameof(FontColorLiveNjsJdControl));
+            }
+        }
+
+        [UIValue("FontColorLiveNjsJdControl")]
+        public string FontColorLiveNjsJdControl
+        {
+            get => !Config.Instance.EnablePlugin
+                ? OffColor
+                : (Config.Instance.EnableLiveNjsJdControl ? OnColor : OffColor);
+            set { SafeNotify(); }
+        }
 
         [UIValue("LiveNoteSpeedControl")]
         public string LiveNoteSpeedControl
         {
-            get => _liveControlModeLabels[Config.Instance.LiveNoteSpeedControl];
+            get => _liveControlModeLabels[Config.Instance.LiveNjsControl];
             set
             {
                 if (_liveControlModeLabels.ContainsValue(value))
                 {
                     var mode = _liveControlModeLabels.First(kv => kv.Value == value).Key;
-                    Config.Instance.LiveNoteSpeedControl = mode;
+                    Config.Instance.LiveNjsControl = mode;
                     SafeNotify();
                 }
             }
@@ -1380,35 +1437,30 @@ namespace AutoBS.UI
         [UIValue("LiveNoteSpawnDistanceControl")]
         public string LiveNoteSpawnDistanceControl
         {
-            get => _liveControlModeLabels[Config.Instance.LiveNoteSpawnDistanceControl];
+            get => _liveControlModeLabels[Config.Instance.LiveJdControl];
             set
             {
                 if (_liveControlModeLabels.ContainsValue(value))
                 {
                     var mode = _liveControlModeLabels.First(kv => kv.Value == value).Key;
-                    Config.Instance.LiveNoteSpawnDistanceControl = mode;
+                    Config.Instance.LiveJdControl = mode;
                     SafeNotify();
                 }
             }
         }
 
-        public List<object> LiveControlModeChoices => new List<object>
-        {
-            "Off",
-            "Buttons",
-            "Thumbstick"
-        };
-
         private readonly Dictionary<Config.LiveControlModeType, string> _liveControlModeLabels =
             new Dictionary<Config.LiveControlModeType, string>
         {
-            { Config.LiveControlModeType.Off,         "Off" },
-            { Config.LiveControlModeType.ThumbstickL, "Thumbstick Left" },
-            { Config.LiveControlModeType.ThumbstickR, "Thumbstick Right" },
-            { Config.LiveControlModeType.ButtonsAB,   "Buttons A / B" },
-            { Config.LiveControlModeType.ButtonsXY,   "Buttons X / Y" },
-            { Config.LiveControlModeType.ButtonsYB,   "Buttons Y / B" },
-            { Config.LiveControlModeType.ButtonsXA,   "Buttons X / A" }
+            { Config.LiveControlModeType.Off,                 "Off" },
+            { Config.LiveControlModeType.ThumbstickLUpDown,   "Thumbstick Left Up/Down" },
+            { Config.LiveControlModeType.ThumbstickLLeftRight,"Thumbstick Left Left/Right" },
+            { Config.LiveControlModeType.ThumbstickRUpDown,   "Thumbstick Right Up/Down" },
+            { Config.LiveControlModeType.ThumbstickRLeftRight,"Thumbstick Right Left/Right" },
+            { Config.LiveControlModeType.ButtonsAB,           "Buttons A / B" },
+            { Config.LiveControlModeType.ButtonsXY,           "Buttons X / Y" },
+            { Config.LiveControlModeType.ButtonsYB,           "Buttons Y / B" },
+            { Config.LiveControlModeType.ButtonsXA,           "Buttons X / A" }
         };
 
         [UIValue("LiveVolumeControlChoices")]
@@ -1782,6 +1834,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableMixedRealityMenus = value;
                 UpdateMixedRealityPortalsUI();
+                EnvironmentMarkersAndGreenScreen.Instance?.RefreshVisualState();
             }
         }
 
@@ -1793,6 +1846,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableMixedRealityStandard = value;
                 UpdateMixedRealityPortalsUI();
+                EnvironmentMarkersAndGreenScreen.Instance?.RefreshVisualState();
             }
         }
 
@@ -1804,6 +1858,7 @@ namespace AutoBS.UI
             {
                 Config.Instance.EnableMixedReality360 = value;
                 UpdateMixedRealityPortalsUI();
+                EnvironmentMarkersAndGreenScreen.Instance?.RefreshVisualState();
             }
         }
 
@@ -1813,6 +1868,8 @@ namespace AutoBS.UI
             get => Config.Instance.EnablePlugin;
             set
             {
+                Config.Instance.EnablePlugin = value;
+
                 SafeNotify(nameof(FontColorMixedRealityMenus));
                 SafeNotify(nameof(FontColorMixedRealityStandard));
                 SafeNotify(nameof(FontColorMixedReality360));
@@ -1820,6 +1877,8 @@ namespace AutoBS.UI
                 SafeNotify(nameof(EnablerMixedRealityMenusControls));
                 SafeNotify(nameof(EnablerMixedRealityGameplayControls));
                 SafeNotify(nameof(EnablerMixedReality360Controls));
+
+                EnvironmentMarkersAndGreenScreen.Instance?.RefreshVisualState();
             }
         }
 
@@ -1894,10 +1953,10 @@ namespace AutoBS.UI
         }
 
         private readonly Dictionary<bool, string> _portalShapeLabels = new Dictionary<bool, string>
-{
-    { true, "Round" },
-    { false, "Rectangular" }
-};
+        {
+            { true, "Round" },
+            { false, "Rectangular" }
+        };
 
         [UIValue("available-portal-shapes")]
         private List<object> _portalShapes = new List<object>();
@@ -2001,6 +2060,43 @@ namespace AutoBS.UI
             set => Config.Instance.MixedReality360CeilingHeight = value;
         }
 
+        private readonly Dictionary<Config.MixedRealityMenuModeType, string> _mixedRealityMenuStyleLabels =
+            new Dictionary<Config.MixedRealityMenuModeType, string>
+        {
+            { Config.MixedRealityMenuModeType.Style1, "Style 1" },
+            { Config.MixedRealityMenuModeType.Style2, "Style 2" },
+            { Config.MixedRealityMenuModeType.Style3, "Style 3" }
+        };
+
+        [UIValue("MixedRealityMenuStyleChoices")]
+        public List<object> MixedRealityMenuStyleChoices { get; } = new List<object>();
+
+        [UIValue("MixedRealityMenuStyle")]
+        public string MixedRealityMenuStyle
+        {
+            get
+            {
+                if (!_mixedRealityMenuStyleLabels.TryGetValue(Config.Instance.MixedRealityMenuStyle, out var label))
+                {
+                    Config.Instance.MixedRealityMenuStyle = Config.MixedRealityMenuModeType.Style1;
+                    return _mixedRealityMenuStyleLabels[Config.MixedRealityMenuModeType.Style1];
+                }
+
+                return label;
+            }
+            set
+            {
+                if (_mixedRealityMenuStyleLabels.ContainsValue(value))
+                {
+                    var mode = _mixedRealityMenuStyleLabels.First(kv => kv.Value == value).Key;
+                    Config.Instance.MixedRealityMenuStyle = mode;
+                    SafeNotify(nameof(MixedRealityMenuStyle));
+
+                    EnvironmentMarkersAndGreenScreen.Instance?.RefreshMixedRealityState();
+                }
+            }
+        }
+
         [UIValue("MixedRealityMenuZOffset")]
         public float MixedRealityMenuZOffset
         {
@@ -2065,6 +2161,8 @@ namespace AutoBS.UI
             SafeNotify(nameof(MixedRealityRectYOffset));
             SafeNotify(nameof(ShowRoundPortalSettings));
             SafeNotify(nameof(ShowRectPortalSettings));
+            SafeNotify(nameof(MixedRealityMenuStyle));
+            SafeNotify(nameof(MixedRealityMenuStyleChoices));
             //SafeNotify(nameof(ShowCustomHeightSetting));
         }
 
@@ -2098,6 +2196,13 @@ namespace AutoBS.UI
         public string FontColorDiffReducer
         {
             get => (!Config.Instance.EnablePlugin || !Config.Instance.EnableDiffReducer) ? OffColor : OnColor;
+        }
+
+        [UIValue("EnableForAllMaps")]
+        public bool EnableForAllMaps
+        {
+            get => Config.Instance.EnableForAllMaps;
+            set => Config.Instance.EnableForAllMaps = value;
         }
 
         [UIValue("PreferredFinalNps")]

@@ -80,6 +80,12 @@ namespace AutoBS
             return true;
         }
 
+        public static bool IsMixedRealitySystemEnabled()
+        {
+            return Config.Instance.EnablePlugin &&
+                   (Utils.IsEnabledGameplayMixedReality() || Config.Instance.EnableMixedRealityMenus);
+        }
+
         public static bool IsEnabledGameplayMixedReality() // not menus MR
         {
             string characteristic = TransitionPatcher.SelectedSerializedName;

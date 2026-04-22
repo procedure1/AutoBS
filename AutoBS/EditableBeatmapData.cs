@@ -1627,12 +1627,17 @@ namespace AutoBS
 
             // Obstacles
             if (!eData.ObstaclesChanged)
-            { 
+            {
                 allItems.AddRange(GetOriginalObstacles(eData));
                 Plugin.LogDebug($"[ConvertEditableCBD] Obstacles NOT ALTERED. Using original (if they exist).");
             }
             else
-                allItems.AddRange(eData.Obstacles.Select(o => (object)o.ToCustomObstacleData(eData.Version)));
+            {
+                //if (Config.Instance.RemoveLeftWalls)
+                //    allItems.AddRange(eData.Obstacles.Where(o => o.line > 1).Select(o => (object)o.ToCustomObstacleData(eData.Version)));
+                //else
+                    allItems.AddRange(eData.Obstacles.Select(o => (object)o.ToCustomObstacleData(eData.Version)));
+            }
 
             // Arcs
             if (!eData.ArcsChanged)

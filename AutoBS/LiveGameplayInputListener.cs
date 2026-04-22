@@ -31,8 +31,8 @@ namespace AutoBS
         private bool _rightStickRightLatched;
         private bool _rightStickLeftLatched;
 
-        private const float StickTriggerThreshold = 0.7f;
-        private const float StickReleaseThreshold = 0.3f;
+        private const float StickTriggerThreshold = 0.8f;
+        private const float StickReleaseThreshold = 0.5f;
         private const float StickDeadzone = 0.2f;
 
         private void OnEnable()
@@ -48,14 +48,14 @@ namespace AutoBS
             if (!Config.Instance.EnablePlugin)
                 return;
 
-            bool volumeEnabled =
-                Config.Instance.LiveVolumeControl != LiveControlModeType.Off;
+            bool volumeEnabled = Config.Instance.EnableLiveVolumeControl &&
+                         Config.Instance.LiveVolumeControl != Config.LiveControlModeType.Off;
 
-            bool njsEnabled =
-                Config.Instance.LiveNoteSpeedControl != LiveControlModeType.Off;
+            bool njsEnabled = Config.Instance.EnableLiveNjsJdControl &&
+                      Config.Instance.LiveNjsControl != Config.LiveControlModeType.Off;
 
-            bool jdEnabled =
-                Config.Instance.LiveNoteSpawnDistanceControl != LiveControlModeType.Off;
+            bool jdEnabled = Config.Instance.EnableLiveNjsJdControl &&
+                                 Config.Instance.LiveJdControl != Config.LiveControlModeType.Off;
 
             if (!volumeEnabled && !njsEnabled && !jdEnabled)
                 return;
@@ -74,13 +74,13 @@ namespace AutoBS
         private static bool CanUseLiveNjsControls()
         {
             return Config.Instance.EnablePlugin &&
-                   Config.Instance.LiveNoteSpeedControl != LiveControlModeType.Off;
+                   Config.Instance.LiveNjsControl != LiveControlModeType.Off;
         }
 
         private static bool CanUseLiveJdControls()
         {
             return Config.Instance.EnablePlugin &&
-                   Config.Instance.LiveNoteSpawnDistanceControl != LiveControlModeType.Off;
+                   Config.Instance.LiveJdControl != LiveControlModeType.Off;
         }
 
         private void HandleButtons()
@@ -91,24 +91,27 @@ namespace AutoBS
             bool rightB = GetSecondaryButton(_rightHand); // B on right
 
             if (leftX && !_prevLeftX)
-                ApplyButtonPress("X", isDecrease: true, modeToMatch: LiveControlModeType.ButtonsXA);
+            {
+                ApplyButtonMode(LiveControlModeType.ButtonsXY, -1, "X");
+                ApplyButtonMode(LiveControlModeType.ButtonsXA, -1, "X");
+            }
 
             if (leftY && !_prevLeftY)
             {
-                ApplyButtonPress("Y", isDecrease: true, modeToMatch: LiveControlModeType.ButtonsYB);
-                ApplyButtonPress("Y", isIncrease: true, modeToMatch: LiveControlModeType.ButtonsXY);
+                ApplyButtonMode(LiveControlModeType.ButtonsXY, +1, "Y");
+                ApplyButtonMode(LiveControlModeType.ButtonsYB, -1, "Y");
             }
 
             if (rightA && !_prevRightA)
             {
-                ApplyButtonPress("A", isDecrease: true, modeToMatch: LiveControlModeType.ButtonsAB);
-                ApplyButtonPress("A", isIncrease: true, modeToMatch: LiveControlModeType.ButtonsXA);
+                ApplyButtonMode(LiveControlModeType.ButtonsAB, -1, "A");
+                ApplyButtonMode(LiveControlModeType.ButtonsXA, +1, "A");
             }
 
             if (rightB && !_prevRightB)
             {
-                ApplyButtonPress("B", isIncrease: true, modeToMatch: LiveControlModeType.ButtonsAB);
-                ApplyButtonPress("B", isIncrease: true, modeToMatch: LiveControlModeType.ButtonsYB);
+                ApplyButtonMode(LiveControlModeType.ButtonsAB, +1, "B");
+                ApplyButtonMode(LiveControlModeType.ButtonsYB, +1, "B");
             }
 
             _prevLeftX = leftX;
@@ -116,30 +119,24 @@ namespace AutoBS
             _prevRightA = rightA;
             _prevRightB = rightB;
         }
-
-        private void ApplyButtonPress(string buttonName, bool isDecrease = false, bool isIncrease = false, LiveControlModeType modeToMatch = LiveControlModeType.Off)
+        private void ApplyButtonMode(LiveControlModeType buttonMode, int dir, string label)
         {
-            if (isDecrease == isIncrease)
-                return;
-
-            int dir = isIncrease ? 1 : -1;
-
-            if (CanUseLiveVolumeControls() && Config.Instance.LiveVolumeControl == modeToMatch)
+            if (CanUseLiveVolumeControls() && Config.Instance.LiveVolumeControl == buttonMode)
             {
                 LiveAudioRuntimeState.PendingVolumeSteps += dir;
-                Plugin.Log.Info($"[LiveInput] {buttonName} => queued volume {(dir > 0 ? "+2 dB" : "-2 dB")}");
+                Plugin.Log.Info($"[LiveInput] {label} => queued volume {(dir > 0 ? "+2 dB" : "-2 dB")}");
             }
 
-            if (CanUseLiveNjsControls() && Config.Instance.LiveNoteSpeedControl == modeToMatch)
+            if (CanUseLiveNjsControls() && Config.Instance.LiveNjsControl == buttonMode)
             {
                 AutoNjsRuntimeState.PendingNjsSteps += dir;
-                Plugin.Log.Info($"[LiveInput] {buttonName} => queued NJS {(dir > 0 ? "+1" : "-1")}");
+                Plugin.Log.Info($"[LiveInput] {label} => queued NJS {(dir > 0 ? "+1" : "-1")}");
             }
 
-            if (CanUseLiveJdControls() && Config.Instance.LiveNoteSpawnDistanceControl == modeToMatch)
+            if (CanUseLiveJdControls() && Config.Instance.LiveJdControl == buttonMode)
             {
                 AutoNjsRuntimeState.PendingJdSteps += dir;
-                Plugin.Log.Info($"[LiveInput] {buttonName} => queued JD {(dir > 0 ? "+2" : "-2")}");
+                Plugin.Log.Info($"[LiveInput] {label} => queued JD {(dir > 0 ? "+2" : "-2")}");
             }
         }
 
@@ -148,119 +145,121 @@ namespace AutoBS
             Vector2 leftAxis = GetThumbstick(_leftHand);
             Vector2 rightAxis = GetThumbstick(_rightHand);
 
-            HandleThumbstickForController(
-                isLeftController: true,
+            HandleThumbstickWithDominance(
                 axis: leftAxis,
-                volumeMode: Config.Instance.LiveVolumeControl,
-                njsMode: Config.Instance.LiveNoteSpeedControl,
-                jdMode: Config.Instance.LiveNoteSpawnDistanceControl);
+                verticalMode: LiveControlModeType.ThumbstickLUpDown,
+                horizontalMode: LiveControlModeType.ThumbstickLLeftRight,
+                posVerticalLatched: ref _leftStickForwardLatched,
+                negVerticalLatched: ref _leftStickBackwardLatched,
+                posHorizontalLatched: ref _leftStickRightLatched,
+                negHorizontalLatched: ref _leftStickLeftLatched,
+                stickName: "Left");
 
-            HandleThumbstickForController(
-                isLeftController: false,
+            HandleThumbstickWithDominance(
                 axis: rightAxis,
-                volumeMode: Config.Instance.LiveVolumeControl,
-                njsMode: Config.Instance.LiveNoteSpeedControl,
-                jdMode: Config.Instance.LiveNoteSpawnDistanceControl);
+                verticalMode: LiveControlModeType.ThumbstickRUpDown,
+                horizontalMode: LiveControlModeType.ThumbstickRLeftRight,
+                posVerticalLatched: ref _rightStickForwardLatched,
+                negVerticalLatched: ref _rightStickBackwardLatched,
+                posHorizontalLatched: ref _rightStickRightLatched,
+                negHorizontalLatched: ref _rightStickLeftLatched,
+                stickName: "Right");
         }
-
-        private void HandleThumbstickForController(
-            bool isLeftController,
-            Vector2 axis,
-            LiveControlModeType volumeMode,
-            LiveControlModeType njsMode,
-            LiveControlModeType jdMode)
+        private void HandleThumbstickWithDominance(
+    Vector2 axis,
+    LiveControlModeType verticalMode,
+    LiveControlModeType horizontalMode,
+    ref bool posVerticalLatched,
+    ref bool negVerticalLatched,
+    ref bool posHorizontalLatched,
+    ref bool negHorizontalLatched,
+    string stickName)
         {
-            LiveControlModeType stickMode = isLeftController
-                ? LiveControlModeType.ThumbstickL
-                : LiveControlModeType.ThumbstickR;
+            float absX = Mathf.Abs(axis.x);
+            float absY = Mathf.Abs(axis.y);
 
-            float y = axis.y;
-            float x = axis.x;
+            // Release latches when stick comes back toward center
+            if (axis.y <= StickReleaseThreshold)
+                posVerticalLatched = false;
+            if (axis.y >= -StickReleaseThreshold)
+                negVerticalLatched = false;
+            if (axis.x <= StickReleaseThreshold)
+                posHorizontalLatched = false;
+            if (axis.x >= -StickReleaseThreshold)
+                negHorizontalLatched = false;
 
-            ref bool forwardLatched = ref (isLeftController ? ref _leftStickForwardLatched : ref _rightStickForwardLatched);
-            ref bool backwardLatched = ref (isLeftController ? ref _leftStickBackwardLatched : ref _rightStickBackwardLatched);
-            ref bool rightLatched = ref (isLeftController ? ref _leftStickRightLatched : ref _rightStickRightLatched);
-            ref bool leftLatched = ref (isLeftController ? ref _leftStickLeftLatched : ref _rightStickLeftLatched);
+            // If neither axis is strongly engaged, do nothing
+            bool yActive = absY >= StickTriggerThreshold;
+            bool xActive = absX >= StickTriggerThreshold;
 
-            string controllerName = isLeftController ? "Left" : "Right";
+            if (!xActive && !yActive)
+                return;
 
-            // Y axis: Volume + / NJS +
-            if (!forwardLatched && y >= StickTriggerThreshold)
+            // Dominance logic: only allow the stronger axis to trigger
+            if (absY > absX)
             {
-                forwardLatched = true;
-
-                if (CanUseLiveVolumeControls() && volumeMode == stickMode)
-                {
-                    LiveAudioRuntimeState.PendingVolumeSteps += 1;
-                    Plugin.Log.Info($"[LiveInput] {controllerName} stick forward ({y:F2}) => queued volume +2 dB");
-                }
-
-                if (CanUseLiveNjsControls() && njsMode == stickMode)
-                {
-                    AutoNjsRuntimeState.PendingNjsSteps += 1;
-                    Plugin.Log.Info($"[LiveInput] {controllerName} stick forward ({y:F2}) => queued NJS +1");
-                }
+                HandleDominantAxis(
+                    axisValue: axis.y,
+                    mode: verticalMode,
+                    positiveLatched: ref posVerticalLatched,
+                    negativeLatched: ref negVerticalLatched,
+                    positiveLabel: $"{stickName} stick up",
+                    negativeLabel: $"{stickName} stick down");
             }
-            else if (forwardLatched && y <= StickReleaseThreshold)
+            else if (absX > absY)
             {
-                forwardLatched = false;
+                HandleDominantAxis(
+                    axisValue: axis.x,
+                    mode: horizontalMode,
+                    positiveLatched: ref posHorizontalLatched,
+                    negativeLatched: ref negHorizontalLatched,
+                    positiveLabel: $"{stickName} stick right",
+                    negativeLabel: $"{stickName} stick left");
             }
-
-            // Y axis: Volume - / NJS -
-            if (!backwardLatched && y <= -StickTriggerThreshold)
+            // If absX == absY exactly, do nothing to avoid ambiguous diagonal triggers
+        }
+        private void HandleDominantAxis(
+            float axisValue,
+            LiveControlModeType mode,
+            ref bool positiveLatched,
+            ref bool negativeLatched,
+            string positiveLabel,
+            string negativeLabel)
+        {
+            if (!positiveLatched && axisValue >= StickTriggerThreshold)
             {
-                backwardLatched = true;
-
-                if (CanUseLiveVolumeControls() && volumeMode == stickMode)
-                {
-                    LiveAudioRuntimeState.PendingVolumeSteps -= 1;
-                    Plugin.Log.Info($"[LiveInput] {controllerName} stick backward ({y:F2}) => queued volume -2 dB");
-                }
-
-                if (CanUseLiveNjsControls() && njsMode == stickMode)
-                {
-                    AutoNjsRuntimeState.PendingNjsSteps -= 1;
-                    Plugin.Log.Info($"[LiveInput] {controllerName} stick backward ({y:F2}) => queued NJS -1");
-                }
-            }
-            else if (backwardLatched && y >= -StickReleaseThreshold)
-            {
-                backwardLatched = false;
-            }
-
-            // X axis: JD +
-            if (!rightLatched && x >= StickTriggerThreshold)
-            {
-                rightLatched = true;
-
-                if (CanUseLiveJdControls() && jdMode == stickMode)
-                {
-                    AutoNjsRuntimeState.PendingJdSteps += 1;
-                    Plugin.Log.Info($"[LiveInput] {controllerName} stick right ({x:F2}) => queued JD +2");
-                }
-            }
-            else if (rightLatched && x <= StickReleaseThreshold)
-            {
-                rightLatched = false;
+                positiveLatched = true;
+                ApplyStickMode(mode, +1, positiveLabel);
             }
 
-            // X axis: JD -
-            if (!leftLatched && x <= -StickTriggerThreshold)
+            if (!negativeLatched && axisValue <= -StickTriggerThreshold)
             {
-                leftLatched = true;
-
-                if (CanUseLiveJdControls() && jdMode == stickMode)
-                {
-                    AutoNjsRuntimeState.PendingJdSteps -= 1;
-                    Plugin.Log.Info($"[LiveInput] {controllerName} stick left ({x:F2}) => queued JD -2");
-                }
-            }
-            else if (leftLatched && x >= -StickReleaseThreshold)
-            {
-                leftLatched = false;
+                negativeLatched = true;
+                ApplyStickMode(mode, -1, negativeLabel);
             }
         }
 
+        private void ApplyStickMode(LiveControlModeType stickMode, int dir, string label)
+        {
+            if (CanUseLiveVolumeControls() && Config.Instance.LiveVolumeControl == stickMode)
+            {
+                LiveAudioRuntimeState.PendingVolumeSteps += dir;
+                Plugin.Log.Info($"[LiveInput] {label} => queued volume {(dir > 0 ? "+2 dB" : "-2 dB")}");
+            }
+
+            if (CanUseLiveNjsControls() && Config.Instance.LiveNjsControl == stickMode)
+            {
+                AutoNjsRuntimeState.PendingNjsSteps += dir;
+                Plugin.Log.Info($"[LiveInput] {label} => queued NJS {(dir > 0 ? "+1" : "-1")}");
+            }
+
+            if (CanUseLiveJdControls() && Config.Instance.LiveJdControl == stickMode)
+            {
+                AutoNjsRuntimeState.PendingJdSteps += dir;
+                Plugin.Log.Info($"[LiveInput] {label} => queued JD {(dir > 0 ? "+2" : "-2")}");
+            }
+        }
+        
         private void RefreshDevices()
         {
             _leftHand = InputDevices.GetDeviceAtXRNode(XRNode.LeftHand);

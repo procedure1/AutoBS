@@ -26,12 +26,12 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <Optimize>false</Optimize>
-    <OutputPath>D:\BSManager\BSInstances\1.42.0\Plugins\</OutputPath>
+    <OutputPath>D:\BSManager\BSInstances\1.42.3\Plugins\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <Optimize>true</Optimize>
-    <OutputPath>D:\BSManager\BSInstances\1.42.0\Plugins\</OutputPath>
+    <OutputPath>D:\BSManager\BSInstances\1.42.3\Plugins\</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>5</WarningLevel>
   </PropertyGroup>
@@ -43,7 +43,8 @@
     <DisableZipRelease>True</DisableZipRelease>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Modules\DifficultyReducer.cs" />
+    <Compile Include="Modules\AutoDifficultyReducer.cs" />
+    <Compile Include="Modules\CameraCalibrationRig.cs" />
     <Compile Include="Modules\NoteSection.cs" />
     <Compile Include="Modules\NoteSwing.cs" />
     <Compile Include="UNUSED_AddDirectionalMarkersToMenu.cs" />

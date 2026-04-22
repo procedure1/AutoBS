@@ -44,7 +44,6 @@ namespace AutoBS.Patches
         public static bool IsBeatSageMap = false;
         public static Dictionary<BeatmapDifficulty, CustomData> BeatmapCustomData = new Dictionary<BeatmapDifficulty, CustomData>();
         public static CustomBeatmapData cjBeatmapData;
-        public static PlayerSpecificSettings PlayerSpecificSettings;
 
         public static readonly Dictionary<string, BeatmapKey> GeneratedToStandardKey = new Dictionary<string, BeatmapKey>(StringComparer.Ordinal);
         //public static string KeyStr(in BeatmapKey k) => k.SerializedName(); // stable string key
@@ -68,8 +67,6 @@ namespace AutoBS.Patches
             float bpm = level.beatsPerMinute;
 
             basedOn = "";
-
-            PlayerSpecificSettings = playerData.playerSpecificSettings;
 
             // Reset these since SetContent is called for new song selections and will cause error to try and add contents to same containers used by previous song
 
@@ -144,6 +141,9 @@ namespace AutoBS.Patches
                 }).ToList();
 
             float songLength = level.songDuration; // Or calculate from notes if needed
+
+            //Plugin.LogDebug($"[CreateGen360DifficultySet] Song Length: {songLength} seconds");
+
             float bpm = level.beatsPerMinute;
 
             // === SET UP GAMEMODE CLONES (360/90) ===
@@ -352,7 +352,7 @@ namespace AutoBS.Patches
                                     false,
                                     env, //null works
                                     BeatmapLevelDataVersion.Original,
-                                    SetContent.PlayerSpecificSettings,
+                                    null,
                                     new NoOpLightEventConverter()
                                 );
                             }
@@ -373,7 +373,7 @@ namespace AutoBS.Patches
                                             false,
                                             env,
                                             BeatmapLevelDataVersion.Original,
-                                            SetContent.PlayerSpecificSettings,
+                                            null,
                                             new NoOpLightEventConverter()
                                         );
                                 }
@@ -398,7 +398,7 @@ namespace AutoBS.Patches
                                         false,
                                         env, //null works
                                         BeatmapLevelDataVersion.Original,
-                                        SetContent.PlayerSpecificSettings,
+                                        null,
                                         new NoOpLightEventConverter()
                                     );
                             }
@@ -419,7 +419,7 @@ namespace AutoBS.Patches
                                         false,
                                         env, //null works
                                         BeatmapLevelDataVersion.Original,
-                                        SetContent.PlayerSpecificSettings,
+                                        null,
                                         new NoOpLightEventConverter()
                                     );
                                 }
@@ -454,7 +454,7 @@ namespace AutoBS.Patches
                                     originalEnvironmentInfo: env,
                                     beatmapLevelDataVersion: BeatmapLevelDataVersion.Original,
                                     gameplayModifiers: null,
-                                    playerSpecificSettings: SetContent.PlayerSpecificSettings,
+                                    playerSpecificSettings: null,
                                     lightEventConverter: new NoOpLightEventConverter()
                                 );
                             }
@@ -477,7 +477,7 @@ namespace AutoBS.Patches
                                         originalEnvironmentInfo: env,
                                         beatmapLevelDataVersion: BeatmapLevelDataVersion.Original,
                                         gameplayModifiers: null,
-                                        playerSpecificSettings: SetContent.PlayerSpecificSettings,
+                                        playerSpecificSettings: null,
                                         lightEventConverter: new NoOpLightEventConverter()
                                     );
                                 }
@@ -747,7 +747,7 @@ namespace AutoBS.Patches
                                     beatmapCustomData
                                 );
 
-                                Plugin.LogDebug($"[CreateGen360DifficultySet] -- Created BeatmapBasicData for {customGameMode.serializedName}-{difficulty}: notesPerSec={notesPerSecond}, notes={noteCount}, obstacles={obstacleCount}, bombs={bombCount}");
+                                Plugin.LogDebug($"[CreateGen360DifficultySet] -- Created BeatmapBasicData for {customGameMode.serializedName}-{difficulty}: nps={notesPerSecond}, notes={noteCount}, obstacles={obstacleCount}, bombs={bombCount}");
                                 Plugin.LogDebug($"[CreateGen360DifficultySet] -- {difficulty} END -------------------");
                             }
                         }

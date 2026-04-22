@@ -34,6 +34,9 @@ namespace AutoBS.Patches
             public bool HasAppliedValues;
             public float LastAppliedNjs;
             public float LastAppliedJd;
+
+            // Capture actual provider baseline once, after Init has finished
+            public bool BaselineFromProviderCaptured;
         }
 
         internal static readonly ConditionalWeakTable<VariableMovementDataProvider, State> Table =
@@ -77,8 +80,8 @@ namespace AutoBS.Patches
             if (!Config.Instance.EnablePlugin)
                 return;
 
-            bool liveNjsEnabled = Config.Instance.LiveNoteSpeedControl != Config.LiveControlModeType.Off;
-            bool liveJdEnabled = Config.Instance.LiveNoteSpawnDistanceControl != Config.LiveControlModeType.Off;
+            bool liveNjsEnabled = Config.Instance.LiveNjsControl != Config.LiveControlModeType.Off;
+            bool liveJdEnabled = Config.Instance.LiveJdControl != Config.LiveControlModeType.Off;
             bool wantsLiveControl = liveNjsEnabled || liveJdEnabled;
 
             bool autoNjsFixerEnabled = AutoNjsRuntimeState.AutoNjsFixerEnabled;
@@ -107,6 +110,7 @@ namespace AutoBS.Patches
             state.HasAppliedValues = false;
             state.LastAppliedNjs = 0f;
             state.LastAppliedJd = 0f;
+            state.BaselineFromProviderCaptured = false;
 
             // If AutoNjsFixer is not enabled, baseline is enough for live controls.
             if (!autoNjsFixerEnabled)
@@ -258,8 +262,8 @@ namespace AutoBS.Patches
             }
 
             bool autoNjsFixerEnabled = AutoNjsRuntimeState.AutoNjsFixerEnabled;
-            bool liveNJSEnabled = Config.Instance.LiveNoteSpeedControl != Config.LiveControlModeType.Off;
-            bool liveJDEnabled = Config.Instance.LiveNoteSpawnDistanceControl != Config.LiveControlModeType.Off;
+            bool liveNJSEnabled = Config.Instance.LiveNjsControl != Config.LiveControlModeType.Off;
+            bool liveJDEnabled = Config.Instance.LiveJdControl != Config.LiveControlModeType.Off;
 
             if (!autoNjsFixerEnabled && !liveNJSEnabled && !liveJDEnabled)
             {
@@ -285,6 +289,26 @@ namespace AutoBS.Patches
 
             if (!state.Active)
                 return;
+
+            if (!state.BaselineFromProviderCaptured)
+            {
+                float providerNjs = _noteJumpMovementSpeed(__instance);
+                float providerJd = _jumpDistance(__instance);
+                float providerJumpDuration = _jumpDuration(__instance);
+
+                state.FinalBaseNjs = Mathf.Max(1f, providerNjs);
+                state.FinalBaseJd = Mathf.Max(1f, providerJd);
+                state.BaseJumpDuration = providerJumpDuration > 0.0001f
+                    ? providerJumpDuration
+                    : (state.FinalBaseJd / Mathf.Max(1f, state.FinalBaseNjs));
+
+                state.BaselineFromProviderCaptured = true;
+
+                Plugin.Log.Info(
+                    $"[VariableMovementDataProvider][AutoNJS][ManualUpdate] " +
+                    $"Captured live baseline from provider. " +
+                    $"BaseNJS:{state.FinalBaseNjs:F2} BaseJD:{state.FinalBaseJd:F2} BaseJumpDuration:{state.BaseJumpDuration:F3}");
+            }
 
             try
             {
@@ -326,8 +350,7 @@ namespace AutoBS.Patches
                 }
 
                 float effectiveNjs = state.FinalBaseNjs + AutoNjsRuntimeState.LiveNjsOffset;
-                if (effectiveNjs < 0.01f)
-                    effectiveNjs = 0.01f;
+                effectiveNjs = Mathf.Clamp(effectiveNjs, 1f, 40f);
 
                 float effectiveJd = state.FinalBaseJd + AutoNjsRuntimeState.LiveJdOffset;
                 effectiveJd = Mathf.Clamp(effectiveJd, 1f, 100f);

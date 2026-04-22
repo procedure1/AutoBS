@@ -36,11 +36,10 @@ namespace AutoBS
         //If notes are balanced, it follows:
         //If total rotation is too far to one side, prefer rotating in the opposite direction. If total rotations exceed BottleneckRotations, prefer the opposite direction
         //Otherwise, follow the previous rotation direction.
+        //public static bool needsRotationLimitAdjustment = false;
 
         internal static void Generate(EditableCBD eData)
         {
-            //Config cfg = Config.Instance;
-
             /// <summary>
             /// The preferred bar duration in seconds. The generator will loop the song in bars. 
             /// This is called 'preferred' because this value will change depending on a song's bpm (will be aligned around this value).
@@ -73,6 +72,7 @@ namespace AutoBS
             /// Minimum amount of seconds between each spin effect.
             /// </summary>
             float SpinCooldown = 10f;
+
 
             List<ENoteData> notesAndBombs = new List<ENoteData>(eData.ColorNotes);
 
@@ -135,7 +135,6 @@ namespace AutoBS
                 .Select(r => (t: MathF.Round(r.time, 4), rot: r.rotation))
                 .ToList();
 
-            bool needsRotationLimitAdjustment = false;
 
             bool isEnabledWalls = Utils.IsEnabledWalls();
 
@@ -858,28 +857,6 @@ namespace AutoBS
             {
                 allRotations = ERotationEventData.RecalculateAccumulatedRotations(allRotations);
 
-                #if DEBUG
-                (float accumRot, float time) high = (0, 0);
-                (float accumRot, float time) low = (0, 0);
-                int endRot = 0;
-
-                foreach (var rot in allRotations)
-                {
-                    endRot = rot.accumRotation;
-                    if (rot.accumRotation < low.accumRot)
-                        low = (rot.accumRotation, rot.time);
-                    else if (rot.accumRotation > high.accumRot)
-                        high = (rot.accumRotation, rot.time);
-
-                    int ro = Math.Abs(rot.rotation);
-                    //if (ro == 0) d0++; if (ro == 15) d15++; if (ro == 30) d30++; if (ro == 45) d45++; if (ro == 60) d60++; if (ro == 75) d75++; if (ro == 90) d90++; if (ro == 120) d120++;
-                    //if (rot.time > 200)
-                    //    Plugin.Log.Info($"2 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
-                }
-                Plugin.Log.Info($"[RotationGenerator] Rotation Count: {allRotations.Count}, Largest '-' Rot: {low.accumRot} (time: {low.time:F}), Largest '+' Rot: {high.accumRot} (time: {high.time:F}), Final Rotation: {endRot} --- Wireless360: {Config.Instance.Wireless360}, LimitRot: {Config.Instance.LimitRotations360}, AddExtraRot: {Config.Instance.AddExtraRotation}, RotSpeedMult: {RotationSpeedMultiplier}, MinRotSize: {Config.Instance.MinRotationSize}, MaxRotSize: {Config.Instance.MaxRotationSize}, FOV: {Config.Instance.FOV}, TimeWin: {Config.Instance.TimeWindow}");
-                //Plugin.LogDebug($"[RotationGenerator] Rotation Count: {allRotations.Count} -- 0deg: {d0} 15deg: {d15}, 30deg: {d30}, 45deg: {d45}, 60deg: {d60}, 75deg: {d75}, 90deg: {d90}, 120deg: {d120}");
-                #endif
-
                 #region Remove Bombs when map turns
 
                 // Remove bombs (just problematic ones) iterate backwards
@@ -961,7 +938,6 @@ namespace AutoBS
                 if (originalRotations.Count != allRotations.Count)
                     eData.RotationEventsChanged = true;
 
-
                 #endregion
 
 
@@ -987,8 +963,8 @@ namespace AutoBS
 
                     allRotations = ERotationEventData.RecalculateAccumulatedRotations(allRotations);
 
-                    if (!Config.Instance.Wireless360 && optimize.RotationsWereAdjusted)
-                        needsRotationLimitAdjustment = true;
+                    //if (!Config.Instance.Wireless360 && optimize.RotationsWereAdjusted)
+                    //    needsRotationLimitAdjustment = true;
 
                     if (prevRots != allRotations.Count)
                         eData.RotationEventsChanged = true;
@@ -1019,8 +995,8 @@ namespace AutoBS
 
                     allRotations = Arcitect.ArcFix(allRotations, eData); // this is for Gen 360 only -- Clearing the list is not needed according to AI. nonGen maps use arcFix() from HarmonyPatches.cs
 
-                    if (!Config.Instance.Wireless360)
-                        needsRotationLimitAdjustment = true;
+                    //if (!Config.Instance.Wireless360)
+                    //    needsRotationLimitAdjustment = true;
 
                     if (prevRots != allRotations.Count)
                         eData.RotationEventsChanged = true;
@@ -1028,18 +1004,18 @@ namespace AutoBS
                 else
                     Plugin.LogDebug($"[RotationGenerator] ArcFix not enabled or not applicable. Starting Game Mode: {TransitionPatcher.SelectedSerializedName} - Characteristic: {TransitionPatcher.SelectedSerializedName}");
 
-
+                /*
                 if (!Config.Instance.Wireless360 && Config.Instance.MinRotationSize > 15)
                     needsRotationLimitAdjustment = true;
-
+                
+                // mopved to end of pipeline since wall gen can change rotations for crouch walls
                 if (needsRotationLimitAdjustment)
                 {
-                    Plugin.LogDebug($"[RotationGenerator] Rotation limits were adjusted.");
                     allRotations = AdjustRotationsToLimit(allRotations);
 
                     eData.RotationEventsChanged = true;
                 }
-
+                */
 
                 allRotations = ERotationEventData.RecalculateAccumulatedRotations(allRotations);
 
@@ -1047,9 +1023,9 @@ namespace AutoBS
                 /*
                 foreach (var rot in allRotations)
                 {
-                    if (rot.time < 20)
+                    if (rot.time < 180)
                     {
-                        Plugin.Log.Info($"3 Rotation - Time: {rot.time:F} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}"); // accum is accurate here
+                        Plugin.Log.Info($"4 Rotation - Time: {rot.time:F} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}"); // accum is accurate here
                     }
                 }
                 */
@@ -1077,50 +1053,52 @@ namespace AutoBS
             }
 
             /// <summary> ArcFix(), MinRotationSize larger than 15, and FOVFix() cause rotations to move beyond the limits of LimitRotations360</summary> 
-            List<ERotationEventData> AdjustRotationsToLimit(List<ERotationEventData> rotations)
+            
+        }
+
+        public static List<ERotationEventData> AdjustRotationsToLimit(List<ERotationEventData> rotations)
+        {
+            int rotationLimit = (int)Config.Instance.LimitRotations360;
+            int halfLimit = rotationLimit / 2;
+
+            int currentRotation = 0;
+            var adjustedRotations = new List<ERotationEventData>();
+
+            int flippedRotationCount = 0;
+
+            foreach (var rotation in rotations)
             {
-                int rotationLimit = (int)Config.Instance.LimitRotations360;
-                int halfLimit = rotationLimit / 2;
+                int proposedRotation = currentRotation + rotation.rotation;
 
-                int currentRotation = 0;
-                var adjustedRotations = new List<ERotationEventData>();
-
-                int flippedRotationCount = 0;
-
-                foreach (var rotation in rotations)
+                if (Math.Abs(proposedRotation) <= halfLimit)
                 {
-                    int proposedRotation = currentRotation + rotation.rotation;
+                    // Within bounds, use the original rotation
+                    currentRotation = proposedRotation;
+                    var newRot = ERotationEventData.Create(rotation.time, rotation.rotation);
+                    adjustedRotations.Add(newRot);
+                }
+                else
+                {
+                    // Try flipping the rotation
+                    int flippedRotation = -rotation.rotation;
+                    proposedRotation = currentRotation + flippedRotation;
 
                     if (Math.Abs(proposedRotation) <= halfLimit)
                     {
-                        // Within bounds, use the original rotation
                         currentRotation = proposedRotation;
-                        var newRot = ERotationEventData.Create(rotation.time, rotation.rotation);
-                        adjustedRotations.Add(newRot);
+                        var flipRot = ERotationEventData.Create(rotation.time, flippedRotation);
+                        adjustedRotations.Add(flipRot);
+                        flippedRotationCount++;
                     }
-                    else
-                    {
-                        // Try flipping the rotation
-                        int flippedRotation = -rotation.rotation;
-                        proposedRotation = currentRotation + flippedRotation;
+                    // If flipping still goes out of bounds, skip the rotation (optional)
 
-                        if (Math.Abs(proposedRotation) <= halfLimit)
-                        {
-                            currentRotation = proposedRotation;
-                            var flipRot = ERotationEventData.Create(rotation.time, flippedRotation);
-                            adjustedRotations.Add(flipRot);
-                            flippedRotationCount++;
-                        }
-                        // If flipping still goes out of bounds, skip the rotation (optional)
-
-                    }
                 }
-                adjustedRotations.Sort((a, b) => a.time.CompareTo(b.time));
-
-                Plugin.LogDebug($"[AdjustRotationsToLimit] Flipped Rotation Count: {flippedRotationCount}");
-
-                return adjustedRotations;
             }
+            adjustedRotations.Sort((a, b) => a.time.CompareTo(b.time));
+
+            Plugin.LogDebug($"[AdjustRotationsToLimit] Rotation limits were adjusted. Flipped Rotation Count: {flippedRotationCount}");
+
+            return adjustedRotations;
         }
 
         /// <summary>

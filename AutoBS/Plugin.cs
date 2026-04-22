@@ -1,4 +1,5 @@
-﻿using AutoBS.Patches;
+﻿using AutoBS.Modules;
+using AutoBS.Patches;
 using AutoBS.UI;//BW UI
 using BeatSaberMarkupLanguage.GameplaySetup;
 using HarmonyLib;
@@ -68,7 +69,7 @@ namespace AutoBS
                 UnityEngine.Object.DontDestroyOnLoad(go);
                 go.AddComponent<EnvironmentMarkersAndGreenScreen>();
 
-                Plugin.Log.Info("[EnvGreen] Created persistent EnvironmentVisualsManager");
+                Plugin.LogDebug("[MixedReality] Created persistent EnvironmentVisualsManager");
             }
         }
 

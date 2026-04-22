@@ -52,11 +52,12 @@
             <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableAutoNjsFixerStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable note speed and spawn distance manipulation for Standard, One Saber maps, etc. Short spawn. Disabled by the real NJSFixer and JDFixer if they are installed (enabled or not). Thanks to Kylemc!"></toggle-setting>
           </vertical>
 
-          <!-- RIGHT Activation: Live Volume -->
+          <!-- RIGHT Activation: Live Control -->
           <vertical preferred-width='40'>
-            <text text="Live Volume Control" align="Center" fontSize="5" font-color="#57FFFB" underlined='true' />
-            <text text="Change the music volume during &#xA;gameplay with your controller." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
-            <toggle-setting text='Enable' apply-on-change='true' value='EnableLiveVolumeControl' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable lighting manipulation and generation for 360fyer-generated maps. Thanks to Loloppe (ChroMapper-AutoMapper)! I tweaked this so any problems are my fault."></toggle-setting>
+            <text text="Live Control" align="Center" fontSize="5" font-color="#57FFFB" underlined='true' />
+            <text text="Change the music volume, note speed and note spawn &#xA;distance during gameplay with your controller." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+            <toggle-setting text='Enable Volume Control' apply-on-change='true' value='EnableLiveVolumeControl' bind-value='true' font-color='~FontColorLiveVolumeControl' interactable="~EnablerLiveVolumeControl" hover-hint="Enable live volume control during gameplay using your controller thumbstick or buttons."></toggle-setting>
+            <toggle-setting text='Enable NJS/JD Control' apply-on-change='true' value='EnableLiveNjsJdControl' bind-value='true' font-color='~FontColorLiveNjsJdControl' interactable="~EnablerLiveNjsJdControl" hover-hint="Enable live note speed and/or note spawn distance control during gameplay using your controller thumbstick or buttons."></toggle-setting>
           </vertical>
         </horizontal>
 
@@ -101,7 +102,7 @@
                 bind-value='true'
                 font-color='~FontColorMixedRealityStandard'
                 interactable='~EnablerMixedRealitySection'
-                hover-hint='Enable mixed reality portals for Standard and similar gameplay maps.'>
+                hover-hint='Enable mixed reality portals for Standard, One Saber maps, etc.'>
             </toggle-setting>
 
             <toggle-setting
@@ -169,7 +170,7 @@
           <text text="360fyer" align="Center" fontSize="5" font-color="#64ff16" underlined='true' />
           <text text="Thanks to the genius, CodeStix, who built the original 360fyer plugin!" align="Center" fontSize="2.3" font-color="#BBBBBB" />
           <toggle-setting text='Wireless 360' apply-on-change='true' value='Wireless360' bind-value='true' font-color='~FontColorRotationSettings' interactable="~EnablerRotationSettings" hover-hint="Default: True. For wireless headsets. Generated maps will have no rotation restrictions and fewer tendencies to reverse direction."></toggle-setting>
-          <slider-setting text="Limit Rotations 360" apply-on-change="true" value="LimitRotations360" bind-value="true" show-buttons="true" increment="30" min="0" max="720" formatter="AngleFormatter" font-color='~FontColorLimitRotations360' interactable="~EnablerLimitRotations360" hover-hint="Default: 360°. Disabled if Wireless 360 is enabled. For wired headsets use 360° or less to avoid cable rip! Decrease the angle for spaces that are obstructed with furniture, for example. Disables score submission if set less than 90." rich-text='true'></slider-setting>
+          <slider-setting text="Limit Rotations 360" apply-on-change="true" value="LimitRotations360" bind-value="true" show-buttons="true" increment="30" min="0" max="720" formatter="AngleFormatter" font-color='~FontColorLimitRotations360' interactable="~EnablerLimitRotations360" hover-hint="Default: 330°. Disabled if Wireless 360 is enabled. For wired headsets use 330° or less to avoid cable rip! Decrease the angle for spaces that are obstructed with furniture, for example. Disables score submission if set less than 90." rich-text='true'></slider-setting>
 
           <text text="Rotation" align="Center" fontSize="4" font-color="#BBBBBB" />
           <slider-setting text="Rot Speed Multiplier" apply-on-change="true" value="RotationSpeedMultiplier" bind-value="true" font-color='~FontColorRotationSettings' interactable="~EnablerRotationSettings" show-buttons="true" increment=".1" min=".1" max="2" formatter="MultFormatter" hover-hint="Default: 1. Increase or decrease how often rotations occur. Disables score submission if set below 0.3. High settings will be limited by FOV settings. Crank this up along with Min and Max Rotation Size."></slider-setting>
@@ -180,7 +181,7 @@
           <slider-setting text="FOV" apply-on-change="true" value="FOV" bind-value="true" font-color='~FontColorRotationSettings' show-buttons="true" increment="10" min="20" max="220" formatter="AngleFormatter" hover-hint="Default: 80° (recommended for Quest 2 and 3). This will force rotations over time to remain within your peripheral vision. Bump this to 90° if you want to also bump Max Rotation Size to 45° (which is challenging but still works on Quest 2 and 3. You may want to reduce Rotation Speed Multiplier as well in this case)." rich-text='true'></slider-setting>
           <slider-setting text="FOV Time Window" apply-on-change="true" value="TimeWindow" bind-value="true" font-color='~FontColorRotationSettings' show-buttons="true" increment=".05" min="0" max="2" formatter="TimeFormatter" hover-hint="Default: .35 sec. Leave this at default unless you want to expand or contract FOV a little. Time window to check for cumulative rotations within your FOV. This will prevent a series of rotations that accumulate to an angle larger than your FOV within this time period. Lower this to allow more rotations near or outside the periphery. 0 turns FOV constraint OFF." rich-text='true'></slider-setting>
           <slider-setting text="Wall Removal Mult" apply-on-change="true" value="VisionBlockingWallRemovalMult" bind-value="true" font-color='~FontColorRotationSettings' show-buttons="true" increment=".05" min=".05" max="4" formatter="MultFormatter" hover-hint="Default: 1. Rotations cause walls to cross in front of the player and block player vision. Increase this to remove more chaotic walls crossing in front of you." rich-text='true'></slider-setting>
-          <slider-setting text="Wall Note Dist" apply-on-change="true" value="MinDistanceBetweenNotesAndWalls" bind-value="true" font-color='~FontColorRotationSettings'  show-buttons="true" increment=".05" min=".05" max="1" formatter="TimeFormatter" hover-hint="Default: 0.2s. This is the minimum distance allowed between notes and walls. Rotation events can cause notes and walls to appear closer together. Increase this to allow more space between them." rich-text='true'></slider-setting>
+          <slider-setting text="Wall Note Space" apply-on-change="true" value="MinDistanceBetweenNotesAndWalls" bind-value="true" font-color='~FontColorRotationSettings'  show-buttons="true" increment=".05" min=".05" max="1" formatter="TimeFormatter" hover-hint="Default: 0.2s. This is the minimum space in time allowed between notes and walls. Rotation events can cause notes and walls to appear closer together. Increase this to allow more space between them." rich-text='true'></slider-setting>
 
         <dropdown-list-setting text='Base Map' value='BasedOn' choices='available-bases' bind-value='true' font-color='~FontColorRotationSettings' interactable="~EnablerEnablePlugin" apply-on-change='true' hover-hint="Default: Standard. Base map for 360fyer-generated maps. Disables score submission if not set to Standard. A Beat Saber restart is required for changes to take effect for maps that have already been selected in the menu."/>
 
@@ -245,9 +246,14 @@
           
           <slider-setting text="Note Speed" apply-on-change="true" value="DesiredNJS" bind-value="true" fontSize="3"  show-buttons="true" increment="1" min="0" max="60" formatter="SpeedFormatter" font-color='~FontColorDesiredNJS' interactable="~EnablerDesiredNJS" hover-hint="Default: 10. The map's note speed is overridden with this value. 0 will revert to the map's original speed. Scoring will be disabled for speeds set lower than the original." rich-text='true'></slider-setting>
           <slider-setting text="Note Spawn Distance" apply-on-change="true" value="DesiredJD" bind-value="true" fontSize="3"  show-buttons="true" increment="1" min="0" max="32" formatter="DistanceFormatter" font-color='~FontColorAutoNjsFixer' interactable="~EnablerAutoNjsFixer" hover-hint="Default: 30. Overrides the map's note spawn distance with this value. 0 will revert to use the map's original distance. It's difficult to see notes coming in 360 with short note spawn distances." rich-text='true'></slider-setting>
-          
-          <text text="The controls below work even with Auto NJS Fixer disabled." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
-
+        </vertical>
+        
+        
+          <!-- Live Controller Input Section -->
+        <text text="Live Control" align="Center" fontSize="5" font-color="#57FFFB" underlined='true' />
+        <text text="Change the music volume, note speed and note spawn distance during gameplay with your controller." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+        <text text="Music reverts to default volume after a map is finished. Careful not to harm your ears or your headset!" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+        <vertical pad-left='2'>
           <dropdown-list-setting
             text="Live Note Speed Control"
             value="LiveNoteSpeedControl"
@@ -256,7 +262,7 @@
             apply-on-change="true"
             font-color="~FontColorEnablePlugin"
             interactable="~EnablerEnablePlugin"
-            hover-hint="Change the Note Speed live during gameplay. Default: OFF. THUMBSTICK Controller Up/Down and several BUTTONS options. -1/+1 NJS. Works during pause as well but HUD is only displayed after you start playing again. This is only tested on Quest3."
+            hover-hint="Default: RIGHT Thumbstick UP/DOWN. Change the Note Speed live during gameplay. THUMBSTICK Controller Right/Left or Up/Down and several BUTTONS options. -1/+1 NJS. Works during pause as well but HUD is only displayed after you start playing again. This is only tested on Quest3. NOTE: This gets wonky for large changes."
             />
           
           <dropdown-list-setting
@@ -267,15 +273,9 @@
               apply-on-change="true"
               font-color="~FontColorEnablePlugin"
               interactable="~EnablerEnablePlugin"
-              hover-hint="Change the Note Spawn Distance live during gameplay. Default: OFF. THUMBSTICK Controller Left/Right and several BUTTONS use Y/B. -2m/+2m JD. Works during pause as well but HUD is only displayed after you start playing again. This is only tested on Quest3."
+              hover-hint="Default: RIGHT Thumbstick RIGHT/LEFT. Change the Note Spawn Distance live during gameplay. THUMBSTICK Controller Right/Left or Up/Down and several BUTTONS options. -2m/+2m JD. Works during pause as well but HUD is only displayed after you start playing again. This is only tested on Quest3. NOTE: This gets wonky for large changes."
               />
-          </vertical>
 
-        <!-- Live Controller Input Section -->
-        <text text="Live Volume Control" align="Center" fontSize="5" font-color="#57FFFB" underlined='true' />
-        <text text="Change the music volume during gameplay. This reverts to default volume after a map is finished." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
-        <text text="Careful not to harm your ears or your headset!" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
-        <vertical pad-left='2'>
           <dropdown-list-setting
            text="Live Volume Control"
            value="LiveVolumeControl"
@@ -284,7 +284,7 @@
            apply-on-change="true"
            font-color='~FontColorLiveVolumeControl' 
            interactable="~EnablerLiveVolumeControl"
-           hover-hint="Default: THUMBSTICK. THUMBSTICK uses LEFT Controller Up/Down. BUTTONS use Y/B. -2db/+2db volume. This is only tested on Quest3."
+           hover-hint="Default: LEFT THUMBSTICK UP/DOWN. Change volume live during gameplay. THUMBSTICK uses LEFT Controller Up/Down. BUTTONS use Y/B. -2db/+2db volume. This is only tested on Quest3."
            />
 
         </vertical>
@@ -295,7 +295,17 @@
         <text text="Auto Difficulty Reducer" align="Center" fontSize="5" font-color="#FF00F8" underlined='true' />
         <text text="Automated version of the Diffreducer mod by Kylemc. Thanks again, Kyle! Set it and forget it! &#xA; The consequence is this alters the original map! Sorry to all the great mappers. &#xA; But now novices can play most any map!" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
         <vertical pad-left='2'>
-
+          
+          <toggle-setting
+              text='Enable For All Maps'
+              apply-on-change='true'
+              value='EnableForAllMaps'
+              bind-value='true'
+              font-color='~FontColorDiffReducer'
+              interactable='~EnablerDiffReducer'
+              hover-hint='Default: FALSE. When TRUE, this will reduce high note per second moments for any map no matter how low the average nps is. When FALSE, will not affect maps when their average nps is lower than your preferred nps.'>
+          </toggle-setting>
+          
           <slider-setting
               text="Preferred Final NPS"
               apply-on-change="true"
@@ -309,7 +319,7 @@
               font-size="3.2"
               font-color='~FontColorDiffReducer'
               interactable='~EnablerDiffReducer'
-              hover-hint="Default: 4 nps. Any map you play over this average notes per second will have notes removed to achieve the preferred nps. Disables score submission if any notes are removed. 0 is OFF. Will not affect maps when their average nps is lower than your preferred nps."
+              hover-hint="Default: 4 nps. Evaluates the notes per second moment to moment during a map and will remove notes to achieve the preferred nps during those periods. Does not affect areas of maps when nps is lower than the preferred nps. Disables score submission if any notes are removed. 0 is OFF."
               rich-text='true'>
           </slider-setting>
         </vertical>
@@ -324,9 +334,9 @@
 
         <!-- Mixed Reality Portals Section -->
         <text text="Mixed Reality Portals" align="Center" fontSize="5" font-color="#33ff33" underlined="true" />
-        <text text="Creates menu and gameplay passthrough portals using Virtual Desktop > Streaming > VR Passthrough Environment." align="Center" fontSize="2.3" font-color="#BBBBBB" />
-        <text text="Default Color Green (r:0, g:255, b:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%." align="Center" fontSize="2.3" font-color="#BBBBBB" />
-        
+        <text text="Creates menu and gameplay passthrough portals using VIRTUAL DESKTOP app > Streaming > VR Passthrough Environment." align="Center" fontSize="2.3" font-color="#BBBBBB" />
+        <text text="Configure - Color Green (r:0, g:255, b:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%." align="Center" fontSize="2.3" font-color="#BBBBBB" />
+        <text text="And turn ON Passthrough ENVIRONMENT Checkbox." align="Center" fontSize="2.3" font-color="#BBBBBB" />
           <dropdown-list-setting
               text="Portal Shape"
               value="MixedRealityPortalShape"
@@ -336,7 +346,7 @@
               fontSize="3"
               font-color="~FontColorMixedRealityPortals"
               interactable="~EnablerMixedRealityGameplayControls"
-              hover-hint="Choose whether the portal aperture is round or rectangular."
+              hover-hint="Default: Round. Choose whether the portal aperture is ROUND or RECTANGULAR for Standard maps."
           />
 
           <text text="Round Portals" align="Center"  fontSize="4" font-color="#BBBBBB" />
@@ -355,7 +365,7 @@
                 font-size="3.2"
                 font-color="~FontColorMixedRealityPortals"
                 interactable="~ShowRoundPortalSettings"
-                hover-hint="Diameter of the round portal. Set to 0 to disable."
+                hover-hint="Default: 4.2m. Diameter of the round portal. Set to 0 to disable."
                 rich-text="true"
           ></slider-setting>
             <!--
@@ -383,7 +393,7 @@
                 font-size="3.2"
                 font-color="~FontColorMixedRealityPortals"
                 interactable="~ShowRoundPortalSettings"
-                hover-hint="Used when the selected height mode is Center At Custom Height. Can set to your approximate height to center the portal in front of you."
+                hover-hint="Default: 0.2m. Set the distance from the floor to the bottom of the portal."
                 rich-text="true"
           ></slider-setting>
 
@@ -400,7 +410,7 @@
                 font-size="3.2"
                 font-color="~FontColorMixedRealityPortals"
                 interactable="~ShowRoundPortalSettings"
-                hover-hint="Moves the portal forward or backward during gameplay."
+                hover-hint="Default: 3m. Moves the portal forward or backwards."
                 rich-text="true"
           ></slider-setting>
             </vertical>
@@ -421,7 +431,7 @@
                 font-size="3.2"
                 font-color="~FontColorMixedRealityPortals"
                 interactable="~ShowRectPortalSettings"
-                hover-hint="Width of the rectangular portal. Set to 0 to disable."
+                hover-hint="Default: 3.8m. Width of the rectangular portal. Set to 0 to disable the portal."
                 rich-text="true"
           ></slider-setting>
 
@@ -438,7 +448,7 @@
                 font-size="3.2"
                 font-color="~FontColorMixedRealityPortals"
                 interactable="~ShowRectPortalSettings"
-                hover-hint="Height of the rectangular portal. Set to 0 to disable."
+                hover-hint="Default: 3.1m. Height of the rectangular portal. Set to 0 to disable the portal."
                 rich-text="true"
           ></slider-setting>
           <!--
@@ -466,7 +476,7 @@
                 font-size="3.2"
                 font-color="~FontColorMixedRealityPortals"
                 interactable="~ShowRectPortalSettings"
-                hover-hint="Used when the selected height mode is Center At Custom Height. Can set to your approximate height to center the portal in front of you."
+                hover-hint="Default: 0m. Set the distance from the floor to the bottom of the portal."
                 rich-text="true"
           ></slider-setting>
 
@@ -483,7 +493,7 @@
                 font-size="3.2"
                 font-color="~FontColorMixedRealityPortals"
                 interactable="~ShowRectPortalSettings"
-                hover-hint="Moves the portal forward or backward during gameplay."
+                hover-hint="Default: 3m. Moves the portal forward or backwards."
                 rich-text="true"
           ></slider-setting>
          
@@ -505,7 +515,7 @@
                   font-size="3.2"
                   font-color="~FontColorMixedReality360"
                   interactable="~EnablerMixedReality360Controls"
-                  hover-hint="Default: 12. Diameter of the surrounding green shell used for 360 capture. Set to 0 to disable."
+                  hover-hint="Default: 10m. Diameter of the portal. Set to 0 to disable the portal."
                   rich-text="true"
             ></slider-setting>
               <slider-setting
@@ -521,14 +531,25 @@
                   font-size="3.2"
                   font-color="~FontColorMixedReality360"
                   interactable="~EnablerMixedReality360Controls"
-                  hover-hint="Default: 2.5m. Set to 0 to disable."
+                  hover-hint="Default: 3.5m. Set the height of the ceiling opening. Set to 0 to disable the ceiling."
                   rich-text="true"
             ></slider-setting>
             </vertical>
               <vertical pad-left='2'>
                 <text text="Menu Portals" align="Center"  fontSize="4" font-color="#BBBBBB" />
+                <dropdown-list-setting
+                   text="Menu Portal Style"
+                   value="MixedRealityMenuStyle"
+                   choices="MixedRealityMenuStyleChoices"
+                   bind-value="true"
+                   apply-on-change="true"
+                   font-size="3"
+                   font-color="~FontColorMixedRealityMenus"
+                   interactable="~EnablerMixedRealityMenusControls"
+                   hover-hint="Choose the menu environment mixed reality portal style."
+              /> 
               <slider-setting
-                text="MENU Portal Forward Offset"
+                text="Style3 Forward Offset"
                 apply-on-change="true"
                 value="MixedRealityMenuZOffset"
                 bind-value="true"
@@ -540,7 +561,7 @@
                 font-size="3.2"
                 font-color="~FontColorMixedRealityMenus"
                 interactable="~EnablerMixedRealityMenusControls"
-                hover-hint="Moves the portal forward or backward in the menu."
+                hover-hint="Default: 0.3m. Moves the portal forward or backward in the menu environment."
                 rich-text="true"
               ></slider-setting>
               </vertical>

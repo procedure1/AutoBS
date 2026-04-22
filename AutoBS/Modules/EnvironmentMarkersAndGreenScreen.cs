@@ -20,6 +20,8 @@ namespace AutoBS
     /// </summary>
     public class EnvironmentMarkersAndGreenScreen : MonoBehaviour
     {
+        private GameObject _cameraAlignmentRoot;
+
         // === Add 360 Directional Markers to Menu Environment
         private bool _menuMarkersAdded;
         private readonly List<GameObject> _markers = new List<GameObject>();
@@ -52,19 +54,50 @@ namespace AutoBS
         const float gameplayFloorHeight = 0.005f; // this higher than the player contruction area. but spooky environment has bricks that are maybe 2 or 3 inches higher than the floor.
 
         //private Transform _menuCameraTransform;
+        public static EnvironmentMarkersAndGreenScreen Instance { get; private set; }
+
+        private float GetCameraAlignmentGridUnitSizeMeters()
+        {
+            return Mathf.Max(0.01f, Config.Instance.CameraAlignmentGridUnitSizeFeet * 0.3048f);
+        }
+
+        private Vector3 GetCameraAlignmentGrid1OriginMeters()
+        {
+            return Config.Instance.CameraAlignmentGrid1OriginFeet.ToMetersFromFeet();
+        }
+
+        private Vector3 GetCameraAlignmentGrid2OriginMeters()
+        {
+            return Config.Instance.CameraAlignmentGrid2OriginFeet.ToMetersFromFeet();
+        }
+
+        private void ClearCameraAlignmentRig()
+        {
+            if (_cameraAlignmentRoot != null)
+            {
+                Destroy(_cameraAlignmentRoot);
+                _cameraAlignmentRoot = null;
+                Plugin.LogDebug("[CameraAlignmentRig] Cleared calibration rig");
+            }
+        }
+
+
+        private void Awake()
+        {
+            Instance = this;
+        }
 
         private void Start()
         {
-            Plugin.Log.Info($"[MixedReality] Start go={gameObject.name} scene={gameObject.scene.name} activeInHierarchy={gameObject.activeInHierarchy}");
+            Plugin.LogDebug($"[MixedReality] Start go={gameObject.name} scene={gameObject.scene.name} activeInHierarchy={gameObject.activeInHierarchy}");
 
             _isMainMenuLoaded = false;
             _isGameplayLoaded = false;
 
             if (!Utils.IsEnabledGameplayMixedReality() && !Config.Instance.EnableMixedRealityMenus)
             {
-                Plugin.Log.Info("[MixedReality] Mixed reality disabled at Start, clearing any existing shells");
+                Plugin.LogDebug("[MixedReality] Mixed reality disabled at Start, clearing any existing shells");
                 ClearAllGreenScreens();
-                return;
             }
 
             for (int i = 0; i < SceneManager.sceneCount; i++)
@@ -82,19 +115,21 @@ namespace AutoBS
 
             if (_isMainMenuLoaded && Config.Instance.EnableMixedRealityMenus)
             {
-                Plugin.Log.Info("[MixedReality] MainMenu already loaded, ensuring menu greenscreen immediately");
+                Plugin.LogDebug("[MixedReality] MainMenu already loaded, ensuring menu greenscreen immediately");
                 EnsureMenuGreenScreen();
             }
             else if (_isGameplayLoaded && Utils.IsEnabledGameplayMixedReality())
             {
-                Plugin.Log.Info("[MixedReality] GameCore already loaded, starting scan immediately");
+                Plugin.LogDebug("[MixedReality] GameCore already loaded, starting scan immediately");
                 _gameRoutine = StartCoroutine(InitialWaitAndCheck());
             }
+
+            RefreshCameraAlignmentForCurrentScene();
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            Plugin.Log.Info($"[MixedReality] Scene loaded: {scene.name}");
+            Plugin.LogDebug($"[MixedReality] Scene loaded: {scene.name}");
 
             if (scene.name.Contains("GlassDesertEnvironment"))
                 AddDirectionalMarkersIfNeeded();
@@ -108,22 +143,46 @@ namespace AutoBS
             if (scene.name.Contains("GameCore") || scene.name.Contains("StandardGameplay"))
                 _isGameplayLoaded = true;
 
-            if (!Utils.IsEnabledGameplayMixedReality() && !Config.Instance.EnableMixedRealityMenus)
+            if (!Utils.IsMixedRealitySystemEnabled())
             {
-                Plugin.Log.Info("[MixedReality] Scene loaded while green screen disabled, clearing shells");
                 ClearAllGreenScreens();
-                return;
             }
+            else
+            {
+                if (scene.name.Contains("GameCore"))
+                {
+                    ResetGameplayState();
+                    ResetMenuState();
+
+                    if (Utils.IsEnabledGameplayMixedReality())
+                    {
+                        Plugin.LogDebug("[MixedReality] GameCore detected, starting scan");
+
+                        if (_gameRoutine != null)
+                            StopCoroutine(_gameRoutine);
+
+                        _gameRoutine = StartCoroutine(InitialWaitAndCheck());
+                    }
+                }
+
+                if (!_isGameplayLoaded && scene.name == "MainMenu" && Config.Instance.EnableMixedRealityMenus)
+                {
+                    Plugin.LogDebug("[MixedReality] MainMenu detected, ensuring menu greenscreen");
+                    EnsureMenuGreenScreen();
+                }
+            }
+
+            RefreshCameraAlignmentForCurrentScene();
 
             if (scene.name.Contains("GameCore"))
             {
-                ResetRunState();
+                ResetGameplayState();
                 ResetMenuState();
 
                 if (!Utils.IsEnabledGameplayMixedReality())
                     return;
 
-                Plugin.Log.Info("[MixedReality] GameCore detected, starting scan");
+                Plugin.LogDebug("[MixedReality] GameCore detected, starting scan");
 
                 if (_gameRoutine != null)
                     StopCoroutine(_gameRoutine);
@@ -134,41 +193,48 @@ namespace AutoBS
 
             if (!_isGameplayLoaded && scene.name == "MainMenu" && Config.Instance.EnableMixedRealityMenus)
             {
-                Plugin.Log.Info("[MixedReality] MainMenu detected, ensuring menu greenscreen");
+                Plugin.LogDebug("[MixedReality] MainMenu detected, ensuring menu greenscreen");
                 EnsureMenuGreenScreen();
             }
+
+            RefreshCameraAlignmentForCurrentScene();
         }
 
         private void OnSceneUnloaded(Scene scene)
         {
-            Plugin.Log.Info($"[MixedReality] Scene unloaded: {scene.name}");
+            Plugin.LogDebug($"[MixedReality] Scene unloaded: {scene.name}");
 
             if (scene.name == "MainMenu")
             {
                 _isMainMenuLoaded = false;
                 ResetMenuState();
-                return;
             }
-
-            if (scene.name.Contains("GameCore") || scene.name.Contains("StandardGameplay"))
+            else if (scene.name.Contains("GameCore") || scene.name.Contains("StandardGameplay"))
             {
                 _isGameplayLoaded = false;
 
-                ResetRunState();
+                ResetGameplayState();
 
                 if (_isMainMenuLoaded && Config.Instance.EnableMixedRealityMenus)
                     EnsureMenuGreenScreen();
-
-                return;
+            }
+            else if (scene.name.Contains("GlassDesertEnvironment"))
+            {
+                ResetGameplayState();
             }
 
-            if (scene.name.Contains("GlassDesertEnvironment"))
-                ResetRunState();
+            RefreshCameraAlignmentForCurrentScene();
+        }
+
+        public void RefreshVisualState()
+        {
+            RefreshMixedRealityState();
+            RefreshCameraAlignmentForCurrentScene();
         }
 
         private void OnEnable()
         {
-            Plugin.Log.Info($"[MixedReality] OnEnable go={gameObject.name} scene={gameObject.scene.name} activeInHierarchy={gameObject.activeInHierarchy}");
+            Plugin.LogDebug($"[MixedReality] OnEnable go={gameObject.name} scene={gameObject.scene.name} activeInHierarchy={gameObject.activeInHierarchy}");
 
             if (!_subscribed)
             {
@@ -179,11 +245,11 @@ namespace AutoBS
 
             if (!Utils.IsEnabledGameplayMixedReality() && !Config.Instance.EnableMixedRealityMenus)
             {
-                Plugin.Log.Info("[MixedReality] OnEnable while disabled, clearing shells");
+                Plugin.LogDebug("[MixedReality] OnEnable while disabled, clearing shells");
                 ClearAllGreenScreens();
             }
         }
-        private void ResetRunState()
+        private void ResetGameplayState()
         {
             if (_gameRoutine != null)
             {
@@ -217,13 +283,49 @@ namespace AutoBS
                 _menuShell = null;
             }
         }
+        /*
+        private void ResetGameplayState()
+        {
+            if (_gameRoutine != null)
+            {
+                StopCoroutine(_gameRoutine);
+                _gameRoutine = null;
+            }
 
+            _loggedMainMenuWrapper = false;
+            _headTransform = null;
+            _tryingToFindHead = false;
+            _lockShellToHead = false;
+
+            if (_gameplayShell != null)
+            {
+                Destroy(_gameplayShell);
+                _gameplayShell = null;
+            }
+        }
+        
+        private void ResetMenuState()
+        {
+            if (_menuRoutine != null)
+            {
+                StopCoroutine(_menuRoutine);
+                _menuRoutine = null;
+            }
+
+            if (_menuShell != null)
+            {
+                Destroy(_menuShell);
+                _menuShell = null;
+            }
+        }
+        */
         private bool _subscribed;
-
-       
 
         private void OnDestroy()
         {
+            if (Instance == this)
+                Instance = null;
+
             if (_subscribed)
             {
                 SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -235,10 +337,18 @@ namespace AutoBS
                     Destroy(_greenTemplateMat);
                     _greenTemplateMat = null;
                 }
+
+                if (_cameraAlignmentTemplateMat != null)
+                {
+                    Destroy(_cameraAlignmentTemplateMat);
+                    _cameraAlignmentTemplateMat = null;
+                }
             }
 
             RemoveDirectionalMarkers();
+            ClearCameraAlignmentRig();
         }
+
         private void ClearAllGreenScreens()
         {
             if (_menuRoutine != null)
@@ -254,8 +364,53 @@ namespace AutoBS
             }
 
             ResetMenuState();
-            ResetRunState();
+            ResetGameplayState();
         }
+
+        public void RefreshMixedRealityState()
+        {
+            bool pluginEnabled = Config.Instance.EnablePlugin;
+            bool menuEnabled = pluginEnabled && Config.Instance.EnableMixedRealityMenus;
+            bool gameplayEnabled = pluginEnabled && Utils.IsEnabledGameplayMixedReality();
+
+            if (!pluginEnabled)
+            {
+                ClearAllGreenScreens();
+                RemoveDirectionalMarkers();
+                return;
+            }
+
+            if (menuEnabled && _isMainMenuLoaded && !_isGameplayLoaded)
+            {
+                ResetMenuState();
+                EnsureMenuGreenScreen();
+            }
+            else
+            {
+                ResetMenuState();
+            }
+
+            if (gameplayEnabled && _isGameplayLoaded)
+            {
+                ResetGameplayState();
+
+                if (_gameRoutine != null)
+                {
+                    StopCoroutine(_gameRoutine);
+                    _gameRoutine = null;
+                }
+
+                _gameRoutine = StartCoroutine(InitialWaitAndCheck());
+            }
+            else
+            {
+                ResetGameplayState();
+                ResetGameplayState();
+            }
+
+            RefreshCameraAlignmentForCurrentScene();
+        }
+
         #region 360 Markers
         private void AddDirectionalMarkersIfNeeded()
         {
@@ -369,7 +524,7 @@ namespace AutoBS
 
         private void EnsureMenuGreenScreen()
         {
-            if (!Config.Instance.EnableMixedRealityMenus)
+            if (!Config.Instance.EnablePlugin || !Config.Instance.EnableMixedRealityMenus)
             {
                 ResetMenuState();
                 return;
@@ -390,13 +545,13 @@ namespace AutoBS
                 _menuRoutine = null;
             }
 
-            Plugin.Log.Info("[MixedReality] Ensuring menu greenscreen");
+            Plugin.LogDebug("[MixedReality] Ensuring menu greenscreen");
             _menuRoutine = StartCoroutine(SetupMenuGreenScreen());
         }
 
         private IEnumerator InitialWaitAndCheck()
         {
-            if (!Config.Instance.EnableMixedRealityStandard)
+            if (!Utils.IsEnabledGameplayMixedReality())
             {
                 _gameRoutine = null;
                 yield break;
@@ -475,16 +630,18 @@ namespace AutoBS
 
                     CreateQuadBox(_menuShell.transform, greenMat); // A box to hide the group of notes on the floor in the menu environment behind the player
 
-                    if (Config.Instance.MixedRealityPortalShapeRound)
-                        CreateCylinderAperture(_menuShell.transform, greenMat, ceilingRound: true, ceilingRoundType2: true);
-                    //CreateRoundAperature(_menuShell.transform, greenMat, depth: 5, zOffset: Config.Instance.MixedRealityMenuZOffset, menuOverrideHeight: true);
+                    if (Config.Instance.MixedRealityMenuStyle == Config.MixedRealityMenuModeType.Style1)
+                    {
+                        CreateCylinderAperture(_menuShell.transform, greenMat, ceilingRoundStyle1: true);
+                    }
+                    else if (Config.Instance.MixedRealityMenuStyle == Config.MixedRealityMenuModeType.Style2)
+                    {
+                        CreateCylinderAperture(_menuShell.transform, greenMat, ceilingRoundStyle1: false);
+                    }
                     else
-                        CreateCylinderAperture(_menuShell.transform, greenMat, ceilingRound: true, ceilingRoundType2: false);
-                        //CreateRectangularAperture(_menuShell.transform, greenMat, width: 7, height: 5, zOffset: Config.Instance.MixedRealityMenuZOffset, menuOverrideHeight: true);
-
-                    //_lastMenuCircular = Config.Instance.GreenScreenCircular;
-                    //_lastMenuYOffset  = Config.Instance.GreenScreenMenuYOffset;
-                    //_lastMenuZOffset  = Config.Instance.GreenScreenMenuZOffset;
+                    {
+                        CreateRoundAperature(_menuShell.transform, greenMat, menuOverrideHeight: true, zOffset: Config.Instance.MixedRealityMenuZOffset);
+                    }
 
                     //Plugin.LogDebug($"[MixedReality] Menu shell worldPos={_menuShell.transform.position} localPos={_menuShell.transform.localPosition} parent={_menuShell.transform.parent?.name}");
 
@@ -507,55 +664,6 @@ namespace AutoBS
             _menuRoutine = null;
         }
 
-        
-        /*
-        private static void LogUiCandidatesInMainMenu()
-        {
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                Scene scene = SceneManager.GetSceneAt(i);
-                if (!scene.isLoaded || scene.name != "MainMenu")
-                    continue;
-
-                foreach (GameObject root in scene.GetRootGameObjects())
-                {
-                    if (root.name != "Wrapper")
-                        continue;
-
-                    Plugin.LogDebug("[MixedReality] ===== UI CANDIDATES START =====");
-
-                    var transforms = root.GetComponentsInChildren<Transform>(true);
-                    foreach (var t in transforms)
-                    {
-                        Component[] comps = t.GetComponents<Component>();
-                        foreach (var c in comps)
-                        {
-                            if (c == null)
-                                continue;
-
-                            string typeName = c.GetType().FullName;
-                            string lower = typeName.ToLowerInvariant();
-
-                            if (lower.Contains("image") ||
-                                lower.Contains("canvas") ||
-                                lower.Contains("textmesh") ||
-                                lower.Contains("curved") ||
-                                lower.Contains("hmui") ||
-                                lower.Contains("sprite") ||
-                                lower.Contains("renderer"))
-                            {
-                                Plugin.LogDebug($"[MixedReality] GO: {t.gameObject.name} | Path: {GetPathFromRoot(t, root.transform)} | Component: {typeName}");
-                            }
-                        }
-                    }
-
-                    Plugin.LogDebug("[MixedReality] ===== UI CANDIDATES END =====");
-                    return;
-                }
-            }
-        }
-        */
-        
         
         private GameObject FindMenuEnvironment()
         {
@@ -605,6 +713,8 @@ namespace AutoBS
 
             return null;
         }
+
+
 
         private GameObject FindEnvironment()
         {
@@ -1253,7 +1363,7 @@ namespace AutoBS
             bool createFloor = true,
             bool createCeiling = true,
             bool ceilingRound = true, // rect works now with straight line across top
-            bool ceilingRoundType2 = false
+            bool ceilingRoundStyle1 = true
         )
         {
             GameObject root = new GameObject("EnvGreen_VerticalCylinderAperture");
@@ -1423,7 +1533,7 @@ namespace AutoBS
                     float ceilingZOffset = 0f;
                     float ceilingRadiusMultiplier = 1.02f;
                     
-                    if (ceilingRoundType2)
+                    if (ceilingRoundStyle1)
                     {
                         startDeg = 325f; // partial opening
                         endDeg = 35f;
@@ -1480,7 +1590,7 @@ namespace AutoBS
                     }
                 }
             }
-            Plugin.Log.Info($"[EnvGreen] Spawned vertical cylinder aperture with opening {frontOpeningAngleDeg:F1} deg");
+            Plugin.LogDebug($"[MixedReality] Spawned vertical cylinder aperture with opening {frontOpeningAngleDeg:F1} deg");
             return root;
         }
         /// <summary>
@@ -1495,7 +1605,7 @@ namespace AutoBS
         /// <returns></returns>
         private static GameObject CreateQuadBox(Transform parent, Material mat, float width = 4f, float height = .75f, float depth = 2.2f, float zOffset = -2.4f)
         {
-            GameObject boxRoot = new GameObject("EnvGreen_QuadBox");
+            GameObject boxRoot = new GameObject("MixedReality_QuadBox");
 
             if (parent != null)
                 boxRoot.transform.SetParent(parent, false);
@@ -1604,7 +1714,7 @@ namespace AutoBS
 
         private static Material GetGreenScreenMaterial()
         {
-            UnityEngine.Color chroma = Config.Instance.MixedRealityGreenScreenColor.ToUnityColor();
+            UnityEngine.Color chroma = Config.Instance.MixedRealityGreenScreenColor.ToUnityColor(Config.Instance.MixedRealityColorMultiplier);
 
             if (_greenTemplateMat == null)
             {
@@ -1673,6 +1783,289 @@ namespace AutoBS
             }
             
         }
+
+        #region Camera Alignment Rig
+
+        private const float CameraAlignmentLineThickness = 0.0075f;
+        private static float CameraAlignmentMarkerDiameter = Config.Instance.CameraAlignmentMarkerDiameterFeet;
+        private const float CameraAlignmentAlpha = 0.5f; // not working
+        private float CameraAlignmentLineEndInset = CameraAlignmentMarkerDiameter * 2f; // 0.015f
+
+        private void RefreshCameraAlignmentForCurrentScene()
+        {
+            ClearCameraAlignmentRig();
+
+            if (!Config.Instance.EnablePlugin)
+            {
+                Plugin.LogDebug("[CameraAlignmentGrid] Skipped: plugin disabled");
+                return;
+            }
+
+            if (!Config.Instance.EnableCameraAlignmentGrid1 && !Config.Instance.EnableCameraAlignmentGrid2)
+            {
+                Plugin.LogDebug("[CameraAlignmentGrid] Skipped: both grids disabled");
+                return;
+            }
+
+            GameObject parentObject = null;
+
+            if (_isGameplayLoaded)
+                parentObject = FindEnvironment();
+
+            if (parentObject == null && _isMainMenuLoaded)
+                parentObject = FindMenuEnvironment();
+
+            if (parentObject == null)
+            {
+                Plugin.LogDebug("[CameraAlignmentGrid] No valid menu/gameplay environment found");
+                return;
+            }
+
+            CreateCameraAlignmentGrids(parentObject.transform);
+        }
+        private void CreateCameraAlignmentGrids(Transform parent)
+        {
+            _cameraAlignmentRoot = new GameObject("AutoBS_CameraAlignmentGrids");
+            _cameraAlignmentRoot.transform.SetParent(parent, false);
+            _cameraAlignmentRoot.transform.localPosition = Vector3.zero;
+            _cameraAlignmentRoot.transform.localRotation = Quaternion.identity;
+            _cameraAlignmentRoot.transform.localScale = Vector3.one;
+
+            Plugin.LogDebug($"[CameraAlignmentGrid] Creating under parent={parent.name} scene={parent.gameObject.scene.name}");
+
+            if (Config.Instance.EnableCameraAlignmentGrid1)
+            {
+                CreateAlignmentGrid(
+                    _cameraAlignmentRoot.transform,
+                    "Grid1",
+                    GetCameraAlignmentGrid1OriginMeters(),
+                    UnityEngine.Color.white);
+            }
+
+            if (Config.Instance.EnableCameraAlignmentGrid2)
+            {
+                CreateAlignmentGrid(
+                    _cameraAlignmentRoot.transform,
+                    "Grid2",
+                    GetCameraAlignmentGrid2OriginMeters(),
+                    UnityEngine.Color.yellow);
+            }
+        }
+
+        private void CreateAlignmentGrid(Transform parent, string gridName, Vector3 localOrigin, UnityEngine.Color color)
+        {
+            GameObject gridRoot = new GameObject(gridName);
+            gridRoot.transform.SetParent(parent, false);
+            gridRoot.transform.localPosition = localOrigin;
+            gridRoot.transform.localRotation = Quaternion.identity;
+            gridRoot.transform.localScale = Vector3.one;
+
+            float step = GetCameraAlignmentGridUnitSizeMeters();
+
+            float xLeft = -step;
+            float xMid = 0f;
+            float xRight = step;
+
+            float y0 = 0f;
+            float y1 = step;
+            float y2 = step * 2f;
+
+            Plugin.LogDebug($"[CameraAlignmentGrids] Create {gridName} origin={localOrigin} step={step:F3}m lines={Config.Instance.CameraAlignmentGridDisplayLines}");
+
+            if (Config.Instance.CameraAlignmentGridDisplayLines)
+            {
+                // Vertical segments at xLeft
+                CreateLine(gridRoot.transform,
+                    new Vector3(xLeft, y0 + CameraAlignmentLineEndInset, 0f),
+                    new Vector3(xLeft, y1 - CameraAlignmentLineEndInset, 0f),
+                    color, "V_Left_Bottom");
+
+                CreateLine(gridRoot.transform,
+                    new Vector3(xLeft, y1 + CameraAlignmentLineEndInset, 0f),
+                    new Vector3(xLeft, y2 - CameraAlignmentLineEndInset, 0f),
+                    color, "V_Left_Top");
+
+                // Vertical segments at xMid
+                CreateLine(gridRoot.transform,
+                    new Vector3(xMid, y0 + CameraAlignmentLineEndInset, 0f),
+                    new Vector3(xMid, y1 - CameraAlignmentLineEndInset, 0f),
+                    color, "V_Mid_Bottom");
+
+                CreateLine(gridRoot.transform,
+                    new Vector3(xMid, y1 + CameraAlignmentLineEndInset, 0f),
+                    new Vector3(xMid, y2 - CameraAlignmentLineEndInset, 0f),
+                    color, "V_Mid_Top");
+
+                // Vertical segments at xRight
+                CreateLine(gridRoot.transform,
+                    new Vector3(xRight, y0 + CameraAlignmentLineEndInset, 0f),
+                    new Vector3(xRight, y1 - CameraAlignmentLineEndInset, 0f),
+                    color, "V_Right_Bottom");
+
+                CreateLine(gridRoot.transform,
+                    new Vector3(xRight, y1 + CameraAlignmentLineEndInset, 0f),
+                    new Vector3(xRight, y2 - CameraAlignmentLineEndInset, 0f),
+                    color, "V_Right_Top");
+
+                // Horizontal segments at y0
+                CreateLine(gridRoot.transform,
+                    new Vector3(xLeft + CameraAlignmentLineEndInset, y0, 0f),
+                    new Vector3(xMid - CameraAlignmentLineEndInset, y0, 0f),
+                    color, "H_Bottom_Left");
+
+                CreateLine(gridRoot.transform,
+                    new Vector3(xMid + CameraAlignmentLineEndInset, y0, 0f),
+                    new Vector3(xRight - CameraAlignmentLineEndInset, y0, 0f),
+                    color, "H_Bottom_Right");
+
+                // Horizontal segments at y1
+                CreateLine(gridRoot.transform,
+                    new Vector3(xLeft + CameraAlignmentLineEndInset, y1, 0f),
+                    new Vector3(xMid - CameraAlignmentLineEndInset, y1, 0f),
+                    color, "H_Mid_Left");
+
+                CreateLine(gridRoot.transform,
+                    new Vector3(xMid + CameraAlignmentLineEndInset, y1, 0f),
+                    new Vector3(xRight - CameraAlignmentLineEndInset, y1, 0f),
+                    color, "H_Mid_Right");
+
+                // Horizontal segments at y2
+                CreateLine(gridRoot.transform,
+                    new Vector3(xLeft + CameraAlignmentLineEndInset, y2, 0f),
+                    new Vector3(xMid - CameraAlignmentLineEndInset, y2, 0f),
+                    color, "H_Top_Left");
+
+                CreateLine(gridRoot.transform,
+                    new Vector3(xMid + CameraAlignmentLineEndInset, y2, 0f),
+                    new Vector3(xRight - CameraAlignmentLineEndInset, y2, 0f),
+                    color, "H_Top_Right");
+            }
+
+            // Always show markers if lines mode is on, and also when markers-only mode is selected
+            float[] xs = { xLeft, xMid, xRight };
+            float[] ys = { y0, y1, y2 };
+
+            foreach (float x in xs)
+            {
+                foreach (float y in ys)
+                {
+                    CreateAlignmentMarker(gridRoot.transform, new Vector3(x, y, 0f), color, $"Marker_{x:F2}_{y:F2}");
+                }
+            }
+        }
+
+        private void CreateLine(Transform parent, Vector3 start, Vector3 end, UnityEngine.Color color, string name)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+
+            Vector3 delta = end - start;
+            float length = delta.magnitude;
+            Vector3 center = (start + end) * 0.5f;
+
+            go.transform.localPosition = center;
+            go.transform.localRotation = Quaternion.FromToRotation(Vector3.up, delta.normalized);
+            go.transform.localScale = new Vector3(CameraAlignmentLineThickness, length, CameraAlignmentLineThickness);
+
+            ApplyAlignmentMaterial(go, color);
+            RemoveCollider(go);
+        }
+
+        private void CreateAlignmentMarker(Transform parent, Vector3 localPos, UnityEngine.Color color, string name)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one * CameraAlignmentMarkerDiameter;
+
+            ApplyAlignmentMaterial(go, color);
+            RemoveCollider(go);
+        }
+
+        private static Material _cameraAlignmentTemplateMat;
+
+        private Material GetAlignmentMaterial(UnityEngine.Color color)
+        {
+            UnityEngine.Color transparentColor = GetTransparentAlignmentColor(color);
+
+            if (_cameraAlignmentTemplateMat == null)
+            {
+                Renderer noteArrowRenderer = FindRendererByNameAcrossScenes("NoteArrow");
+                if (noteArrowRenderer != null && noteArrowRenderer.sharedMaterial != null)
+                {
+                    _cameraAlignmentTemplateMat = new Material(noteArrowRenderer.sharedMaterial);
+                    Plugin.LogDebug("[CameraAlignmentGrids] Using NoteArrow material as calibration template");
+                }
+                else
+                {
+                    Shader shader =
+                        Shader.Find("Custom/SimpleLit") ??
+                        Shader.Find("Sprites/Default") ??
+                        Shader.Find("UI/Default") ??
+                        Shader.Find("Unlit/Color");
+
+                    if (shader == null)
+                    {
+                        Plugin.LogDebug("[CameraAlignmentGrids] Could not find fallback shader for alignment grids");
+                        return null;
+                    }
+
+                    _cameraAlignmentTemplateMat = new Material(shader);
+                    Plugin.LogDebug($"[CameraAlignmentGrids] Using fallback shader: {shader.name}");
+                }
+            }
+
+            Material mat = new Material(_cameraAlignmentTemplateMat);
+
+            if (mat.HasProperty("_Color"))
+                mat.SetColor("_Color", transparentColor);
+
+            if (mat.HasProperty("_BaseColor"))
+                mat.SetColor("_BaseColor", transparentColor);
+
+            if (mat.HasProperty("_EmissionColor"))
+            {
+                mat.EnableKeyword("_EMISSION");
+                mat.SetColor("_EmissionColor", transparentColor * 0.5f);
+            }
+
+            return mat;
+        }
+        private UnityEngine.Color GetTransparentAlignmentColor(UnityEngine.Color color)
+        {
+            color.a = CameraAlignmentAlpha;
+            return color;
+        }
+
+        private void ApplyAlignmentMaterial(GameObject go, UnityEngine.Color color)
+        {
+            var renderer = go.GetComponent<Renderer>();
+            if (renderer == null)
+                return;
+
+            Material mat = GetAlignmentMaterial(color);
+            if (mat == null)
+            {
+                Plugin.LogDebug($"[CameraAlignmentRig] Failed to create material for {go.name}");
+                return;
+            }
+
+            renderer.material = mat;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+        }
+
+        private void RemoveCollider(GameObject go)
+        {
+            var collider = go.GetComponent<Collider>();
+            if (collider != null)
+                Destroy(collider);
+        }
+
+        #endregion
 
         /*
         private void LateUpdate()
@@ -1831,6 +2224,54 @@ namespace AutoBS
             }
         }
        */
+
+        /*
+        private static void LogUiCandidatesInMainMenu()
+        {
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded || scene.name != "MainMenu")
+                    continue;
+
+                foreach (GameObject root in scene.GetRootGameObjects())
+                {
+                    if (root.name != "Wrapper")
+                        continue;
+
+                    Plugin.LogDebug("[MixedReality] ===== UI CANDIDATES START =====");
+
+                    var transforms = root.GetComponentsInChildren<Transform>(true);
+                    foreach (var t in transforms)
+                    {
+                        Component[] comps = t.GetComponents<Component>();
+                        foreach (var c in comps)
+                        {
+                            if (c == null)
+                                continue;
+
+                            string typeName = c.GetType().FullName;
+                            string lower = typeName.ToLowerInvariant();
+
+                            if (lower.Contains("image") ||
+                                lower.Contains("canvas") ||
+                                lower.Contains("textmesh") ||
+                                lower.Contains("curved") ||
+                                lower.Contains("hmui") ||
+                                lower.Contains("sprite") ||
+                                lower.Contains("renderer"))
+                            {
+                                Plugin.LogDebug($"[MixedReality] GO: {t.gameObject.name} | Path: {GetPathFromRoot(t, root.transform)} | Component: {typeName}");
+                            }
+                        }
+                    }
+
+                    Plugin.LogDebug("[MixedReality] ===== UI CANDIDATES END =====");
+                    return;
+                }
+            }
+        }
+        */
         private static void LogPossibleNoteRenderers()
         {
             Plugin.LogDebug("[MixedReality] ===== NOTE RENDERER SEARCH START =====");

@@ -249,20 +249,23 @@ namespace AutoBS
         //------------------------
 
         public virtual bool EnableLiveVolumeControl { get; set; } = true;
-        
+        public virtual bool EnableLiveNjsJdControl { get; set; } = true;
+
         public enum LiveControlModeType
         {
             Off,
-            ThumbstickL,
-            ThumbstickR,
+            ThumbstickLUpDown,
+            ThumbstickLLeftRight,
+            ThumbstickRUpDown,
+            ThumbstickRLeftRight,
             ButtonsAB,
             ButtonsXY,
             ButtonsYB,
             ButtonsXA
         }
-        public virtual LiveControlModeType LiveVolumeControl { get; set; } = LiveControlModeType.ThumbstickL;
-        public virtual LiveControlModeType LiveNoteSpeedControl { get; set; } = LiveControlModeType.Off;
-        public virtual LiveControlModeType LiveNoteSpawnDistanceControl { get; set; } = LiveControlModeType.Off;
+        public virtual LiveControlModeType LiveVolumeControl { get; set; } = LiveControlModeType.ThumbstickLUpDown;
+        public virtual LiveControlModeType LiveNjsControl { get; set; } = LiveControlModeType.Off;
+        public virtual LiveControlModeType LiveJdControl { get; set; } = LiveControlModeType.Off;
 
 
         // Green Screen Passthrough portal
@@ -272,21 +275,29 @@ namespace AutoBS
         public virtual bool EnableMixedReality360 { get; set; } = false;
 
         public virtual bool MixedRealityPortalShapeRound { get; set; } = true;
-        public virtual float MixedRealityRoundDiameter { get; set; } = 2.8f;
+        public virtual float MixedRealityRoundDiameter { get; set; } = 3.2f;
         public virtual float MixedRealityRectWidth { get; set; } = 3.8f;
         public virtual float MixedRealityRectHeight { get; set; } = 3.1f;
 
-        public virtual float MixedReality360Diameter { get; set; } = 6f; // set to 0 to turn off
+        public virtual float MixedReality360Diameter { get; set; } = 10f; // set to 0 to turn off
 
-        public virtual float MixedReality360CeilingHeight { get; set; } = 3f; // set to 0 to turn off
+        public virtual float MixedReality360CeilingHeight { get; set; } = 3.5f; // set to 0 to turn off
+
+        public enum MixedRealityMenuModeType
+        {
+            Style1,
+            Style2,
+            Style3
+        }
+        public virtual MixedRealityMenuModeType MixedRealityMenuStyle { get; set; } = MixedRealityMenuModeType.Style1;
 
         public virtual float MixedRealityMenuZOffset { get; set; } = 0.3f;
 
-        public virtual float MixedRealityGamePlayRoundZOffset { get; set; } = 1.7f;
-        public virtual float MixedRealityGamePlayRectZOffset { get; set; } = 1.7f;
+        public virtual float MixedRealityGamePlayRoundZOffset { get; set; } = 2.8f;
+        public virtual float MixedRealityGamePlayRectZOffset { get; set; } = 2.8f;
 
-        public virtual float MixedRealityRoundYOffset { get; set; } = 1.8f; //meters - for centering passthroughj portal. use player height 1.8f
-        public virtual float MixedRealityRectYOffset { get; set; } = 1.8f; //meters - for centering passthroughj portal. use player height 1.8f
+        public virtual float MixedRealityRoundYOffset { get; set; } = .2f; //meters - for centering passthroughj portal. use player height 1.8f
+        public virtual float MixedRealityRectYOffset { get; set; } = 0f; //meters - for centering passthroughj portal. use player height 1.8f
 
         public virtual VirtualDesktopColor MixedRealityGreenScreenColor { get; set; } = new VirtualDesktopColor
         {
@@ -294,6 +305,8 @@ namespace AutoBS
             g = 255,
             b = 0
         };
+
+        public virtual float MixedRealityColorMultiplier { get; set; } = 1f;
         //public virtual bool MixedRealityFullModeTest { get; set; } = false; // huge green screen behind everything. but it looks terrible. all objects get a green glow around them.
         /*
         public enum mRHeightMode
@@ -308,14 +321,39 @@ namespace AutoBS
         // DiffReducer
 
         public virtual bool EnableDiffReducer { get; set; } = true;
-        public virtual bool EnableForAllSongs { get; set; } = false; //EnableOnlyIfSongAboveAveNps
-        public virtual float PreferredFinalNps { get; set; } = 3.3f;
+        public virtual bool EnableForAllMaps { get; set; } = false; //EnableOnlyIfSongAboveAveNps
+        public virtual float PreferredFinalNps { get; set; } = 4f;
 
 
-        public virtual bool RepairSwingDirections { get; set; } = false;
+        //public virtual bool RepairSwingDirections { get; set; } = false;
         //public virtual bool ScoredSwingRemovalsUsingMinorSections { get; set; } = true;
         //public virtual bool SimplifySwingOneByOne { get; set; } = true;
-        
+
+
+        public virtual bool PatchV4ObstacleExtensionLayers { get; set; } = false; // v4 maps clamp obstacle layers from 0 to 4 which breaks v4 mapping extensions. disable if Mapping Extensions takes care of this.
+
+
+
+
+
+
+        // Virtual Camera and Real Camera Alignment Grid for Mixed Reality Setup 
+
+        public virtual bool EnableCameraAlignmentGrid1 { get; set; } = false;
+
+        public virtual bool CameraAlignmentGridDisplayLines { get; set; } = true;
+
+        public virtual float CameraAlignmentMarkerDiameterFeet { get; set; } = 0.02f;
+
+        public virtual SerializableVector3 CameraAlignmentGrid1OriginFeet { get; set; } = new SerializableVector3(0f, 0f, 0f);
+
+        public virtual float CameraAlignmentGridUnitSizeFeet { get; set; } = 3f;
+
+        public virtual bool EnableCameraAlignmentGrid2 { get; set; } = false;
+
+        public virtual SerializableVector3 CameraAlignmentGrid2OriginFeet { get; set; } = new SerializableVector3(0f, 0f, -3f);
+
+
 
 
 
@@ -331,6 +369,14 @@ namespace AutoBS
         //at least for beat sage, need to remove in info.dat:  "_environmentNames": [ "DefaultEnvironment" ], AND remove "_environmentNameIdx": 0, from each difficultyBeatmap in order for 360 map to use 360 environment
         public virtual bool OutputV4JsonToSongFolder { get; set; } = false; // outputs perfect map compared to v2 or 3
         public virtual int OutputJsonSongSampleRate { get; set; } = 44100;
+
+
+
+        
+
+
+        // TEMP -----------------------------------
+        //public virtual bool RemoveLeftWalls { get; set; } = true;
     }
     public class VirtualDesktopColor
     {
@@ -338,7 +384,14 @@ namespace AutoBS
         public int g { get; set; } = 255;
         public int b { get; set; } = 0;
 
-        public Color ToUnityColor(float alpha = 1f, float multiplier = 1f)
+        /// <summary>
+        /// multiplier will brighten color only (not change hue). Can make HDR brightness levels. 
+        /// For example unity (0,1,0) is full green green. but (0,2,0) is HDR green and will remove some shadows
+        /// </summary>
+        /// <param name="alpha"></param>
+        /// <param name="multiplier"></param>
+        /// <returns></returns>
+        public Color ToUnityColor(float alpha = 1f, float multiplier = 1f) 
         {
             return new Color(
                 Mathf.Clamp(r, 0, 255) / 255f * multiplier,
@@ -346,5 +399,36 @@ namespace AutoBS
                 Mathf.Clamp(b, 0, 255) / 255f * multiplier,
                 alpha);
         }
+    }
+    [Serializable]
+    public struct SerializableVector3
+    {
+        public float x;
+        public float y;
+        public float z;
+
+        public SerializableVector3(float x, float y, float z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        public Vector3 ToMeters()
+        {
+            return new Vector3(x, y, z);
+        }
+
+        public Vector3 ToMetersFromFeet()
+        {
+            return new Vector3(x * 0.3048f, y * 0.3048f, z * 0.3048f);
+        }
+
+        public static SerializableVector3 FromVector3(Vector3 v)
+        {
+            return new SerializableVector3(v.x, v.y, v.z);
+        }
+
+        public static SerializableVector3 Zero => new SerializableVector3(0f, 0f, 0f);
     }
 }

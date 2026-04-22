@@ -274,18 +274,18 @@ namespace AutoBS
             if (!Config.Instance.EnableDiffReducer) return;
             
             bool eligibleHighNpsSong = TransitionPatcher.NotesPerSecond > Config.Instance.PreferredFinalNps;
-            bool enableDiffRed = Config.Instance.EnableForAllSongs || eligibleHighNpsSong;
+            bool enableDiffRed = Config.Instance.EnableForAllMaps || eligibleHighNpsSong;
 
             if (!enableDiffRed) return;
 
             int originalCount = eData.ColorNotes.Count;
             Plugin.LogDebug($"[Pipeline DiffReducer] Inital Note Count: {originalCount}");
 
-            DifficultyReducer.InitialCalculations(eData, TransitionPatcher.bpm, TransitionPatcher.NotesPerSecond);
+            AutoDifficultyReducer.InitialCalculations(eData, TransitionPatcher.bpm, TransitionPatcher.NotesPerSecond);
 
-            eData.ColorNotes = DifficultyReducer.SimplifyBeatmap(eData);
+            eData.ColorNotes = AutoDifficultyReducer.SimplifyBeatmap(eData);
 
-            DifficultyReducer.ApplyArcAndChainEndpointChanges(eData, eData.ColorNotes);
+            AutoDifficultyReducer.ApplyArcAndChainEndpointChanges(eData, eData.ColorNotes);
 
             eData.ColorNotes = eData.ColorNotes.OrderBy(n => n.time).ToList();
             if (eData.Arcs != null)
@@ -634,6 +634,13 @@ namespace AutoBS
             eData.ColorNotes = eData.ColorNotes.OrderBy(n => n.time).ToList();
             eData.BombNotes = eData.BombNotes.OrderBy(n => n.time).ToList();
             eData.Obstacles = eData.Obstacles.OrderBy(o => o.time).ToList();
+
+            //bool shouldAdjustRotations =
+            //    RotationGenerator.needsRotationLimitAdjustment &&
+            //    !Config.Instance.Wireless360;
+
+            if (!Config.Instance.Wireless360)
+             eData.RotationEvents = RotationGenerator.AdjustRotationsToLimit(eData.RotationEvents); // moved this here since wallGenerator can change rotations for crouch walls
 
             eData.RotationEvents = ERotationEventData.RecalculateAccumulatedRotations(eData.RotationEvents);
 

@@ -7,7 +7,7 @@ using CustomJSONData.CustomBeatmap;
 
 namespace AutoBS.Modules
 {
-    internal class DifficultyReducer
+    internal class AutoDifficultyReducer
     {
         public static int OriginalNoteCount = 0;
         public static float InitialNps = 0;
@@ -21,8 +21,8 @@ namespace AutoBS.Modules
         public static List<NoteData> Bombs;
 
         // if lose both ends always remove whole arc
-        public static bool IfDeleteHeadDeleteArc = false; // RemoveArcHead = true → remove whole arc , false → set arc.hasHeadNote = false
-        public static bool IfDeleteTailDeleteArc = false; // RemoveArcTail = true → remove whole arc, false → set arc.hasTailNote = false
+        public static bool IfDeleteHeadDeleteArc = true; // RemoveArcHead = true → remove whole arc , false → set arc.hasHeadNote = false
+        public static bool IfDeleteTailDeleteArc = true; // RemoveArcTail = true → remove whole arc, false → set arc.hasTailNote = false
         public static bool RemoveArcIfDeleteHeadAndTail = true;
 
         // Use the actual slider type in your project if different.

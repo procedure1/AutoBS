@@ -111,8 +111,8 @@ namespace AutoBS.Modules
             var swingsA = Swings.Where(s => s.ColorType == ColorType.ColorA).OrderBy(s => s.Time).ToList();
             var swingsB = Swings.Where(s => s.ColorType == ColorType.ColorB).OrderBy(s => s.Time).ToList();
 
-            float preferredIntervalPerHand = 2f / DifficultyReducer.PreferredNps;
-            float preferredIntervalSoloHand = 1f / DifficultyReducer.PreferredNps;
+            float preferredIntervalPerHand = 2f / AutoDifficultyReducer.PreferredNps;
+            float preferredIntervalSoloHand = 1f / AutoDifficultyReducer.PreferredNps;
 
             List<NoteSwing> keptA = SimplifySingleColor(swingsA, swingsB, preferredIntervalPerHand, preferredIntervalSoloHand);
             List<NoteSwing> keptB = SimplifySingleColor(swingsB, swingsA, preferredIntervalPerHand, preferredIntervalSoloHand);
@@ -150,7 +150,13 @@ namespace AutoBS.Modules
                 index = AdvanceIndexPastTime(colorSwings, index, lastKept.Time);
                 oppositeIndex = AdvanceIndexPastTime(oppositeColorSwings, oppositeIndex, lastKept.Time - 0.001f);
 
-                bool soloHandSection = IsSoloHandLocally(lastKept.Time, oppositeColorSwings, oppositeIndex);
+                bool soloHandSection = IsSoloHandLocally(
+                    lastKept.Time,
+                    colorSwings,
+                    index,
+                    oppositeColorSwings,
+                    oppositeIndex);
+
                 float effectivePreferredInterval = soloHandSection ? preferredIntervalSoloHand : preferredIntervalPerHand;
 
                 NoteSwing best = GetBestForwardCandidateSameColor(
@@ -166,7 +172,50 @@ namespace AutoBS.Modules
                 kept.Add(best);
                 lastKept = best;
                 index = AdvanceIndexPastTime(colorSwings, index, best.Time);
+                /*
+                if ((lastKept.Time > 110 && lastKept.Time < 116) || (lastKept.Time > 122 && lastKept.Time < 127))
+                {
+                    Plugin.LogDebug(
+                        $"[DiffReducer][{lastKept.ColorType}] LastKept t:{lastKept.Time:F3} dir:{lastKept.SwingDirection} len:{lastKept.SwingLength}");
+                }
+                */
             }
+            /*
+            while (index < colorSwings.Count)
+            {
+                index = AdvanceIndexPastTime(colorSwings, index, lastKept.Time);
+                oppositeIndex = AdvanceIndexPastTime(oppositeColorSwings, oppositeIndex, lastKept.Time - 0.001f);
+
+                bool soloHandSection = IsSoloHandLocally(
+                    lastKept.Time,
+                    colorSwings,
+                    index,
+                    oppositeColorSwings,
+                    oppositeIndex);
+
+                float effectivePreferredInterval = soloHandSection ? preferredIntervalSoloHand : preferredIntervalPerHand;
+
+                NoteSwing best = GetBestForwardCandidateSameColor(
+                    colorSwings,
+                    index,
+                    lastKept,
+                    kept,
+                    effectivePreferredInterval);
+
+                if (best == null)
+                    break;
+
+                kept.Add(best);
+                lastKept = best;
+                index = AdvanceIndexPastTime(colorSwings, index, best.Time);
+
+                if ((lastKept.Time > 110 && lastKept.Time < 116) || (lastKept.Time > 122 && lastKept.Time < 127))
+                {
+                    Plugin.LogDebug(
+                        $"[DiffReducer][{lastKept.ColorType}] LastKept t:{lastKept.Time:F3} dir:{lastKept.SwingDirection} len:{lastKept.SwingLength}");
+                }
+            }
+            */
 
             NoteSwing last = colorSwings[colorSwings.Count - 1];
             if (!kept.Contains(last))
@@ -174,6 +223,43 @@ namespace AutoBS.Modules
 
             return kept;
         }
+        private bool IsSoloHandLocally(
+            float currentTime,
+            List<NoteSwing> sameColorSwings,
+            int sameStartIndex,
+            List<NoteSwing> oppositeColorSwings,
+            int oppositeStartIndex)
+        {
+            const float lookAheadWindow = 1.4f;
+
+            int sameCount = 0;
+            int sameEnd = Math.Min(sameStartIndex + 8, sameColorSwings.Count);
+            for (int i = sameStartIndex; i < sameEnd; i++)
+            {
+                if (sameColorSwings[i].Time - currentTime <= lookAheadWindow)
+                    sameCount++;
+                else
+                    break;
+            }
+
+            if (sameCount < 2)
+                return false;
+
+            int oppEnd = Math.Min(oppositeStartIndex + 8, oppositeColorSwings.Count);
+            for (int i = oppositeStartIndex; i < oppEnd; i++)
+            {
+                float dt = oppositeColorSwings[i].Time - currentTime;
+                if (dt < 0f)
+                    continue;
+                if (dt > lookAheadWindow)
+                    break;
+
+                return false;
+            }
+
+            return true;
+        }
+        /*
         private bool IsSoloHandLocally(float currentTime, List<NoteSwing> oppositeColorSwings, int startIndex)
         {
             // Small local window. Tune as needed.
@@ -196,6 +282,103 @@ namespace AutoBS.Modules
 
             return true; // no opposite-hand swings nearby
         }
+        */
+
+        private NoteSwing GetBestForwardCandidateSameColor(
+            List<NoteSwing> colorSwings,
+            int startIndex,
+            NoteSwing lastSameColor,
+            List<NoteSwing> keptSoFar,
+            float preferredInterval)
+        {
+            if (startIndex >= colorSwings.Count)
+                return null;
+
+            NoteSwing firstFuture = colorSwings[startIndex];
+
+            float targetHandNps = 1f / preferredInterval;
+            float burstAllowance = 0;// .35f; // how much a single moment may exceed the per - hand nps target -- turned this off for now.
+            int DiffReducerBurstWindow = 3; //how many recent kept same - color intervals define the “recent average”
+            int burstWindow = Math.Max(1, DiffReducerBurstWindow);
+
+            float recentAverageHandNps = GetRecentAverageHandNps(keptSoFar, burstWindow);
+            float firstGap = firstFuture.Time - lastSameColor.Time;
+
+            if (firstGap > 0f)
+            {
+                float firstCandidateHandNps = 1f / firstGap;
+
+                bool recentAverageIsAtOrBelowTarget =
+                    recentAverageHandNps <= 0f || recentAverageHandNps <= targetHandNps;
+
+                bool thisIsOnlyAMildSpike =
+                    firstCandidateHandNps <= targetHandNps + burstAllowance;
+
+                if (firstCandidateHandNps <= targetHandNps)
+                    return firstFuture;
+
+                if (recentAverageIsAtOrBelowTarget && thisIsOnlyAMildSpike)
+                    return firstFuture;
+            }
+
+            NoteSwing best = null;
+            float bestScore = float.MinValue;
+
+            int end = Math.Min(startIndex + 12, colorSwings.Count);
+
+            for (int i = startIndex; i < end; i++)
+            {
+                NoteSwing s = colorSwings[i];
+                if (s.Time <= lastSameColor.Time)
+                    continue;
+
+                float gap = s.Time - lastSameColor.Time;
+                float gapRatio = gap / preferredInterval;
+
+                float score = ScoreCandidateSameColor(s, lastSameColor, preferredInterval);
+
+                bool candidateIsDot = s.FirstNote != null && s.FirstNote.cutDirection == NoteCutDirection.Any;
+                //bool lastIsDot = lastSameColor.FirstNote != null && lastSameColor.FirstNote.cutDirection == NoteCutDirection.Any;
+
+                //if ((candidateIsDot || lastIsDot) && gapRatio < 0.85f)
+                //{
+                //    score -= (0.85f - gapRatio) * 140f;
+                //}
+
+                if (recentAverageHandNps > targetHandNps && gapRatio < 0.75f)
+                {
+                    score -= (0.75f - gapRatio) * 120f;
+                }
+                /*
+                if ((s.Time > 110 && s.Time < 116) || (s.Time > 122 && s.Time < 127))
+                {
+                    Plugin.LogDebug(
+                        $"[DiffReducer][Eval][{s.ColorType}] t:{s.Time:F3} gap:{gap:F3} pref:{preferredInterval:F3} ratio:{gapRatio:F2} angle:{lastSameColor.GetAngleBetweenSwings(s)} dot:{candidateIsDot} score:{score:F2}");
+                }
+                */
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = s;
+                }
+            }
+
+            if (best == null)
+                return firstFuture;
+
+            float bestGap = best.Time - lastSameColor.Time;
+            float firstFutureGap = firstFuture.Time - lastSameColor.Time;
+
+            bool firstFutureIsVeryTight =
+                firstFutureGap < preferredInterval * 0.75f &&
+                recentAverageHandNps > targetHandNps;
+
+            if (firstFutureIsVeryTight && best != firstFuture)
+                return best;
+
+            return best;
+        }
+        /*
         private NoteSwing GetBestForwardCandidateSameColor(
             List<NoteSwing> colorSwings,
             int startIndex,
@@ -230,6 +413,17 @@ namespace AutoBS.Modules
                 bool thisIsOnlyAMildSpike =
                     firstCandidateHandNps <= targetHandNps + burstAllowance;
 
+                if (recentAverageIsAtOrBelowTarget && thisIsOnlyAMildSpike)
+                {
+                    if ((firstFuture.Time > 110 && firstFuture.Time < 116) || (firstFuture.Time > 122 && firstFuture.Time < 127))
+                    {
+                        Plugin.LogDebug(
+                            $"[DiffReducer][BurstAllowed][{firstFuture.ColorType}] t:{firstFuture.Time:F3} gap:{firstGap:F3} candNps:{firstCandidateHandNps:F2} targetHandNps:{targetHandNps:F2} recentAvg:{recentAverageHandNps:F2}");
+                    }
+
+                    return firstFuture;
+                }
+
                 // Allow brief local spike only if the recent average is still behaving.
                 if (recentAverageIsAtOrBelowTarget && thisIsOnlyAMildSpike)
                     return firstFuture;
@@ -258,9 +452,15 @@ namespace AutoBS.Modules
                     best = s;
                 }
             }
+            if ((lastSameColor.Time > 110 && lastSameColor.Time < 116) || (lastSameColor.Time > 122 && lastSameColor.Time < 127))
+            {
+                Plugin.LogDebug(
+                    $"[DiffReducer][CandidateScan][{lastSameColor.ColorType}] last:{lastSameColor.Time:F3} firstFuture:{firstFuture?.Time:F3} preferredInt:{preferredInterval:F3} recentAvgNps:{recentAverageHandNps:F2}");
+            }
 
             return best ?? firstFuture;
         }
+        */
         private float GetRecentAverageHandNps(List<NoteSwing> keptSoFar, int intervalCount)
         {
             if (keptSoFar == null || keptSoFar.Count < 2)

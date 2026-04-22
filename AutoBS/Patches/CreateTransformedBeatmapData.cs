@@ -46,7 +46,7 @@ namespace AutoBS.Patches
 
             EditableCBD eData = null;
 
-            if (beatmapData is CustomBeatmapData cbd) // custom map data
+            if (__result is CustomBeatmapData cbd) // custom map data
             {
                 RotationV3Registry.RotationEventsByKey.TryGetValue(TransitionPatcher.SelectedPlayKey, out var v3RotList);
 
@@ -97,7 +97,7 @@ namespace AutoBS.Patches
                 }
                 */
             }
-            else if (beatmapData is BeatmapData bm) // built-in map data
+            else if (__result is BeatmapData bm) // built-in map data
             {
                 Plugin.Log.Info($"[CreateTransformedBeatmapData] Retrieved custom v4 or Vanilla BeatmapData from JSON v{TransitionPatcher.SelectedBeatmapVersion}: " +
                          $"notes: {bm.cuttableNotesCount}, " +
@@ -117,19 +117,23 @@ namespace AutoBS.Patches
                 var bmCopy = bm.GetCopy(); // need this so that original data is immutable. otherwise changes to eData will affect original data.
                 eData = new EditableCBD(bmCopy, version);
             }
-                /*
-                foreach (var obs in eData.Obstacles)
-                {
-                    if (obs.time > 32 && obs.time < 33)
-                        Plugin.LogDebug($"Original Obstacle - Time: {obs.time:F} - Line: {obs.line} - Layer: {obs.layer} - Height: {obs.height} - width: {obs.width} - Dur: {obs.duration}");
-                }
-                foreach (var rot in eData.RotationEvents)
-                {
-                    if (rot.time < 30)
-                        Plugin.LogDebug($"Original Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
-                }
-                */
-                Plugin.LogDebug($"[CreateTransformedBeatmapData] Converted (Custom)BeatmapData to EditableCBD map version: {eData.Version.Major} - notes: {eData.ColorNotes.Count}, bombs: {eData.BombNotes.Count}, obstacles: {eData.Obstacles.Count}, arcs: {eData.Arcs.Count}, chains: {eData.Chains.Count}, rotations: {eData.RotationEvents.Count}, basic events: {eData.BasicEvents.Count}, customEvents: {eData.CustomEvents.Count}, color boosts: {eData.ColorBoostEvents.Count}.");
+            else
+            {
+                return;
+            }
+            /*
+            foreach (var obs in eData.Obstacles)
+            {
+                if (obs.time > 32 && obs.time < 33)
+                    Plugin.LogDebug($"Original Obstacle - Time: {obs.time:F} - Line: {obs.line} - Layer: {obs.layer} - Height: {obs.height} - width: {obs.width} - Dur: {obs.duration}");
+            }
+            foreach (var rot in eData.RotationEvents)
+            {
+                if (rot.time < 30)
+                    Plugin.LogDebug($"Original Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
+            }
+            */
+            Plugin.LogDebug($"[CreateTransformedBeatmapData] Converted (Custom)BeatmapData to EditableCBD map version: {eData.Version.Major} - notes: {eData.ColorNotes.Count}, bombs: {eData.BombNotes.Count}, obstacles: {eData.Obstacles.Count}, arcs: {eData.Arcs.Count}, chains: {eData.Chains.Count}, rotations: {eData.RotationEvents.Count}, basic events: {eData.BasicEvents.Count}, customEvents: {eData.CustomEvents.Count}, color boosts: {eData.ColorBoostEvents.Count}.");
 
                 Plugin.LogDebug($"[CreateTransformedBeatmapData] Song Name: {SetContent.SongName} - v{TransitionPatcher.SelectedBeatmapVersion} - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty}  ----------------------------------------------------------------------------");
 
@@ -243,8 +247,14 @@ namespace AutoBS.Patches
                 */
             }
 
-            //Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");
-
+            Plugin.LogDebug($"4 Final Lane Rotations in Notes from Data (represents the first note found with a new rotation value - Wireless360: {Config.Instance.Wireless360} - LimitRotations360: {Config.Instance.LimitRotations360}):");
+            /*
+            foreach ( var note in __result.allBeatmapDataItems.OfType<NoteData>())
+            {
+                if (note.time > 0 && note.time < 180)
+                    Plugin.LogDebug($"Final Note - Time: {note.time:F} - Rot: {note.rotation}");// Line: {obs.lineIndex} - Layer: {(int)obs.lineLayer} - Height: {obs.height} - width: {obs.width} - Dur: {obs.duration}");
+            }
+            */
             //BeatmapLightingLogger.LogGLSLightingEvents(HarmonyPatches.CurrentBeatmapSaveData);
             //if (Config.Instance.UseGreenScreen)
             //    EnvironmentGreenScreenBootstrap.EnsureCreated();
