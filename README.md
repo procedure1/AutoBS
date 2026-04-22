@@ -1,17 +1,17 @@
 # AutoBS — Beat Saber Automation Mod
-# Featuring 360fyer, Arcitect Arc + Chain Maker, Auto Lights, Auto Walls, Auto NJS Fixer, and Mixed Reality Portals
+# Featuring Mixed Reality Portals, Arcitect Arc + Chain Maker, Auto Lights, Auto Walls, Auto NJS Fixer with Live Tuning, and 360fyer
 
 ## For Beat Saber PC Version v1.42
 
 
-A Beat Saber mod to automatically generate 360 degree maps from standard maps, and automatically add arcs, chains, lights and walls, and set note speed and spawn distance. Most features fully work on non-generated maps as well. So you can add arcs and walls etc to standard maps too.
+A Beat Saber mod to create Mixed Reality Portals (requires `Virtual Desktop` App) and to automatically generate 360 degree maps from standard maps, and automatically add arcs, chains, lights and walls, and set note speed and spawn distance. Most features fully work on non-generated maps as well. So you can add arcs and walls etc to standard maps too.
 
-NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. See below.
+NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. It can also be used to help line up a virtual and real camera for mixed reality capture along with the `CameraPlus` mod. See the end of this readme file below.
 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time.
 
-This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without the included `Auto Lights`. `Boost lighting events` add more color to maps that don't have them. `Auto Lights` power larger and brighter lasers and optional strobe events. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more intereseting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps and adds portals to see Beat Saber through a floating mixed reality window (requires `Virtual Desktop App`.) Tune the Volumne, Note Speed and Note spawn disance live during gameplay with your controllers.
+This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without the included `Auto Lights`. `Boost lighting events` add more color to maps that don't have them. `Auto Lights` power larger and brighter lasers and optional strobe events. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more intereseting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps and adds portals to see Beat Saber through a floating mixed reality window. Tune the Volumne, Note Speed and Note spawn disance live during gameplay with your controllers.
 
 Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
@@ -26,6 +26,20 @@ Note: Vivify maps and many complex Noodle maps are currently incompatible and di
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
 
 ![Technicolor with 360fyer](https://github.com/procedure1/AutoBS/blob/master/AutoBS-Big-Lasers-Big-Walls-Technicolor.gif)
+
+## Mixed Reality Portals
+Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. 
+
+NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Environment checkbox. 
+
+And configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with these.
+Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
+
+## Arcitect Arc + Chain Maker
+
+`Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the slices can become difficult to hit when chains get too long. ***HINT: Set `Arc Rotation Mode` to `No Restrictions` for more challenging arcs.***
+
+NOTE: Chains added to a map would change the scoring, so I have disabled score submission for maps with generated chains.
 
 ## 360fyer
 
@@ -43,12 +57,6 @@ Rotation size and frequency can be adjusted in the menu, and headset FOV limits 
 ***Option 2: I like to use `Rot Speed Multiplier` = 1.6x, `Min Rotation Size` = 15 (default), `Max Rotation Size` = 45 and `FOV` = 90 for my Quest3 headset. This creates fast frequent rotations with the occational big 45° rotation.***
 
 ***Option 3: To go even bigger, use Option 2 and set `Min Rotation Size` = 30. You will likely need to reduce `Rot Speed Multiplier` quite a bit. You can start trimming around the edges of your peripheral vision with `FOV Time Window`. Increase it a bit to reduce a little of the large jumps at the periphery.***
-
-## Arcitect Arc + Chain Maker
-
-`Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the slices can become difficult to hit when chains get too long. ***HINT: Set `Arc Rotation Mode` to `No Restrictions` for more challenging arcs.***
-
-NOTE: Chains added to a map would change the scoring, so I have disabled score submission for maps with generated chains.
 
 ## Auto Light Generator
 
@@ -72,14 +80,6 @@ NOTE: This gets wonky for large NJS or JD changes.
 
 ## Live Volume Control
 I hate reaching for my headset volume button during gameplay every other song to bump up a quiet song. Now you can do it with your controller during gameplay with ease.
-
-## Mixed Reality Portals
-Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. 
-
-NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Environment. 
-
-These Virtual Desktop setting work well for me: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%.
-Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file lets you change the passthrough color if you prefer another color.)
 
 ## Beat Sage Cleaner
 
@@ -331,6 +331,18 @@ Designed to work with `Mapping Extensions` mod installed. Many of the following 
 NOTE: The JSON config file has a `StandardLevelWallMultiplier` setting not available in the menus that is a multiplier for generated walls in standard maps (non-360). If you like the number of walls in 360 but find that there are too many or few in a standard map, then change this config item.
 ***
 
+
+***
+## SUPER SECRET HIDDEN AREA 51 - Camera Alignment Grid for Mixed Reality Recording
+
+Mixed Reality Portals allow a new way (I think) to help record mixed reality videos using green screen to place your physical body into the virtual Beat Saber environment. For your virtual sabers to line up with your hands and controllers in the real world, your virtual camera must line up perfectly with your real camera. I have provided JSON config file settings to display a configurable grid in Beat Saber that can be used to help align the cameras. 
+Edit the `Beat Saber/UserData/AutoBS.json` config file in Notepad or other text editor. Set `EnableCameraAlignmentGrid1` = true to display the grid. (Optionally set `CameraAlignmentGridDisplayLines` = true to show full grid lines or false to show grid intersection markers only. `CameraAlignmentGrid1OriginFeet` defaults to grid axis origin x,y,z at 0,0,0. `CameraAlignmentGridUnitSizeFeet` defaults to 3 feet as the grid unit spacing size. A secound grid is also available if needed.) 
+This will show a grid centered at the exact location that you stand when you reset your center space in Beat Saber when holding the meta button on your controller for Quest devices. 
+Stand exactly where you plan to record yourself. Mark your feet with tape and place a mark on the wall at the point you are staring at so that you can reset your playspace again to this exact position in the future.
+Using AutoBS Mixed Reality Portals, you can see the grid floating in your apartment. You can then place light stands (or similar objects) with tape marks lined up with the virtual grid intersection markers. I placed one stand at the left grid edge and a second light stand at the right grid edge. Then using CameraPlus (easier than using Camera2), you can position your virtual camera on top of your real camera which you can also see in the AutoBS portal. Then in Virtual Desktop, you can see OBS (or whatever recording software you use to composite your greenscreen with Beat Saber). You can see the light stands with tape marks and your virtual grid markers. You need to see OBS and Beat Saber at the same time in Virtual Desktop. Now in Virtual Desktop, right click Beat Saber to get CameraPlus camera settings to pop-up, where you can manipulate your virtual cameras FOV, rotation and positon in precise increments until the tripod tape marks line up with the Virtual Grid markers. Your virtual and real camera are aligned!
+Now you can turn off the grid and use the floor and wall tape marks to reset your space if needed when you are ready to record.
+Video tutorial link coming soon. 
+
 ## JSON Beatmap File Output
 
 You can output a generated map to a JSON beatmap file. This file will contain all standard and all generated features including 360 rotation events, arcs, chains, lighting events, walls, and auto njs njo values. (It attempts to retain all customData but this is not fully tested). The output file can be in v2, v3, or v4 format (no matter what the starting format was). The output file(s) will be placed in the same folder as the original beatmap and will NOT OVERWRITE any files. The generator will also output a `Info.AutoBS.dat` that will point to the generated files. To use the new generated difficulty, you can rename the original 'Info.dat' to something like 'Info.dat.bak' and then rename the new 'Info.AutoBS.dat' to 'Info.dat'. Currently original v3 beatmaps with GLS lighting can generate a new v3 output and retain the GLS lightshow as well, but the GLS lightshow portion will not be preserved if output to v2 or v4. (If you need that, I believe you can convert the v3 lightshow to v4 using Beat Saber's built-in map editor.)
@@ -372,7 +384,5 @@ To test and build this project locally, do the following:
 3. Build. Visual Studio should copy the plugin to your Beat Saber installation automatically.
 
 ## Todo
-
-Beat Saber Mixed Reality Mode support
 
 Modern GLS lighting and environment support
