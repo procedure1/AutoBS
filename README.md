@@ -41,6 +41,11 @@ And configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0,
 Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
 Video tutorial link coming soon. 
 
+| | |
+|--|--|
+| ![AutoBS Beat Saber Automation Mod Mixed Reality Portal Setup](Virtual-Desktop-Configuration-1.jpg) |  ![AutoBS Beat Saber Automation Mod Mixed Reality Portal Setup](Virtual-Desktop-Configuration-2.jpg) |
+
+
 ## Arcitect Arc + Chain Maker
 
 `Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the slices can become difficult to hit when chains get too long. ***HINT: Set `Arc Rotation Mode` to `No Restrictions` for more challenging arcs.***
