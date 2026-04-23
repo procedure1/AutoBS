@@ -16,7 +16,7 @@ NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time.
 
-This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without the included `Auto Lights`. `Boost lighting events` add more color to maps that don't have them. `Auto Lights` power larger and brighter lasers and optional strobe events. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more intereseting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps and adds portals to see Beat Saber through a floating mixed reality window. Tune the Volumne, Note Speed and Note spawn disance live during gameplay with your controllers.
+This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without the included `Auto Lights`. `Boost lighting events` add more color to maps that don't have them. `Auto Lights` power larger and brighter lasers and optional strobe events. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more interesting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps and adds portals to see Beat Saber through a floating mixed reality window. Tune the Volume, Note Speed and Note spawn distance live during gameplay with your controllers.
 
 Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
@@ -37,7 +37,7 @@ Create circular or rectangular portals to see Beat Saber through a floating mixe
 
 NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Environment checkbox. 
 
-And configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with these.
+And configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with them.
 Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
 
 ## Arcitect Arc + Chain Maker
@@ -55,11 +55,11 @@ Wireless headset users can use the `Wireless 360` menu setting, which has no rot
 
 Rotation size and frequency can be adjusted in the menu, and headset FOV limits can be set so that rotations don't move outside your peripheral vision.
 
-***HINT: For challenging rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier`, `Min Rotation Size` and/or `Max Rotation Size`. If you set `Max Rotation Size` > 30, then your must set `FOV` to 90 or greater (otherwise 45° rotations will be removed. Higher than 90° FOV on a Quest will allow rotations you cannot see).***
+***HINT: For challenging rapid, large-angle rotations, go to the `Rotation` settings section and crank up `Rot Speed Multiplier`, `Min Rotation Size` and/or `Max Rotation Size`. If you set `Max Rotation Size` > 30, then you must set `FOV` to 90 or greater (otherwise 45° rotations will be removed. Higher than 90° FOV on a Quest will allow rotations you cannot see).***
 
 ***Option 1: Raise `Rot Speed Multiplier` to your desired value and increase `Min Rotation Size` to 30. leave `Max Rotation Size` and `FOV` at default. This creates fast frequent rotations all at 30°.*** 
 
-***Option 2: I like to use `Rot Speed Multiplier` = 1.6x, `Min Rotation Size` = 15 (default), `Max Rotation Size` = 45 and `FOV` = 90 for my Quest3 headset. This creates fast frequent rotations with the occational big 45° rotation.***
+***Option 2: I like to use `Rot Speed Multiplier` = 1.6x, `Min Rotation Size` = 15 (default), `Max Rotation Size` = 45 and `FOV` = 90 for my Quest3 headset. This creates fast frequent rotations with the occasional big 45° rotation.***
 
 ***Option 3: To go even bigger, use Option 2 and set `Min Rotation Size` = 30. You will likely need to reduce `Rot Speed Multiplier` quite a bit. You can start trimming around the edges of your peripheral vision with `FOV Time Window`. Increase it a bit to reduce a little of the large jumps at the periphery.***
 
@@ -84,7 +84,7 @@ NOTE: If settings cause the note speed to be slower than the mapper intended, sc
 NOTE: This gets wonky for large NJS or JD changes.
 
 ## Auto Difficulty Reducer
-And yet again, thanks to Kylemc for allowing me to work from their original code! This new version is automated to reduce difficulty on all maps above the note per second threshold that a user sets. It is also designed to attempt to keep a maps rhythmic structure as much as possible. It's not perfect! This reduces difficulty by removing notes. Sorry to the genius mappers out there! But at least this gives more toddlers like me a chance to play your awesome maps...
+And yet again, thanks to Kylemc for allowing me to work from their original code! This new version is automated to reduce difficulty on all maps above the note per second threshold that a user sets. It is also designed to attempt to keep a map's rhythmic structure as much as possible. It's not perfect! This reduces difficulty by removing notes. Sorry to the genius mappers out there! But at least this gives more toddlers like me a chance to play your awesome maps...
 
 ## Live Volume Control
 I hate reaching for my headset volume button during gameplay every other song to bump up a quiet song. Now you can do it with your controller during gameplay with ease.
@@ -114,10 +114,10 @@ Thanks to the genius, CodeStix, who built the original 360fyer plugin!
 | **Limit Rotations 360**  | Default: **360°**. Limits maximum allowed accumulated rotation. Disabled if **Wireless 360** is enabled. For wired headsets, use 360° or less to avoid twisting your cable (cable rip!). You can lower this in tight spaces. **Score submission is disabled** if this is set below 90°. |
 | **Rot Speed Multiplier*** | Default: **1.0**. Scales how often rotations occur. Less than 1 slows rotations; greater than 1 increases them. **Score submission is disabled** if set below 0.3. Very high values are still constrained by `FOV` settings. * ***Bump this up for more rotations!***               |
 | **Add Extra Rotations**  | Default: **True**. Adds extra rotations in a consistent direction to maps that would otherwise have low overall rotation. |
-| **Min Rotation Size***    | Default: **15°**. Minimum rotation step size. Rotations are typically 15° or 30°. `FOV` rules may force this down to 15° sometimes. * ***Bump this up for larger and challenging rotations angles!***|
+| **Min Rotation Size***    | Default: **15°**. Minimum rotation step size. Rotations are typically 15° or 30°. `FOV` rules may force this down to 15° sometimes. * ***Bump this up for larger and challenging rotation angles!***|
 | **Max Rotation Size**    | Default: **30°**. Maximum rotation step size. 30° is typical while 45° is more challenging. 60° rotations may fall outside peripheral vision. `FOV` rules may also force this value lower.|
 | **FOV**                  | Default: **80°**. Set to slightly below your headset’s actual field of view. This is used to keep rotations within your peripheral vision over time. 80° is recommended for Quest 2 and 3. * ***90° and higher is required if you allow 45° rotations. 90° still works well for Quest 3.***|
-| **FOV Time Window**      | Default: **0.36 s**. Time window used to evaluate cumulative rotations against your FOV. Prevents multiple small rotations from stacking into a large FOV-breaking turns within this time span. Lower values allow more rapid rotations that can edge toward or outside the periphery.|
+| **FOV Time Window**      | Default: **0.36 s**. Time window used to evaluate cumulative rotations against your FOV. Prevents multiple small rotations from stacking into large FOV-breaking turns within this time span. Lower values allow more rapid rotations that can edge toward or outside the periphery.|
 | **Wall Removal Mult**    | Default: **1.0**. Controls how aggressively vision-blocking walls are removed during rotation sequences. Higher values remove more chaotic walls that may pass in front of the player and block visibility.|
 | **Wall Note Space**       | Default: **0.2 s**. This is the minimum space in time allowed between notes and walls. Rotation events can cause notes and walls to appear closer together. Increase this to allow more space between them.|
 | **Base Map**             | Default: **Standard**. Chooses which map type is used as the base for 360fyer-generated maps. **Score submission is disabled** if this is not set to Standard, and a Beat Saber restart is required for changes to take effect for maps that have already been selected in the menu.|
@@ -174,8 +174,8 @@ Automated version of the classic NJS Fixer mod by Kylemc. Set it and forget it! 
 
 | Option                       | Description |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable For All Maps** | Default: **FALSE**. When TRUE, this will reduce high note per second moments for any map no matter how low the average nps is. When FALSE, will not affect maps when their average nps is lower than your preferred nps. |
-| **Preferred Final NPS** | Default: **4 nps**. Evaluates the notes per second moment to moment during a map and will remove notes to achieve the preferred nps during those periods. Does not affect areas of maps when nps is lower than the preferred nps. Disables score submission if any notes are removed. 0 is OFF. |
+| **Enable For All Maps** | Default: **FALSE**. When TRUE, this will reduce high note per second moments for any map no matter how low the average NPS is. When FALSE, will not affect maps when their average NPS is lower than your preferred NPS. |
+| **Preferred Final NPS** | Default: **4 nps**. Evaluates the notes per second moment to moment during a map and will remove notes to achieve the preferred NPS during those periods. Does not affect areas of maps when NPS is lower than the preferred NPS. Disables score submission if any notes are removed. 0 is OFF. |
 
 ***Mixed Reality Portals***
 
@@ -250,7 +250,7 @@ Alters walls that already exist in the original base map
 
 ***Auto Walls – Generated Walls (Standard & Big)***
 
-No crouch are generated by this system. Walls are primarily for visual effect only but lean walls can be added by setting `Standard and Big Walls Min Dis` to 0. If walls are too chaotic and claustrophobia-inducing, reduce their counts and move them further out from the playspace by increasing `Min Distance`.
+No crouch walls are generated by this system. Walls are primarily for visual effect only but lean walls can be added by setting `Standard and Big Walls Min Dis` to 0. If walls are too chaotic and claustrophobic, reduce their counts and move them further out from the playspace by increasing `Min Distance`.
 
 | Option                             | Description                                                                                                                                                               |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -324,7 +324,7 @@ Designed to work with `Mapping Extensions` mod installed. Many of the following 
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Enable Ext Floor Walls** | Enables bursts of thin, flat walls like floor tiles under (and sometimes sky tiles above) the player. This also forms miniature “cityscape” patterns of walls around you. Best with `Mapping Extensions` mod installed. |
 | **Floor Walls Mult**       | Default: **4**. Controls how frequently floor wall batches are generated. Higher values mean more batches. More is better! Calculations on this can slow map generation time on some maps.                                        |
-| **Floor Walls Batch Size** | Default: **20**. Maximum number of floors walls per batch. More is better! Calculations on this can slow map generation time on some maps..                                                               |
+| **Floor Walls Batch Size** | Default: **20**. Maximum number of floor walls per batch. More is better! Calculations on this can slow map generation time on some maps..                                                               |
 | **Floor Walls Min Dis**    | Default: **0**. Minimum distance from the player (by line index and line layer).                                                                                           |
 
 ***Tunnel Walls (Mapping Extensions only)***
@@ -344,10 +344,10 @@ NOTE: The JSON config file has a `StandardLevelWallMultiplier` setting not avail
 ## SUPER SECRET HIDDEN AREA 51 - Camera Alignment Grid for Mixed Reality Recording
 
 Mixed Reality Portals allow a new way (I think) to help record mixed reality videos using green screen to place your physical body into the virtual Beat Saber environment. For your virtual sabers to line up with your hands and controllers in the real world, your virtual camera must line up perfectly with your real camera. I have provided JSON config file settings to display a configurable grid in Beat Saber that can be used to help align the cameras. 
-Edit the `Beat Saber/UserData/AutoBS.json` config file in Notepad or other text editor. Set `EnableCameraAlignmentGrid1` = true to display the grid. (Optionally set `CameraAlignmentGridDisplayLines` = true to show full grid lines or false to show grid intersection markers only. `CameraAlignmentGrid1OriginFeet` defaults to grid axis origin x,y,z at 0,0,0. `CameraAlignmentGridUnitSizeFeet` defaults to 3 feet as the grid unit spacing size. A secound grid is also available if needed.) 
-This will show a grid centered at the exact location that you stand when you reset your center space in Beat Saber when holding the meta button on your controller for Quest devices. 
+Edit the `Beat Saber/UserData/AutoBS.json` config file in Notepad or other text editor. Set `EnableCameraAlignmentGrid1` = true to display the grid. (Optionally set `CameraAlignmentGridDisplayLines` = true to show full grid lines or false to show grid intersection markers only. `CameraAlignmentGrid1OriginFeet` defaults to grid axis origin x,y,z at 0,0,0. `CameraAlignmentGridUnitSizeFeet` defaults to 3 feet as the grid unit spacing size. A second grid is also available if needed.) 
+This will show a grid centered at the exact location where you stand when you reset your center space in Beat Saber when holding the meta button on your controller for Quest devices. 
 Stand exactly where you plan to record yourself. Mark your feet with tape and place a mark on the wall at the point you are staring at so that you can reset your playspace again to this exact position in the future.
-Using AutoBS Mixed Reality Portals, you can see the grid floating in your apartment. You can then place light stands (or similar objects) with tape marks lined up with the virtual grid intersection markers. I placed one stand at the left grid edge and a second light stand at the right grid edge. Then using CameraPlus (easier than using Camera2), you can position your virtual camera on top of your real camera which you can also see in the AutoBS portal. Then in Virtual Desktop, you can see OBS (or whatever recording software you use to composite your greenscreen with Beat Saber). You can see the light stands with tape marks and your virtual grid markers. You need to see OBS and Beat Saber at the same time in Virtual Desktop. Now in Virtual Desktop, right click Beat Saber to get CameraPlus camera settings to pop-up, where you can manipulate your virtual cameras FOV, rotation and positon in precise increments until the tripod tape marks line up with the Virtual Grid markers. Your virtual and real camera are aligned!
+Using AutoBS Mixed Reality Portals, you can see the grid floating in your apartment. You can then place light stands (or similar objects) with tape marks lined up with the virtual grid intersection markers. I placed one stand at the left grid edge and a second light stand at the right grid edge. Then using CameraPlus (easier than using Camera2), you can position your virtual camera on top of your real camera which you can also see in the AutoBS portal. Then in Virtual Desktop, you can see OBS (or whatever recording software you use to composite your greenscreen with Beat Saber). You can see the light stands with tape marks and your virtual grid markers. You need to see OBS and Beat Saber at the same time in Virtual Desktop. Now in Virtual Desktop, right click Beat Saber to get CameraPlus camera settings to pop-up, where you can manipulate your virtual camera's FOV, rotation and position in precise increments until the tripod tape marks line up with the Virtual Grid markers. Your virtual and real camera are aligned!
 Now you can turn off the grid and use the floor and wall tape marks to reset your space if needed when you are ready to record.
 Video tutorial link coming soon. 
 
@@ -361,7 +361,7 @@ NOTE: v3 360 maps may need some minor cleanup due to some vision blocking walls 
 
 NOTE: v4 will be the most exact match to the in-game generated map. Outputs beatmapV4, lightshow, audioData and 'Info.AutoBS.dat' files. v4 doesn't really support customData so all customData will be lost (for Noodle etc). `Mapping Extensions` precision placement does still function.
 
-NOTE: If you have `Mapping Extensions` installed and walls are generated, then of course `Mapping Extensions` walls will be added to the beatmap. If you prefer not have them, then uninstall `Mapping Extensions` before outputing the JSON file.
+NOTE: If you have `Mapping Extensions` installed and walls are generated, then of course `Mapping Extensions` walls will be added to the beatmap. If you prefer not to have them, then uninstall `Mapping Extensions` before outputting the JSON file.
 
 To enable JSON file output, edit the `Beat Saber/UserData/AutoBS.json` config file in Notepad or other text editor. The last 5 settings in the config file are the ones to edit. 
 
@@ -388,7 +388,7 @@ For all output versions, you must also set the `OutputJsonSongSampleRate` config
 To test and build this project locally, do the following:
 1. Use `Beat Saber Modding Tools` extension for Visual Studio to make things easier.
 1. Clone this repo & open the project in Visual Studio
-2. Make sure to add the right dll references. The needed dlls are located in your modded Beat Saber installation folder.
+2. Make sure to add the right DLL references. The needed DLL's are located in your modded Beat Saber installation folder.
 3. Build. Visual Studio should copy the plugin to your Beat Saber installation automatically.
 
 ## Todo
