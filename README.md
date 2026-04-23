@@ -39,6 +39,7 @@ NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Envir
 
 And configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with them.
 Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
+Video tutorial link coming soon. 
 
 ## Arcitect Arc + Chain Maker
 
@@ -93,7 +94,8 @@ I hate reaching for my headset volume button during gameplay every other song to
 
 Can remove some impossible note combinations common with `Beat Sage`-generated maps. It shortens long crouch walls and removes stray notes (notes many seconds away from the main body of song notes) at the start or end of maps.
 
-## Menu Settings and Config file
+
+# AutoBS Menu Settings and Config file
 
 There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/UserData/AutoBS.json` config file. (You can open this file with notepad or another text editor.)
 
@@ -104,7 +106,7 @@ There is a settings menu in-game. Or you can tweak settings in the `Beat Saber/U
 | **360fyer**                   | 360fyer rotation engine. Generates 360° maps from standard maps. Unlikely to work well with Vivify, Noodle, Mapping Extensions, or maps that contain thousands of walls. ***Requires a restart for maps that have already been selected in the menu.***|
 
 
-***360fyer – Rotation Settings***
+## 360fyer – Rotation Settings
 
 Thanks to the genius, CodeStix, who built the original 360fyer plugin!
 
@@ -122,7 +124,7 @@ Thanks to the genius, CodeStix, who built the original 360fyer plugin!
 | **Wall Note Space**       | Default: **0.2 s**. This is the minimum space in time allowed between notes and walls. Rotation events can cause notes and walls to appear closer together. Increase this to allow more space between them.|
 | **Base Map**             | Default: **Standard**. Chooses which map type is used as the base for 360fyer-generated maps. **Score submission is disabled** if this is not set to Standard, and a Beat Saber restart is required for changes to take effect for maps that have already been selected in the menu.|
 
-***Architect – Arcs***
+## Architect – Arcs
 
 Generates Arcs if they do not exist already in a map. These are based on notes.
 
@@ -136,7 +138,7 @@ Generates Arcs if they do not exist already in a map. These are based on notes.
 
 NOTE: The JSON config file has an `AllowArcHeadDotNotes` and `AllowArcTailDotNotes` setting not available in the menus if you want dot notes to produce arcs.
 
-***Architect – Chains***
+## Architect – Chains
 
 Generates Chains if they do not already exist in a map. This alters scoring, so scoring will be disabled. These are based on notes.
 
@@ -147,7 +149,7 @@ Generates Chains if they do not already exist in a map. This alters scoring, so 
 | **Enable Long Chains**          | Default: **True**. Enables long chains that behave similarly to arcs in terms of duration and feel.
 | **Long Chain Max Duration**     | Default: **0.35 s**. Maximum allowed duration for a chain. Chain slices become awkward to hit on longer chains.        |
 
-***Auto NJS Fixer***
+## Auto NJS Fixer
 
 Automated version of the classic NJS Fixer mod by Kylemc. Set it and forget it! Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET
 
@@ -158,7 +160,7 @@ Automated version of the classic NJS Fixer mod by Kylemc. Set it and forget it! 
 | **Note Speed**               | Default: **10 m/s**. Overrides the map’s note speed (NJS). Setting this to **0** reverts to the map’s original NJS. **Score submission is disabled** if you set this below the map’s original speed. I use this to set my favorite speed for all maps. Doesn't work great on high note density maps sometimes. |
 | **Note Spawn Distance**      | Default: **30 m**. Overrides the map’s note spawn distance (JD). Setting this to **0** uses the map’s original spawn distance. It's difficult to see notes coming in 360 with short note spawn distances. |
 
-***Live Control***
+## Live Control
 
 Change the music volume, note speed and note spawn distance during gameplay with your controller. Music reverts to default volume after a map is finished. Careful not to harm your ears or your headset!
 		
@@ -168,7 +170,7 @@ Change the music volume, note speed and note spawn distance during gameplay with
 | **Live Note Spawn Distance Control** | Default: **RIGHT Thumbstick RIGHT/LEFT**. Change the Note Spawn Distance live during gameplay. THUMBSTICK Controller Right/Left or Up/Down and several BUTTONS options. -2m/+2m JD. Works during pause as well but HUD is only displayed after you start playing again. This is only tested on Quest3. NOTE: This gets wonky for large changes. |
 | **Live Volume Control** | Default: **LEFT THUMBSTICK UP/DOWN**. Change volume live during gameplay. THUMBSTICK uses LEFT Controller Up/Down. BUTTONS use Y/B. -2db/+2db volume. This is only tested on Quest3. |
 
-***Auto Difficulty Reducer***
+## Auto Difficulty Reducer
 
 Automated version of the classic NJS Fixer mod by Kylemc. Set it and forget it! Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET.
 
@@ -177,7 +179,7 @@ Automated version of the classic NJS Fixer mod by Kylemc. Set it and forget it! 
 | **Enable For All Maps** | Default: **FALSE**. When TRUE, this will reduce high note per second moments for any map no matter how low the average NPS is. When FALSE, will not affect maps when their average NPS is lower than your preferred NPS. |
 | **Preferred Final NPS** | Default: **4 nps**. Evaluates the notes per second moment to moment during a map and will remove notes to achieve the preferred NPS during those periods. Does not affect areas of maps when NPS is lower than the preferred NPS. Disables score submission if any notes are removed. 0 is OFF. |
 
-***Mixed Reality Portals***
+## Mixed Reality Portals
 
 Creates menu and gameplay passthrough portals using VIRTUAL DESKTOP app > Streaming > VR Passthrough Environment. CONFIGURE - Color Green (r:0, g:255, b:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. And turn ON Passthrough ENVIRONMENT Checkbox.
 
@@ -185,14 +187,14 @@ Creates menu and gameplay passthrough portals using VIRTUAL DESKTOP app > Stream
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Portal Shape** | Default: **Round**. Choose whether the portal aperture is ROUND or RECTANGULAR for Standard maps. |
 
-**Round Portals**
+***Round Portals***
 | Option                       | Description |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Diameter** | Default: 4.2m. Diameter of the round portal. Set to 0 to disable portal. |
 | **Height from Floor** | Default: **0.2 m**. Set the distance from the floor to the bottom of the portal. |
 | **Forward Offset** | Default: **3 m**. Moves the portal forward or backwards. |
 
-**Rectangular Portals**
+***Rectangular Portals***
 | Option                       | Description |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Width** | Default: 3.8m. Width of the rectangular portal. Set to 0 to disable the portal. |
@@ -200,19 +202,19 @@ Creates menu and gameplay passthrough portals using VIRTUAL DESKTOP app > Stream
 | **Height from Floor** | Default: **0 m**. Set the distance from the floor to the bottom of the portal. |
 | **Forward Offset** | Default: **3 m**. Moves the portal forward or backwards. |
 
-**360/90 Map Portals**
+***360/90 Map Portals***
 | Option                       | Description |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Diameter** | Default: 10m. Diameter of the portal. Set to 0 to disable the portal. |
 | **Ceiling Height** | Default: **3.5 m**. Set the height of the ceiling opening. Set to 0 to disable the ceiling. |
 
-**Menu Portals**
+***Menu Portals***
 | Option                       | Description |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Menu Portal Style** | Choose the menu environment mixed reality portal style. |
 | **Style3 Forward Offset** | Default: **0.3 m**. Moves the STYLE3 portal forward or backward in the menu environment. |
 
-***Auto Lighting***
+## Auto Light Generator
 
 Thanks to Loloppe (ChroMapper-AutoMapper)! Aeroluna's Technicolor Mod is highly recommended for 360!
 
@@ -229,7 +231,7 @@ Thanks to Loloppe (ChroMapper-AutoMapper)! Aeroluna's Technicolor Mod is highly 
 | **All Lights Brightness Multiplier**    | Default: **1.0**. Scales the brightness of auto lights. Increase to make the overall light show brighter.   |
 | **Light Style**              | Default: **Med Flash**. Chooses the auto lighting style. Styles lower in the list are less and less strobe-like. This is not related to 'strobe lights' which set above separately. |
 
-***Beat Sage Cleaner***
+## Beat Sage Cleaner
 
 Fixes some typical problems for Beat Sage generated maps.
 
@@ -239,7 +241,7 @@ Fixes some typical problems for Beat Sage generated maps.
 | **Stray Notes Remover**          | Default: **6s**. 0 is OFF. Removes stray notes at the start or end of a map if they are this far away in time from the main note stream. Use with `Intro Skip` mod. |
 | **Max Strays Allowed**           | Default: **5 notes**. 0 is OFF. Removes up to this many stray notes at the start or end of a song. NOTE: All bombs will be removed where clean up occurs. Use with `Intro Skip` mod. |
 
-***Existing Wall Manipulation***
+## Existing Wall Manipulation
 
 Alters walls that already exist in the original base map
 
@@ -248,7 +250,7 @@ Alters walls that already exist in the original base map
 | **Allow Crouch Walls** | Allows **crouch walls** in the final output. These can be difficult to see and react to in fast 360 maps.     |
 | **Allow Lean Walls**   | Allows **lean walls** in the final output. These can be difficult to see and react to in fast 360 maps. |
 
-***Auto Walls – Generated Walls (Standard & Big)***
+## Auto Walls – Generated Walls (Standard & Big)
 
 No crouch walls are generated by this system. Walls are primarily for visual effect only but lean walls can be added by setting `Standard and Big Walls Min Dis` to 0. If walls are too chaotic and claustrophobic, reduce their counts and move them further out from the playspace by increasing `Min Distance`.
 
@@ -259,7 +261,7 @@ No crouch walls are generated by this system. Walls are primarily for visual eff
 | **Standard and Big Walls Mult**    | Default: **100%**. Percentage multiplier controlling how many Standard and Big walls are generated. Decrease for fewer walls.                          |
 | **Standard and Big Walls Min Dis** | Default: **1**. Minimum distance from the player (by line index) for Standard and Big walls. 0 will make lean walls. Increase this to move generated walls further out from the center playspace. |
 
-***Auto Walls – Generated Extension Walls***
+## Auto Walls – Generated Extension Walls
 
 Designed to work with `Mapping Extensions` mod installed. Many of the following will work in a modified and reduced way without the mod. (I use the word `Ext` below to denote Generated Extension walls.)
 
@@ -347,7 +349,7 @@ Mixed Reality Portals allow a new way (I think) to help record mixed reality vid
 Edit the `Beat Saber/UserData/AutoBS.json` config file in Notepad or other text editor. Set `EnableCameraAlignmentGrid1` = true to display the grid. (Optionally set `CameraAlignmentGridDisplayLines` = true to show full grid lines or false to show grid intersection markers only. `CameraAlignmentGrid1OriginFeet` defaults to grid axis origin x,y,z at 0,0,0. `CameraAlignmentGridUnitSizeFeet` defaults to 3 feet as the grid unit spacing size. A second grid is also available if needed.) 
 This will show a grid centered at the exact location where you stand when you reset your center space in Beat Saber when holding the meta button on your controller for Quest devices. 
 Stand exactly where you plan to record yourself. Mark your feet with tape and place a mark on the wall at the point you are staring at so that you can reset your playspace again to this exact position in the future.
-Using AutoBS Mixed Reality Portals, you can see the grid floating in your apartment. You can then place light stands (or similar objects) with tape marks lined up with the virtual grid intersection markers. I placed one stand at the left grid edge and a second light stand at the right grid edge. Then using CameraPlus (easier than using Camera2), you can position your virtual camera on top of your real camera which you can also see in the AutoBS portal. Then in Virtual Desktop, you can see OBS (or whatever recording software you use to composite your greenscreen with Beat Saber). You can see the light stands with tape marks and your virtual grid markers. You need to see OBS and Beat Saber at the same time in Virtual Desktop. Now in Virtual Desktop, right click Beat Saber to get CameraPlus camera settings to pop-up, where you can manipulate your virtual camera's FOV, rotation and position in precise increments until the tripod tape marks line up with the Virtual Grid markers. Your virtual and real camera are aligned!
+Using AutoBS Mixed Reality Portals, you can see the grid floating in your apartment. You can then place light stands (or similar objects) with tape marks lined up with the virtual grid intersection markers. I placed one stand at the left grid edge and a second light stand at the right grid edge. I also put a tape mark on the floor under each light stand. Then using CameraPlus (easier than using Camera2), you can position your virtual camera on top of your real camera which you can also see in the AutoBS portal. Then in Virtual Desktop, observe OBS (or whatever recording software you use to composite your greenscreen with Beat Saber). You can see the light stands with tape marks and your virtual grid markers together. You need to see OBS and Beat Saber at the same time in Virtual Desktop. Now in Virtual Desktop, right click Beat Saber to get CameraPlus camera settings to pop-up, where you can manipulate your virtual camera's FOV, rotation and position in precise increments until the tripod tape marks line up with the Virtual Grid markers. Your virtual and real camera are now aligned!
 Now you can turn off the grid and use the floor and wall tape marks to reset your space if needed when you are ready to record.
 Video tutorial link coming soon. 
 
