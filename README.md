@@ -5,7 +5,7 @@
 ## Auto NJS Fixer with Live Tuning
 ## And 360fyer!
 
---
+![AutoBS Beat Saber Automation Mod](AutoBS-Beat-Saber-Automation-Mod.jpg)
 ## For Beat Saber PC Version v1.42
 
 
@@ -25,7 +25,7 @@ Note: Vivify maps and many complex Noodle maps are currently incompatible and di
 ## Installation
 
 - You can install this mod using BSManager or ModAssistant (coming soon).
-- Or install this mod manually by downloading the `AutoBS.dll` from the Releases tab: https://github.com/procedure1/autobs/releases and placing it in the `Plugins/` directory of your modded Beat Saber installation.
+- Or install this mod manually by downloading `AutoBS.dll` from the Releases tab: https://github.com/procedure1/autobs/releases and placing it in the `Plugins/` directory of your modded Beat Saber installation.
 - Requires `CustomJSONData` mod (also via BSManager or ModAssistant)
 - Recommended: install Kylemc's `Mapping Extensions` mod if you want full wall customization.
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
