@@ -99,7 +99,7 @@ I hate reaching for my headset volume button during gameplay every other song to
 
 Can remove some impossible note combinations common with `Beat Sage`-generated maps. It shortens long crouch walls and removes stray notes (notes many seconds away from the main body of song notes) at the start or end of maps.
 
-Check out the WIKI for more details.
+## Check out the WIKI for more details.
 
 ## Todo
 
