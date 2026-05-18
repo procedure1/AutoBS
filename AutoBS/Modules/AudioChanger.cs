@@ -170,54 +170,190 @@ namespace AutoBS // required adding reference to UnityEngine.AudioModule
         {
             SetMusicVolumeDb(0f);
         }
-    }
 
 
+        // OLD -------------------------------------------------------------
 
-
-
-
-
-
-
-
-
-
-    // OLD -------------------------------------------------------------
-
-    // UNUSED but works! but changes volume on all sounds
-    /*
-    [HarmonyPatch(typeof(AudioManagerSO), "set_mainVolume")]
-    public class Volume_Changer
-    {
-        static void Prefix(ref float value)
+        // UNUSED but works! but changes volume on all sounds
+        /*
+        [HarmonyPatch(typeof(AudioManagerSO), "set_mainVolume")]
+        public class Volume_Changer
         {
-            value += Config.Instance.VolumeAdjuster; // changes vol by db
-            Plugin.LogDebug($"Adjusted audio volume {Config.Instance.VolumeAdjuster} dB louder.");
-        }
-    }
-    */
-    // USE THIS ONE!!!! WORKS!!! but prefer Verbose Volume
-    /*
-    public class SoundRemover // from sound replacer -- MADE THIS SINCE WAS NOT WORKING ON LEVEL CLEARED so just replaced all the sounds i wanted and can remove soundreplacer.dll
-    {
-        // Remove Level Cleared or Failed Audio
-        //
-        [HarmonyPatch(typeof(ResultsViewController), "DidActivate", MethodType.Normal)]
-        public class LevelEndPatch
-        {
-            public static void Postfix(bool addedToHierarchy, bool screenSystemEnabling, ref SongPreviewPlayer ____songPreviewPlayer, ref LevelCompletionResults ____levelCompletionResults)
+            static void Prefix(ref float value)
             {
-                if (!Config.Instance.EnablePlugin) return;
-
-                if (!addedToHierarchy)
-                    return;
-
-                if (____levelCompletionResults.levelEndStateType == LevelCompletionResults.LevelEndStateType.Cleared ||
-                    ____levelCompletionResults.levelEndStateType == LevelCompletionResults.LevelEndStateType.Failed)
+                value += Config.Instance.VolumeAdjuster; // changes vol by db
+                Plugin.LogDebug($"Adjusted audio volume {Config.Instance.VolumeAdjuster} dB louder.");
+            }
+        }
+        */
+        // USE THIS ONE!!!! WORKS!!! but prefer Verbose Volume
+        /*
+        public class SoundRemover // from sound replacer -- MADE THIS SINCE WAS NOT WORKING ON LEVEL CLEARED so just replaced all the sounds i wanted and can remove soundreplacer.dll
+        {
+            // Remove Level Cleared or Failed Audio
+            //
+            [HarmonyPatch(typeof(ResultsViewController), "DidActivate", MethodType.Normal)]
+            public class LevelEndPatch
+            {
+                public static void Postfix(bool addedToHierarchy, bool screenSystemEnabling, ref SongPreviewPlayer ____songPreviewPlayer, ref LevelCompletionResults ____levelCompletionResults)
                 {
-                    ____songPreviewPlayer.CrossfadeTo(null, 0f, 0f, 0f, null);
-                    Plugin.LogDebug($"Level End Cleared or Success sound removed!");
+                    if (!Config.Instance.EnablePlugin) return;
+
+                    if (!addedToHierarchy)
+                        return;
+
+                    if (____levelCompletionResults.levelEndStateType == LevelCompletionResults.LevelEndStateType.Cleared ||
+                        ____levelCompletionResults.levelEndStateType == LevelCompletionResults.LevelEndStateType.Failed)
+                    {
+                        ____songPreviewPlayer.CrossfadeTo(null, 0f, 0f, 0f, null);
+                        Plugin.LogDebug($"Level End Cleared or Success sound removed!");
+                    }
+                }
+            }
+            */
+
+
+
+
+
+        // Remove menu music
+        // Works but disabling
+        [HarmonyPatch(typeof(SongPreviewPlayer), "Awake")]
+        public static class MenuMusicPatch
+        {
+            private static AudioClip _silentMenuClip;
+
+            public static void Postfix(ref AudioClip ____defaultAudioClip)
+            {
+                if (Config.Instance.RemoveMenuMusic)
+                    ____defaultAudioClip = GetSilentMenuClip();
+            }
+
+            internal static AudioClip GetSilentMenuClip()
+            {
+                return _silentMenuClip ??= AudioClip.Create(
+                    "AutoBS_SilentMenuMusic",
+                    44100,
+                    1,
+                    44100,
+                    false
+                );
+            }
+        }
+
+        // Remove bad cut sound or Miss sound - not using this.
+
+        [HarmonyPatch(typeof(NoteCutSoundEffect), nameof(NoteCutSoundEffect.Init))]
+        public static class NoteCutSoundEffectInitPatch
+        {
+            public static void Prefix(ref bool ignoreBadCuts)
+            {
+                if (Config.Instance.RemoveBadCutSound)
+                    ignoreBadCuts = true;
+            }
+        }
+
+        //}
+
+
+
+
+        // I used this version.
+        // Works! during playback music volume is changed only - so preview of song is not louder
+        /*
+        [HarmonyPatch(typeof(AudioTimeSyncController), "StartSong")]
+        public class AudioTimeSyncController_StartSong_Patch
+        {
+            static void Postfix(AudioTimeSyncController __instance)
+            {
+                // Use reflection to get the private _audioSource field
+                FieldInfo audioSourceField = typeof(AudioTimeSyncController).GetField("_audioSource", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (audioSourceField != null)
+                {
+                    AudioSource audioSource = audioSourceField.GetValue(__instance) as AudioSource;
+                    if (audioSource != null)
+                    {
+                        if (audioSource.outputAudioMixerGroup.audioMixer.GetFloat("MusicVolume", out var currentVolume))
+                        {
+                            // Set the music volume based on the base volume and adjuster value
+                            float newVolume = currentVolume + Config.Instance.VolumeAdjuster;
+                            audioSource.outputAudioMixerGroup.audioMixer.SetFloat("MusicVolume", newVolume);
+                            Plugin.LogDebug($"Adjusted music volume {Config.Instance.VolumeAdjuster} dB louder.");
+                        }
+                    }
+                    else
+                    {
+                        Plugin.LogDebug("Failed to retrieve AudioSource from AudioTimeSyncController.");
+                    }
+                }
+                else
+                {
+                    Plugin.LogDebug("Failed to find _audioSource field in AudioTimeSyncController.");
+                }
+            }
+        }
+        */
+        /*
+        // test to see if volume can be changed live during playback. happens after 5s. works!
+        using System.Collections;
+        using System.Reflection;
+        using HarmonyLib;
+        using UnityEngine;
+        using UnityEngine.Audio;
+
+        [HarmonyPatch(typeof(AudioTimeSyncController), "StartSong")]
+        public class AudioTimeSyncController_StartSong_Patch
+        {
+            static void Postfix(AudioTimeSyncController __instance)
+            {
+                __instance.StartCoroutine(ChangeVolumeAfterDelay(__instance, 5f, 12f));
+            }
+
+            private static IEnumerator ChangeVolumeAfterDelay(AudioTimeSyncController controller, float delay, float dbChange)
+            {
+                yield return new WaitForSeconds(delay);
+
+                FieldInfo audioSourceField = typeof(AudioTimeSyncController).GetField("_audioSource", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (audioSourceField == null)
+                {
+                    Plugin.LogDebug("Failed to find _audioSource field in AudioTimeSyncController.");
+                    yield break;
+                }
+
+                AudioSource audioSource = audioSourceField.GetValue(controller) as AudioSource;
+                if (audioSource == null)
+                {
+                    Plugin.LogDebug("Failed to retrieve AudioSource from AudioTimeSyncController.");
+                    yield break;
+                }
+
+                AudioMixerGroup mixerGroup = audioSource.outputAudioMixerGroup;
+                if (mixerGroup == null)
+                {
+                    Plugin.LogDebug("AudioSource has no outputAudioMixerGroup.");
+                    yield break;
+                }
+
+                AudioMixer mixer = mixerGroup.audioMixer;
+                if (mixer == null)
+                {
+                    Plugin.LogDebug("AudioMixerGroup has no AudioMixer.");
+                    yield break;
+                }
+
+                if (mixer.GetFloat("MusicVolume", out float currentVolume))
+                {
+                    float newVolume = currentVolume + dbChange;
+
+                    // Optional clamp, depending on Beat Saber's mixer range
+                    newVolume = Mathf.Clamp(newVolume, -80f, 20f);
+
+                    mixer.SetFloat("MusicVolume", newVolume);
+                    Plugin.LogDebug($"Changed MusicVolume live after {delay:F1}s. Old: {currentVolume:F2} dB New: {newVolume:F2} dB");
+                }
+                else
+                {
+                    Plugin.LogDebug("Failed to read MusicVolume from AudioMixer.");
                 }
             }
         }
@@ -227,140 +363,20 @@ namespace AutoBS // required adding reference to UnityEngine.AudioModule
 
 
 
-    // Remove menu music
-    /* Works but disabling
-    [HarmonyPatch(typeof(SongPreviewPlayer), "Awake")]
-    public class MenuMusicPatch
-    {
-        public static void Postfix(ref AudioClip ____defaultAudioClip)
-        {
-            ____defaultAudioClip = GetEmptyClip();
-        }
+
     }
-    */
-    // Remove bad hit sound - not using this.
-
-    //[HarmonyPatch(typeof(NoteCutSoundEffect), "Awake")]
-    //public class BadCutSoundPatch
-    //{
-    //    public static void Prefix(ref AudioClip[] ____badCutSoundEffectAudioClips)
-    //    {
-    //        ____badCutSoundEffectAudioClips = new AudioClip[] { GetEmptyClip() };
-    //    }
-    //}
-
-    // Helper method to get an empty AudioClip
-
-    /*
-    private static AudioClip GetEmptyClip()
-    {
-        return AudioClip.Create("Silence", 1, 1, 44100, false);
-    }
-    */
-    //}
 
 
 
 
-    // I used this version.
-    // Works! during playback music volume is changed only - so preview of song is not louder
-    /*
-    [HarmonyPatch(typeof(AudioTimeSyncController), "StartSong")]
-    public class AudioTimeSyncController_StartSong_Patch
-    {
-        static void Postfix(AudioTimeSyncController __instance)
-        {
-            // Use reflection to get the private _audioSource field
-            FieldInfo audioSourceField = typeof(AudioTimeSyncController).GetField("_audioSource", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (audioSourceField != null)
-            {
-                AudioSource audioSource = audioSourceField.GetValue(__instance) as AudioSource;
-                if (audioSource != null)
-                {
-                    if (audioSource.outputAudioMixerGroup.audioMixer.GetFloat("MusicVolume", out var currentVolume))
-                    {
-                        // Set the music volume based on the base volume and adjuster value
-                        float newVolume = currentVolume + Config.Instance.VolumeAdjuster;
-                        audioSource.outputAudioMixerGroup.audioMixer.SetFloat("MusicVolume", newVolume);
-                        Plugin.LogDebug($"Adjusted music volume {Config.Instance.VolumeAdjuster} dB louder.");
-                    }
-                }
-                else
-                {
-                    Plugin.LogDebug("Failed to retrieve AudioSource from AudioTimeSyncController.");
-                }
-            }
-            else
-            {
-                Plugin.LogDebug("Failed to find _audioSource field in AudioTimeSyncController.");
-            }
-        }
-    }
-    */
-    /*
-    // test to see if volume can be changed live during playback. happens after 5s. works!
-    using System.Collections;
-    using System.Reflection;
-    using HarmonyLib;
-    using UnityEngine;
-    using UnityEngine.Audio;
 
-    [HarmonyPatch(typeof(AudioTimeSyncController), "StartSong")]
-    public class AudioTimeSyncController_StartSong_Patch
-    {
-        static void Postfix(AudioTimeSyncController __instance)
-        {
-            __instance.StartCoroutine(ChangeVolumeAfterDelay(__instance, 5f, 12f));
-        }
 
-        private static IEnumerator ChangeVolumeAfterDelay(AudioTimeSyncController controller, float delay, float dbChange)
-        {
-            yield return new WaitForSeconds(delay);
 
-            FieldInfo audioSourceField = typeof(AudioTimeSyncController).GetField("_audioSource", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (audioSourceField == null)
-            {
-                Plugin.LogDebug("Failed to find _audioSource field in AudioTimeSyncController.");
-                yield break;
-            }
 
-            AudioSource audioSource = audioSourceField.GetValue(controller) as AudioSource;
-            if (audioSource == null)
-            {
-                Plugin.LogDebug("Failed to retrieve AudioSource from AudioTimeSyncController.");
-                yield break;
-            }
 
-            AudioMixerGroup mixerGroup = audioSource.outputAudioMixerGroup;
-            if (mixerGroup == null)
-            {
-                Plugin.LogDebug("AudioSource has no outputAudioMixerGroup.");
-                yield break;
-            }
 
-            AudioMixer mixer = mixerGroup.audioMixer;
-            if (mixer == null)
-            {
-                Plugin.LogDebug("AudioMixerGroup has no AudioMixer.");
-                yield break;
-            }
 
-            if (mixer.GetFloat("MusicVolume", out float currentVolume))
-            {
-                float newVolume = currentVolume + dbChange;
 
-                // Optional clamp, depending on Beat Saber's mixer range
-                newVolume = Mathf.Clamp(newVolume, -80f, 20f);
 
-                mixer.SetFloat("MusicVolume", newVolume);
-                Plugin.LogDebug($"Changed MusicVolume live after {delay:F1}s. Old: {currentVolume:F2} dB New: {newVolume:F2} dB");
-            }
-            else
-            {
-                Plugin.LogDebug("Failed to read MusicVolume from AudioMixer.");
-            }
-        }
-    }
-    */
 
 }

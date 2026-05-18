@@ -103,7 +103,7 @@ namespace AutoBS
         private static bool IsSkyTileMode => IsCityScapeMode || IsSpiresMode;
 
 
-        public static void SetOriginalWalls(EditableCBD eData)
+        public static void  SetOriginalWalls(EditableCBD eData)
         {
             originalWalls.Clear();
             foreach (var obstacle in eData.Obstacles) // Clear existing obstacles from BeatmapData so obstacles are empty
@@ -191,6 +191,29 @@ namespace AutoBS
         public static void WallGen(int i, float wallTime, float wallDuration, ENoteData afterLastNote, List<ENoteData> notesInBarBeat, List<ENoteData> notesInBar, float nextNoteLeftTime, float nextNoteRightTime)
 
         {
+            // Mapping Extensions Precision Helpers
+            static bool IsFarLeftNote(ENoteData n)
+            {
+                return ConvertEditableCBD.DecodePrecision(n.line) <= 0f;
+            }
+
+            static bool IsInnerLeftNote(ENoteData n)
+            {
+                float x = ConvertEditableCBD.DecodePrecision(n.line);
+                return x > 0f && x <= 1f;
+            }
+
+            static bool IsInnerRightNote(ENoteData n)
+            {
+                float x = ConvertEditableCBD.DecodePrecision(n.line);
+                return x >= 2f && x < 3f;
+            }
+
+            static bool IsFarRightNote(ENoteData n)
+            {
+                return ConvertEditableCBD.DecodePrecision(n.line) >= 3f;
+            }
+
             ExtensionMappingWallsGenerated = false;
 
             static bool LayerOverlap(int noteLine, int wallStartCol, int wallWidth)
@@ -333,10 +356,10 @@ namespace AutoBS
             if (generateWall && afterLastNote != null)
             {
                 // ===== RIGHT WALLS =====
-                if (!notesInBarBeat.Any(e => e.line == 3))
+                if (!notesInBarBeat.Any(IsFarRightNote))
                 {
                     int widthRight = 1;
-                    int wallHeightR = notesInBarBeat.Any(e => e.line == 2) ? 1 : 3;
+                    int wallHeightR = notesInBarBeat.Any(IsInnerRightNote) ? 1 : 3;
                     int lineLayerR = wallHeightR == 1 ? 2 : 0;
 
                     // decide width first (uses your existing cadence)
@@ -356,7 +379,7 @@ namespace AutoBS
                     float rStart = wallTime;
                     float rDur = wallDuration;
 
-                    if (afterLastNote.line == 3 && !(wallHeightR == 1 && afterLastNote.layer == 0))
+                    if (IsFarRightNote(afterLastNote) && !(wallHeightR == 1 && afterLastNote.layer == 0))
                     {
                         rDur = afterLastNote.time - WallBackCut - rStart;
                         if (rDur < minWallDuration) goto LEFT_WALLS;
@@ -385,10 +408,10 @@ namespace AutoBS
 
                 // ===== LEFT WALLS =====
                 LEFT_WALLS:
-                if (!notesInBarBeat.Any(e => e.line == 0))
+                if (!notesInBarBeat.Any(IsFarLeftNote))
                 {
                     int widthLeft = 1;
-                    int wallHeightL = notesInBarBeat.Any(e => e.line == 1) ? 1 : 3;
+                    int wallHeightL = notesInBarBeat.Any(IsInnerLeftNote) ? 1 : 3;
                     int lineLayerL = wallHeightL == 1 ? 2 : 0;
 
                     if (i % 4 == 0 || i % 6 == 0)
@@ -408,7 +431,7 @@ namespace AutoBS
                     float lDur = wallDuration;
                     bool skip = false;
 
-                    if (afterLastNote.line == 0 && !(wallHeightL == 1 && afterLastNote.layer == 0))
+                    if (IsFarLeftNote(afterLastNote) && !(wallHeightL == 1 && afterLastNote.layer == 0))
                     {
                         lDur = afterLastNote.time - WallBackCut - lStart;
                         if (lDur < minWallDuration) skip = true; // skip left, continue
@@ -1426,113 +1449,6 @@ namespace AutoBS
                     ExtensionMappingWallsGenerated = true;
             }
         }
-        private static void AddFloorWallOld(float time, int j, List<TimeGap> gaps, int lineIndex, int[] activeLineList, HashSet<int> generatedSkyRows)
-        {
-            // floor walls
-            float[] dur = { .04f, .02f, .02f, .08f };
-            int[] widths = { 1900, 2900, 1400 };//, { 2000, 3000 };
-            int[] heights = { 1001 };
-
-            int height = 1001;
-
-            // skyscraper walls
-            if (ToggleCityScape == 0 || ToggleSpires == 0)
-            {
-                dur = new float[] { .02f };
-                heights = new int[] { 1200, 1400, 1400, 1800, 1800, 2000, 2000, 2200, 2600, 3000 };
-
-                height = heights[TransitionPatcher.RepeatableRandom.Next(heights.Length)];
-            }
-
-            if (lineIndex < 2)
-                lineIndex -= (int)Config.Instance.FloorWallsMinDistance;
-            else
-                lineIndex += (int)Config.Instance.FloorWallsMinDistance;
-
-            int variableWidths;
-
-            if (time % 3 == 0)
-            {
-                variableWidths = (int)(Math.Sin(time) * 1000) + j;
-            }
-            else
-                variableWidths = (int)(Math.Cos(time) * 1000) + j;
-
-            int cycleIndexForWidth = Math.Abs(variableWidths) % widths.Length;
-            int cycleIndexForDuration = Math.Abs(variableWidths) % dur.Length;
-
-            int width = widths[cycleIndexForWidth];
-
-            float duration = dur[cycleIndexForDuration];
-
-            if (width <= 1500 && duration > .04f) // tiny walls should have short duration
-                duration = .04f;
-
-            int minDis = (int)Config.Instance.FloorWallsMinDistance;
-
-            if (ToggleCityScape == 0)
-            {
-                if (height < 1500)
-                    width = (int)(height * 1.5f);
-                else
-                    width = (int)(height * .66f);
-
-                if (width <= 1000)
-                    duration /= 8f;
-                else if (width >= 1800)
-                    duration *= 1.3f;
-
-            }
-            else if (ToggleSpires == 0)
-            {
-                height = (int)(height * 1.5f);
-                width = 1300;
-                duration /= 2.5f;
-                //Plugin.Log.Info($"-- Wall Floor: SPIRES! Time: {time}");
-            }
-            else if (ToggleSmall == 0)
-            {
-                //Plugin.Log.Info($"Small Floor time: {time}");
-                width = (width - 1000) / 2 + 1000; // this will half the size
-                if (width > 1700)
-                    width = (width - 1000) / 2 + 1000;
-                duration /= 2.5f;
-            }
-
-            //Plugin.Log.Info($"---Variable Index: {Math.Abs(variableIndex1)} widthHeight: {widthHeight}");
-            EObstacleData customObsData = EObstacleData.Create(time, lineIndex, 0, duration, width, height); // lineLayer 4 & lower square. 5 is flat no height. 6 is normal 7 is very tall, 9 is long thin taller even
-
-            if (TransitionPatcher.RequiresNoodle)
-                customObsData = ConvertToNoodleWall(customObsData);
-
-            //Plugin.Log.Info($"-- Wall Floor: Time: {time}, Index:{lineIndex}, Layer: 0, Dur: {duration}, Width: {width}, Height: {height}");
-            if (ToggleCityScape == 0 || ToggleSpires == 0)
-            {
-                //Plugin.Log.Info($"Wall EXTENSION Lo Rt: Time: {wallTime}, Index:{indexx}, Layer: {loLayer}, Dur: {duration}, Width: {loWidth}, Height: {height1}");
-                if (lineIndex < -minDis || lineIndex > 3 + minDis)
-                    generatedExtensionWalls.Add(customObsData); // these are standard walls not floor walls really
-            }
-            else
-            {
-                //Plugin.Log.Info($"Wall EXTENSION Lo Rt: Time: {wallTime}, Index:{indexx}, Layer: {loLayer}, Dur: {duration}, Width: {loWidth}, Height: {height1}");
-                floorWalls.Add(customObsData);
-            }
-
-            if (gaps.Count == 0 || gaps.Any(g => g.WithinGap(time))) // sky walls
-            {
-                int layer = 8;// 8500
-                int heightSky = 1001;
-                customObsData = EObstacleData.Create(time, lineIndex, layer, duration, width, heightSky); // lineLayer 4 & lower square. 5 is flat no height. 6 is normal 7 is very tall, 9 is long thin taller even
-                //Plugin.Log.Info($"-- Wall Floor: Time: {time}, Index:{lineIndex}, Layer: 0, Dur: {duration}, Width: {width}, Height: 1001");
-
-                Plugin.LogDebug($"[WallFloor] SkyTile - Time: {time:F3}, Line:{lineIndex}, Layer: {layer}, Dur: {duration}, Width: {width}, Height: {heightSky}");
-                floorWalls.Add(customObsData);
-
-            }
-            lastHeight = height;
-
-        }
-
 
         private static void AddFloorWall(float time, int j, List<TimeGap> gaps, int line, int[] activeLineList, HashSet<int> generatedSkyRows)
         {
@@ -1594,8 +1510,6 @@ namespace AutoBS
                 duration = .04f;
 
             bool skip = false;
-
-
 
             if (IsMappingExtensionsInstalled)
             {
@@ -1886,7 +1800,7 @@ namespace AutoBS
         }
         static float SquareDurationSeconds(float widthUnits) // tries to set duration so will creates size dimension matching the width since a sky wall is time x width for its dimension
         {
-            float njs = Math.Max(0.01f, TransitionPatcher.FinalNoteJumpMovementSpeed);
+            float njs = Math.Max(1f, TransitionPatcher.FinalNoteJumpMovementSpeed);
             return widthUnits / njs;
         }
 
@@ -2381,6 +2295,22 @@ namespace AutoBS
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Restart();
 
+            // Mapping Extensions precision walls
+            static float DecodeWidth(int width)
+            {
+                if (!ConvertEditableCBD.IsPrecision(width)) return width;
+                return width / 1000f;
+            }
+
+            static bool IsRightSideWall(EObstacleData obs)
+            {
+                float left = ConvertEditableCBD.DecodePrecision(obs.line);
+                float width = Math.Max(DecodeWidth(obs.width), 0.001f);
+                float center = left + width * 0.5f;
+
+                return center >= 2f;
+            }
+
             if (!allWallsContainsOriginalWalls)
             {
                 allWalls.AddRange(originalWalls);
@@ -2418,7 +2348,7 @@ namespace AutoBS
 
             foreach (var obs in allWalls)
             {
-                if (obs.line > 1) rightWalls.Add(obs);
+                if (IsRightSideWall(obs)) rightWalls.Add(obs);
                 else leftWalls.Add(obs);
             }
 
@@ -2718,68 +2648,58 @@ namespace AutoBS
 
         public static void FinalizeWallsToMap(EditableCBD eData)
         {
-            //Stopwatch stopwatch = new Stopwatch();
-            //stopwatch.Restart();
-            if (originalWalls.Count == 0) // Github Issue #2 Walls gone when using autolights
-            {
-                allWalls.AddRange(eData.Obstacles); // in case not already done
-                allWallsContainsOriginalWalls = true;
-            }
+            // Do NOT special-case originalWalls.Count == 0 here.
+            // If SetOriginalWalls() already ran, eData.Obstacles may already be empty.
 
             if (!allWallsContainsOriginalWalls)
             {
                 allWalls.AddRange(originalWalls);
                 allWallsContainsOriginalWalls = true;
             }
+
             if (!allWallsContainsStandardWalls)
             {
                 allWalls.AddRange(generatedStandardWalls);
                 allWallsContainsStandardWalls = true;
             }
+
             if (!allWallsContainsExtensionWalls)
             {
                 allWalls.AddRange(generatedExtensionWalls);
                 allWallsContainsExtensionWalls = true;
             }
+
             if (!allWallsContainsParticleWalls)
             {
                 allWalls.AddRange(particleWalls);
                 allWallsContainsParticleWalls = true;
             }
+
             if (!allWallsContainsFloorWalls)
             {
                 allWalls.AddRange(floorWalls);
                 allWallsContainsFloorWalls = true;
             }
 
-            eData.Obstacles = allWalls;
-
-            Plugin.LogDebug($"[FinalizeWallsToMap] Walls Finalized Count: {eData.Obstacles.Count}");
-
-            //Plugin.LogDebug($" ------- Add all walls Time Elapsed: {stopwatch.ElapsedMilliseconds / 1000.0:F1}.");
-            //stopwatch.Stop();
-        }
-        public static void FinalizeOriginalOnlyWallsToMap(EditableCBD eData)
-        {
-            // Github Issue #2 Walls gone when using autolights
-            if (originalWalls.Count == 0)
-            {
-                allWalls.AddRange(eData.Obstacles); // in case not already done
-                allWallsContainsOriginalWalls = true;
-            }
-
-            if (!allWallsContainsOriginalWalls)
-            {
-                allWalls.AddRange(originalWalls);
-                allWallsContainsOriginalWalls = true;
-            }
-            
-
             allWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
             eData.Obstacles = allWalls;
 
-            Plugin.LogDebug($"[FinalizeWallsToMap] Walls Finalized Count: {eData.Obstacles.Count} (only original walls since walls count > 5000)");
+            eData.ObstaclesChanged =
+                generatedStandardWalls.Count > 0 ||
+                generatedExtensionWalls.Count > 0 ||
+                particleWalls.Count > 0 ||
+                floorWalls.Count > 0 ||
+                originalWallCount != eData.Obstacles.Count;
+
+            Plugin.LogDebug(
+                $"[FinalizeWallsToMap] Finalized: eData={eData.Obstacles.Count}, " +
+                $"original={originalWalls.Count}, " +
+                $"standard={generatedStandardWalls.Count}, " +
+                $"extension={generatedExtensionWalls.Count}, " +
+                $"particle={particleWalls.Count}, " +
+                $"floor={floorWalls.Count}, " +
+                $"allWalls={allWalls.Count}");
         }
 
         public static bool IsCustomNoodleWall(EObstacleData ob)

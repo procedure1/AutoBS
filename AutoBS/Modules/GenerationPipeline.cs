@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing.Text;
 using System.Linq;
+using UnityEngine;
 
 namespace AutoBS
 {
@@ -78,6 +79,11 @@ namespace AutoBS
             if (!string.IsNullOrEmpty(disabledText))
                 ScoreGate.Set(disabledText);
 
+            //int offset = (int)Config.Instance.RotationOriginOffsetForRecording360;
+            //foreach (var evt in eData.RotationEvents)
+            //{
+            //    evt.accumRotation += offset;
+            //}
 
             (float accumRot, float time) high = (0, 0);
             (float accumRot, float time) low = (0, 0);
@@ -246,9 +252,13 @@ namespace AutoBS
             */
 
             float originalNjs = TransitionPatcher.OriginalNoteJumpMovementSpeed;
-            if (originalNjs == 0f) return; // this means we never got valid data for the current map, so skip initialization to avoid writing stale data.
+            if (originalNjs == 0f)
+            {
+                Plugin.LogDebug($"[InitializeMovementData] Init skipped because original NJS was 0.");
+                return; // this means we never got valid data for the current map, so skip initialization to avoid writing stale data.
+            }
 
-            float originalNjo = TransitionPatcher.OriginalNoteJumpOffset;
+                float originalNjo = TransitionPatcher.OriginalNoteJumpOffset;
 
             // Reuse your existing calculation path so original JD matches your current logic.
             (float finalNjs, float finalJd, float originalJd) = AutoNjsFixer.Calculate(originalNjs, originalNjo, TransitionPatcher.bpm);
@@ -278,8 +288,8 @@ namespace AutoBS
 
             if (!enableDiffRed) return;
 
-            int originalCount = eData.ColorNotes.Count;
-            Plugin.LogDebug($"[Pipeline DiffReducer] Inital Note Count: {originalCount}");
+            int originalNotesCount = eData.ColorNotes.Count;
+            int originalBombCount = eData.BombNotes.Count;
 
             AutoDifficultyReducer.InitialCalculations(eData, TransitionPatcher.bpm, TransitionPatcher.NotesPerSecond);
 
@@ -294,11 +304,17 @@ namespace AutoBS
             if (eData.Chains != null)
                 eData.Chains = eData.Chains.OrderBy(c => c.time).ToList();
 
-            int finalCount = eData.ColorNotes.Count;
-            Plugin.LogDebug($"[Pipeline DiffReducer] Inital Note Count: {originalCount} -- Final Note Count: {eData.ColorNotes.Count}");// ColorA: {eData.ColorNotes.Where(r => r.colorType == ColorType.ColorA).Count()} ColorB: {eData.ColorNotes.Where(r => r.colorType == ColorType.ColorB).Count()}");
-            if (originalCount != finalCount)
+            int finalNotesCount = eData.ColorNotes.Count;
+            int finalBombCount = eData.BombNotes.Count;
+            Plugin.LogDebug($"[Pipeline DiffReducer] Inital Note Count: {originalNotesCount}, Bomb Count: {originalBombCount} -- Final Note Count: {finalNotesCount}, Bomb Count: {finalBombCount}");// ColorA: {eData.ColorNotes.Where(r => r.colorType == ColorType.ColorA).Count()} ColorB: {eData.ColorNotes.Where(r => r.colorType == ColorType.ColorB).Count()}");
+            if (originalNotesCount != finalNotesCount)
             {
                 eData.ColorNotesChanged = true;
+                TransitionPatcher.DifficultyReducerRemovedNotes = true;
+            }
+            if (originalBombCount != finalBombCount)
+            {
+                eData.BombNotesChanged = true;
                 TransitionPatcher.DifficultyReducerRemovedNotes = true;
             }
 
@@ -390,7 +406,7 @@ namespace AutoBS
         {
             if (TransitionPatcher.SelectedSerializedName != GameModeHelper.GENERATED_360DEGREE_MODE) return;
 
-            RotationGenerator.Generate(eData);      
+            RotationGenerator.Generate(eData);    
         }
 
         private static void RunWallGenerator(EditableCBD eData)
@@ -546,15 +562,16 @@ namespace AutoBS
 
                 List<TimeGap> gaps = new List<TimeGap>();
 
+                float size = 2.0f;
                 if (eData.WallCutMoments.Count > 0)
                 {
-                    gaps = WallGenerator.FindGapsUsingRotations(eData.WallCutMoments, 2.0f);
-                    Plugin.LogDebug($"[FinalizeWallGeneration][FindGapsUsingRotations] using WallCutMoments found {gaps.Count} gaps to help set floor walls and mega walls.");
+                    gaps = WallGenerator.FindGapsUsingRotations(eData.WallCutMoments, size);
+                    Plugin.LogDebug($"[FinalizeWallGeneration][FindGapsUsingRotations] using WallCutMoments found {gaps.Count} gaps with size {size}s to help set floor walls and mega walls.");
                 }
                 else
                 {
-                    gaps = WallGenerator.FindGapsUsingNotes(eData.ColorNotes, 2.0f);
-                    Plugin.LogDebug($"[FinalizeWallGeneration][FindGapsUsingNotes] No WallCutMoments! With notes found {gaps.Count} gaps to help set floor walls and mega walls.");
+                    gaps = WallGenerator.FindGapsUsingNotes(eData.ColorNotes, size);
+                    Plugin.LogDebug($"[FinalizeWallGeneration][FindGapsUsingNotes] No WallCutMoments! So using notes found {gaps.Count} gaps with size {size}s to help set floor walls and mega walls.");
                 }
 
                 WallGenerator.ParticleWalls(); WallGenerator.FloorWalls(gaps);//outside the loop. so not using wallTime and not on the beat
@@ -609,8 +626,8 @@ namespace AutoBS
                 if (Utils.IsEnabledWalls() && !alreadyUsingME)
                     WallGenerator.RemoveIntersectingWalls();
 
-                if (WallGenerator.allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
-                    WallGenerator.FinalizeWallsToMap(eData);
+                //if (WallGenerator.allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
+                WallGenerator.FinalizeWallsToMap(eData);
 
                 //if (WallGenerator._originalWalls.Count > 0 || WallGenerator._allWalls.Count > 0) // Github Issue #2 Walls gone when using autolights
                 //    WallGenerator.FinalizeOriginalOnlyWallsToMap(eData);
@@ -653,7 +670,7 @@ namespace AutoBS
         public static string DetermineScoreSubmissionReason(EditableCBD eData)
         {
             string str = "";
-
+            /*
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
             {
                 if (Config.Instance.BasedOn != Config.Base.Standard)
@@ -669,22 +686,36 @@ namespace AutoBS
                     str += (str != "" ? " | " : "") + "Rotations Limited";
                 }
             }
+            */
+            if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE) // Since 360 settings can be altered, there is no standard for 360 generated maps and so can't score it.
+            {
+                str = "360fyer";
+            }
+
             if (BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Standard &&
                 Config.Instance.EnableDiffReducer && TransitionPatcher.DifficultyReducerRemovedNotes)
             {
                 str += (str != "" ? " | " : "") + "Auto Diff Reducer";
             }
-            if (BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Standard &&
-                Utils.IsEnabledAutoNjsFixer() &&
-                !TransitionPatcher.AutoNJSDisabledByConflictingMod &&
-                TransitionPatcher.OriginalNoteJumpMovementSpeed > TransitionPatcher.FinalNoteJumpMovementSpeed)
+
+            if (Mathf.Abs(TransitionPatcher.OriginalNoteJumpMovementSpeed - TransitionPatcher.FinalNoteJumpMovementSpeed) > 0.0001f )
             {
                 str += (str != "" ? " | " : "") + "Auto NJS Fixer";
             }
 
-            if (Utils.IsEnabledChains() && !eData.MapAlreadyUsesChains && eData.Chains.Count > 0)
+            if (eData.ArcsChanged)
             {
-                str += (str != "" ? " | " : "") + "Architect Chains";
+                str += (str != "" ? " | " : "") + "Arcitect Arcs";
+            }
+
+            if (eData.ChainsChanged)
+            {
+                str += (str != "" ? " | " : "") + "Arcitect Chains";
+            }
+
+            if (eData.ObstaclesChanged)
+            {
+                str += (str != "" ? " | " : "") + "Auto Walls";
             }
 
             if (Config.Instance.EnableCleanBeatSage && (TransitionPatcher.IsBeatSageMap) && BeatSageCleanUp.DisableScoreSubmission)

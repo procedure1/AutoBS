@@ -287,6 +287,8 @@ namespace AutoBS.Patches
                     if (IsCustomLevel)
                         (beatmapJson, lightshowJson, audioDataJson, version) = GetJsonForCustomLevel(level, difficulty, stdKey); //no longer works for built-in levels
 
+                    // ************* For built-in vanilla levels, we don't get actual beatmapData until CreateTransformedBeatmapData() ****************
+
                     if (!string.IsNullOrEmpty(beatmapJson))// v2/v3 custom map have no lightshowJson && !string.IsNullOrEmpty(lightshowJson))
                     {
                         Plugin.LogDebug($"[CreateGen360DifficultySet] -- Difficulty: {difficulty}");

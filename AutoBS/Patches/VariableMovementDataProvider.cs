@@ -357,7 +357,7 @@ namespace AutoBS.Patches
 
                 bool flexibleDuration = AutoNjsRuntimeState.FlexibleDuration;
 
-                if (!state.LiveNjsScoreGateTriggered && effectiveNjs < state.OriginalNjs - 0.001f)
+                if (!state.LiveNjsScoreGateTriggered && Mathf.Abs(effectiveNjs - state.OriginalNjs) > 0.0001f)//effectiveNjs < state.OriginalNjs - 0.001f)
                 {
                     state.LiveNjsScoreGateTriggered = true;
                     ScoreGate.AddReason("Live NJS");

@@ -21,6 +21,7 @@ namespace AutoBS
             Plugin.LogDebug($"[BeatSageCleanUp] Beat Sage Map being cleaned!");
 
             int originalNoteCount = eData.ColorNotes.Count();
+            int originalBombCount = eData.BombNotes.Count();
 
             StrayNoteCleaner.RemoveStrays(eData, minPauseSeconds: Config.Instance.StrayNoteCleanerOffset, maxStrays: (int)Config.Instance.MaxStrayNotes);
 
@@ -31,11 +32,15 @@ namespace AutoBS
             {
                 DisableScoreSubmission = true;
             }
+            else if (eData.BombNotes.Count() < originalBombCount)
+            {
+                DisableScoreSubmission = true;
+            }
             else
                 DisableScoreSubmission = false;
         }
 
-        #region Adjust Notes
+        #region Adjust Notes and Bombs
         private static EditableCBD notesAdjustment(EditableCBD eData)
         {
             int originalNoteCount = eData.ColorNotes.Count();

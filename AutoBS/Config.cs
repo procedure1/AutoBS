@@ -22,12 +22,12 @@ namespace AutoBS
         public virtual bool Enable360fyer { get; set; } = true;
 
         public virtual bool EnableArcsGen360 { get; set; } = true;
-        public virtual bool EnableArcsNonGen360 { get; set; } = false;
-        public virtual bool EnableArcsStandard { get; set; } = false;
+        public virtual bool EnableArcsNonGen360 { get; set; } = true;
+        public virtual bool EnableArcsStandard { get; set; } = true;
 
         public virtual bool EnableChainsGen360 { get; set; } = true;
-        public virtual bool EnableChainsNonGen360 { get; set; } = false;
-        public virtual bool EnableChainsStandard { get; set; } = false;
+        public virtual bool EnableChainsNonGen360 { get; set; } = true;
+        public virtual bool EnableChainsStandard { get; set; } = true;
 
 
         public virtual bool EnableWallsGen360 { get; set; } = true;
@@ -37,7 +37,7 @@ namespace AutoBS
 
         public virtual bool EnableLightingGen360 { get; set; } = true;
         public virtual bool EnableLightingNonGen360 { get; set; } = true;
-        public virtual bool EnableLightingStandard { get; set; } = false;
+        public virtual bool EnableLightingStandard { get; set; } = true;
 
         // ROTATION ---------------------------------
 
@@ -103,7 +103,7 @@ namespace AutoBS
 
         // BEAT SAGE
 
-        public virtual bool EnableCleanBeatSage { get; set; } = false; // alter notes so that chains will be compatible - will move note position so tail can exist
+        public virtual bool EnableCleanBeatSage { get; set; } = true; // alter notes so that chains will be compatible - will move note position so tail can exist
         public virtual float MaxCrouchWallDuration { get; set; } = 0.75f; // max duration of crouch walls in Seconds
         public virtual float StrayNoteCleanerOffset { get; set; } = 6f; // how many seconds from primary note content to remove straggler notes that are off by themselves at the beginning or end of map
         public virtual float MaxStrayNotes { get; set; } = 5f; //how many stray notes allowed with a StrayNoteCleanerOffset time gap before removal
@@ -239,7 +239,7 @@ namespace AutoBS
         public virtual bool EnableAutoNjsFixerNonGen360 { get; set; } = false;
         public virtual bool EnableAutoNjsFixerStandard { get; set; } = false;
 
-        public virtual bool EnabledInPractice { get; set; } = false; 
+        public virtual bool EnabledInPractice { get; set; } = true; 
         public virtual float DesiredNJS { get; set; } = 10f; // if > 0 use this value
         public virtual float DesiredJD  { get; set; } = 30f; // if > 0 use this value
         public enum AutoNjsFixerModeType { PreserveTravelTime, SetNoteSpeed } // bpm is required for PreserveTravelTime mode. 
@@ -264,8 +264,8 @@ namespace AutoBS
             ButtonsXA
         }
         public virtual LiveControlModeType LiveVolumeControl { get; set; } = LiveControlModeType.ThumbstickLUpDown;
-        public virtual LiveControlModeType LiveNjsControl { get; set; } = LiveControlModeType.Off;
-        public virtual LiveControlModeType LiveJdControl { get; set; } = LiveControlModeType.Off;
+        public virtual LiveControlModeType LiveNjsControl { get; set; } = LiveControlModeType.ThumbstickRUpDown;
+        public virtual LiveControlModeType LiveJdControl { get; set; } = LiveControlModeType.ThumbstickRLeftRight;
 
 
         // Green Screen Passthrough portal
@@ -293,8 +293,8 @@ namespace AutoBS
 
         public virtual float MixedRealityMenuZOffset { get; set; } = 0.3f;
 
-        public virtual float MixedRealityGamePlayRoundZOffset { get; set; } = 2.8f;
-        public virtual float MixedRealityGamePlayRectZOffset { get; set; } = 2.8f;
+        public virtual float MixedRealityGamePlayRoundZOffset { get; set; } = 3.0f;
+        public virtual float MixedRealityGamePlayRectZOffset { get; set; } = 3.0f;
 
         public virtual float MixedRealityRoundYOffset { get; set; } = .2f; //meters - for centering passthroughj portal. use player height 1.8f
         public virtual float MixedRealityRectYOffset { get; set; } = 0f; //meters - for centering passthroughj portal. use player height 1.8f
@@ -318,9 +318,9 @@ namespace AutoBS
         public virtual mRHeightMode mRRectHeightMode { get; set; }  = mRHeightMode.CenterAtCustomHeight;
         */
 
-        // DiffReducer
+        // Auto Difficulty Reducer DiffReducer
 
-        public virtual bool EnableDiffReducer { get; set; } = true;
+        public virtual bool EnableDiffReducer { get; set; } = false;
         public virtual bool EnableForAllMaps { get; set; } = false; //EnableOnlyIfSongAboveAveNps
         public virtual float PreferredFinalNps { get; set; } = 4f;
 
@@ -341,22 +341,33 @@ namespace AutoBS
 
         public virtual bool EnableCameraAlignmentGrid1 { get; set; } = false;
 
-        public virtual bool CameraAlignmentGridDisplayLines { get; set; } = true;
-
-        public virtual float CameraAlignmentMarkerDiameterFeet { get; set; } = 0.02f;
-
         public virtual SerializableVector3 CameraAlignmentGrid1OriginFeet { get; set; } = new SerializableVector3(0f, 0f, 0f);
-
-        public virtual float CameraAlignmentGridUnitSizeFeet { get; set; } = 3f;
 
         public virtual bool EnableCameraAlignmentGrid2 { get; set; } = false;
 
         public virtual SerializableVector3 CameraAlignmentGrid2OriginFeet { get; set; } = new SerializableVector3(0f, 0f, -3f);
 
+        public virtual bool EnableCameraAlignmentVerticalMarkerSet1 { get; set; } = false;
+        public virtual SerializableVector3 CameraAlignmentVerticalMarkerSet1OriginFeet { get; set; } = new SerializableVector3(-3f, 0f, 0f);
 
+        public virtual bool EnableCameraAlignmentVerticalMarkerSet2 { get; set; } = false;
+        public virtual SerializableVector3 CameraAlignmentVerticalMarkerSet2OriginFeet { get; set; } = new SerializableVector3(0, 0f, -3f);
 
+        public virtual bool EnableCameraAlignmentVerticalMarkerSet3 { get; set; } = false;
+        public virtual SerializableVector3 CameraAlignmentVerticalMarkerSet3OriginFeet { get; set; } = new SerializableVector3(3f, 0f, -3f);
 
+        public virtual bool CameraAlignmentGridDisplayLines { get; set; } = true;
 
+        public virtual float CameraAlignmentMarkerDiameterFeet { get; set; } = 0.02f;
+
+        public virtual float CameraAlignmentGridUnitSizeFeet { get; set; } = 3f;
+
+        // TEMP -----------------------------------
+        //public float RotationOriginOffsetForRecording360 { get; set; } = 0f; // for recording 360 videos, can offset the rotation origin to the left or right. 0 is center, - is left, + is right. if plan to record multiple videos from various angles on the same song to edit into final video.
+
+        //public virtual bool RemoveLeftWalls { get; set; } = false;
+        public virtual bool RemoveMenuMusic { get; set; } = false;
+        public virtual bool RemoveBadCutSound { get; set; } = false;
 
 
 
@@ -369,14 +380,6 @@ namespace AutoBS
         //at least for beat sage, need to remove in info.dat:  "_environmentNames": [ "DefaultEnvironment" ], AND remove "_environmentNameIdx": 0, from each difficultyBeatmap in order for 360 map to use 360 environment
         public virtual bool OutputV4JsonToSongFolder { get; set; } = false; // outputs perfect map compared to v2 or 3
         public virtual int OutputJsonSongSampleRate { get; set; } = 44100;
-
-
-
-        
-
-
-        // TEMP -----------------------------------
-        //public virtual bool RemoveLeftWalls { get; set; } = true;
     }
     public class VirtualDesktopColor
     {

@@ -153,7 +153,7 @@ namespace AutoBS
 
                 if (eData.Chains.Count > 0)
                 {
-                    ScoreSubmissionDisableText = "Architect Chains";
+                    ScoreSubmissionDisableText = "Arcitect Chains";
                     eData.ChainsChanged = true;
                 }
 

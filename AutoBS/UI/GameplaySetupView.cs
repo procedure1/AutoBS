@@ -194,6 +194,10 @@ namespace AutoBS.UI
                 SafeNotify(nameof(EnablerLiveVolumeControl));
                 SafeNotify(nameof(FontColorLiveVolumeControl));
 
+                SafeNotify(nameof(FontColorLiveNjsJdControl));
+                SafeNotify(nameof(EnablerLiveNjsJdControl));
+                SafeNotify(nameof(EnableLiveNjsJdControl));
+
                 SafeNotify(nameof(EnablerMixedRealitySection));
                 SafeNotify(nameof(EnablerMixedRealityMenusControls));
                 SafeNotify(nameof(EnablerMixedRealityGameplayControls));
@@ -212,7 +216,7 @@ namespace AutoBS.UI
             }
         }
 
-        // Architect arcs and chains
+        // Arcitect arcs and chains
 
         [UIValue("EnableArcsGenerator")]
         public bool EnableArcsGenerator

@@ -53,6 +53,21 @@ namespace AutoBS
         const float menuFloorHeight = 0.001f; // the menu floor is very close to 0, but we add a small offset to ensure the floor quad renders above it and doesn't z-fight
         const float gameplayFloorHeight = 0.005f; // this higher than the player contruction area. but spooky environment has bricks that are maybe 2 or 3 inches higher than the floor.
 
+        private bool ShouldShowMenuGreenScreen()
+        {
+            return Config.Instance.EnablePlugin &&
+                   Config.Instance.EnableMixedRealityMenus &&
+                   _isMainMenuLoaded &&
+                   !_isGameplayLoaded;
+        }
+
+        private bool ShouldShowGameplayGreenScreen()
+        {
+            return Config.Instance.EnablePlugin &&
+                   Utils.IsEnabledGameplayMixedReality() &&
+                   _isGameplayLoaded;
+        }
+
         //private Transform _menuCameraTransform;
         public static EnvironmentMarkersAndGreenScreen Instance { get; private set; }
 
@@ -71,13 +86,13 @@ namespace AutoBS
             return Config.Instance.CameraAlignmentGrid2OriginFeet.ToMetersFromFeet();
         }
 
-        private void ClearCameraAlignmentRig()
+        private void ClearCameraAlignmentTool()
         {
             if (_cameraAlignmentRoot != null)
             {
                 Destroy(_cameraAlignmentRoot);
                 _cameraAlignmentRoot = null;
-                Plugin.LogDebug("[CameraAlignmentRig] Cleared calibration rig");
+                Plugin.LogDebug("[CameraAlignmentTool] Cleared calibration tool");
             }
         }
 
@@ -131,12 +146,6 @@ namespace AutoBS
         {
             Plugin.LogDebug($"[MixedReality] Scene loaded: {scene.name}");
 
-            if (scene.name.Contains("GlassDesertEnvironment"))
-                AddDirectionalMarkersIfNeeded();
-            else if (scene.name.Contains("Environment"))
-                RemoveDirectionalMarkers();
-
-            // Always track actual scene state, regardless of feature toggles
             if (scene.name == "MainMenu")
                 _isMainMenuLoaded = true;
 
@@ -146,55 +155,52 @@ namespace AutoBS
             if (!Utils.IsMixedRealitySystemEnabled())
             {
                 ClearAllGreenScreens();
+                RemoveDirectionalMarkers();
+                RefreshCameraAlignmentForCurrentScene();
+                return;
             }
-            else
+
+            if (scene.name.Contains("GlassDesertEnvironment"))
             {
-                if (scene.name.Contains("GameCore"))
-                {
-                    ResetGameplayState();
-                    ResetMenuState();
-
-                    if (Utils.IsEnabledGameplayMixedReality())
-                    {
-                        Plugin.LogDebug("[MixedReality] GameCore detected, starting scan");
-
-                        if (_gameRoutine != null)
-                            StopCoroutine(_gameRoutine);
-
-                        _gameRoutine = StartCoroutine(InitialWaitAndCheck());
-                    }
-                }
-
-                if (!_isGameplayLoaded && scene.name == "MainMenu" && Config.Instance.EnableMixedRealityMenus)
-                {
-                    Plugin.LogDebug("[MixedReality] MainMenu detected, ensuring menu greenscreen");
-                    EnsureMenuGreenScreen();
-                }
+                if (Config.Instance.EnablePlugin)
+                    AddDirectionalMarkersIfNeeded();
             }
-
-            RefreshCameraAlignmentForCurrentScene();
+            else if (scene.name.Contains("Environment"))
+            {
+                RemoveDirectionalMarkers();
+            }
 
             if (scene.name.Contains("GameCore"))
             {
                 ResetGameplayState();
                 ResetMenuState();
 
-                if (!Utils.IsEnabledGameplayMixedReality())
-                    return;
+                if (ShouldShowGameplayGreenScreen())
+                {
+                    Plugin.LogDebug("[MixedReality] GameCore detected, starting scan");
+                    _gameRoutine = StartCoroutine(InitialWaitAndCheck());
+                }
 
-                Plugin.LogDebug("[MixedReality] GameCore detected, starting scan");
-
-                if (_gameRoutine != null)
-                    StopCoroutine(_gameRoutine);
-
-                _gameRoutine = StartCoroutine(InitialWaitAndCheck());
+                RefreshCameraAlignmentForCurrentScene();
                 return;
             }
 
-            if (!_isGameplayLoaded && scene.name == "MainMenu" && Config.Instance.EnableMixedRealityMenus)
+            if (scene.name == "MainMenu")
             {
-                Plugin.LogDebug("[MixedReality] MainMenu detected, ensuring menu greenscreen");
-                EnsureMenuGreenScreen();
+                ResetGameplayState();
+
+                if (ShouldShowMenuGreenScreen())
+                {
+                    Plugin.LogDebug("[MixedReality] MainMenu detected, ensuring menu greenscreen");
+                    EnsureMenuGreenScreen();
+                }
+                else
+                {
+                    ResetMenuState();
+                }
+
+                RefreshCameraAlignmentForCurrentScene();
+                return;
             }
 
             RefreshCameraAlignmentForCurrentScene();
@@ -346,7 +352,7 @@ namespace AutoBS
             }
 
             RemoveDirectionalMarkers();
-            ClearCameraAlignmentRig();
+            ClearCameraAlignmentTool();
         }
 
         private void ClearAllGreenScreens()
@@ -369,18 +375,15 @@ namespace AutoBS
 
         public void RefreshMixedRealityState()
         {
-            bool pluginEnabled = Config.Instance.EnablePlugin;
-            bool menuEnabled = pluginEnabled && Config.Instance.EnableMixedRealityMenus;
-            bool gameplayEnabled = pluginEnabled && Utils.IsEnabledGameplayMixedReality();
-
-            if (!pluginEnabled)
+            if (!Config.Instance.EnablePlugin)
             {
                 ClearAllGreenScreens();
                 RemoveDirectionalMarkers();
+                RefreshCameraAlignmentForCurrentScene();
                 return;
             }
 
-            if (menuEnabled && _isMainMenuLoaded && !_isGameplayLoaded)
+            if (ShouldShowMenuGreenScreen())
             {
                 ResetMenuState();
                 EnsureMenuGreenScreen();
@@ -390,21 +393,13 @@ namespace AutoBS
                 ResetMenuState();
             }
 
-            if (gameplayEnabled && _isGameplayLoaded)
+            if (ShouldShowGameplayGreenScreen())
             {
                 ResetGameplayState();
-
-                if (_gameRoutine != null)
-                {
-                    StopCoroutine(_gameRoutine);
-                    _gameRoutine = null;
-                }
-
                 _gameRoutine = StartCoroutine(InitialWaitAndCheck());
             }
             else
             {
-                ResetGameplayState();
                 ResetGameplayState();
             }
 
@@ -551,8 +546,9 @@ namespace AutoBS
 
         private IEnumerator InitialWaitAndCheck()
         {
-            if (!Utils.IsEnabledGameplayMixedReality())
+            if (!ShouldShowGameplayGreenScreen())
             {
+                ResetGameplayState();
                 _gameRoutine = null;
                 yield break;
             }
@@ -562,20 +558,26 @@ namespace AutoBS
 
             while (totalWaitTime < 10f)
             {
+                if (!ShouldShowGameplayGreenScreen())
+                {
+                    ResetGameplayState();
+                    _gameRoutine = null;
+                    yield break;
+                }
+
                 GameObject environment = FindEnvironment();
+
                 if (environment != null)
                 {
-                    //Plugin.LogDebug($"[MixedReality] Environment found: {environment.name}");
-                    //LogRenderers(environment);
-                    //LogPossibleNoteRenderers();
+                    if (!ShouldShowGameplayGreenScreen())
+                    {
+                        ResetGameplayState();
+                        _gameRoutine = null;
+                        yield break;
+                    }
+
                     SetupGamePlayGreenScreen(environment);
-
                     _gameRoutine = null;
-
-                    // DO NOT destroy the finder — we need it alive to follow the headset
-                    //if (environment.scene.name != "GlassDesertEnvironment")
-                    //    Destroy(gameObject);
-
                     yield break;
                 }
 
@@ -583,30 +585,39 @@ namespace AutoBS
                 yield return new WaitForSecondsRealtime(waitInterval);
             }
 
-            //Plugin.LogDebug("[MixedReality] Environment not found within wait time");
             _gameRoutine = null;
-            yield break;
-
         }
         private IEnumerator SetupMenuGreenScreen()
         {
-            if (!Config.Instance.EnableMixedRealityMenus)
+            if (!ShouldShowMenuGreenScreen())
             {
                 ResetMenuState();
                 _menuRoutine = null;
                 yield break;
             }
 
-            //Plugin.LogDebug("[MixedReality] SetupMenuGreenScreen started");
-
             float elapsed = 0f;
 
             while (elapsed < 10f)
             {
+                if (!ShouldShowMenuGreenScreen())
+                {
+                    ResetMenuState();
+                    _menuRoutine = null;
+                    yield break;
+                }
+
                 GameObject environment = FindMenuEnvironment();
 
                 if (environment != null)
                 {
+                    if (!ShouldShowMenuGreenScreen())
+                    {
+                        ResetMenuState();
+                        _menuRoutine = null;
+                        yield break;
+                    }
+
                     //Plugin.LogDebug($"[MixedReality] Menu environment found: {environment.name} scene={environment.scene.name} path={GetPath(environment.transform, environment.transform.root)}");
 
                     if (_menuShell != null)
@@ -745,6 +756,15 @@ namespace AutoBS
         
         private void SetupGamePlayGreenScreen(GameObject root)
         {
+            if (!ShouldShowGameplayGreenScreen())
+            {
+                ResetGameplayState();
+                return;
+            }
+
+            if (root == null)
+                return;
+
             if (_gameplayShell != null)
             {
                 Destroy(_gameplayShell);
@@ -763,33 +783,6 @@ namespace AutoBS
                 Plugin.LogDebug("[MixedReality] Could not build green material");
                 return;
             }
-            /*
-            Renderer playersPlaceConstruction = null;
-            Renderer playersPlaceMirror = null;
-
-            foreach (var r in renderers)
-            {
-                string path = GetPath(r.transform, root.transform);
-
-                if (path == "Environment/PlayersPlace/Construction")
-                    playersPlaceConstruction = r;
-
-                if (path == "Environment/PlayersPlace/Mirror")
-                    playersPlaceMirror = r;
-            }
-            
-            if (playersPlaceConstruction != null)
-            {
-                playersPlaceConstruction.enabled = false;
-                Plugin.LogDebug("[MixedReality] Disabled PlayersPlace/Construction");
-            }
-
-            if (playersPlaceMirror != null)
-            {
-                playersPlaceMirror.enabled = false;
-                Plugin.LogDebug("[MixedReality] Disabled PlayersPlace/Mirror");
-            }
-            */
             if (root.scene.name == "GlassDesertEnvironment")
             {
                 if (Config.Instance.MixedReality360Diameter <= 0) return;
@@ -1793,17 +1786,17 @@ namespace AutoBS
 
         private void RefreshCameraAlignmentForCurrentScene()
         {
-            ClearCameraAlignmentRig();
+            ClearCameraAlignmentTool();
 
             if (!Config.Instance.EnablePlugin)
             {
-                Plugin.LogDebug("[CameraAlignmentGrid] Skipped: plugin disabled");
+                //Plugin.LogDebug("[CameraAlignmentTool] Skipped: plugin disabled");
                 return;
             }
 
-            if (!Config.Instance.EnableCameraAlignmentGrid1 && !Config.Instance.EnableCameraAlignmentGrid2)
+            if (!Config.Instance.EnableCameraAlignmentGrid1 && !Config.Instance.EnableCameraAlignmentGrid2 && !Config.Instance.EnableCameraAlignmentVerticalMarkerSet1 && !Config.Instance.EnableCameraAlignmentVerticalMarkerSet2 && !Config.Instance.EnableCameraAlignmentVerticalMarkerSet3)
             {
-                Plugin.LogDebug("[CameraAlignmentGrid] Skipped: both grids disabled");
+                //Plugin.LogDebug("[CameraAlignmentTool] Skipped: all grids disabled");
                 return;
             }
 
@@ -1817,13 +1810,13 @@ namespace AutoBS
 
             if (parentObject == null)
             {
-                Plugin.LogDebug("[CameraAlignmentGrid] No valid menu/gameplay environment found");
+                Plugin.LogDebug("[CameraAlignmentTool] No valid menu/gameplay environment found");
                 return;
             }
 
-            CreateCameraAlignmentGrids(parentObject.transform);
+            CreateCameraAlignmentMarkers(parentObject.transform);
         }
-        private void CreateCameraAlignmentGrids(Transform parent)
+        private void CreateCameraAlignmentMarkers(Transform parent)
         {
             _cameraAlignmentRoot = new GameObject("AutoBS_CameraAlignmentGrids");
             _cameraAlignmentRoot.transform.SetParent(parent, false);
@@ -1850,8 +1843,46 @@ namespace AutoBS
                     GetCameraAlignmentGrid2OriginMeters(),
                     UnityEngine.Color.yellow);
             }
-        }
 
+            if (Config.Instance.EnableCameraAlignmentVerticalMarkerSet1)
+            {
+                CreateVerticalMarkerSet(
+                    _cameraAlignmentRoot.transform,
+                    "VerticalMarkers1",
+                    Config.Instance.CameraAlignmentVerticalMarkerSet1OriginFeet.ToMetersFromFeet(),
+                    UnityEngine.Color.white);
+            }
+
+            if (Config.Instance.EnableCameraAlignmentVerticalMarkerSet2)
+            {
+                CreateVerticalMarkerSet(
+                    _cameraAlignmentRoot.transform,
+                    "VerticalMarkers2",
+                    Config.Instance.CameraAlignmentVerticalMarkerSet2OriginFeet.ToMetersFromFeet(),
+                    UnityEngine.Color.yellow);
+            }
+
+            if (Config.Instance.EnableCameraAlignmentVerticalMarkerSet3)
+            {
+                CreateVerticalMarkerSet(
+                    _cameraAlignmentRoot.transform,
+                    "VerticalMarkers3",
+                    Config.Instance.CameraAlignmentVerticalMarkerSet3OriginFeet.ToMetersFromFeet(),
+                    UnityEngine.Color.magenta);
+            }
+
+            if (!HasGridAtOrigin())
+            {
+                CreateOriginFloorReference(_cameraAlignmentRoot.transform);
+            }
+        }
+        /// <summary>
+        /// Creates a 3x3 grid of lines and markers with the specified local origin.
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="gridName"></param>
+        /// <param name="localOrigin"></param>
+        /// <param name="color"></param>
         private void CreateAlignmentGrid(Transform parent, string gridName, Vector3 localOrigin, UnityEngine.Color color)
         {
             GameObject gridRoot = new GameObject(gridName);
@@ -1953,6 +1984,106 @@ namespace AutoBS
                 }
             }
         }
+        /// <summary>
+        /// Creates a set of vertical alignment markers as opposed to a full grid with the specified local origin.
+        /// </summary>
+        /// <remarks>Connecting lines between markers are created only if the camera alignment grid
+        /// display lines option is enabled in the configuration.</remarks>
+        /// <param name="parent">The parent transform to which the marker set root will be attached.</param>
+        /// <param name="setName">The name to assign to the root GameObject of the marker set.</param>
+        /// <param name="localOrigin">The local position, relative to the parent, at which to place the marker set root.</param>
+        /// <param name="color">The color to use for the markers and lines.</param>
+        private void CreateVerticalMarkerSet(Transform parent, string setName, Vector3 localOrigin, UnityEngine.Color color)
+        {
+            GameObject setRoot = new GameObject(setName);
+            setRoot.transform.SetParent(parent, false);
+            setRoot.transform.localPosition = localOrigin;
+            setRoot.transform.localRotation = Quaternion.identity;
+            setRoot.transform.localScale = Vector3.one;
+
+            float step = GetCameraAlignmentGridUnitSizeMeters();
+
+            Vector3 bottom = new Vector3(0f, 0f, 0f);
+            Vector3 middle = new Vector3(0f, step, 0f);
+            Vector3 top = new Vector3(0f, step * 2f, 0f);
+
+            if (Config.Instance.CameraAlignmentGridDisplayLines)
+            {
+                CreateLine(
+                    setRoot.transform,
+                    bottom + Vector3.up * CameraAlignmentLineEndInset,
+                    middle - Vector3.up * CameraAlignmentLineEndInset,
+                    color,
+                    "Line_BottomToMiddle");
+
+                CreateLine(
+                    setRoot.transform,
+                    middle + Vector3.up * CameraAlignmentLineEndInset,
+                    top - Vector3.up * CameraAlignmentLineEndInset,
+                    color,
+                    "Line_MiddleToTop");
+            }
+
+            CreateAlignmentMarker(setRoot.transform, bottom, color, "Marker_Bottom");
+            CreateAlignmentMarker(setRoot.transform, middle, color, "Marker_Middle");
+            CreateAlignmentMarker(setRoot.transform, top, color, "Marker_Top");
+        }
+
+        /// <summary>
+        /// This is a center space and orientation marker set on the floor so the user has a reference when resetting their space.
+        /// </summary>
+        /// <param name="parent"></param>
+        private void CreateOriginFloorReference(Transform parent)
+        {
+            GameObject root = new GameObject("OriginFloorReference");
+            root.transform.SetParent(parent, false);
+            root.transform.localPosition = Vector3.zero;
+            root.transform.localRotation = Quaternion.identity;
+            root.transform.localScale = Vector3.one;
+
+            float step = .5f;// half a meter // GetCameraAlignmentGridUnitSizeMeters();
+
+            Vector3 left = new Vector3(-step, 0f, 0f);
+            Vector3 center = Vector3.zero;
+            Vector3 right = new Vector3(step, 0f, 0f);
+
+            UnityEngine.Color color = UnityEngine.Color.white;
+
+            // Always show lines for this set.
+            CreateLine(
+                root.transform,
+                left + Vector3.right * CameraAlignmentLineEndInset,
+                center - Vector3.right * CameraAlignmentLineEndInset,
+                color,
+                "OriginLine_Left");
+
+            CreateLine(
+                root.transform,
+                center + Vector3.right * CameraAlignmentLineEndInset,
+                right - Vector3.right * CameraAlignmentLineEndInset,
+                color,
+                "OriginLine_Right");
+
+            CreateAlignmentMarker(root.transform, left, color, "OriginMarker_Left");
+            CreateAlignmentMarker(root.transform, center, color, "OriginMarker_Center");
+            CreateAlignmentMarker(root.transform, right, color, "OriginMarker_Right");
+        }
+
+        private bool IsOriginZeroFeet(SerializableVector3 v)
+        {
+            const float eps = 0.05f;
+            return Mathf.Abs(v.x) < eps && Mathf.Abs(v.y) < eps && Mathf.Abs(v.z) < eps;
+        }
+
+        private bool HasGridAtOrigin()
+        {
+            return
+                Config.Instance.EnableCameraAlignmentGrid1 &&
+                IsOriginZeroFeet(Config.Instance.CameraAlignmentGrid1OriginFeet)
+                ||
+                Config.Instance.EnableCameraAlignmentGrid2 &&
+                IsOriginZeroFeet(Config.Instance.CameraAlignmentGrid2OriginFeet);
+        }
 
         private void CreateLine(Transform parent, Vector3 start, Vector3 end, UnityEngine.Color color, string name)
         {
@@ -2049,7 +2180,7 @@ namespace AutoBS
             Material mat = GetAlignmentMaterial(color);
             if (mat == null)
             {
-                Plugin.LogDebug($"[CameraAlignmentRig] Failed to create material for {go.name}");
+                Plugin.LogDebug($"[CameraAlignmentTool] Failed to create material for {go.name}");
                 return;
             }
 

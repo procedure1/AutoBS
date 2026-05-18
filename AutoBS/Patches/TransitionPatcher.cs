@@ -222,6 +222,43 @@ namespace AutoBS.Patches
 
                 Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map - Calculated NotesPerSecond: {NotesPerSecond} from {noteCount} notes over {songLength} seconds. version: {SelectedBeatmapVersion}");
             }
+            else
+            {
+                // Vanilla, non-generated, non-based-on map:
+                // OneSaber, 360Degree, 90Degree, etc.
+                var basic = beatmapLevel.GetDifficultyBeatmapData(
+                    SelectedCharacteristicSO,
+                    SelectedDifficulty
+                );
+
+                if (basic != null)
+                {
+                    OriginalNoteJumpMovementSpeed = basic.noteJumpMovementSpeed;
+                    OriginalNoteJumpOffset = basic.noteJumpStartBeatOffset;
+
+                    if (OriginalNoteJumpMovementSpeed <= 0f)
+                        OriginalNoteJumpMovementSpeed = GetNoteJumpMovementSpeed(
+                            SelectedDifficulty,
+                            OriginalNoteJumpMovementSpeed
+                        );
+
+                    NJSRegistry.findByKey[SelectedPlayKey] = OriginalNoteJumpMovementSpeed;
+                    NJORegistry.findByKey[SelectedPlayKey] = OriginalNoteJumpOffset;
+
+                    NotesPerSecond = beatmapLevel.songDuration > 0f
+                        ? basic.notesCount / beatmapLevel.songDuration
+                        : 0f;
+
+                    SelectedBeatmapVersion = new Version(4, 0, 0);
+
+                    Plugin.LogDebug(
+                        $"[TransitionPatcher] Vanilla non-based-on map. " +
+                        $"NJS={OriginalNoteJumpMovementSpeed}, NJO={OriginalNoteJumpOffset}, " +
+                        $"NPS={NotesPerSecond}, char={SelectedSerializedName}, diff={SelectedDifficulty}"
+                    );
+                }
+            }
+
 
             Plugin.LogDebug($"[TransitionPatcher] Beat Sage Map: {IsBeatSageMap}");
 

@@ -1481,7 +1481,8 @@ namespace AutoBS
         {
             // fast early-exit: if no inline rotations anywhere, bail out
             bool hasInlineRotations =
-                colorNotes.Any(n => n.rotation != 0);
+                colorNotes.Any(n => n.originalRotation != 0) ||
+                bombs.Any(b => b.originalRotation != 0);
 
             if (!hasInlineRotations)
                 return new List<ERotationEventData>();
@@ -1500,13 +1501,13 @@ namespace AutoBS
             foreach (var n in notesAndBombs)
             {
                 //Plugin.Log.Info($"[EditableCBD][BuildInlineRotations] Note time:{n.time:F} inline rot: {n.rotation}");  
-                accumRot = n.rotation; //n.rotation is inline accumulated rotation as hard coded in v4 beatmap json 'r' field
-                rotation = n.rotation - prevAccum;
-                if (n.rotation != prevAccum) // good usually but misses first note if has rotation = 0. seems to work fine though
+                accumRot = n.originalRotation; //n.rotation is inline accumulated rotation as hard coded in v4 beatmap json 'r' field
+                rotation = n.originalRotation - prevAccum;
+                if (n.originalRotation != prevAccum) // good usually but misses first note if has rotation = 0. seems to work fine though
                 {
                     rotations.Add(new ERotationEventData(n.time, rotation, accumRot));
                 }
-                prevAccum = n.rotation;
+                prevAccum = n.originalRotation;
                 n.rotation = 0; // reset inline rotation after extracting since moving rotations to ERotationEventData and will later convert back to inline rotations. a reference to ColorNotes and BombNotes so this updates them outside too.
             }
             //prevRotation = 0f;
@@ -1631,14 +1632,15 @@ namespace AutoBS
                 allItems.AddRange(GetOriginalObstacles(eData));
                 Plugin.LogDebug($"[ConvertEditableCBD] Obstacles NOT ALTERED. Using original (if they exist).");
             }
+            /*
             else
             {
-                //if (Config.Instance.RemoveLeftWalls)
-                //    allItems.AddRange(eData.Obstacles.Where(o => o.line > 1).Select(o => (object)o.ToCustomObstacleData(eData.Version)));
-                //else
+                if (Config.Instance.RemoveLeftWalls)
+                    allItems.AddRange(eData.Obstacles.Where(o => o.line > 1).Select(o => (object)o.ToCustomObstacleData(eData.Version)));
+                else
                     allItems.AddRange(eData.Obstacles.Select(o => (object)o.ToCustomObstacleData(eData.Version)));
             }
-
+            */
             // Arcs
             if (!eData.ArcsChanged)
             { 
@@ -2028,18 +2030,33 @@ namespace AutoBS
             //the last cumulative rotation at or before t - equivalent to v2 "early" rotation events
             const float EPS = 0.0005f; // same spirit as your TOL
 
-            int GetAccumRotationAt(float t) // bianary search version 
+
+            //int rotationOriginOffset = (int)Config.Instance.RotationOriginOffsetForRecording360;
+
+            int GetAccumRotationAt(float t)
             {
                 int lo = 0, hi = accumulated.Count - 1, ans = -1;
+
                 while (lo <= hi)
                 {
                     int mid = (lo + hi) >> 1;
                     float mt = accumulated[mid].time;
 
                     bool ok = rotationModeLate ? (t > mt + EPS) : (t >= mt - EPS);
-                    if (ok) { ans = mid; lo = mid + 1; } else { hi = mid - 1; }
+                    if (ok)
+                    {
+                        ans = mid;
+                        lo = mid + 1;
+                    }
+                    else
+                    {
+                        hi = mid - 1;
+                    }
                 }
-                return (ans >= 0) ? accumulated[ans].total : 0;
+
+                return (ans >= 0)
+                    ? accumulated[ans].total //+ rotationOriginOffset
+                    : 0; // rotationOriginOffset;
             }
 
             // Apply to all notes (color + bombs)
@@ -2255,6 +2272,8 @@ namespace AutoBS
 
             bool rotationEventsSubsetUsed = false; // if you ever add the "subset" optimization again
 
+            //int rotationOriginOffset = (int)Config.Instance.RotationOriginOffsetForRecording360;
+
             int GetAccumRotationAt(float t) //recognizes early/late 1 of 2
             {
                 int lo = 0, hi = rotations.Count - 1, ans = -1;
@@ -2267,23 +2286,12 @@ namespace AutoBS
                     if (ok) { ans = mid; lo = mid + 1; }
                     else { hi = mid - 1; }
                 }
-                return ans >= 0 ? rotations[ans].accumRotation : 0;
+                return ans >= 0 ? rotations[ans].accumRotation : 0;// + rotationOriginOffset : rotationOriginOffset;
             }
 
 
             int RotationForSegmentStart(EObstacleData obs, float segStart)
                 => rotationEventsSubsetUsed ? obs.rotation : GetAccumRotationAt(segStart);
-
-            static bool IsPrecision(int v) => Math.Abs(v) >= 1000;
-
-            static float DecodePrecision(int line)
-            {
-                // Standard: 0..3 are lanes
-                if (!IsPrecision(line)) return line;
-
-                // Precision: 1000->0, 2000->1, etc. => /1000 - 1
-                return (line / 1000f) - 1f;
-            }
 
             // new version to account for ME
             static bool WouldBlock(EObstacleData obs, int deltaRot)
@@ -2780,6 +2788,17 @@ namespace AutoBS
                         }
                 }
             }
+        }
+
+        public static bool IsPrecision(int v) => Math.Abs(v) >= 1000;
+
+        public static float DecodePrecision(int line)
+        {
+            // Standard: 0..3 are lanes
+            if (!IsPrecision(line)) return line;
+
+            // Precision: 1000->0, 2000->1, etc. => /1000 - 1
+            return (line / 1000f) - 1f;
         }
 
         // Not used. i made this list to prevent arcs and walls from having rotation problems in JSON output files. but it turns out the the origianl rotation events list is best.
