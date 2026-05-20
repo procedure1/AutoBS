@@ -20,12 +20,24 @@ namespace AutoBS
         public virtual bool Enable360fyer { get; set; } = true;
 
         public virtual bool EnableArcsGen360 { get; set; } = true;
-        public virtual bool EnableArcsNonGen360 { get; set; } = false;
-        public virtual bool EnableArcsStandard { get; set; } = false;
+        public virtual bool EnableArcsNonGen360 { get; set; } = true;
+        public virtual bool EnableArcsStandard { get; set; } = true;
 
         public virtual bool EnableChainsGen360 { get; set; } = true;
-        public virtual bool EnableChainsNonGen360 { get; set; } = false;
-        public virtual bool EnableChainsStandard { get; set; } = false;
+        public virtual bool EnableChainsNonGen360 { get; set; } = true;
+        public virtual bool EnableChainsStandard { get; set; } = true;
+
+        public virtual bool EnableAutoNjsFixerGen360 { get; set; } = true;
+        public virtual bool EnableAutoNjsFixerNonGen360 { get; set; } = false;
+        public virtual bool EnableAutoNjsFixerStandard { get; set; } = false;
+
+        public virtual bool EnableLightingGen360 { get; set; } = true;
+        public virtual bool EnableLightingNonGen360 { get; set; } = true;
+        public virtual bool EnableLightingStandard { get; set; } = true;
+
+
+        public virtual bool EnableCleanBeatSage { get; set; } = false; // alter notes so that chains will be compatible - will move note position so tail can exist
+
 
 
         public virtual bool EnableWallsGen360 { get; set; } = true;
@@ -33,15 +45,10 @@ namespace AutoBS
         public virtual bool EnableWallsStandard { get; set; } = false;
 
 
-        public virtual bool EnableLightingGen360 { get; set; } = true;
-        public virtual bool EnableLightingNonGen360 { get; set; } = true;
-        public virtual bool EnableLightingStandard { get; set; } = false;
-
+        // ROTATION
         public virtual bool Wireless360 { get; set; } = true; //This assumes the user doesn't want rotation limits and it sets LimitRotations to 999 and BottleneckRotations to 999. only for 360 not 90.
         public virtual float LimitRotations360 { get; set; } = 330;//changed this to Degrees. Previously Default 28 where 24 is 360 degree circle. designed to avoid riping a cable
 
-
-        // ROTATION
         public virtual bool RotationModeLate { get; set; } = true; // late means rotations only occur on an object if the object is later than the rotation event time. early, means the rotation applies to any object on or after the rotation event time
         
         public virtual bool AddExtraRotation { get; set; } = true;//for periods of low rotation, will make sure rotations for direction-less notes move in same direction as last rotation so totalRotation will increase.
@@ -82,7 +89,6 @@ namespace AutoBS
 
         // BEAT SAGE
 
-        public virtual bool EnableCleanBeatSage { get; set; } = false; // alter notes so that chains will be compatible - will move note position so tail can exist
         public virtual float MaxCrouchWallDuration { get; set; } = 0.75f; // max duration of crouch walls in Seconds
         public virtual float StrayNoteCleanerOffset { get; set; } = 6f; // how many seconds from primary note content to remove straggler notes that are off by themselves at the beginning or end of map
 
@@ -200,10 +206,6 @@ namespace AutoBS
 
 
         // NJS FIXER
-
-        public virtual bool EnableAutoNjsFixerGen360 { get; set; } = true;
-        public virtual bool EnableAutoNjsFixerNonGen360 { get; set; } = false;
-        public virtual bool EnableAutoNjsFixerStandard { get; set; } = false;
 
         public virtual bool EnabledInPractice { get; set; } = false; 
         public virtual float DesiredNJS { get; set; } = 10f; // if > 0 use this value

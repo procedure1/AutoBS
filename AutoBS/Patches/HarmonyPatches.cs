@@ -264,44 +264,107 @@ namespace AutoBS.Patches
     [HarmonyAfter("com.kyle1413.BeatSaber.BS-Utils")] // run after BS_Utils
     static class ResultsViewController_SetDataToUI_Fix
     {
-        // Store base text per controller instance (weak map pattern)
-        static readonly Dictionary<int, string> _baseText = new Dictionary<int, string>();
-
-        // Prefix runs BEFORE BS_Utils; remember the base TMP text
-        static void Prefix(ResultsViewController __instance,
-                           ref GameObject ____clearedBannerGo,
-                           ref GameObject ____failedBannerGo)
-        {
-            if (!Config.Instance.EnablePlugin) return;
-            if (!Utils.IsEnabledForGeneralFeatures()) return;
-
-            var obj = ____clearedBannerGo.activeInHierarchy ? ____clearedBannerGo : ____failedBannerGo;
-            var tmp = obj.GetComponentInChildren<CurvedTextMeshPro>();
-            if (tmp != null) _baseText[__instance.GetHashCode()] = tmp.text ?? "";
-        }
-
-        // Postfix runs AFTER BS_Utils; normalize text to 1 line (or show your own)
-        
         const string LabelName = "AutoBS_NoSubmitLabel";
 
-        static void Postfix(ref GameObject ____clearedBannerGo, ref GameObject ____failedBannerGo, ref TextMeshProUGUI ____rankText)
+        static void DestroyAutoBSLabel(GameObject banner)
         {
-            if (!Config.Instance.EnablePlugin) return;
-            if (!Utils.IsEnabledForGeneralFeatures()) return;
+            if (!banner) return;
 
-            // Debug: confirm gate state at render time
-            Plugin.Log.Info($"[ScoreGate] Map Results: IsDisabled={ScoreGate.IsDisabledThisRun} Reason='{ScoreGate.ReasonThisRun}'");
+            var t = banner.transform.Find(LabelName);
+            if (t)
+                UnityEngine.Object.Destroy(t.gameObject);
+        }
 
-            // If not disabled this run, hide (or remove) our label if present and bail.
-            var host = ____clearedBannerGo.activeInHierarchy ? ____clearedBannerGo : ____failedBannerGo;
-            var label = host.transform.Find(LabelName)?.GetComponent<TextMeshProUGUI>();
-            if (!ScoreGate.IsDisabledThisRun)
+        static void DestroyAutoBSLabels(GameObject clearedBanner, GameObject failedBanner)
+        {
+            DestroyAutoBSLabel(clearedBanner);
+            DestroyAutoBSLabel(failedBanner);
+        }
+
+        static void RemoveBSUtilsScoreSubmissionText(
+            GameObject clearedBanner,
+            GameObject failedBanner)
+        {
+            RemoveBSUtilsScoreSubmissionTextFromBanner(clearedBanner, false);
+            RemoveBSUtilsScoreSubmissionTextFromBanner(failedBanner, true);
+        }
+
+        static void RemoveBSUtilsScoreSubmissionTextFromBanner(GameObject bannerGo, bool isFailedBanner)
+        {
+            if (!bannerGo) return;
+
+            var tmp = bannerGo.GetComponentInChildren<CurvedTextMeshPro>(true);
+            if (!tmp) return;
+
+            string text = tmp.text ?? "";
+
+            const string marker = "Score Submission Disabled by:";
+            int markerIndex = text.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+
+            if (markerIndex < 0)
+                return;
+
+            // BS_Utils starts its appended section with: "  \r\n<color=#ff0000ff><size=50%><b>..."
+            int appendStart = text.LastIndexOf("  \r\n", markerIndex, StringComparison.Ordinal);
+
+            // Fallbacks in case line endings differ.
+            if (appendStart < 0)
+                appendStart = text.LastIndexOf("\r\n", markerIndex, StringComparison.Ordinal);
+            if (appendStart < 0)
+                appendStart = text.LastIndexOf("\n", markerIndex, StringComparison.Ordinal);
+
+            // Last fallback: remove from the marker itself.
+            // This is less ideal, but still safer than disabling the whole text object.
+            if (appendStart < 0)
+                appendStart = markerIndex;
+
+            tmp.text = text.Substring(0, appendStart).TrimEnd();
+
+            // BS_Utils changes this when score submission was disabled.
+            tmp.enableWordWrapping = true;
+
+            // BS_Utils sets failed banner text red first, then changes it to white when disabled.
+            // Restore the failed color if this is the failed banner.
+            if (isFailedBanner)
+                tmp.color = Color.red;
+
+            var bg = bannerGo.transform.Find("BG");
+            if (bg)
+                bg.gameObject.SetActive(true);
+        }
+
+        static void Postfix(
+            ref GameObject ____clearedBannerGo,
+            ref GameObject ____failedBannerGo,
+            ref TextMeshProUGUI ____rankText)
+        {
+            bool enabled =
+                Config.Instance.EnablePlugin &&
+                Utils.IsEnabledForGeneralFeatures();
+
+            if (!enabled)
             {
-                if (label) label.gameObject.SetActive(false);
+                DestroyAutoBSLabels(____clearedBannerGo, ____failedBannerGo);
+                RemoveBSUtilsScoreSubmissionText(____clearedBannerGo, ____failedBannerGo);
                 return;
             }
 
-            // Ensure a label exists (create once, reuse forever).
+            RemoveBSUtilsScoreSubmissionText(____clearedBannerGo, ____failedBannerGo);
+
+            Plugin.Log.Info(
+                $"[ScoreGate] Map Results: IsDisabled={ScoreGate.IsDisabledThisRun} Reason='{ScoreGate.ReasonThisRun}'");
+
+            if (!ScoreGate.IsDisabledThisRun)
+            {
+                DestroyAutoBSLabels(____clearedBannerGo, ____failedBannerGo);
+                return;
+            }
+
+            var host = ____clearedBannerGo.activeInHierarchy
+                ? ____clearedBannerGo
+                : ____failedBannerGo;
+
+            var label = host.transform.Find(LabelName)?.GetComponent<TextMeshProUGUI>();
             if (!label)
             {
                 var go = new GameObject(LabelName);
@@ -313,30 +376,31 @@ namespace AutoBS.Patches
                 label.alignment = TextAlignmentOptions.Center;
                 label.fontSize = 3.5f;
 
-                // Place it just under the banner text (or under the rank text as a fallback).
                 var rt = (RectTransform)label.transform;
                 rt.anchorMin = new Vector2(0.5f, 0f);
                 rt.anchorMax = new Vector2(0.5f, 0f);
                 rt.pivot = new Vector2(0.5f, 0f);
                 rt.anchoredPosition = new Vector2(0f, 35f);
 
-                // If the banner hierarchy is odd on first run, fall back to rankText’s parent
                 if (!label.isActiveAndEnabled && ____rankText && ____rankText.transform is RectTransform rankRT)
                 {
                     rt.SetParent(rankRT.parent, false);
                     rt.anchoredPosition = new Vector2(0f, -30f);
                 }
 
-                Plugin.LogDebug("[ScoreGate] Created results label");
+                //Plugin.LogDebug("[ScoreGate] Created results label");
             }
 
-            // Write a single, clean line every time (no stacking).
             var reason = ScoreGate.ReasonThisRun;
-            label.text =
-                $"\n<size=200%><color=#ff0000ff>Score submission disabled:</color>{(string.IsNullOrEmpty(reason) ? "" : $"<color=#ff0000ff>  {reason}")}</color></size>";
+
+            label.text = string.IsNullOrEmpty(reason)
+                ? "\n<size=200%><color=#ff0000ff>Score submission disabled</color></size>"
+                : $"\n<size=200%><color=#ff0000ff>Score submission disabled:  {reason}</color></size>";
+
             label.gameObject.SetActive(true);
         }
     }
+
     #endregion
 
     #region ScoreGate - Enable/Disable Scoring
@@ -346,8 +410,8 @@ namespace AutoBS.Patches
     {
         static void Postfix()
         {
-            if (!Config.Instance.EnablePlugin) return;
-            if (!Utils.IsEnabledForGeneralFeatures()) return;
+            //if (!Config.Instance.EnablePlugin) return;
+            //if (!Utils.IsEnabledForGeneralFeatures()) return;
 
             Plugin.LogDebug("[ScoreGate] Clearing on MainFlowCoordinator.DidActivate");
             ScoreGate.Clear();
@@ -360,16 +424,25 @@ namespace AutoBS.Patches
         public static bool IsDisabledThisRun { get; private set; }
         public static string ReasonThisRun { get; private set; } = "";
 
-        public static void Set(string reason)
+        public static void Disable(string reason)
         {
-            IsDisabledThisRun = !string.IsNullOrEmpty(reason);
-            ReasonThisRun = reason ?? "";
+            if (string.IsNullOrEmpty(reason))
+                return;
+
+            IsDisabledThisRun = true;
+            ReasonThisRun = reason;
+
+            BS_Utils.Gameplay.ScoreSubmission.DisableSubmission(reason);
+
+            Plugin.Log.Info($"[ScoreGate] REAL score submission disable called. Reason='{reason}'");
         }
+
         public static void Clear()
         {
             IsDisabledThisRun = false;
             ReasonThisRun = "";
         }
     }
+
     #endregion
 }

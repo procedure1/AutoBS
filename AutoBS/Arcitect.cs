@@ -67,17 +67,20 @@ namespace AutoBS
         /// Method to create Arcs and Chains. Arcs between two notes of the same colorType based on their cut direction and the duration between notes. Chains are creaed based on pause detection between notes.
         /// </summary>
         /// <returns>List of SliderData and writes to BeatmapData</returns>
-        public static void CreateSliders(EditableCBD eData) // reference list so no need to return it.
+        public static (int originalArcCount, int finalArcCount, int originalChainCount, int finalChainCount) CreateSliders(EditableCBD eData) // reference list so no need to return it.
         {
             ScoreSubmissionDisableText = "";
 
-            if (eData.ColorNotes.Count == 0) return;
+            if (eData.ColorNotes.Count == 0) return (0, 0, 0, 0);
             //If AlterNotes() is used, the original notes of the song would be altered permanently in the context of that data object.
+
+            int originalArcCount = eData.Arcs.Count;
+            int originalChainCount = eData.Chains.Count;
 
             notes = eData.ColorNotes; // hold original notes for various checks
 
             doubleChainCount = 0;
-            
+
             float songDuration = (eData.ColorNotes.Last().time - eData.ColorNotes.First().time) / 60; // minutes between 1st and last note
 
             Plugin.LogDebug($"Arcitect: Song Duration: {songDuration} sec. ColorNote Count: {eData.ColorNotes.Count()} 1st Note at: {eData.ColorNotes.First().time} last note at: {eData.ColorNotes.Last().time}");
@@ -153,6 +156,7 @@ namespace AutoBS
             }
 
             Plugin.LogDebug($"Arcitect after Creation: Arcs Count: {eData.Arcs.Count}. Chains Count: {eData.Chains.Count}.");
+            return (originalArcCount, eData.Arcs.Count, originalChainCount, eData.Chains.Count);
         }
 
         public static List<ESliderData> SetPreferredArcCount(List<ENoteData> colorA, List<ENoteData> colorB) // https://github.com/Loloppe/Lolighter/blob/master/Lolighter/Algorithm/Arc.cs

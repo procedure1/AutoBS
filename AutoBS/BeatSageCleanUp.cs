@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Permissions;
+using UnityEngine;
 using static BeatmapSaveDataVersion2_6_0AndEarlier.BeatmapSaveData;
 using static NoteData;
 
@@ -21,13 +22,16 @@ namespace AutoBS
             Plugin.LogDebug($"[BeatSageCleanUp] Beat Sage Map being cleaned!");
 
             int originalNoteCount = eData.ColorNotes.Count();
+            int originalBombCount = eData.BombNotes.Count();
 
             BeatSageStrayNoteCleaner.RemoveStragglers(eData, TransitionPatcher.bpm, minPauseSeconds: Config.Instance.StrayNoteCleanerOffset, maxStragglers: 4);
 
             eData = notesAdjustment(eData);
-            eData = wallsAdjustment(eData);
 
-            if (eData.ColorNotes.Count() < originalNoteCount)
+            bool wallsAltered = false;
+            (eData, wallsAltered) = wallsAdjustment(eData);
+
+            if (eData.ColorNotes.Count() < originalNoteCount || eData.BombNotes.Count() < originalBombCount || wallsAltered)
             {
                 DisableScoreSubmission = true;
             }
@@ -279,9 +283,12 @@ namespace AutoBS
         #endregion
 
         #region Adjust Walls
-        private static EditableCBD wallsAdjustment(EditableCBD eData)
+        private static (EditableCBD eData, bool wallsAltered) wallsAdjustment(EditableCBD eData)
         {
             Plugin.LogDebug($"[BeatSageCleanUp] Adjusting Walls in Beat Sage Map!");
+
+            bool wallsAltered = false;
+
             List<EObstacleData> obs = eData.Obstacles.ToList();
             List<ENoteData> notes = eData.ColorNotes.ToList();
             //Plugin.Log.Info($"[BeatSageCleanUp] Found {obs.Count} obstacles and {notes.Count} notes in Beat Sage Map!");
@@ -564,6 +571,11 @@ namespace AutoBS
 
             finalWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
+            wallsAltered = ObstaclesDiffer(obs, finalWalls); // new for scoring
+
+            
+
+
             foreach (var ob in obs) // Clear existing obstacles from BeatmapData so obstacles are empty
             {
                 eData.Obstacles.Remove(ob);
@@ -580,11 +592,42 @@ namespace AutoBS
 
             eData.Obstacles = eData.Obstacles.OrderBy(o => o.time).ToList(); // Sort the obstacles by time
 
-            Plugin.Log.Info($"[BeatSageCleanUp] - Original Obstacles Cleaned: {originalObstacleCount}. Final Count: {theCount}.");
+            if (wallsAltered)
+                Plugin.LogDebug($"[BeatSageCleanUp] Walls altered. Original Count: {obs.Count}. Final Count: {finalWalls.Count}.");
+            else
+                Plugin.LogDebug($"[BeatSageCleanUp] Walls not altered. Final Count: {finalWalls.Count}.");
 
-            return eData;
+
+            return (eData, wallsAltered);
         }
 
+        public static bool ObstaclesDiffer(
+            List<EObstacleData> original,
+            List<EObstacleData> finalWalls,
+            float epsilon = 0.0001f)
+        {
+            if (original.Count != finalWalls.Count)
+                return true;
+
+            for (int i = 0; i < original.Count; i++)
+            {
+                EObstacleData a = original[i];
+                EObstacleData b = finalWalls[i];
+
+                if (Mathf.Abs(a.time - b.time) > epsilon) return true;
+                if (Mathf.Abs(a.duration - b.duration) > epsilon) return true;
+
+                if (a.line != b.line) return true;
+                if (a.layer != b.layer) return true;
+                if (a.width != b.width) return true;
+                if (a.height != b.height) return true;
+
+                // Add if relevant in your class:
+                // if (a.rotation != b.rotation) return true;
+            }
+
+            return false;
+        }
 
         private static class BeatSageStrayNoteCleaner
         {

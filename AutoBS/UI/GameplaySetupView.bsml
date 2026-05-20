@@ -16,7 +16,7 @@
           <text text="Generates 360 maps from standard maps." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
           <text text="Unlikely to work well with Vivify, Noodle, Mapping Extensions, or maps containing thousands of walls." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
 
-          <toggle-setting text='Enable Generated 360 Maps' apply-on-change='true' value='Enable360fyer' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Requires a Beat Saber restart for maps that have already been selected in the menu. Thanks to CodeStix for making the original 360fyer!'></toggle-setting>
+          <toggle-setting text='Enable Generated 360 Maps' apply-on-change='true' value='Enable360fyer' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Requires a Beat Saber restart for maps that have already been selected in the menu. Thanks to CodeStix for making the original 360fyer! 360fyer maps have score submission disabled.'></toggle-setting>
         </vertical>
 
         <vertical pad-left='2' pad-bottom='2' preferred-width='60'>
@@ -27,17 +27,17 @@
           <!-- LEFT Activation: Arcs -->
           <vertical preferred-width='40' pad-left='2'>
             <text text="Arcs" align="Center" fontSize="3.3" font-color="#BBBBBB" />
-            <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableArcsGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Arcs if they do not exist already in 360fyer-generated maps.'></toggle-setting>
-            <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableArcsNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Arcs if they do not exist already in non-generated 360/90 maps.'></toggle-setting>
-            <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableArcsStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Arcs if they do not exist already in Standard, One Saber maps, etc.'></toggle-setting>
+            <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableArcsGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Arcs if they do not exist already in 360fyer-generated maps. Score submission is disabled.'></toggle-setting>
+            <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableArcsNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Arcs if they do not exist already in non-generated 360/90 maps. Score submission is disabled.'></toggle-setting>
+            <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableArcsStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Arcs if they do not exist already in Standard, One Saber maps, etc. Score submission is disabled.'></toggle-setting>
           </vertical>
 
           <!-- RIGHT Activation: Chains -->
           <vertical preferred-width='40'>
             <text text="Chains" align="Center" fontSize="3.3" font-color="#BBBBBB" />
-            <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableChainsGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Chains if they do not exist already in 360fyer-generated maps. This alters scoring, so scoring submission will be disabled.'></toggle-setting>
-            <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableChainsNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Chains if they do not exist already in non-generated 360/90 maps. This alters scoring, so scoring submission will be disabled.'></toggle-setting>
-            <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableChainsStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Chains if they do not exist already in Standard, One Saber maps, etc. This alters scoring, so scoring submission will be disabled.'></toggle-setting>
+            <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableChainsGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Chains if they do not exist already in 360fyer-generated maps. Score submission is disabled.'></toggle-setting>
+            <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableChainsNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Chains if they do not exist already in non-generated 360/90 maps. Score submission is disabled.'></toggle-setting>
+            <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableChainsStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint='Generates Chains if they do not exist already in Standard, One Saber maps, etc. Score submission is disabled.'></toggle-setting>
           </vertical>
         </horizontal>
 
@@ -68,16 +68,16 @@
           <vertical preferred-width='40' pad-left='2'>
             <text text="Beat Sage Cleaner" align="Center" fontSize="5" font-color="#ff00f8" underlined='true' />
             <text text="Fixes some typical Beat Sage problems like impossible note  &#xA;combinations and endless crouch walls among other things." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
-            <toggle-setting text='Clean' apply-on-change='true' value='EnableCleanBeatSage' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Removes some problem notes (such as overlapping notes and strays, etc) and walls (such as long crouch walls) typically created by Beat Sage. Disables score submission if any notes are removed."></toggle-setting>
+            <toggle-setting text='Clean' apply-on-change='true' value='EnableCleanBeatSage' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Removes some problem notes (such as overlapping notes and strays, etc) and walls (such as long crouch walls) typically created by Beat Sage. Disables score submission if the map is altered."></toggle-setting>
           </vertical>
           
           <!-- LEFT Activation: Walls -->
           <vertical preferred-width='40'>
             <text text="Auto Walls" align="Center" fontSize="5" font-color="#ff5a00" underlined='true' />
             <text text="Enables wall manipulation and wall generation for visual &#xA;interest. Additional walls are cool, especially in 360." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
-            <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableWallsGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable wall manipulation and generation for 360fyer-generated maps. Walls are cool in 360! No crouch or lean walls are added."></toggle-setting>
-            <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableWallsNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable wall manipulation and generation for non-generated 360/90 maps. Walls are cool in 360! No crouch or lean walls are added."></toggle-setting>
-            <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableWallsStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable wall manipulation and generation for Standard, One Saber maps, etc. No crouch or lean walls are added."></toggle-setting>
+            <toggle-setting text='Gen 360 Maps' apply-on-change='true' value='EnableWallsGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable wall manipulation and generation for 360fyer-generated maps. Walls are cool in 360! No crouch or lean walls are added. Disables score submission."></toggle-setting>
+            <toggle-setting text='360/90 Maps' apply-on-change='true' value='EnableWallsNonGen360' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable wall manipulation and generation for non-generated 360/90 maps. Walls are cool in 360! No crouch or lean walls are added. Disables score submission."></toggle-setting>
+            <toggle-setting text='Standard Maps' apply-on-change='true' value='EnableWallsStandard' bind-value='true' font-color='~FontColorEnablePlugin' interactable="~EnablerEnablePlugin" hover-hint="Enable wall manipulation and generation for Standard, One Saber maps, etc. No crouch or lean walls are added. Disables score submission."></toggle-setting>
           </vertical>
 
         </horizontal>
@@ -95,12 +95,12 @@
 
         <!-- Rotation Section -->
           <text text="360fyer" align="Center" fontSize="5" font-color="#64ff16" underlined='true' />
-          <text text="Thanks to the genius, CodeStix, who built the original 360fyer plugin!" align="Center" fontSize="2.3" font-color="#BBBBBB" />
+          <text text="Thanks to the genius, CodeStix, who built the original 360fyer plugin! &#xA;360fyer maps have score submission disabled." align="Center" fontSize="2.3" font-color="#BBBBBB" />
           <toggle-setting text='Wireless 360' apply-on-change='true' value='Wireless360' bind-value='true' font-color='~FontColorRotationSettings' interactable="~EnablerRotationSettings" hover-hint="Default: True. For wireless headsets. Generated maps will have no rotation restrictions and fewer tendencies to reverse direction."></toggle-setting>
-          <slider-setting text="Limit Rotations 360" apply-on-change="true" value="LimitRotations360" bind-value="true" show-buttons="true" increment="30" min="0" max="720" formatter="AngleFormatter" font-color='~FontColorLimitRotations360' interactable="~EnablerLimitRotations360" hover-hint="Default: 360°. Disabled if Wireless 360 is enabled. For wired headsets use 360° or less to avoid cable rip! Decrease the angle for spaces that are obstructed with furniture, for example. Disables score submission if set less than 90." rich-text='true'></slider-setting>
+          <slider-setting text="Limit Rotations 360" apply-on-change="true" value="LimitRotations360" bind-value="true" show-buttons="true" increment="30" min="0" max="720" formatter="AngleFormatter" font-color='~FontColorLimitRotations360' interactable="~EnablerLimitRotations360" hover-hint="Default: 360°. Disabled if Wireless 360 is enabled. For wired headsets use 360° or less to avoid cable rip! Decrease the angle for spaces that are obstructed with furniture, for example." rich-text='true'></slider-setting>
 
           <text text="Rotation" align="Center" fontSize="4" font-color="#BBBBBB" />
-          <slider-setting text="Rot Speed Multiplier" apply-on-change="true" value="RotationSpeedMultiplier" bind-value="true" font-color='~FontColorRotationSettings' interactable="~EnablerRotationSettings" show-buttons="true" increment=".1" min=".1" max="2" formatter="MultFormatter" hover-hint="Default: 1. Increase or decrease how often rotations occur. Disables score submission if set below 0.3. High settings will be limited by FOV settings. Crank this up along with min rotation size."></slider-setting>
+          <slider-setting text="Rot Speed Multiplier" apply-on-change="true" value="RotationSpeedMultiplier" bind-value="true" font-color='~FontColorRotationSettings' interactable="~EnablerRotationSettings" show-buttons="true" increment=".1" min=".1" max="2" formatter="MultFormatter" hover-hint="Default: 1. Increase or decrease how often rotations occur. High settings will be limited by FOV settings. Crank this up along with min rotation size."></slider-setting>
           <toggle-setting text='Add Extra Rotations' apply-on-change='true' value='AddExtraRotation' bind-value='true' font-color='~FontColorRotationSettings' interactable="~EnablerRotationSettings" hover-hint="Default: True. Adds more rotations in a consistent direction. Useful for maps that end up with low overall rotation."></toggle-setting>
         <!-- had to remove interactable="~EnablerRotationSettings" since not working on the following 6 sliders (EnablerEnablePlugin didn't work either). so better just to be always active-->
         <slider-setting text="Min Rotation Size" apply-on-change="true" value="MinRotationSize" bind-value="true" font-color='~FontColorRotationSettings' show-buttons="false" increment="15" min="15" max="30" formatter="AngleFormatter" hover-hint="Default: 15°. Rotations are typically 15° and 30°. FOV settings may force this to 15°. Crank this up along with Rot Speed Multiplier." rich-text='true'></slider-setting>
@@ -110,12 +110,12 @@
           <slider-setting text="Wall Removal Mult" apply-on-change="true" value="VisionBlockingWallRemovalMult" bind-value="true" font-color='~FontColorRotationSettings' show-buttons="true" increment=".05" min=".05" max="4" hover-hint="Default: 1. Rotations cause walls to cross in front of the player and block player vision. Increase this to remove more chaotic walls crossing in front of you." rich-text='true'></slider-setting>
           <slider-setting text="Wall Note Dist" apply-on-change="true" value="MinDistanceBetweenNotesAndWalls" bind-value="true" font-color='~FontColorRotationSettings'  show-buttons="true" increment=".05" min=".05" max="1" formatter="TimeFormatter" hover-hint="Default: 0.2s. This is the minimum distance allowed between notes and walls. Rotation events can cause notes and walls to appear closer together. Increase this to allow more space between them." rich-text='true'></slider-setting>
 
-        <dropdown-list-setting text='Base Map' value='BasedOn' choices='available-bases' bind-value='true' font-color='~FontColorRotationSettings' interactable="~EnablerEnablePlugin" apply-on-change='true' hover-hint="Default: Standard. Base map for 360fyer-generated maps. Disables score submission if not set to Standard. A Beat Saber restart is required for changes to take effect for maps that have already been selected in the menu."/>
+        <dropdown-list-setting text='Base Map' value='BasedOn' choices='available-bases' bind-value='true' font-color='~FontColorRotationSettings' interactable="~EnablerEnablePlugin" apply-on-change='true' hover-hint="Default: Standard. Base map for 360fyer-generated maps. A Beat Saber restart is required for changes to take effect for maps that have already been selected in the menu."/>
 
           <!-- Architect Section -->
           <text text="Architect Auto Arcs + Chains" align="Center" fontSize="5" font-color="#fffc17" underlined='true' />
           <text text="Arcs" align="Center" fontSize="4" font-color="#BBBBBB" />
-          <text text="Generates Arcs if they do not exist already in a map. These are based on notes." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+          <text text="Generates Arcs if they do not exist already in a map. Disables score submission." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
         <!--<toggle-setting text='Enable Arcs' apply-on-change='true' value='EnableArcs' bind-value='true' font-color='~FontColorArchitect' interactable="~EnablerArchitect" hover-hint='Generates Arcs if they do not exist already in a map.'></toggle-setting>-->
         <vertical pad-left='2'>
           <!--<toggle-setting text='Arc Fix for 360/90' apply-on-change='true' value='ArcFixFull' bind-value='true' font-size="3.2" font-color='~FontColorArcs' interactable="~EnablerArcs" hover-hint="Default: True. Arcs were not designed to work with rotations. Deactivates rotations during arcs to keep arcs pointed toward tail notes. Turn this off for more rotations but wonky arcs."></toggle-setting>-->
@@ -134,8 +134,8 @@
           </vertical>
 
           <text text="Chains" align="Center" fontSize="4" font-color="#BBBBBB" />
-          <text text="Generates Chains if they do not already exist in a map. &#xA;This alters scoring, so scoring will be disabled. These are based on notes." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
-          <!--<toggle-setting text='Enable Chains' apply-on-change='true' value='EnableChains' bind-value='true' font-color='~FontColorArchitect' interactable="~EnablerArchitect" hover-hint='Generates Chains if they do not exist already in a map. This alters scoring so scoring will be disabled.'></toggle-setting>-->
+          <text text="Generates Chains if they do not already exist in a map. Disables score submission." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+          <!--<toggle-setting text='Enable Chains' apply-on-change='true' value='EnableChains' bind-value='true' font-color='~FontColorArchitect' interactable="~EnablerArchitect" hover-hint='Generates Chains if they do not exist already in a map. Disables score submission.'></toggle-setting>-->
           <vertical pad-left='2'>
             <slider-setting text="Pref Count per Min" apply-on-change="true" value="PreferredChainCountPerMin" bind-value="true" show-buttons="true" increment="1" min="1" max="200" formatter="IntFormatter" font-size="3.1" font-color='~FontColorChains' interactable="~EnablerChains" hover-hint="Default: 10. Aattempts to create this many chains per minute." rich-text='true'></slider-setting>
             <!--<toggle-setting text='Force More Chains' apply-on-change='true' value='ForceMoreChains' bind-value='true' font-size="3.1" font-color='~FontColorChains' interactable="~EnablerChains" hover-hint="True-will try and match preferred count if too few. False-will not produce more chains if fewer than preferred count."></toggle-setting>-->
@@ -148,7 +148,7 @@
 
         <!-- Auto NJS Fixer Section -->
         <text text="Auto NJS Fixer" align="Center" fontSize="5" font-color="#FF2121" underlined='true' />
-        <text text="Automated version of the classic NJS Fixer mod by Kylemc. Set it and forget it! &#xA;Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+        <text text="Automated version of the classic NJS Fixer mod by Kylemc. Set it and forget it! &#xA;Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET&#xA;Disables score submission if original speed is altered." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
         <vertical pad-left='2'>
           <toggle-setting text='Enable for Practice Mode' apply-on-change='true' value='EnabledInPractice' bind-value='true' font-color='~FontColorAutoNjsFixer' interactable="~EnablerAutoNjsFixer" hover-hint="Attempts to apply itself in Practice Mode. Will be overridden if PracticePlugin is installed."></toggle-setting>
 
@@ -160,10 +160,10 @@
             apply-on-change="true"
             font-color="~FontColorAutoNjsFixer"
             interactable="~EnablerAutoNjsFixer"
-            hover-hint="Default: Maintain Speed. Use MAINTAIN SPEED to keep the same perceived note speed intended by the map while letting you change the note spawn distance. Use SET SPEED to set your desired note speed. It's difficult to see notes coming in 360 with short note spawn distances."
+            hover-hint="Default: PRESERVE TRAVEL TIME. PRESERVE TRAVEL TIME keeps the same reaction time intended by the map while letting you change the note spawn distance. SET NOTE SPEED sets your desired note speed. It's difficult to see notes coming in 360 with short note spawn distances. Disables score submission if original speed is altered."
           />
 
-          <slider-setting text="Note Speed" apply-on-change="true" value="DesiredNJS" bind-value="true" fontSize="3"  show-buttons="true" increment="1" min="0" max="60" formatter="SpeedFormatter" font-color='~FontColorDesiredNJS' interactable="~EnablerDesiredNJS" hover-hint="Default: 10. The map's note speed is overridden with this value. 0 will revert to the map's original speed. Scoring will be disabled for speeds set lower than the original." rich-text='true'></slider-setting>
+          <slider-setting text="Note Speed" apply-on-change="true" value="DesiredNJS" bind-value="true" fontSize="3"  show-buttons="true" increment="1" min="0" max="60" formatter="SpeedFormatter" font-color='~FontColorDesiredNJS' interactable="~EnablerDesiredNJS" hover-hint="Default: 10. The map's note speed is overridden with this value. 0 will revert to the map's original speed. Disables score submission if original speed is altered." rich-text='true'></slider-setting>
           <slider-setting text="Note Spawn Distance" apply-on-change="true" value="DesiredJD" bind-value="true" fontSize="3"  show-buttons="true" increment="1" min="0" max="32" formatter="DistanceFormatter" font-color='~FontColorAutoNjsFixer' interactable="~EnablerAutoNjsFixer" hover-hint="Default: 30. Overrides the map's note spawn distance with this value. 0 will revert to use the map's original distance. It's difficult to see notes coming in 360 with short note spawn distances." rich-text='true'></slider-setting>
 
         </vertical>
@@ -189,7 +189,7 @@
 
         <!-- Beat Sage Section -->
         <text text="Beat Sage Cleaner" align="Center" fontSize="5" font-color="#ff00f8" underlined='true' />
-        <text text="Fixes some typical problems for Beat Sage generated maps" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+        <text text="Fixes some typical problems for Beat Sage generated maps.&#xA; Disables score submission if map is altered." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
         <vertical pad-left='2'>
           <slider-setting text="Set Crouch Wall Max Duration" apply-on-change="true" value="MaxCrouchWallDuration" bind-value="true" fontSize="3"  show-buttons="true" increment=".25" min=".25" max="60" formatter="TimeFormatter" font-color='~FontColorCleanBeatSage' interactable="~EnablerCleanBeatSage" hover-hint="Default: .75. Shortens long crouch walls to this duration." rich-text='true'></slider-setting>
           <slider-setting text="Stray Notes Remover" apply-on-change="true" value="StrayNoteCleanerOffset" bind-value="true" fontSize="3"  show-buttons="true" increment="1" min="0" max="60" formatter="TimeFormatter" font-color='~FontColorCleanBeatSage' interactable="~EnablerCleanBeatSage" hover-hint="Default: 6s. 0 is OFF. Removes up to 4 stray notes at the start or end of a map if they are this far away from the main note stream. Use with Intro Skip Mod." rich-text='true'></slider-setting>
@@ -198,12 +198,12 @@
         <!-- Walls Section -->
         <text text="Auto Walls" align="Center" fontSize="5" font-color="#ff5a00" underlined='true' />
           <text text="Wall Manipulation" align="Center"  fontSize="4" font-color="#BBBBBB" />
-          <text text="Alters walls that already exist in the original base map" align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+          <text text="Alters walls that already exist in the original base map.&#xA; Disables score submission if map is altered." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
             <toggle-setting text='Allow Crouch Walls' apply-on-change='true' value='AllowCrouchWalls' bind-value='true' font-color='~FontColorWallGenerator' interactable="~EnablerWallGenerator" hover-hint="It's hard to see these walls coming on faster 360 maps."></toggle-setting>
             <toggle-setting text='Allow Lean Walls' apply-on-change='true' value='AllowLeanWalls' bind-value='true' font-color='~FontColorWallGenerator' interactable="~EnablerWallGenerator" hover-hint="It's hard to see these walls coming on faster 360 maps."></toggle-setting>
 
         <text text="Generated Walls" align="Center"  fontSize="4" font-color="#BBBBBB" />
-        <text text="If walls are too chaotic and claustrophobia-inducing, reduce their counts and move them further out from the playspace by increasing Min Distance." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
+        <text text="If walls are too chaotic and claustrophobia-inducing, reduce their counts and move them further out from the playspace by increasing Min Distance.&#xA; Disables score submission if walls are added." align="Center"  fontSize="2.3" font-color="#BBBBBB" />
 
         <vertical pad-left='2' pad-right='2' pad='2'>
             <toggle-setting text='Standard Walls' apply-on-change='true' value='EnableStandardWalls' bind-value='true' font-color='~FontColorWallGenerator' interactable="~EnablerWallGenerator" fontSize="3.5" hover-hint="Enables new generated standard size walls."></toggle-setting>

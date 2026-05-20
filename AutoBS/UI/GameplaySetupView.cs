@@ -1129,7 +1129,7 @@ namespace AutoBS.UI
 
         private readonly Dictionary<Config.AutoNjsFixerModeType, string> _autoNjsFixerModeLabels = new Dictionary<Config.AutoNjsFixerModeType, string>
         {
-            { Config.AutoNjsFixerModeType.MaintainNoteSpeed, "Maintain Map Speed" },
+            { Config.AutoNjsFixerModeType.MaintainNoteSpeed, "Preserve Travel Time" },
             { Config.AutoNjsFixerModeType.ForceNJS,         "Set Note Speed" }
         };
 

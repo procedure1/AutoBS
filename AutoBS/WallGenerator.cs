@@ -98,6 +98,29 @@ namespace AutoBS
         private static float ParticleWallsMultiplier = Config.Instance.ParticleWallsMultiplier;
         private static float FloorWallsMultiplier = Config.Instance.FloorWallsMultiplier;
 
+        public static bool WallsAltered { get; private set; } = false;
+        private static readonly HashSet<string> _wallAlterReasons = new HashSet<string>();
+
+        private static void MarkWallsAltered(string reason)
+        {
+            WallsAltered = true;
+
+            if (!string.IsNullOrEmpty(reason))
+                _wallAlterReasons.Add(reason);
+        }
+
+        public static string GetWallAlterReasons()
+        {
+            return _wallAlterReasons.Count == 0
+                ? ""
+                : string.Join(" | ", _wallAlterReasons);
+        }
+        public static void ResetAlteredState()
+        {
+            WallsAltered = false;
+            _wallAlterReasons.Clear();
+        }
+
         public static void ResetWalls(EditableCBD eData)
         {
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE ||
@@ -174,6 +197,9 @@ namespace AutoBS
             _allWallsContainsExtensionWalls = false;
             _allWallsContainsParticleWalls = false;
             _allWallsContainsFloorWalls = false;
+
+            WallsAltered = false;
+            _wallAlterReasons.Clear();
 
             Plugin.LogDebug($"[WallGenerator] Walls RESET: original wall count: {_originalWalls.Count}");
         }
@@ -1475,6 +1501,11 @@ namespace AutoBS
 
             _allWallsContainsOriginalWalls = true;
 
+            if (count > 0)
+            {
+                MarkWallsAltered("Lean/Crouch Walls Removed");
+            }
+
             Plugin.LogDebug($"Lean Crouch Wall Removal End --- Original Standard Wall Count: {_originalWalls.Count} - Walls Removed: {count} -- allWalls Count: {_allWalls.Count}");
         }
         
@@ -1575,12 +1606,16 @@ namespace AutoBS
                     newLineIndex += offset;
 
                     // Only adjust if the new line index differs from the original tail line index.
-                    if (newLineIndex != chains[i].tailLine)
+                    if (newLineIndex != chains[i].tailLine && newLineIndex != ob.line)
                     {
+                        int oldLine = ob.line;
                         ob.line = newLineIndex;
 
+                        MarkWallsAltered("Walls Moved For Chains");
+
                         string rot = chainHasRotation.Count() > 0 ? $" - has rotation: {chainHasRotation[i].Item2}" : "";
-                        //Plugin.Log.Info($" -- Chain {i} ADJUSTED wall at time {ob.time:F} (dur: {ob.duration:F}) for chain at {chains[i].time:F}. Old lineIndex: {ob.lineIndex}, new: {newLineIndex} {rot}")
+
+                        //Plugin.Log.Info($" -- Chain {i} ADJUSTED wall at time {ob.time:F} (dur: {ob.duration:F}) for chain at {chains[i].time:F}. Old lineIndex: {oldLine}, new: {newLineIndex} {rot}");
                     }
                 }
             }
@@ -1658,9 +1693,12 @@ namespace AutoBS
                         // If we have a new valid lane index, create an adjusted obstacle.
                         if (newLineIndex != ob.line)
                         {
+                            int oldLine = ob.line;
                             ob.line = newLineIndex;
 
-                            //Plugin.Log.Info($" -- {i} ADJUSTED a wall intersecting an arc. Wall time: {ob.time:F}, width: {ob.width} layer: {(int)ob.lineLayer} dur: {ob.duration:F}; Arc head time: {arcs[i].time:F} index: {arcs[i].headLineIndex}, tail time: {arcs[i].tailTime:F} index: {arcs[i].tailLine}. Wall old lineIndex: {ob.lineIndex}, new lineIndex: {newLineIndex}");
+                            MarkWallsAltered("Walls Moved For Arcs");
+
+                            //Plugin.Log.Info($" -- {i} ADJUSTED a wall intersecting an arc. Wall time: {ob.time:F}, old lineIndex: {oldLine}, new lineIndex: {newLineIndex}");
                         }
                     }
                 }
@@ -1714,6 +1752,11 @@ namespace AutoBS
             foreach (var obs in obstaclesToDelete)
             {
                 _allWalls.Remove(obs);
+            }
+
+            if (obstaclesToDelete.Count > 0)
+            {
+                MarkWallsAltered("Intersecting Walls Removed");
             }
 
             Plugin.LogDebug($"--- Remove Intersecting Walls --- Remaining Walls: {_allWalls.Count} --- Total Removed: {obstaclesToDelete.Count}");
@@ -2029,7 +2072,24 @@ namespace AutoBS
 
             _allWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
+            bool generatedWallsAdded =
+                _generatedStandardWalls.Count > 0 ||
+                _generatedExtensionWalls.Count > 0 ||
+                _particleWalls.Count > 0 ||
+                _floorWalls.Count > 0;
+
+            if (generatedWallsAdded)
+            {
+                MarkWallsAltered("Generated Walls Added");
+            }
+
             eData.Obstacles = _allWalls;
+
+            if (WallsAltered)
+            {
+                Plugin.LogDebug(
+                    $"[ScoreGate] Walls altered by WallGenerator: {GetWallAlterReasons()}");
+            }
 
             Plugin.LogDebug($"[FinalizeWallsToMap] Walls Finalized Count: {eData.Obstacles.Count}");
 
@@ -2050,11 +2110,17 @@ namespace AutoBS
                 _allWalls.AddRange(_originalWalls);
                 _allWallsContainsOriginalWalls = true;
             }
-            
+
 
             _allWalls.Sort((a, b) => a.time.CompareTo(b.time));
 
             eData.Obstacles = _allWalls;
+
+            if (WallsAltered)
+            {
+                Plugin.LogDebug(
+                    $"[ScoreGate] Original-only walls altered by WallGenerator: {GetWallAlterReasons()}");
+            }
 
             Plugin.LogDebug($"[FinalizeWallsToMap] Walls Finalized Count: {eData.Obstacles.Count} (only original walls since walls count > 5000)");
         }

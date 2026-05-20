@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 using Zenject;
 using static AutoBS.Patches.SetContent;
 using static IPA.Logging.Logger;
@@ -120,6 +121,10 @@ namespace AutoBS.Patches
             if (!Utils.IsEnabledForGeneralFeatures()) return; // have to have the serialized name from TransitionPatcher for this to work
 
             ScoreGate.Clear();
+            ResetPerPlayState();
+            BeatmapDataTransformHelperPatcher.arcsAndChains.Clear();
+
+            bool isCustomLevel = beatmapLevel.levelID.StartsWith("custom_level_");
 
             SelectedCharacteristicSO = beatmapKey.beatmapCharacteristic;
             SelectedDifficulty = beatmapKey.difficulty;
@@ -159,9 +164,35 @@ namespace AutoBS.Patches
                 float originalJD;
                 (FinalNoteJumpMovementSpeed, FinalJumpDistance, originalJD) = AutoNjsFixer.Fix(OriginalNoteJumpMovementSpeed, NoteJumpOffset, bpm);
                 Plugin.LogDebug($"[TransitionPatcher] BasicBeatmapData - Original NJS: {OriginalNoteJumpMovementSpeed} Original NJO: {NoteJumpOffset}, AutoNjsFixer NJS: {FinalNoteJumpMovementSpeed}, Original JD: {originalJD}, AutoNjsFixer JD: {FinalJumpDistance}");
-                IsBeatSageMap = basic.mappers.Contains("Beat Sage");
-                Plugin.LogDebug($"[TransitionPatcher] BasicBeatmapData - Beat Sage Map: {IsBeatSageMap}");
+                // Plugin.LogDebug($"[TransitionPatcher] Mappers: {string.Join(", ", basic.mappers ?? Array.Empty<string>())}"); -- mappers is empty here
+                //IsBeatSageMap = basic.mappers?.Any(m => m?.IndexOf("Beat Sage", StringComparison.OrdinalIgnoreCase) >= 0) == true;
+                //Plugin.LogDebug($"[TransitionPatcher] BasicBeatmapData - Beat Sage Map: {IsBeatSageMap}");
             }
+
+            IsBeatSageMap = SetContent.IsBeatSageMap;
+
+            if (!IsBeatSageMap && isCustomLevel)
+            {
+                var songCoreExtraData = SongCoreBridge.TryGetSongCoreSongData(beatmapLevel);
+
+                string[] mappers = beatmapLevel.allMappers ?? Array.Empty<string>();
+
+                if (songCoreExtraData != null)
+                {
+                    var contributorMappers = songCoreExtraData.contributors
+                        .Where(c => string.Equals(c._role, "mapper", StringComparison.OrdinalIgnoreCase))
+                        .Select(c => c._name)
+                        .ToArray();
+
+                    if (contributorMappers.Length > 0)
+                        mappers = contributorMappers;
+                }
+
+                IsBeatSageMap = mappers.Any(m =>
+                    string.Equals(m, "Beat Sage", StringComparison.OrdinalIgnoreCase));
+            }
+
+            Plugin.LogDebug($"[TransitionPatcher] [from songCoreExtraData] Beat Sage Map: {IsBeatSageMap}");
 
             bool isBasedOn = SelectedSerializedName == basedOn;
             if (isGen360 || isBasedOn)
@@ -175,7 +206,7 @@ namespace AutoBS.Patches
                 NotesPerSecond = NotesPerSecRegistry.findByKey.TryGetValue(CurrentPlayKey, out var nps) ? nps : 0f; // used by generator to reduce rotations for high density maps
                 Plugin.LogDebug($"[TransitionPatcher] Gen or BasedOn Map - Retrieved from Registries. AlreadyUsingEnvColorBoost: {MapAlreadyUsesEnvColorBoost}, MapAlreadyUsesArcs: {MapAlreadyUsesArcs}, MapAlreadyUsesChains: {MapAlreadyUsesChains}, NotesPerSecond: {NotesPerSecond}");
             }
-            else 
+            else if (isCustomLevel)
             {
                 MapAlreadyUsesArcs   = false;
                 MapAlreadyUsesChains = false;
@@ -250,6 +281,19 @@ namespace AutoBS.Patches
 
                 Plugin.LogDebug($"[TransitionPatcher] NonGen and Non BasedOn Map - Calculated NotesPerSecond: {NotesPerSecond} from {noteCount} notes over {songLength} seconds.");
             }
+            else
+            {
+                MapAlreadyUsesArcs = false;
+                MapAlreadyUsesChains = false;
+                MapAlreadyUsesEnvColorBoost = false;
+                NotesPerSecond = 0f;
+
+                CurrentBeatmapVersion = BeatmapDataRegistry.versionByKey.TryGetValue(CurrentPlayKey, out var ver)
+                    ? ver
+                    : CurrentBeatmapVersion;
+
+                Plugin.LogDebug("[TransitionPatcher] Built-in nonGen/nonBasedOn map - skipping custom JSON/SongCore detection and using safe defaults.");
+            }
 
             Plugin.LogDebug($"[TransitionPatcher] Map Version: v{CurrentBeatmapVersion}"); 
 
@@ -257,6 +301,20 @@ namespace AutoBS.Patches
 
             ForceActivatePatches.MappingExtensionsForceActivate();
 
+        }
+
+        public static void ResetPerPlayState()
+        {
+            WallGenerator.ResetAlteredState();
+            BeatSageCleanUp.DisableScoreSubmission = false;
+            LightAutoMapper.LightEventsAdded = false;
+            Arcitect.ScoreSubmissionDisableText = "";
+            AutoNjsFixer.ScoreSubmissionDisableText = "";
+            TransitionPatcher.ScoreSubmissionDisableText = "";
+            BeatmapDataTransformHelperPatcher.NoodleProblemNotes = false;
+            BeatmapDataTransformHelperPatcher.NoodleProblemObstacles = false;
+            TransitionPatcher.NoodleProblemNotes = false;
+            TransitionPatcher.NoodleProblemObstacles = false;
         }
 
         // Doesn't check if the mod itself is self-enabled. so JDFixer and NJSFixer may be disabled but will be considered enabled here.
@@ -288,12 +346,13 @@ namespace AutoBS.Patches
                 Plugin.LogDebug("[TransitionPatcher] Conficting Mods Enabled: " + str + ". Will Disable AutoNJS! (or practice mode for PracticePlugin");
         }
 
-        public static string DetermineScoreSubmissionReason(bool beatSageDisableScoreSubmission, int chainsCount)
+        public static string DetermineScoreSubmissionReason(bool arcsAdded, bool chainsAdded)
         {
             string str = "";
 
             if (SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
             {
+                /*
                 if (Config.Instance.BasedOn != Config.Base.Standard)
                 {
                     str = "Base Map Not Standard";
@@ -306,22 +365,32 @@ namespace AutoBS.Patches
                 {
                     str += (str != "" ? ", " : "") + "Rotations Limited";
                 }
-            }
+                */
+                str = "AutoBS—360fyer";
+                return str;
 
+            }
             if (BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Standard &&
                 Utils.IsEnabledAutoNjsFixer() &&
                 !AutoNJSDisabledByConflictingMod &&
-                OriginalNoteJumpMovementSpeed > FinalNoteJumpMovementSpeed)
+                Mathf.Abs(TransitionPatcher.OriginalNoteJumpMovementSpeed - TransitionPatcher.FinalNoteJumpMovementSpeed) > 0.0001f)
             {
                 str += (str != "" ? ", " : "") + "Auto NJS Fixer";
             }
-
-            if (Utils.IsEnabledChains() && !MapAlreadyUsesChains && chainsCount > 0)
+            if (arcsAdded)
             {
-                str += (str != "" ? ", " : "") + "Architect Chains";
+                str += (str != "" ? ", " : "") + "Arcitect Arcs";
+            }
+            if (chainsAdded)
+            {
+                str += (str != "" ? ", " : "") + "Arcitect Chains";
+            }
+            if (WallGenerator.WallsAltered)
+            {
+                str += (str != "" ? ", " : "") + "Auto Walls";
             }
 
-            if (Config.Instance.EnableCleanBeatSage && (SetContent.IsBeatSageMap || IsBeatSageMap) && beatSageDisableScoreSubmission)
+            if (Config.Instance.EnableCleanBeatSage && (SetContent.IsBeatSageMap || IsBeatSageMap) && BeatSageCleanUp.DisableScoreSubmission)
             {
                 str += (str != "" ? ", " : "") + "Beat Sage Cleaner";
             }

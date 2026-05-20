@@ -143,8 +143,18 @@ namespace AutoBS
             WallGenerator._originalWalls.Clear();// Github Issue #2 Walls gone when using autolights
             WallGenerator._allWalls.Clear();
 
-            if (isEnabledWalls && (!Config.Instance.AllowCrouchWalls || !Config.Instance.AllowLeanWalls) || isEnabledWalls || Utils.IsEnabledArcs() || Utils.IsEnabledChains() || Config.Instance.Enable360fyer)// || Config.Instance.ShowGenerated90)
-                WallGenerator.ResetWalls(eData); // reset for each song so variables clear out - do this even if wall generator is off since need to change walls for chains and rotations etc
+            bool isGenerated360 = TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
+
+            bool needsWallReset =
+                isEnabledWalls ||
+                Utils.IsEnabledArcs() ||
+                Utils.IsEnabledChains() ||
+                isGenerated360;
+
+            if (needsWallReset)
+            {
+                WallGenerator.ResetWalls(eData);
+            }
 
             int wallGenCount = 0;
             int eventCount = 0; // Amount of rotation events emitted
@@ -1098,8 +1108,9 @@ namespace AutoBS
             #endregion
 
             Plugin.LogDebug($"[Generator] Rotation Events Count: {eData.RotationEvents.Count()}");
-            
-            bool beatSageMapNotAltered = (TransitionPatcher.IsBeatSageMap && !BeatSageCleanUp.DisableScoreSubmission) || !TransitionPatcher.IsBeatSageMap;
+
+            bool beatSageIsAltered = TransitionPatcher.IsBeatSageMap && BeatSageCleanUp.DisableScoreSubmission; // if not a beat sage map then not altered
+            bool beatSageMapNotAltered = !beatSageIsAltered;            
             Plugin.LogDebug($"[Generator] 1 beatSageMapNotAltered: {beatSageMapNotAltered}.");
             
             bool arcsEnabled = Utils.IsEnabledArcs();
@@ -1126,7 +1137,10 @@ namespace AutoBS
             bool wallsNotAdded = (Utils.IsEnabledWalls() && originalWallCount == eData.Obstacles.Count) || !Utils.IsEnabledWalls();
             Plugin.LogDebug($"[Generator] 7 wallsNotAdded: {wallsNotAdded}.");
 
-            if (beatSageMapNotAltered && arcsNotAdded && chainsNotAdded && rotationsNotchanged && lightsNotAdded && boostNotAdded && wallsNotAdded)
+            bool wallsNotAltered = !WallGenerator.WallsAltered;
+            Plugin.LogDebug($"[Generator] 8 wallsNotAltered: {wallsNotAltered}.");
+
+            if (beatSageMapNotAltered && arcsNotAdded && chainsNotAdded && rotationsNotchanged && lightsNotAdded && boostNotAdded && wallsNotAdded && wallsNotAltered)
             {
                 OriginalMapAltered = false;
                 Plugin.Log.Info("[Generator] Original map NOT altered! So original untouched map will be passed through!");
