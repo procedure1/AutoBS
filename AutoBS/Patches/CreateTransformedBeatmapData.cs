@@ -103,7 +103,7 @@ namespace AutoBS.Patches
             (NoodleProblemNotes, NoodleProblemObstacles) = EditableCBD.TestForNoodleCustomData(eData); //Should remove notes and walls first before figuring out rotations etc which are based on notes
 
 
-            if (SetContent.IsBeatSageMap && Config.Instance.EnableCleanBeatSage)
+            if (TransitionPatcher.IsBeatSageMap && Config.Instance.EnableCleanBeatSage)
             {
                 BeatSageCleanUp.Clean(eData); // reference sent so no need to return eData
             }
@@ -155,7 +155,7 @@ namespace AutoBS.Patches
                 Utils.IsEnabledWalls() ||
                 (Utils.IsEnabledLighting() &&
                 Config.Instance.BoostLighting) ||
-                (SetContent.IsBeatSageMap && Config.Instance.EnableCleanBeatSage) ||
+                (TransitionPatcher.IsBeatSageMap && Config.Instance.EnableCleanBeatSage) ||
                 TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE))
             {
                 Plugin.LogDebug($"[CreateTransformedBeatmapData] Generator Called. Generating map changes for {TransitionPatcher.SelectedSerializedName}...");
@@ -268,7 +268,7 @@ namespace AutoBS.Patches
 
                 if (autoNjsChangedWholeMap)
                 {
-                    Plugin.Log.Info("[CreateTransformedBeatmapData] Final Score Disable Reason (3rd pass): AutoBS—Auto NJS Fixer only.");
+                    Plugin.Log.Info("[CreateTransformedBeatmapData] Final Score Disable Reason (3rd pass): 'AutoBS—Auto NJS Fixer' only.");
                     ScoreGate.Disable("AutoBS—Auto NJS Fixer");
                 }
             }

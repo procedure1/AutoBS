@@ -385,12 +385,12 @@ namespace AutoBS.Patches
             {
                 str += (str != "" ? ", " : "") + "Arcitect Chains";
             }
-            if (WallGenerator.WallsAltered)
+            if (Utils.IsEnabledWalls() && WallGenerator.WallsAltered) // stringent pass will catch any wall changes if they were altered and my determination missed it..
             {
                 str += (str != "" ? ", " : "") + "Auto Walls";
             }
 
-            if (Config.Instance.EnableCleanBeatSage && (SetContent.IsBeatSageMap || IsBeatSageMap) && BeatSageCleanUp.DisableScoreSubmission)
+            if (Config.Instance.EnableCleanBeatSage && (IsBeatSageMap) && BeatSageCleanUp.DisableScoreSubmission)
             {
                 str += (str != "" ? ", " : "") + "Beat Sage Cleaner";
             }
