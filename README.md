@@ -3,6 +3,12 @@
 
 ## Beat Saber PC Version v1.40.0 - v1.40.8
 
+### Important Score Submission Warning
+Versions prior to the latest release may not properly disable ranked score submission under certain conditions.  
+If you use BeatLeader or ScoreSaber, please update to the latest version immediately.
+
+---
+
 A Beat Saber mod to automatically generate 360 degree maps from standard maps, and automatically add arcs, chains, lights and walls, and set note speed and spawn distance. Most features fully work on non-generated maps as well. So you can add arcs and walls etc to standard maps too.
 
 NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. See below.
