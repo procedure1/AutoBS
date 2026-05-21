@@ -47,6 +47,7 @@
     <Compile Include="Modules\CameraCalibrationRig.cs" />
     <Compile Include="Modules\NoteSection.cs" />
     <Compile Include="Modules\NoteSwing.cs" />
+    <Compile Include="ScoreSubmission.cs" />
     <Compile Include="UNUSED_AddDirectionalMarkersToMenu.cs" />
     <Compile Include="Modules\EnvironmentMarkersAndGreenScreen.cs" />
     <Compile Include="Modules\LiveAdjustHud.cs" />

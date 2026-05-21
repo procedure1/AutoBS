@@ -124,8 +124,6 @@ namespace AutoBS.Patches
             bool willOverride =
                 BS_Utils.Plugin.LevelData.IsSet &&
                 !BS_Utils.Gameplay.Gamemode.IsIsolatedLevel &&
-                (BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Standard ||
-                 BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Multiplayer) &&
                 (Config.Instance.EnabledInPractice ||
                  BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.practiceSettings == null);
 
@@ -360,11 +358,11 @@ namespace AutoBS.Patches
                 if (!state.LiveNjsScoreGateTriggered && Mathf.Abs(effectiveNjs - state.OriginalNjs) > 0.0001f)//effectiveNjs < state.OriginalNjs - 0.001f)
                 {
                     state.LiveNjsScoreGateTriggered = true;
-                    ScoreGate.AddReason("Live NJS");
+                    ScoreSubmission.ScoreGate.AddReason("Live NJS");
 
                     Plugin.Log.Info(
                         $"[ScoreGate] Disabled by live NJS change. " +
-                        $"OriginalNJS:{state.OriginalNjs:F2} CurrentNJS:{effectiveNjs:F2}");
+                        $"Original NJS:{state.OriginalNjs:F2} NJS when disabled:{effectiveNjs:F2}");
                 }
 
                 bool valuesChanged =

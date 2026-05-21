@@ -118,6 +118,27 @@ namespace AutoBS
 
             Plugin.LogDebug($"[SetOriginalWalls] Original wall count: {originalWallCount}");
         }
+        public static void PrepareOriginalWallsOnly(EditableCBD eData)
+        {
+            originalWalls.Clear();
+            originalWalls.AddRange(eData.Obstacles);
+            originalWalls.Sort((a, b) => a.time.CompareTo(b.time));
+
+            originalWallCount = originalWalls.Count;
+
+            generatedStandardWalls.Clear();
+            generatedExtensionWalls.Clear();
+            tempOriginalAndStandardWalls.Clear();
+            particleWalls.Clear();
+            floorWalls.Clear();
+            allWalls.Clear();
+
+            allWallsContainsOriginalWalls = false;
+            allWallsContainsStandardWalls = false;
+            allWallsContainsExtensionWalls = false;
+            allWallsContainsParticleWalls = false;
+            allWallsContainsFloorWalls = false;
+        }
         public static void ResetWalls(EditableCBD eData)
         {
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE ||
@@ -186,6 +207,48 @@ namespace AutoBS
             allWallsContainsFloorWalls = false;
 
             //Plugin.LogDebug($"[WallGenerator] Walls RESET (except orginalWalls).");
+        }
+
+        public static void ResetRunState()
+        {
+            originalWallCount = -1;
+
+            originalWalls.Clear();
+            generatedStandardWalls.Clear();
+            generatedExtensionWalls.Clear();
+            tempOriginalAndStandardWalls.Clear();
+            particleWalls.Clear();
+            floorWalls.Clear();
+            allWalls.Clear();
+
+            allWallsContainsOriginalWalls = false;
+            allWallsContainsStandardWalls = false;
+            allWallsContainsExtensionWalls = false;
+            allWallsContainsParticleWalls = false;
+            allWallsContainsFloorWalls = false;
+
+            failedWallRemovalForRotations1x = false;
+            failedWallRemovalForRotations2x = false;
+            failedWallRemovalForRotations3x = false;
+
+            divisorCounter = 0;
+            lastProcessedIndex = 0;
+
+            _startTime = -1f;
+            _endTime = -1f;
+
+            lastNonExtRowTime = float.NegativeInfinity;
+            lastTime = float.NegativeInfinity;
+            lastRightEdge = int.MinValue;
+
+            occupiedColsForRow.Clear();
+            _generatedSkyCells.Clear();
+
+            _floorNonMeLastRowTime = float.NegativeInfinity;
+            _floorNonMeOccupiedCols.Clear();
+
+            _particleNonMeLastRowTime = float.NegativeInfinity;
+            _particleNonMeOccupiedCols.Clear();
         }
 
         public static void WallGen(int i, float wallTime, float wallDuration, ENoteData afterLastNote, List<ENoteData> notesInBarBeat, List<ENoteData> notesInBar, float nextNoteLeftTime, float nextNoteRightTime)
@@ -2685,7 +2748,7 @@ namespace AutoBS
 
             eData.Obstacles = allWalls;
 
-            eData.ObstaclesChanged =
+            eData.ObstaclesChanged |=
                 generatedStandardWalls.Count > 0 ||
                 generatedExtensionWalls.Count > 0 ||
                 particleWalls.Count > 0 ||
@@ -2700,6 +2763,19 @@ namespace AutoBS
                 $"particle={particleWalls.Count}, " +
                 $"floor={floorWalls.Count}, " +
                 $"allWalls={allWalls.Count}");
+        }
+        public static void FinalizeOriginalWallsOnly(EditableCBD eData)
+        {
+            if (!allWallsContainsOriginalWalls)
+            {
+                allWalls.AddRange(originalWalls);
+                allWallsContainsOriginalWalls = true;
+            }
+
+            allWalls.Sort((a, b) => a.time.CompareTo(b.time));
+
+            eData.Obstacles = allWalls;
+            eData.ObstaclesChanged |= originalWallCount != eData.Obstacles.Count;
         }
 
         public static bool IsCustomNoodleWall(EObstacleData ob)

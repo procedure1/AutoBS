@@ -61,17 +61,19 @@ namespace AutoBS.Patches
 
         {
             if (!Config.Instance.EnablePlugin) return;
-            if (!Config.Instance.Enable360fyer) return;
 
             SongName = level.songName;
-            float bpm = level.beatsPerMinute;
-
+            SongFolderPath = "";
             basedOn = "";
+            IsCustomLevel = level.levelID.StartsWith("custom_level_");
+            IsBeatSageMap = false;
+            BeatmapCustomData = new Dictionary<BeatmapDifficulty, CustomData>(); // Reset these since SetContent is called for new song selections and will cause error to try and add contents to same containers used by previous song
+            Mappers = level.allMappers ?? Array.Empty<string>();
+            Lighters = level.allLighters ?? Array.Empty<string>();
 
-            // Reset these since SetContent is called for new song selections and will cause error to try and add contents to same containers used by previous song
+            if (!Config.Instance.Enable360fyer) return;
 
-            BeatmapCustomData = new Dictionary<BeatmapDifficulty, CustomData>();
-
+            float bpm = level.beatsPerMinute;
 
             // === LOG GENERAL SONG INFO ===
             Plugin.LogDebug($".");
@@ -109,8 +111,6 @@ namespace AutoBS.Patches
         /// </summary>
         public static void CreateGen360DifficultySet(BeatmapLevel level)
         {
-            IsCustomLevel = level.levelID.StartsWith("custom_level_");
-
             if (IsCustomLevel)
                 Plugin.LogDebug("[CreateGen360DifficultySet] Custom Level Found.");
             else
@@ -168,9 +168,6 @@ namespace AutoBS.Patches
             if (Mappers.Length > 0 & Lighters.Length == 0) Lighters = Mappers;
 
             Plugin.LogDebug($"[CreateGen360DifficultySet] Mappers: {string.Join(", ", Mappers)}, Lighters: {string.Join(", ", Lighters)}"); //empty for vanilla
-
-
-            IsBeatSageMap = false; // will be true for all difficulties
 
             if (Mappers.Contains("Beat Sage"))
             {

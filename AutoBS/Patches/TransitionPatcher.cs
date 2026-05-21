@@ -51,6 +51,7 @@ namespace AutoBS.Patches
 
         public static float FinalNoteJumpMovementSpeed = 0;
         public static float FinalJumpDistance;
+
         public static bool AutoNJSDisabledByConflictingMod = false;
         public static bool AutoNJSPracticeModeDisabledByConflictingMod = false;
 
@@ -96,13 +97,38 @@ namespace AutoBS.Patches
         {
             if (!Config.Instance.EnablePlugin) return;
 
+            ScoreSubmission.ScoreGate.Clear();
+
+            BasedOnKey = default;
+            SelectedBeatmapVersion = new Version(0, 0, 0);
+            NotesPerSecond = 0f;
+
+            OriginalNoteJumpMovementSpeed = 0f;
+            OriginalNoteJumpOffset = 0f;
+            OrginalJumpDistance = 0f;
+            FinalNoteJumpMovementSpeed = 0f;
+            FinalJumpDistance = 0f;
+
+            DifficultyReducerRemovedNotes = false;
+            IsBeatSageMap = false;
+
+            RequiresMappingExtensions = false;
+            RequiresNoodle = false;
+            RequiresChroma = false;
+            RequiresVivify = false;
+
+            NoodleProblemNotes = false;
+            NoodleProblemObstacles = false;
+            ScoreSubmissionDisableText = "";
+            EnvironmentName = "";
+
             SelectedSerializedName = beatmapKey.beatmapCharacteristic.serializedName;
 
             if (!Utils.IsEnabledForGeneralFeatures()) return; // have to have the serialized name from TransitionPatcher for this to work
 
             AutoNjsRuntimeState.AutoNjsFixerEnabled = Utils.IsEnabledAutoNjsFixer();
 
-            ScoreGate.Clear();
+            ScoreSubmission.ScoreGate.Clear();
 
             IsCustomLevel = beatmapLevel.levelID.StartsWith("custom_level_");
             SelectedCharacteristicSO = beatmapKey.beatmapCharacteristic;
@@ -115,6 +141,8 @@ namespace AutoBS.Patches
             OriginalNoteJumpOffset = NJORegistry.findByKey.TryGetValue(SelectedPlayKey, out var n) ? n : 0f; // used by JsonOutputConverter so only needed for generated map. this will not work anyway for non generated maps.
 
             IsGen360 = SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
+
+            BasedOnKey = SelectedPlayKey; // new
             if (IsGen360)
             {
                 if (!SetContent.GeneratedToStandardKey.TryGetValue(beatmapKey.SerializedName(), out BasedOnKey))

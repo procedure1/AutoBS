@@ -15,6 +15,7 @@ namespace AutoBS
         public bool IsCustom;
         public CustomBeatmapData Custom;
         public BeatmapData Vanilla;
+        public string PipelineScoreDisabledReason;
     }
 
     /// <summary>
@@ -70,14 +71,10 @@ namespace AutoBS
             RunWallGenerator(eData);
             FinalNormalize(eData);
 
-
-            ScoreGate.Clear();
             AutoNjsRuntimeState.ResetLive(); // these reset for live njs disabled text.
             LiveAudioRuntimeState.ResetLive();
             LiveGameplayRuntimeState.Reset();
-            string disabledText = DetermineScoreSubmissionReason(eData);
-            if (!string.IsNullOrEmpty(disabledText))
-                ScoreGate.Set(disabledText);
+            string PipelineScoreDisabledReason = ScoreSubmission.DetermineScoreSubmissionDisabledReason(eData);
 
             //int offset = (int)Config.Instance.RotationOriginOffsetForRecording360;
             //foreach (var evt in eData.RotationEvents)
@@ -116,19 +113,20 @@ namespace AutoBS
                 .OrderBy(r => r.time)
                 .Select(r => (t: MathF.Round(r.time, 4), rot: r.rotation))
                 .ToList();
-            bool rotationsNotchanged = originalRotations.Count == rotAfter.Count && originalRotations.SequenceEqual(rotAfter); //compares starting rotations to final rotations
-            Plugin.LogDebug($"[PipelineResult] 4 rotationsNotchanged: {rotationsNotchanged} Rotation Events Count: {eData.RotationEvents.Count()}.");
-            if (!rotationsNotchanged) eData.RotationEventsChanged = true;
+            bool rotationsChanged = originalRotations.Count != rotAfter.Count || !originalRotations.SequenceEqual(rotAfter); // compares starting rotations to final rotations
+            Plugin.LogDebug($"[PipelineResult] 4 rotationsChanged: {rotationsChanged} Rotation Events Count: {eData.RotationEvents.Count()}.");
+            if (rotationsChanged) eData.RotationEventsChanged = true;
 
-            bool lightsNotAdded = (Utils.IsEnabledLighting() && !LightsGenerator.LightEventsAdded) || !Utils.IsEnabledLighting();
-            Plugin.LogDebug($"[PipelineResult] 5 lightsNotAdded: {lightsNotAdded}.");
+            bool lightsAdded = Utils.IsEnabledLighting() && LightsGenerator.LightEventsAdded;
+            Plugin.LogDebug($"[PipelineResult] 5 lightsAdded: {lightsAdded}.");
 
-            bool boostNotAdded = (Config.Instance.BoostLighting && eData.ColorBoostEvents.Count == 0) || eData.MapAlreadyUsesEnvColorBoost;
-            Plugin.LogDebug($"[PipelineResult] 6 boostNotAdded: {boostNotAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {eData.MapAlreadyUsesEnvColorBoost})");
+            bool boostAdded = Config.Instance.BoostLighting &&
+                              eData.ColorBoostEvents.Count > 0 &&
+                              !eData.MapAlreadyUsesEnvColorBoost;
+            Plugin.LogDebug($"[PipelineResult] 6 boostAdded: {boostAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {eData.MapAlreadyUsesEnvColorBoost})");
 
-            bool wallsNotAltered = ((Utils.IsEnabledWalls() && originalWallCount == eData.Obstacles.Count) || !Utils.IsEnabledWalls()) && !eData.ObstaclesChanged;
-            Plugin.LogDebug($"[PipelineResult] 7 wallsNotAltered: {wallsNotAltered} (Original Count: {originalWallCount} Final Count: {eData.Obstacles.Count} -- walls may have changed start time or duration or lineLayer if beatsage cleaner used)");
-
+            bool wallsAltered = (Utils.IsEnabledWalls() && originalWallCount != eData.Obstacles.Count) || eData.ObstaclesChanged;
+            Plugin.LogDebug($"[PipelineResult] 7 wallsAltered: {wallsAltered} (Original Count: {originalWallCount} Final Count: {eData.Obstacles.Count} -- walls may have changed start time or duration or lineLayer if beatsage cleaner used)");
             if (eData.IsNative360or90 && eData.RotationEventsChanged) // if rotations are altered, then original data with its per object rotations will change! (basic event data is turned into per object rotation)  
             {
                 if (eData.ColorNotes.Count > 0) eData.ColorNotesChanged = true;
@@ -157,7 +155,8 @@ namespace AutoBS
                     OriginalMapAltered = false,
                     IsCustom = (eData.OriginalCBData != null),
                     Custom   = eData.OriginalCBData,
-                    Vanilla  = eData.OriginalBData
+                    Vanilla  = eData.OriginalBData,
+                    PipelineScoreDisabledReason = PipelineScoreDisabledReason
                 };
             }
 
@@ -179,7 +178,8 @@ namespace AutoBS
                 OriginalMapAltered = true,
                 IsCustom = (eData.OriginalCBData != null),
                 Custom   = (eData.OriginalCBData != null) ? ConvertEditableCBD.Convert(eData) : null,
-                Vanilla  = (eData.OriginalCBData == null) ? ConvertEditableCBD.ConvertVanilla(eData) : null
+                Vanilla  = (eData.OriginalCBData == null) ? ConvertEditableCBD.ConvertVanilla(eData) : null,
+                PipelineScoreDisabledReason = PipelineScoreDisabledReason
             };
         }
 
@@ -211,6 +211,7 @@ namespace AutoBS
             // These are safe even if some module is disabled this run.
             LightsGenerator.LightEventsAdded = false;
             BeatSageCleanUp.DisableScoreSubmission = false;
+            WallGenerator.ResetRunState();
 
             // Always initialize these to baseline-safe values later in InitializeMovementData().
             // Doing a reset here helps avoid stale data if initialization returns early.
@@ -370,17 +371,29 @@ namespace AutoBS
             bool moveWallsBlockingArc = false;
             bool moveWallsBlockingChainTail = false;
 
+            bool wallsDisabled = !Utils.IsEnabledWalls();
+
+            bool wallHelpersNeedOriginalWalls =
+                wallsDisabled &&
+                ((addArcs && eData.ArcsChanged) || (addChains && eData.ChainsChanged));
+
+            if (wallHelpersNeedOriginalWalls)
+                WallGenerator.PrepareOriginalWallsOnly(eData);
+
             if (addArcs && eData.ArcsChanged)
             {
-                if (!Utils.IsEnabledWalls())
+                if (wallsDisabled)
                     moveWallsBlockingArc = WallGenerator.MoveWallsBlockingArc(eData);
             }
 
             if (addChains && eData.ChainsChanged)
             {
-                if (!Utils.IsEnabledWalls())
+                if (wallsDisabled)
                     moveWallsBlockingChainTail = WallGenerator.MoveWallsBlockingChainTail(eData);
             }
+
+            if (wallHelpersNeedOriginalWalls)
+                WallGenerator.FinalizeOriginalWallsOnly(eData);
 
             if (moveWallsBlockingArc || moveWallsBlockingChainTail)
                 eData.ObstaclesChanged = true;
@@ -633,10 +646,16 @@ namespace AutoBS
                 //    WallGenerator.FinalizeOriginalOnlyWallsToMap(eData);
 
                 eData.Obstacles = eData.Obstacles.OrderBy(o => o.time).ToList();
-                
 
-                if (leanCrouchWallRemoval || moveWallsBlockingArc || moveWallsBlockingChainTail || eData.OriginalObstacleCount != eData.Obstacles.Count)
+
+                if (leanCrouchWallRemoval ||
+                    moveWallsBlockingArc ||
+                    moveWallsBlockingChainTail ||
+                    removeCrouchWallsBlockingChains ||
+                    eData.OriginalObstacleCount != eData.Obstacles.Count)
+                {
                     eData.ObstaclesChanged = true;
+                }
             }
 
             int Floor(float f)
@@ -667,66 +686,5 @@ namespace AutoBS
             eData.Chains = eData.Chains.OrderBy(c => c.time).ToList();
         }
 
-        public static string DetermineScoreSubmissionReason(EditableCBD eData)
-        {
-            string str = "";
-            /*
-            if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
-            {
-                if (Config.Instance.BasedOn != Config.Base.Standard)
-                {
-                    str = "Base Map Not Standard";
-                }
-                if (Config.Instance.RotationSpeedMultiplier < 0.3f)
-                {
-                    str += (str != "" ? " | " : "") + "Rotation Mult Low";
-                }
-                if (!Config.Instance.Wireless360 && Config.Instance.LimitRotations360 < 90)
-                {
-                    str += (str != "" ? " | " : "") + "Rotations Limited";
-                }
-            }
-            */
-            if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE) // Since 360 settings can be altered, there is no standard for 360 generated maps and so can't score it.
-            {
-                str = "360fyer";
-            }
-
-            if (BS_Utils.Plugin.LevelData.Mode == BS_Utils.Gameplay.Mode.Standard &&
-                Config.Instance.EnableDiffReducer && TransitionPatcher.DifficultyReducerRemovedNotes)
-            {
-                str += (str != "" ? " | " : "") + "Auto Diff Reducer";
-            }
-
-            if (Mathf.Abs(TransitionPatcher.OriginalNoteJumpMovementSpeed - TransitionPatcher.FinalNoteJumpMovementSpeed) > 0.0001f )
-            {
-                str += (str != "" ? " | " : "") + "Auto NJS Fixer";
-            }
-
-            if (eData.ArcsChanged)
-            {
-                str += (str != "" ? " | " : "") + "Arcitect Arcs";
-            }
-
-            if (eData.ChainsChanged)
-            {
-                str += (str != "" ? " | " : "") + "Arcitect Chains";
-            }
-
-            if (eData.ObstaclesChanged)
-            {
-                str += (str != "" ? " | " : "") + "Auto Walls";
-            }
-
-            if (Config.Instance.EnableCleanBeatSage && (TransitionPatcher.IsBeatSageMap) && BeatSageCleanUp.DisableScoreSubmission)
-            {
-                str += (str != "" ? " | " : "") + "Beat Sage Cleaner";
-            }
-
-            if (str != "")
-                str = "AutoBS—" + str; // prefix once
-
-            return str;
-        }
     }
 }
