@@ -20,40 +20,87 @@ namespace AutoBS
         [HarmonyAfter("com.kyle1413.BeatSaber.BS-Utils")] // run after BS_Utils
         static class ResultsViewController_SetDataToUI_Fix
         {
-            // Store base text per controller instance (weak map pattern)
-            static readonly Dictionary<int, string> _baseText = new Dictionary<int, string>();
+            const string LabelName = "AutoBS_NoSubmitLabel";
 
-            // Prefix runs BEFORE BS_Utils; remember the base TMP text
-            static void Prefix(ResultsViewController __instance,
-                               ref GameObject ____clearedBannerGo,
-                               ref GameObject ____failedBannerGo)
+            static void DestroyAutoBSLabel(GameObject banner)
             {
-                if (!Config.Instance.EnablePlugin) return;
-                if (!Utils.IsEnabledForGeneralFeatures()) return;
+                if (!banner) return;
 
-                var obj = ____clearedBannerGo.activeInHierarchy ? ____clearedBannerGo : ____failedBannerGo;
-                var tmp = obj.GetComponentInChildren<CurvedTextMeshPro>();
-                if (tmp != null) _baseText[__instance.GetHashCode()] = tmp.text ?? "";
+                var t = banner.transform.Find(LabelName);
+                if (t)
+                    UnityEngine.Object.Destroy(t.gameObject);
             }
 
-            // Postfix runs AFTER BS_Utils; normalize text to 1 line (or show your own)
+            static void DestroyAutoBSLabels(GameObject clearedBanner, GameObject failedBanner)
+            {
+                DestroyAutoBSLabel(clearedBanner);
+                DestroyAutoBSLabel(failedBanner);
+            }
 
-            const string LabelName = "AutoBS_NoSubmitLabel";
+            static void RemoveBSUtilsScoreSubmissionText(GameObject clearedBanner, GameObject failedBanner)
+            {
+                RemoveBSUtilsScoreSubmissionTextFromBanner(clearedBanner, false);
+                RemoveBSUtilsScoreSubmissionTextFromBanner(failedBanner, true);
+            }
+
+            static void RemoveBSUtilsScoreSubmissionTextFromBanner(GameObject bannerGo, bool isFailedBanner)
+            {
+                if (!bannerGo) return;
+
+                var tmp = bannerGo.GetComponentInChildren<CurvedTextMeshPro>(true);
+                if (!tmp) return;
+
+                string text = tmp.text ?? "";
+
+                const string marker = "Score Submission Disabled by:";
+                int markerIndex = text.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+
+                if (markerIndex < 0)
+                    return;
+
+                int appendStart = text.LastIndexOf("  \r\n", markerIndex, StringComparison.Ordinal);
+
+                if (appendStart < 0)
+                    appendStart = text.LastIndexOf("\r\n", markerIndex, StringComparison.Ordinal);
+                if (appendStart < 0)
+                    appendStart = text.LastIndexOf("\n", markerIndex, StringComparison.Ordinal);
+                if (appendStart < 0)
+                    appendStart = markerIndex;
+
+                tmp.text = text.Substring(0, appendStart).TrimEnd();
+                tmp.enableWordWrapping = true;
+
+                if (isFailedBanner)
+                    tmp.color = Color.red;
+
+                var bg = bannerGo.transform.Find("BG");
+                if (bg)
+                    bg.gameObject.SetActive(true);
+            }
 
             static void Postfix(ref GameObject ____clearedBannerGo, ref GameObject ____failedBannerGo, ref TextMeshProUGUI ____rankText)
             {
-                if (!Config.Instance.EnablePlugin) return;
-                if (!Utils.IsEnabledForGeneralFeatures()) return;
+                bool enabled =
+                    Config.Instance.EnablePlugin &&
+                    Utils.IsEnabledForGeneralFeatures();
+
+                if (!enabled)
+                {
+                    DestroyAutoBSLabels(____clearedBannerGo, ____failedBannerGo);
+                    RemoveBSUtilsScoreSubmissionText(____clearedBannerGo, ____failedBannerGo);
+                    return;
+                }
+
+                RemoveBSUtilsScoreSubmissionText(____clearedBannerGo, ____failedBannerGo);
 
                 // Debug: confirm gate state at render time
                 Plugin.Log.Info($"[ScoreGate] Map Results: IsDisabled={ScoreGate.IsDisabledThisRun} Reason='{ScoreGate.ReasonThisRun}'");
 
-                // If not disabled this run, hide (or remove) our label if present and bail.
                 var host = ____clearedBannerGo.activeInHierarchy ? ____clearedBannerGo : ____failedBannerGo;
                 var label = host.transform.Find(LabelName)?.GetComponent<TextMeshProUGUI>();
                 if (!ScoreGate.IsDisabledThisRun)
                 {
-                    if (label) label.gameObject.SetActive(false);
+                    DestroyAutoBSLabels(____clearedBannerGo, ____failedBannerGo);
                     return;
                 }
 
@@ -88,8 +135,9 @@ namespace AutoBS
 
                 // Write a single, clean line every time (no stacking).
                 var reason = ScoreGate.ReasonThisRun;
-                label.text =
-                    $"\n<size=200%><color=#ff0000ff>Score submission disabled:</color>{(string.IsNullOrEmpty(reason) ? "" : $"<color=#ff0000ff>  {reason}")}</color></size>";
+                label.text = string.IsNullOrEmpty(reason)
+                    ? "\n<size=200%><color=#ff0000ff>Score submission disabled</color></size>"
+                    : $"\n<size=200%><color=#ff0000ff>Score submission disabled:  {reason}</color></size>";
                 label.gameObject.SetActive(true);
             }
         }
@@ -178,7 +226,7 @@ namespace AutoBS
             */
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE) // Since 360 settings can be altered, there is no standard for 360 generated maps and so can't score it.
             {
-                str = "360fyer";
+                str = "AutoBS—360fyer";
                 return str;
             }
 
@@ -202,7 +250,7 @@ namespace AutoBS
                 str += (str != "" ? " | " : "") + "Arcitect Chains";
             }
 
-            if (eData.ObstaclesChanged)
+            if (Utils.IsEnabledWalls() && eData.ObstaclesChanged) // since even if auto walls is off, arcitect can alter walls and so we don't want to show a reason for auto walls when its disabled. arcs or chains will disable and worse case my stringent test will find it.
             {
                 str += (str != "" ? " | " : "") + "Auto Walls";
             }

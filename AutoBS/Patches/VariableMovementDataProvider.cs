@@ -105,7 +105,7 @@ namespace AutoBS.Patches
             state.FinalBaseNjs = givenNJS;
             state.FinalBaseJd = givenJD;
             state.BaseJumpDuration = givenNJS > 0.01f ? (givenJD / givenNJS) : 0f;
-            state.LiveNjsScoreGateTriggered = false;
+            state.LiveNjsScoreGateTriggered = TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE; // force off for gen 360
 
             state.HasAppliedValues = false;
             state.LastAppliedNjs = 0f;
@@ -355,14 +355,16 @@ namespace AutoBS.Patches
 
                 bool flexibleDuration = AutoNjsRuntimeState.FlexibleDuration;
 
-                if (!state.LiveNjsScoreGateTriggered && Mathf.Abs(effectiveNjs - state.OriginalNjs) > 0.0001f)//effectiveNjs < state.OriginalNjs - 0.001f)
+                if (!state.LiveNjsScoreGateTriggered &&
+                    liveNJSEnabled &&
+                    Mathf.Abs(AutoNjsRuntimeState.LiveNjsOffset) > 0.0001f)
                 {
                     state.LiveNjsScoreGateTriggered = true;
                     ScoreSubmission.ScoreGate.AddReason("Live NJS");
 
                     Plugin.Log.Info(
                         $"[ScoreGate] Disabled by live NJS change. " +
-                        $"Original NJS:{state.OriginalNjs:F2} NJS when disabled:{effectiveNjs:F2}");
+                        $"Base NJS:{state.FinalBaseNjs:F2} NJS when disabled:{effectiveNjs:F2}");
                 }
 
                 bool valuesChanged =
