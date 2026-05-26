@@ -103,7 +103,11 @@ I hate reaching for my headset volume button during gameplay every other song to
 
 Can remove some impossible note combinations common with `Beat Sage`-generated maps. It shortens long crouch walls and removes stray notes (notes many seconds away from the main body of song notes) at the start or end of maps.
 
-## Check out the WIKI for more details.
+## Camera Alignment Tool for Mixed Reality Recording
+
+Mixed Reality Portals allow a new way (I think) to help record mixed reality videos using green screen to place your physical body into the virtual Beat Saber environment. For your virtual sabers to line up with your hands and controllers in the real world, your virtual camera must line up perfectly with your real camera and this tool can help in that difficult process. [See the WIKI.](https://github.com/procedure1/AutoBS/wiki/Camera-Alignment-Tool-for-Mixed-Reality-Recording)
+
+## Check out the full [WIKI](https://github.com/procedure1/AutoBS/wiki) for more details.
 
 ## Todo
 
