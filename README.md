@@ -11,6 +11,8 @@
 
 A Beat Saber mod to create Mixed Reality Portals (requires `Virtual Desktop` App) and to automatically generate 360 degree maps from standard maps, and automatically add arcs, chains, lights and walls, and set note speed and spawn distance. Most features fully work on non-generated maps as well. So you can add arcs and walls etc to standard maps too. Auto Difficulty Reducer along with Auto Note Speed and Spawn Distance Fixer can make Expert++ maps into maps a toddler can play!
 
+<p align="center"><img src="024413BeatSaber-AutoBSMixedRealityPortals-Yeah.gif" alt="AutoBS Mixed Reality Portals"></p>
+
 NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. It can also be used to help line up a virtual and real world camera for mixed reality capture along with the `CameraPlus` mod. See the end of this readme file below.
 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
@@ -20,7 +22,7 @@ This version has lots of customization and supports v3 and v4 maps. Much of the 
 
 Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
-[![showcase video](AutoBS-Big-Lasers-Big-Walls.gif)](https://www.youtube.com/watch?v=xUDdStGQwq0)
+<p align="center"><a href="https://www.youtube.com/watch?v=xUDdStGQwq0"><img src="AutoBS-Big-Lasers-Big-Walls.gif" alt="AutoBS Mixed Reality Portals"></a></p>
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/procedure1)
 
@@ -32,7 +34,7 @@ Note: Vivify maps and many complex Noodle maps are currently incompatible and di
 - Recommended: install Kylemc's `Mapping Extensions` mod if you want full wall customization.
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
 
-![Technicolor with 360fyer](AutoBS-Big-Lasers-Big-Walls-Technicolor.gif)
+<p align="center"><img src="AutoBS-Big-Lasers-Big-Walls-Technicolor.gif" alt="Technicolor with AutoBS 360fyer"></p>
 
 ## Mixed Reality Portals
 Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. 
