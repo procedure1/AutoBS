@@ -20,7 +20,7 @@ This version has lots of customization and supports v3 and v4 maps. Much of the 
 
 Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
-[![showcase video](https://github.com/procedure1/AutoBS/blob/master/AutoBS-Big-Lasers-Big-Walls.gif)](https://www.youtube.com/watch?v=xUDdStGQwq0)
+[![showcase video](AutoBS-Big-Lasers-Big-Walls.gif)](https://www.youtube.com/watch?v=xUDdStGQwq0)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/procedure1)
 
@@ -32,7 +32,7 @@ Note: Vivify maps and many complex Noodle maps are currently incompatible and di
 - Recommended: install Kylemc's `Mapping Extensions` mod if you want full wall customization.
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
 
-![Technicolor with 360fyer](https://github.com/procedure1/AutoBS/blob/master/AutoBS-Big-Lasers-Big-Walls-Technicolor.gif)
+![Technicolor with 360fyer](AutoBS-Big-Lasers-Big-Walls-Technicolor.gif)
 
 ## Mixed Reality Portals
 Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. 
