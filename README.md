@@ -15,9 +15,7 @@ A Beat Saber mod that adds floating Mixed Reality Portals (requires the `Virtual
 NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. It can also be used to help line up a virtual and real world camera for mixed reality capture along with the `CameraPlus` mod. See the end of this readme file below.
 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
-I have updated the mod since it has been dormant for a long time.
-
-Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
+I have updated the mod since it has been dormant for a long time. Now compatible with Arcs + Chains. Ultra customizable from angle size to rotation frequency for easy 360 or for a super challenging workout. Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
 <p align="center"><a href="https://www.youtube.com/watch?v=xUDdStGQwq0"><img src="AutoBS-Big-Lasers-Big-Walls.gif" alt="AutoBS Mixed Reality Portals"></a></p>
 
@@ -26,8 +24,8 @@ Note: Vivify maps and many complex Noodle maps are currently incompatible and di
 ## Installation
 
 - Install this mod by downloading `AutoBS.dll` from the Releases tab: https://github.com/procedure1/autobs/releases and placing it in the `Plugins/` directory of your modded Beat Saber installation.
-- COMING SOON: You can install this mod using BSManager or ModAssistant.
-- Requires `CustomJSONData` mod (also via BSManager or ModAssistant)
+- Requires `CustomJSONData` mod (via BSManager or ModAssistant)
+- COMING SOON: Install this mod using BSManager or ModAssistant.
 - Recommended: install Kylemc's `Mapping Extensions` mod if you want full wall customization.
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
 
@@ -38,7 +36,7 @@ Create circular or rectangular portals to see Beat Saber through a floating mixe
 
 - NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Environment checkbox. 
 
-And configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with them.
+Configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with them.
 Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
 Video tutorial link coming soon. 
 
