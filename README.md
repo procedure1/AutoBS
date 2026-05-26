@@ -54,7 +54,7 @@ Video tutorial link coming soon.
 
 `Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the slices can become difficult to hit when chains get too long. ***HINT: Set `Arc Rotation Mode` to `No Restrictions` for more challenging arcs.***
 
-- NOTE: Chains added to a map would change the scoring, so I have disabled score submission for maps with generated chains.
+- NOTE: Arcs and Chains added to a map would change the scoring, so I have disabled score submission for maps with generated chains.
 
 ## 360fyer
 
@@ -83,18 +83,21 @@ Rotation size and frequency can be adjusted in the menu, and headset FOV limits 
 
 The original 360fyer generated awesome walls. This version adds `Generated Extension Walls` walls and creates tons of walls and particle walls to help enliven the boring 360 environment. But you can add this to any environment. This is designed to work with `Mapping Extensions` mod. Many of the walls types will still work in a modified and reduced way without the mod.
 
-- NOTE: Dense walls can be claustrophobic and distracting, but you can disable them, reduce them, or move them away from your play space if you like (using `Min Distance` for each wall type) .
+- NOTE: Dense walls can be claustrophobic and distracting, but you can disable them, reduce them, or move them away from your play space if you like (using `Min Distance` for each wall type).
+- NOTE: Scoring is disabled when using auto walls.
 
 ## Auto NJS Fixer — with Live Controller Tuning
 
 Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence the need for this. You can choose `Preserve Travel Time` if you want to keep the mapper’s intended duration of travel, reaction time and perceived note speed while letting you change the note spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs. (But large speed changes don't work well on maps with high note density.) Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET. Separately or additionally, change the NJS (and/or JD) live during gameplay using your controllers! Tune every map to your preference on the fly.
 
-- NOTE: If settings cause the note speed to be slower than the mapper intended, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not). Also, for maps with NJS events, a specified note spawn distance will vary when note speed varies. 
+- NOTE: If settings cause the note speed to change from the original map, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not). Also, for maps with NJS events, a specified note spawn distance will vary when note speed varies. 
 
 - NOTE: This gets wonky for large NJS or JD changes.
 
 ## Auto Difficulty Reducer
 And yet again, thanks to Kylemc for allowing me to work from their original code! This new version is automated to reduce difficulty on all maps above the note per second threshold that a user sets. It is also designed to attempt to keep a map's rhythmic structure as much as possible. It's not perfect! This reduces difficulty by removing notes. Sorry to the genius mappers out there! But at least this gives more toddlers like me a chance to play your awesome maps...
+
+- NOTE: Altered maps have scoring disabled.
 
 ## Live Volume Control
 I hate reaching for my headset volume button during gameplay every other song to bump up a quiet song. Now you can do it with your controller during gameplay with ease.
@@ -102,6 +105,8 @@ I hate reaching for my headset volume button during gameplay every other song to
 ## Beat Sage Cleaner
 
 Can remove some impossible note combinations common with `Beat Sage`-generated maps. It shortens long crouch walls and removes stray notes (notes many seconds away from the main body of song notes) at the start or end of maps.
+
+- NOTE: Altered maps have scoring disabled.
 
 ## Camera Alignment Tool for Mixed Reality Recording
 
