@@ -8,8 +8,7 @@
 ![AutoBS Beat Saber Automation Mod](AutoBS-Beat-Saber-Automation-Mod.jpg)
 ## For Beat Saber PC Version v1.42
 
-
-A Beat Saber mod to create Mixed Reality Portals (requires `Virtual Desktop` App) and to automatically generate 360 degree maps from standard maps, and automatically add arcs, chains, lights and walls, and set note speed and spawn distance. Most features fully work on non-generated maps as well. So you can add arcs and walls etc to standard maps too. Auto Difficulty Reducer along with Auto Note Speed and Spawn Distance Fixer can make Expert++ maps into maps a toddler can play!
+A Beat Saber mod that adds floating Mixed Reality Portals (requires the `Virtual Desktop` app) and can automatically convert standard maps into 360° maps. It also enhances maps by generating arcs, chains, lighting events, and a show of `mapping extensions` walls. Most of these features work on existing, non‑generated maps as well—so you can add arcs, walls, and more to standard maps. Tune the Volume, Note Speed and Note spawn distance live during gameplay with your controllers. Auto Difficulty Reducer, along with automatic note speed and spawn distance adjustments, can turn even Expert++ maps into maps a toddler can play :) This mod includes a Camera Alignment Tool for mixed reality recording and can also clean up small problems with `Beat Sage` maps.
 
 <p align="center"><img src="024413BeatSaber-AutoBSMixedRealityPortals-Yeah.gif" alt="AutoBS Mixed Reality Portals"></p>
 
@@ -17,8 +16,6 @@ NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap 
 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time.
-
-This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without the included `Auto Lights`. `Boost lighting events` add more color to maps that don't have them. `Auto Lights` power larger and brighter lasers and optional strobe events. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more interesting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps and adds portals to see Beat Saber through a floating mixed reality window. Tune the Volume, Note Speed and Note spawn distance live during gameplay with your controllers.
 
 Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
@@ -28,8 +25,8 @@ Note: Vivify maps and many complex Noodle maps are currently incompatible and di
 
 ## Installation
 
-- You can install this mod using BSManager or ModAssistant (coming soon).
-- Or install this mod manually by downloading `AutoBS.dll` from the Releases tab: https://github.com/procedure1/autobs/releases and placing it in the `Plugins/` directory of your modded Beat Saber installation.
+- Install this mod by downloading `AutoBS.dll` from the Releases tab: https://github.com/procedure1/autobs/releases and placing it in the `Plugins/` directory of your modded Beat Saber installation.
+- COMING SOON: You can install this mod using BSManager or ModAssistant.
 - Requires `CustomJSONData` mod (also via BSManager or ModAssistant)
 - Recommended: install Kylemc's `Mapping Extensions` mod if you want full wall customization.
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
@@ -37,7 +34,7 @@ Note: Vivify maps and many complex Noodle maps are currently incompatible and di
 <p align="center"><img src="AutoBS-Big-Lasers-Big-Walls-Technicolor.gif" alt="Technicolor with AutoBS 360fyer"></p>
 
 ## Mixed Reality Portals
-Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. 
+Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. There is a ring-style portal for 360 maps.
 
 - NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Environment checkbox. 
 
@@ -75,7 +72,7 @@ Rotation size and frequency can be adjusted in the menu, and headset FOV limits 
 
 ## Auto Light Generator
 
-`Auto Lights` automatically adds basic lighting events to maps that don't have them. This only works for 360 and the older environments before Weave. Modern GLS environments are not supported. Thanks to Loloppe (based on their ChroMapper-AutoMapper)! I made many changes so anything crappy is my fault :) You can choose to add `boost` lighting events as well. And 360-environment lasers are fat and bright to enliven the boring 360 environment. Human-crafted lights are best, machine-made lights are OK, no lights suck! (I am considering adding automatic lighting for GLS environments as well in the future.)
+`Auto Lights` automatically adds basic lighting events to maps that don't have them. This only works older environments before Weave and the 360 environment. Modern GLS environments are not supported. Thanks to Loloppe (based on their ChroMapper-AutoMapper)! I made many changes so anything crappy is my fault :) The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without `Auto Lights`. You can choose to add `boost` lighting events as well. And 360-environment lasers are fat and bright to enliven the boring 360 environment. Human-crafted lights are best, machine-made lights are OK, no lights suck! (I am considering adding automatic lighting for GLS environments as well in the future.)
 
 - Note: Aeroluna's `Technicolor` mod is awesome with 360fyer if you play a lot of 360 maps.
 
