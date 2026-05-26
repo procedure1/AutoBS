@@ -89,13 +89,13 @@ Thanks to Kylemc for allowing me to work from their original code! The original 
 
 - NOTE: This gets wonky for large NJS or JD changes.
 
+## Live Volume Control
+I hate reaching for my headset volume button during gameplay every other song to bump up a quiet song. Now you can do it with your controller thumbstick or buttons during gameplay with ease.
+
 ## Auto Difficulty Reducer
 And yet again, thanks to Kylemc for allowing me to work from their original code! This new version is automated to reduce difficulty on all maps above the note per second threshold that a user sets. It is also designed to attempt to keep a map's rhythmic structure as much as possible. It's not perfect! This reduces difficulty by removing notes. Sorry to the genius mappers out there! But at least this gives more toddlers like me a chance to play your awesome maps...
 
 - NOTE: Altered maps have scoring disabled.
-
-## Live Volume Control
-I hate reaching for my headset volume button during gameplay every other song to bump up a quiet song. Now you can do it with your controller during gameplay with ease.
 
 ## Beat Sage Cleaner
 
