@@ -22,6 +22,8 @@ Note: Vivify maps and many complex Noodle maps are currently incompatible and di
 
 [![showcase video](https://github.com/procedure1/AutoBS/blob/master/AutoBS-Big-Lasers-Big-Walls.gif)](https://www.youtube.com/watch?v=xUDdStGQwq0)
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/procedure1)
+
 ## Installation
 
 - You can install this mod using BSManager or ModAssistant (coming soon).
