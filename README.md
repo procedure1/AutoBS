@@ -1,7 +1,7 @@
 # AutoBS — Beat Saber Automation Mod
 ## Mixed Reality Portals 
 ## Arcitect Arc + Chain Maker, Auto Lights, Auto Walls
-## Auto NJS Fixer with Live Tuning
+## Auto NJS Fixer with Live Control
 ## Auto Difficulty Reducer
 ## And 360fyer!
 
@@ -112,9 +112,11 @@ Can remove some impossible note combinations common with `Beat Sage`-generated m
 
 ## Camera Alignment Tool for Mixed Reality Recording
 
-Mixed Reality Portals allow a new way (I think) to help record mixed reality videos using green screen to place your physical body into the virtual Beat Saber environment. For your virtual sabers to line up with your hands and controllers in the real world, your virtual camera must line up perfectly with your real camera and this tool can help in that difficult process. [See the WIKI.](https://github.com/procedure1/AutoBS/wiki/Camera-Alignment-Tool-for-Mixed-Reality-Recording)
+Mixed Reality Portals allow a new way (I think) to help record mixed reality videos using green screen to place your physical body into the virtual Beat Saber environment. For your virtual sabers to line up with your hands and controllers in the real world, your virtual camera must line up perfectly with your real camera and this tool can help in that process. [See the WIKI.](https://github.com/procedure1/AutoBS/wiki/Camera-Alignment-Tool-for-Mixed-Reality-Recording)
 
-<p align="center"><img style="width:480px" src="AutoBS%20Camera%20Alignment%20Grid%20-%20no%20tripods.jpg" alt="AutoBS Camera Alignment Tool for Mixed Reality Recording"></p>
+| | |
+|--|--|
+| ![AutoBS Mod Camera Alignment Grids](AutoBS%20Camera%20Alignment%20Grid%20-%20Both%20Tripods.jpg) |  ![AutoBS Mod Camera Alignment Marker Sets](AutoBS%20Camera%20Alignment%20Grid%20live.jpg) |
 
 ## Check out the full [WIKI](https://github.com/procedure1/AutoBS/wiki) for more details on the AutoBS mod.
 
