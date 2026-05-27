@@ -32,6 +32,8 @@ I have updated the mod since it has been dormant for a long time. Now compatible
 ## Mixed Reality Portals
 Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. There is a ring-style portal for 360 maps.
 
+<p align="center"><img src="Beat-Saber-AutoBS-Mod-Mixed-Reality-Portals.gif" alt="AutoBS Auto Mixed Reality Portals"></p>
+
 - NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Environment checkbox. 
 
 Configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with them.
@@ -51,7 +53,28 @@ Video tutorial link coming soon.
 
 - NOTE: Arcs and Chains added to a map would change the scoring, so I have disabled score submission for maps with generated chains.
 
-## 360fyer
+
+## Auto NJS Fixer — with Live Controller Tuning
+
+Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence the need for this. You can choose `Preserve Travel Time` if you want to keep the mapper’s intended duration of travel, reaction time and perceived note speed while letting you change the note spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs. (But large speed changes don't work well on maps with high note density.) Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET. Separately or additionally, change the NJS (and/or JD) live during gameplay using your controllers! Tune every map to your preference on the fly.
+
+<p align="center"><img src="Beat-Saber-AutoBS-Mod-Live-NJS-Control.gif" alt="AutoBS Live NJS Control"></p>
+
+- NOTE: If settings cause the note speed to change from the original map, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not). Also, for maps with NJS events, a specified note spawn distance will vary when note speed varies. 
+
+- NOTE: This gets wonky for large NJS or JD changes.
+
+## Live Volume Control
+I hate reaching for my headset volume button during gameplay every other song to bump up a quiet song. Now you can do it with your controller thumbstick or buttons during gameplay with ease.
+
+## Auto Difficulty Reducer
+And yet again, thanks to Kylemc for allowing me to work from their original code! This new version is automated to reduce difficulty on all maps above the note per second threshold that a user sets. It is also designed to attempt to keep a map's rhythmic structure as much as possible. It's not perfect! This reduces difficulty by removing notes. Sorry to the genius mappers out there! But at least this gives more toddlers like me a chance to play your awesome maps...
+
+<p align="center"><img src="Beat-Saber-AutoBS-Mod-Auto-Difficulty-Reducer.gif" alt="AutoBS Auto Difficulty Reducer"></p>
+
+- NOTE: Altered maps have scoring disabled.
+
+- ## 360fyer
 
 `360fyer` will take a standard map and create a new map with rotation events. After installation, every beatmap will have the 360-degree game mode enabled. Just choose 360 when you select a song. The level will be generated once you start the level.
 The algorithm is completely deterministic and does not use random chance; it generates rotation events based on the notes in the Standard beatmap (the base map can be changed in the menus from "Standard" to "OneSaber", "NoArrows", "90Degree", or even "360Degree" as well).
@@ -81,26 +104,6 @@ The original 360fyer generated awesome walls. This version adds `Generated Exten
 - NOTE: Dense walls can be claustrophobic and distracting, but you can disable them, reduce them, or move them away from your play space if you like (using `Min Distance` for each wall type).
 - NOTE: Scoring is disabled when using auto walls.
 
-## Auto NJS Fixer — with Live Controller Tuning
-
-Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence the need for this. You can choose `Preserve Travel Time` if you want to keep the mapper’s intended duration of travel, reaction time and perceived note speed while letting you change the note spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs. (But large speed changes don't work well on maps with high note density.) Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET. Separately or additionally, change the NJS (and/or JD) live during gameplay using your controllers! Tune every map to your preference on the fly.
-
-<p align="center"><img src="Beat-Saber-AutoBS-Mod-Live-NJS-Control.gif" alt="AutoBS Live NJS Control"></p>
-
-- NOTE: If settings cause the note speed to change from the original map, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not). Also, for maps with NJS events, a specified note spawn distance will vary when note speed varies. 
-
-- NOTE: This gets wonky for large NJS or JD changes.
-
-## Live Volume Control
-I hate reaching for my headset volume button during gameplay every other song to bump up a quiet song. Now you can do it with your controller thumbstick or buttons during gameplay with ease.
-
-## Auto Difficulty Reducer
-And yet again, thanks to Kylemc for allowing me to work from their original code! This new version is automated to reduce difficulty on all maps above the note per second threshold that a user sets. It is also designed to attempt to keep a map's rhythmic structure as much as possible. It's not perfect! This reduces difficulty by removing notes. Sorry to the genius mappers out there! But at least this gives more toddlers like me a chance to play your awesome maps...
-
-<p align="center"><img src="Beat-Saber-AutoBS-Mod-Auto-Difficulty-Reducer.gif" alt="AutoBS Auto Difficulty Reducer"></p>
-
-- NOTE: Altered maps have scoring disabled.
-
 ## Beat Sage Cleaner
 
 Can remove some impossible note combinations common with `Beat Sage`-generated maps. It shortens long crouch walls and removes stray notes (notes many seconds away from the main body of song notes) at the start or end of maps.
@@ -111,7 +114,9 @@ Can remove some impossible note combinations common with `Beat Sage`-generated m
 
 Mixed Reality Portals allow a new way (I think) to help record mixed reality videos using green screen to place your physical body into the virtual Beat Saber environment. For your virtual sabers to line up with your hands and controllers in the real world, your virtual camera must line up perfectly with your real camera and this tool can help in that difficult process. [See the WIKI.](https://github.com/procedure1/AutoBS/wiki/Camera-Alignment-Tool-for-Mixed-Reality-Recording)
 
-## Check out the full [WIKI](https://github.com/procedure1/AutoBS/wiki) for more details.
+<p align="center"><img style="width:480px" src="AutoBS%20Camera%20Alignment%20Grid%20-%20no%20tripods.jpg" alt="AutoBS Camera Alignment Tool for Mixed Reality Recording"></p>
+
+## Check out the full [WIKI](https://github.com/procedure1/AutoBS/wiki) for more details on the AutoBS mod.
 
 ## Todo
 
