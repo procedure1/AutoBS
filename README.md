@@ -10,14 +10,14 @@
 
 A Beat Saber mod that adds floating Mixed Reality Portals (requires the `Virtual Desktop` app) and can automatically convert standard maps into 360° maps. It also enhances maps by generating arcs, chains, lighting events, and a show of `mapping extensions` walls. Most of these features work on existing, non‑generated maps as well—so you can add arcs, walls, and more to standard maps. Tune the Volume, Note Speed and Note spawn distance live during gameplay with your controllers. Auto Difficulty Reducer, along with automatic note speed and spawn distance adjustments, can turn even Expert++ maps into maps a toddler can play :) This mod includes a Camera Alignment Tool to aid in mixed reality recording and can also clean up small problems with `Beat Sage` maps.
 
-<p align="center"><img src="024413BeatSaber-AutoBSMixedRealityPortals-Yeah.gif" alt="AutoBS Mixed Reality Portals"></p>
+<p align="center"><img src="Beat-Saber-AutoBS-Mixed-Reality-Portals-Yeah-024413.gif" alt="AutoBS Mixed Reality Portals"></p>
 
 NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. It can also be used to help line up a virtual and real world camera for mixed reality capture along with the `CameraPlus` mod. See the end of this readme file below.
 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time. Now compatible with Arcs + Chains. Ultra customizable from angle size to rotation frequency for easy 360 or for a super challenging workout. Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
-<p align="center"><a href="https://www.youtube.com/watch?v=xUDdStGQwq0"><img src="AutoBS-Big-Lasers-Big-Walls.gif" alt="AutoBS Mixed Reality Portals"></a></p>
+<p align="center"><a href="https://www.youtube.com/watch?v=xUDdStGQwq0"><img src="Beat-Saber-AutoBS-Mod-360fyer-Returns.gif" alt="AutoBS 360fyer"></a></p>
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/procedure1)
 
@@ -28,8 +28,6 @@ I have updated the mod since it has been dormant for a long time. Now compatible
 - COMING SOON: Install this mod using BSManager or ModAssistant.
 - Recommended: install Kylemc's `Mapping Extensions` mod if you want full wall customization.
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
-
-<p align="center"><img src="AutoBS-Big-Lasers-Big-Walls-Technicolor.gif" alt="Technicolor with AutoBS 360fyer"></p>
 
 ## Mixed Reality Portals
 Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. There is a ring-style portal for 360 maps.
@@ -48,6 +46,8 @@ Video tutorial link coming soon.
 ## Arcitect Arc + Chain Maker
 
 `Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the slices can become difficult to hit when chains get too long. ***HINT: Set `Arc Rotation Mode` to `No Restrictions` for more challenging arcs.***
+
+<p align="center"><img src="Beat-Saber-AutoBS-Mod-Auto-Arcs-Chains-Walls-Lights.gif" alt="AutoBS Auto Arcs Chains Walls Lights"></p>
 
 - NOTE: Arcs and Chains added to a map would change the scoring, so I have disabled score submission for maps with generated chains.
 
@@ -85,6 +85,8 @@ The original 360fyer generated awesome walls. This version adds `Generated Exten
 
 Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence the need for this. You can choose `Preserve Travel Time` if you want to keep the mapper’s intended duration of travel, reaction time and perceived note speed while letting you change the note spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs. (But large speed changes don't work well on maps with high note density.) Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET. Separately or additionally, change the NJS (and/or JD) live during gameplay using your controllers! Tune every map to your preference on the fly.
 
+<p align="center"><img src="Beat-Saber-AutoBS-Mod-Live-NJS-Control.gif" alt="AutoBS Live NJS Control"></p>
+
 - NOTE: If settings cause the note speed to change from the original map, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not). Also, for maps with NJS events, a specified note spawn distance will vary when note speed varies. 
 
 - NOTE: This gets wonky for large NJS or JD changes.
@@ -94,6 +96,8 @@ I hate reaching for my headset volume button during gameplay every other song to
 
 ## Auto Difficulty Reducer
 And yet again, thanks to Kylemc for allowing me to work from their original code! This new version is automated to reduce difficulty on all maps above the note per second threshold that a user sets. It is also designed to attempt to keep a map's rhythmic structure as much as possible. It's not perfect! This reduces difficulty by removing notes. Sorry to the genius mappers out there! But at least this gives more toddlers like me a chance to play your awesome maps...
+
+<p align="center"><img src="Beat-Saber-AutoBS-Mod-Auto-Difficulty-Reducer.gif" alt="AutoBS Auto Difficulty Reducer"></p>
 
 - NOTE: Altered maps have scoring disabled.
 
