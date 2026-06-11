@@ -5,13 +5,13 @@
 ## Auto Difficulty Reducer
 ## And 360fyer!
 
-![AutoBS Beat Saber Automation Mod](AutoBS-Beat-Saber-Automation-Mod.jpg)
+![AutoBS Beat Saber Automation Mod](images/AutoBS-Beat-Saber-Automation-Mod.jpg)
 ## For Beat Saber PC Version v1.42-1.44
 ## [Download Latest Release](https://github.com/procedure1/AutoBS/releases)
 
 A Beat Saber mod that adds floating Mixed Reality Portals (requires the `Virtual Desktop` app) and can automatically convert standard maps into 360° maps. It also enhances maps by generating arcs, chains, lighting events, and a show of `mapping extensions` walls. Most of these features work on existing, non‑generated maps as well—so you can add arcs, walls, and more to standard maps. Tune the Volume, Note Speed and Note spawn distance live during gameplay with your controllers. Auto Difficulty Reducer, along with automatic note speed and spawn distance adjustments, can turn even Expert++ maps into maps a toddler can play :) This mod includes a Camera Alignment Tool to aid in mixed reality recording and can also clean up small problems with `Beat Sage` maps.
 
-<p align="center"><img src="Beat-Saber-AutoBS-Mixed-Reality-Portals-Yeah-024413.gif" alt="AutoBS Mixed Reality Portals"></p>
+<p align="center"><img src="images/Beat-Saber-AutoBS-Mixed-Reality-Portals-Yeah-024413.gif" alt="AutoBS Mixed Reality Portals"></p>
 
 NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. It can also be used to help line up a virtual and real world camera for mixed reality capture along with the `CameraPlus` mod. See the end of this readme file below.
 
@@ -33,7 +33,7 @@ I have updated the mod since it has been dormant for a long time. Now compatible
 ## Mixed Reality Portals
 Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. There is a ring-style portal for 360 maps.
 
-<p align="center"><img src="Beat-Saber-AutoBS-Mod-Mixed-Reality-Portals.gif" alt="AutoBS Auto Mixed Reality Portals"></p>
+<p align="center"><img src="images/Beat-Saber-AutoBS-Mod-Mixed-Reality-Portals.gif" alt="AutoBS Auto Mixed Reality Portals"></p>
 
 - NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Environment checkbox. 
 
@@ -43,14 +43,14 @@ Video tutorial link coming soon.
 
 | | |
 |--|--|
-| ![AutoBS Beat Saber Automation Mod Mixed Reality Portal Setup](Virtual-Desktop-Configuration-1.jpg) |  ![AutoBS Beat Saber Automation Mod Mixed Reality Portal Setup](Virtual-Desktop-Configuration-2.jpg) |
+| ![AutoBS Beat Saber Automation Mod Mixed Reality Portal Setup](images/Virtual-Desktop-Configuration-1.jpg) |  ![AutoBS Beat Saber Automation Mod Mixed Reality Portal Setup](images/Virtual-Desktop-Configuration-2.jpg) |
 
 
 ## Arcitect Arc + Chain Maker
 
 `Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the slices can become difficult to hit when chains get too long. ***HINT: Set `Arc Rotation Mode` to `No Restrictions` for more challenging arcs.***
 
-<p align="center"><img src="Beat-Saber-AutoBS-Mod-Auto-Arcs-Chains-Walls-Lights.gif" alt="AutoBS Auto Arcs Chains Walls Lights"></p>
+<p align="center"><img src="images/Beat-Saber-AutoBS-Mod-Auto-Arcs-Chains-Walls-Lights.gif" alt="AutoBS Auto Arcs Chains Walls Lights"></p>
 
 - NOTE: Arcs and Chains added to a map would change the scoring, so I have disabled score submission for maps with generated chains.
 
@@ -59,7 +59,7 @@ Video tutorial link coming soon.
 
 Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence one need for this. You can choose `Preserve Travel Time` if you want to keep the mapper’s intended duration of travel, reaction time and perceived note speed while letting you change the note spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs. (But large speed changes don't work well on maps with high note density.) Overrides Beat Saber PLAYER OPTIONS > JUMP DURATION TYPE and OFFSET. Separately or additionally, change the NJS (and/or JD) live during gameplay using your controllers! Tune every map to your preference on the fly.
 
-<p align="center"><img src="Beat-Saber-AutoBS-Mod-Live-NJS-Control.gif" alt="AutoBS Live NJS Control"></p>
+<p align="center"><img src="images/Beat-Saber-AutoBS-Mod-Live-NJS-Control.gif" alt="AutoBS Live NJS Control"></p>
 
 - NOTE: If settings cause the note speed to change from the original map, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not). Also, for maps with NJS events, a specified note spawn distance will vary when note speed varies. 
 
@@ -71,7 +71,7 @@ I hate reaching for my headset volume button during gameplay every other song to
 ## Auto Difficulty Reducer
 And yet again, thanks to Kylemc for allowing me to work from their original code! This new version is automated to reduce difficulty on all maps above the note per second threshold that a user sets. Set it and forget it! It is also designed to attempt to keep a map's rhythmic structure as much as possible. It's not perfect! This reduces difficulty by removing notes. Complex swing patterns are still difficult even with reduced note quantity. Sorry to the genius mappers out there! But at least this gives more toddlers like me a chance to play your awesome maps...
 
-<p align="center"><img src="Beat-Saber-AutoBS-Mod-Auto-Difficulty-Reducer.gif" alt="AutoBS Auto Difficulty Reducer"></p>
+<p align="center"><img src="images/Beat-Saber-AutoBS-Mod-Auto-Difficulty-Reducer.gif" alt="AutoBS Auto Difficulty Reducer"></p>
 
 - NOTE: Altered maps have scoring disabled.
 
@@ -79,6 +79,8 @@ And yet again, thanks to Kylemc for allowing me to work from their original code
 
 `360fyer` will take a standard map and create a new map with rotation events. After installation, every beatmap will have the 360-degree game mode enabled. Just choose 360 when you select a song. The level will be generated once you start the level.
 The algorithm is completely deterministic and does not use random chance; it generates rotation events based on the notes in the Standard beatmap (the base map can be changed in the menus from "Standard" to "OneSaber", "NoArrows", "90Degree", or even "360Degree" as well).
+
+<p align="center"><img src="images/Beat-Saber-AutoBS-Mod-360fyer-Returns.gif" alt="AutoBS Auto Difficulty Reducer"></p>
 
 Wireless headset users can use the `Wireless 360` menu setting, which has no rotation limits and fewer tendencies to reverse direction. Tethered headset users have rotation-limiting settings to make sure they don’t ruin the cable by rotating too much. You can also use these settings if your play space is limited (for example, you could limit rotations to 150° or 180° if you want to face forward only).
 
@@ -117,7 +119,7 @@ Mixed Reality Portals allow a new way (I think) to help record mixed reality vid
 
 | | |
 |--|--|
-| ![AutoBS Mod Camera Alignment Grids](AutoBS%20Camera%20Alignment%20Grid%20-%20Both%20Tripods.jpg) |  ![AutoBS Mod Camera Alignment Marker Sets](AutoBS%20Camera%20Alignment%20Grid%20live.jpg) |
+| ![AutoBS Mod Camera Alignment Grids](images/AutoBS%20Camera%20Alignment%20Grid%20-%20Both%20Tripods.jpg) |  ![AutoBS Mod Camera Alignment Marker Sets](images/AutoBS%20Camera%20Alignment%20Grid%20live.jpg) |
 
 ## Check out the full [WIKI](https://github.com/procedure1/AutoBS/wiki) for more details on the AutoBS mod.
 
