@@ -3,19 +3,24 @@
 
 ## Beat Saber PC Version v1.40.0 - v1.40.8
 
+### Important Score Submission Warning
+- Versions prior to the latest release may not properly disable ranked score submission under certain conditions.  
+If you use BeatLeader or ScoreSaber, please update to the latest version immediately.
+
+---
+
+<p align="center"><a href="https://www.youtube.com/watch?v=xUDdStGQwq0"><img src="AutoBS-Big-Lasers-Big-Walls.gif" alt="AutoBS Mixed Reality Portals"></a></p>
+
 A Beat Saber mod to automatically generate 360 degree maps from standard maps, and automatically add arcs, chains, lights and walls, and set note speed and spawn distance. Most features fully work on non-generated maps as well. So you can add arcs and walls etc to standard maps too.
 
-NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. See below.
+- NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap `.dat` files containing all generated features. See below.
 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time.
 
 This version has lots of customization and supports v3 and v4 maps. Much of the customization in this update is centered around rotation updates and flexibility, automatic arcs and chains, and attempted visual improvements for 360 maps. As you probably know, 360 maps have had the same environment since they first came out in 2019. The 360 environment is very low-key with dim, narrow lasers compared to modern environments. Since the 360 environment doesn't work with v3 `GLS` lights (Group Lighting System), new `OST maps` converted to 360 have no lights in the 360 environment without `Automapper` lights. So I attempted to make 360 a bit flashier. `Boost lighting events` add more color to maps that don't have them. `Automapper` lights power larger and brighter lasers. If you hate it, disable it :) I've added auto `Mapping Extensions` Walls to make the environment more intereseting as well. As an automation tool, this mod can also clean up small problems with `Beat Sage`-generated maps.
 
-Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
-
-[![showcase video](https://github.com/procedure1/AutoBS/blob/master/AutoBS-Big-Lasers-Big-Walls.gif)](https://www.youtube.com/watch?v=xUDdStGQwq0)
-
+- NOTE: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
 ## Installation
 
@@ -25,7 +30,7 @@ Note: Vivify maps and many complex Noodle maps are currently incompatible and di
 - Recommended: install Kylemc's `Mapping Extensions` mod if you want full wall customization.
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
 
-![Technicolor with 360fyer](https://github.com/procedure1/AutoBS/blob/master/AutoBS-Big-Lasers-Big-Walls-Technicolor.gif)
+<p align="center"><img src="AutoBS-Big-Lasers-Big-Walls-Technicolor.gif" alt="Technicolor with AutoBS 360fyer"></p>
 
 ## 360fyer
 
@@ -42,25 +47,25 @@ Rotation size and frequency can be adjusted in the menu, and headset FOV limits 
 
 `Arcitect` automatically adds arcs and chains to maps that don't have them. Not as good as a human, of course! But better than nothing. Long-duration chains are available, but the segments can become impossible to hit when chains get too long.
 
-NOTE: Chains added to a map will change the scoring, so I have disabled score submission for maps that get chains added.
+- NOTE: Chains added to a map will change the scoring, so I have disabled score submission for maps that get chains added.
 
 ## Auto Lighting
 
 `Light Automapper` automatically adds basic lighting events to maps that don't have them. This only works for 360 and the older environments before Weave. Modern GLS environments are not supported. Thanks to Loloppe (based on their ChroMapper-AutoMapper)! I made many changes so anything crappy is my fault :) You can choose to add `boost` lighting events as well. And 360-environment lasers are fat and bright to enliven the boring 360 environment. Human-crafted lights are best, machine-made lights are OK, no lights suck! (I am considering adding automatic lighting for GLS environments as well in the future.)
 
-Note: Aeroluna's `Technicolor` mod is awesome with 360fyer if you play a lot of 360 maps.
+- Note: Aeroluna's `Technicolor` mod is awesome with 360fyer if you play a lot of 360 maps.
 
 ## Auto Wall Generator
 
 The original 360fyer generated awesome walls. This version adds `Mapping Extensions` walls (if you have the Mapping Extensions mod installed) and creates tons of walls to help enliven the boring 360 environment. But you can add this to any environment. 
 
-NOTE: Dense walls in 360 can be claustrophobic and distracting, but you can disable them, reduce them, or move them away from your play space if you like (using `Min Distance` for each wall type) .
+- NOTE: Dense walls in 360 can be claustrophobic and distracting, but you can disable them, reduce them, or move them away from your play space if you like (using `Min Distance` for each wall type) .
 
 ## Auto NJS Fixer
 
 Thanks to Kylemc for allowing me to work from their original code! The original `NJS Fixer` is designed to be used on a per-song basis more or less (IMHO). `Auto NJS Fixer` is designed to “set it and forget it.” 360 maps with rapid turns prefer a long note spawn distance, hence the need for this. You can choose `Maintain Speed` if you want to keep the mapper’s intended perceived speed but increase or change the spawn distance. Or you can use `Set Note Speed` to set your favorite speed and spawn distance; this works well for most songs until note density gets very tight.
 
-NOTE: If settings cause the note speed to be slower than the mapper intended, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not).
+- NOTE: If settings cause the note speed to be slower than the mapper intended, score submission will be disabled. Also, `Auto NJS Fixer` is disabled by the original `NJS Fixer` and `JDFixer` if they are installed (enabled or not).
 
 ## Beat Sage Cleaner
 
@@ -241,15 +246,15 @@ NOTE: The JSON config file has a `StandardLevelWallMultiplier` that reduces wall
 
 You can output a generated map to a JSON beatmap file. This file will contain all standard and all generated features including 360 rotation events, arcs, chains, lighting events, and walls (and attempts customData but not really tested). The output file can be in v2, v3, or v4 format (no matter what the starting format was). The output file(s) will be placed in the same folder as the original beatmap. 
 
-NOTE: v2 maps will not have arcs, chains or `Mapping Extensions` walls added.
+- NOTE: v2 maps will not have arcs, chains or `Mapping Extensions` walls added.
 
-NOTE: v3 maps may need some cleanup due to some vision blocking walls around arcs if the arc mode is NOT set to `Force Zero`.
+- NOTE: v3 maps may need some cleanup due to some vision blocking walls around arcs if the arc mode is NOT set to `Force Zero`.
 
-NOTE: v4 will be the most exact match to the in-game generated map. 
+- NOTE: v4 will be the most exact match to the in-game generated map. 
 
-NOTE: v4 doesn't really support customData so all customData will be lost (for Noodle etc). `Mapping Extensions` precision placement does still function.
+- NOTE: v4 doesn't really support customData so all customData will be lost (for Noodle etc). `Mapping Extensions` precision placement does still function.
 
-NOTE: This generator does not output an `info.dat` file. So you will need to make your own. FYI, `info` v2.1.0 handles v2 and v3 maps. `info` v4.1.0 files can handle v2, v3, and v4 maps. You can look at `PnfrlEnm`'s `Ascension to Heaven` to see a v4.1.0 info file.
+- NOTE: This generator does not output an `info.dat` file. So you will need to make your own. FYI, `info` v2.1.0 handles v2 and v3 maps. `info` v4.1.0 files can handle v2, v3, and v4 maps. You can look at `PnfrlEnm`'s `Ascension to Heaven` to see a v4.1.0 info file.
 
 To enable JSON file output, edit the `Beat Saber/UserData/AutoBS.json` config file in Notepad or other text editor. The last 5 settings in the config file are the ones to edit. 
 
