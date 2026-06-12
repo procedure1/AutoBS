@@ -98,35 +98,48 @@ namespace AutoBS
             Plugin.Log.Info($"[PipelineResult] Rotation Count: {eData.RotationEvents.Count}, Largest '-' Rot: {low.accumRot} (time: {low.time:F}), Largest '+' Rot: {high.accumRot} (time: {high.time:F}), Final Rotation: {endRot}");
 
 
-            bool beatSageMapNotAltered = (TransitionPatcher.IsBeatSageMap && !BeatSageCleanUp.DisableScoreSubmission) || !TransitionPatcher.IsBeatSageMap;
-            Plugin.LogDebug($"[PipelineResult] 1 beatSageMapNotAltered: {beatSageMapNotAltered}.");
+            bool beatSageMapAltered = TransitionPatcher.IsBeatSageMap &&
+                                      (BeatSageCleanUp.DisableScoreSubmission ||
+                                       eData.ObstaclesChangedByBeatSageCleanUp);
+            Plugin.LogDebug($"[PipelineResult] 1 beatSageMapAltered: {beatSageMapAltered}.");
 
             bool arcsEnabled = Utils.IsEnabledArcs();
-            bool arcsNotAdded = (arcsEnabled && eData.MapAlreadyUsesArcs) || !arcsEnabled;
-            Plugin.LogDebug($"[PipelineResult] 2 arcsNotAdded: {arcsNotAdded}.");
+            bool arcsAdded = arcsEnabled && eData.ArcsChangedByArcitect;
+            Plugin.LogDebug($"[PipelineResult] 2 arcsAdded: {arcsAdded}.");
 
             bool chainsEnabled = Utils.IsEnabledChains();
-            bool chainsNotAdded = (chainsEnabled && eData.MapAlreadyUsesChains) || !chainsEnabled;
-            Plugin.LogDebug($"[PipelineResult] 3 chainsNotAdded: {chainsNotAdded}.");
+            bool chainsAdded = chainsEnabled && eData.ChainsChangedByArcitect;
+            Plugin.LogDebug($"[PipelineResult] 3 chainsAdded: {chainsAdded}.");
+
+            bool autoDifficultyReducerNotesChanged = Config.Instance.EnableDiffReducer && TransitionPatcher.DifficultyReducerRemovedNotes;
+            bool autoDifficultyReducerArcsChanged = Config.Instance.EnableDiffReducer && eData.ArcsChangedByDifficultyReducer;
+            bool autoDifficultyReducerChainsChanged = Config.Instance.EnableDiffReducer && eData.ChainsChangedByDifficultyReducer;
+            bool autoDifficultyReducerAltered =
+                autoDifficultyReducerNotesChanged ||
+                autoDifficultyReducerArcsChanged ||
+                autoDifficultyReducerChainsChanged;
+            Plugin.LogDebug(
+                $"[PipelineResult] 4 autoDifficultyReducerAltered: {autoDifficultyReducerAltered} " +
+                $"(notesChanged: {autoDifficultyReducerNotesChanged}, arcsChanged: {autoDifficultyReducerArcsChanged}, chainsChanged: {autoDifficultyReducerChainsChanged}).");
 
             var rotAfter = eData.RotationEvents
                 .OrderBy(r => r.time)
                 .Select(r => (t: MathF.Round(r.time, 4), rot: r.rotation))
                 .ToList();
             bool rotationsChanged = originalRotations.Count != rotAfter.Count || !originalRotations.SequenceEqual(rotAfter); // compares starting rotations to final rotations
-            Plugin.LogDebug($"[PipelineResult] 4 rotationsChanged: {rotationsChanged} Rotation Events Count: {eData.RotationEvents.Count()}.");
+            Plugin.LogDebug($"[PipelineResult] 5 rotationsChanged: {rotationsChanged} Rotation Events Count: {eData.RotationEvents.Count()}.");
             if (rotationsChanged) eData.RotationEventsChanged = true;
 
             bool lightsAdded = Utils.IsEnabledLighting() && LightsGenerator.LightEventsAdded;
-            Plugin.LogDebug($"[PipelineResult] 5 lightsAdded: {lightsAdded}.");
+            Plugin.LogDebug($"[PipelineResult] 6 lightsAdded: {lightsAdded}.");
 
             bool boostAdded = Config.Instance.BoostLighting &&
                               eData.ColorBoostEvents.Count > 0 &&
                               !eData.MapAlreadyUsesEnvColorBoost;
-            Plugin.LogDebug($"[PipelineResult] 6 boostAdded: {boostAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {eData.MapAlreadyUsesEnvColorBoost})");
+            Plugin.LogDebug($"[PipelineResult] 7 boostAdded: {boostAdded} (boost events: {eData.ColorBoostEvents.Count} MapAlreadyUsesEnvColorBoost: {eData.MapAlreadyUsesEnvColorBoost})");
 
-            bool wallsAltered = (Utils.IsEnabledWalls() && originalWallCount != eData.Obstacles.Count) || eData.ObstaclesChanged;
-            Plugin.LogDebug($"[PipelineResult] 7 wallsAltered: {wallsAltered} (Original Count: {originalWallCount} Final Count: {eData.Obstacles.Count} -- walls may have changed start time or duration or lineLayer if beatsage cleaner used)");
+            bool autoWallsAltered = Utils.IsEnabledWalls() && eData.ObstaclesChangedByWallGenerator;
+            Plugin.LogDebug($"[PipelineResult] 8 autoWallsAltered: {autoWallsAltered} (Original Count: {originalWallCount} Final Count: {eData.Obstacles.Count}, beatSageWallsChanged: {eData.ObstaclesChangedByBeatSageCleanUp}, arcitectWallsChanged: {eData.ObstaclesChangedByArcitect})");
             if (eData.IsNative360or90 && eData.RotationEventsChanged) // if rotations are altered, then original data with its per object rotations will change! (basic event data is turned into per object rotation)  
             {
                 if (eData.ColorNotes.Count > 0) eData.ColorNotesChanged = true;
@@ -134,7 +147,8 @@ namespace AutoBS
                 if (eData.Obstacles.Count > 0)  eData.ObstaclesChanged = true;
             }
 
-            Plugin.LogDebug($"[PipelineResult] ColorNotesChanged: {eData.ColorNotesChanged}, BombNotesChanged: {eData.BombNotesChanged}, ObstaclesChanged: {eData.ObstaclesChanged}, ArcsChanged: {eData.ArcsChanged}, BasicEventsChanged: {eData.BasicEventsChanged}, ColorBoostEventsChanged: {eData.ColorBoostEventsChanged}, RotationEventsChanged: {eData.RotationEventsChanged}, CustomEventsChanged: {eData.CustomEventsChanged}");
+            Plugin.LogDebug($"[PipelineResult] ColorNotesChanged: {eData.ColorNotesChanged}, BombNotesChanged: {eData.BombNotesChanged}, ObstaclesChanged: {eData.ObstaclesChanged}, ArcsChanged: {eData.ArcsChanged}, ChainsChanged: {eData.ChainsChanged}, BasicEventsChanged: {eData.BasicEventsChanged}, ColorBoostEventsChanged: {eData.ColorBoostEventsChanged}, RotationEventsChanged: {eData.RotationEventsChanged}, CustomEventsChanged: {eData.CustomEventsChanged}");
+            Plugin.LogDebug($"[PipelineResult] Change sources: ObstaclesByWallGenerator: {eData.ObstaclesChangedByWallGenerator}, ObstaclesByBeatSageCleanUp: {eData.ObstaclesChangedByBeatSageCleanUp}, ObstaclesByArcitect: {eData.ObstaclesChangedByArcitect}, ArcsByArcitect: {eData.ArcsChangedByArcitect}, ChainsByArcitect: {eData.ChainsChangedByArcitect}, ArcsByDifficultyReducer: {eData.ArcsChangedByDifficultyReducer}, ChainsByDifficultyReducer: {eData.ChainsChangedByDifficultyReducer}");
 
             if (eData.RotationEventsChanged) // this adds per object rotation to all objects so they are altered
             {
@@ -146,7 +160,7 @@ namespace AutoBS
                 if (eData.BasicEvents.Count > 0) eData.BasicEventsChanged = true; // added this since v2/v3 maps may have rotation events tied to basic events which are removed. but not sure if this is needed really
             }
 
-            //if (beatSageMapNotAltered && arcsNotAdded && chainsNotAdded && rotationsNotchanged && lightsNotAdded && boostNotAdded && wallsNotAdded)
+            
             if (!eData.ColorNotesChanged && !eData.BombNotesChanged && !eData.ObstaclesChanged && !eData.ArcsChanged && !eData.ChainsChanged && !eData.BasicEventsChanged && !eData.ColorBoostEventsChanged && !eData.RotationEventsChanged && !eData.CustomEventsChanged)
             {
                 Plugin.LogDebug("[PipelineResult] Original map NOT altered! Pass original customBeatmapData or beatmapData!");
@@ -188,6 +202,10 @@ namespace AutoBS
         /// </summary>
         private static void ResetRunState(EditableCBD eData)
         {
+            // The pipeline can be invoked more than once for one Play action. Always rewind
+            // the shared stream, while individual generators use their own named streams.
+            TransitionPatcher.ResetRepeatableRandom();
+
             // This replaces RunState.wallCutMoments.
             // RotationGenerator can fill it (or you can fill it elsewhere).
             // IMPORTANT: must be reset per run or old values can affect gap/wall logic.
@@ -203,6 +221,13 @@ namespace AutoBS
             eData.ObstaclesChanged = false;
             eData.ArcsChanged = false;
             eData.ChainsChanged = false;
+            eData.ObstaclesChangedByWallGenerator = false;
+            eData.ObstaclesChangedByBeatSageCleanUp = false;
+            eData.ObstaclesChangedByArcitect = false;
+            eData.ArcsChangedByArcitect = false;
+            eData.ChainsChangedByArcitect = false;
+            eData.ArcsChangedByDifficultyReducer = false;
+            eData.ChainsChangedByDifficultyReducer = false;
             eData.BasicEventsChanged = false;
             eData.ColorBoostEventsChanged = false;
             eData.CustomEventsChanged = false;
@@ -396,7 +421,10 @@ namespace AutoBS
                 WallGenerator.FinalizeOriginalWallsOnly(eData);
 
             if (moveWallsBlockingArc || moveWallsBlockingChainTail)
+            {
                 eData.ObstaclesChanged = true;
+                eData.ObstaclesChangedByArcitect = true;
+            }
         }
 
         private static void RunLightAutoMapper(EditableCBD eData)
@@ -443,12 +471,43 @@ namespace AutoBS
                  !cfg.EnableFloorWalls)
                 return;
 
+            var obstaclesBeforeWallGenerator = eData.Obstacles
+                .OrderBy(o => o.time)
+                .Select(o => (
+                    t: MathF.Round(o.time, 4),
+                    d: MathF.Round(o.duration, 4),
+                    l: o.line,
+                    y: o.layer,
+                    w: o.width,
+                    h: o.height,
+                    r: o.rotation))
+                .ToList();
+
             WallGenerator.SetOriginalWalls(eData);
             WallGenerator.ResetWalls(eData);
 
             RunWallLoop(eData);
 
             FinalizeWallGeneration(eData);
+
+            var obstaclesAfterWallGenerator = eData.Obstacles
+                .OrderBy(o => o.time)
+                .Select(o => (
+                    t: MathF.Round(o.time, 4),
+                    d: MathF.Round(o.duration, 4),
+                    l: o.line,
+                    y: o.layer,
+                    w: o.width,
+                    h: o.height,
+                    r: o.rotation))
+                .ToList();
+
+            if (obstaclesBeforeWallGenerator.Count != obstaclesAfterWallGenerator.Count ||
+                !obstaclesBeforeWallGenerator.SequenceEqual(obstaclesAfterWallGenerator))
+            {
+                eData.ObstaclesChanged = true;
+                eData.ObstaclesChangedByWallGenerator = true;
+            }
 
             void RunWallLoop(EditableCBD eData)
             {

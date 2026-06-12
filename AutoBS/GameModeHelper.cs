@@ -59,7 +59,7 @@ namespace AutoBS
         //This is only used to get the icon from origianl 360 and 90 modes
         private static BeatmapCharacteristicCollection GetDefaultGameModes()
         {
-            CustomLevelLoader customLevelLoader = UnityEngine.Object.FindObjectOfType<CustomLevelLoader>();
+            CustomLevelLoader customLevelLoader = UnityEngine.Object.FindAnyObjectByType<CustomLevelLoader>();
             if (customLevelLoader == null)
             {
                 Plugin.Log.Warn("customLevelLoader is null");

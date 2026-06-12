@@ -1024,8 +1024,15 @@ namespace AutoBS
         public bool ColorNotesChanged { get; set; } = false;
         public bool BombNotesChanged { get; set; } = false;
         public bool ObstaclesChanged { get; set; } = false;
+        public bool ObstaclesChangedByWallGenerator { get; set; } = false;
+        public bool ObstaclesChangedByBeatSageCleanUp { get; set; } = false;
+        public bool ObstaclesChangedByArcitect { get; set; } = false;
         public bool ArcsChanged { get; set; } = false;
+        public bool ArcsChangedByArcitect { get; set; } = false;
+        public bool ArcsChangedByDifficultyReducer { get; set; } = false;
         public bool ChainsChanged { get; set; } = false;
+        public bool ChainsChangedByArcitect { get; set; } = false;
+        public bool ChainsChangedByDifficultyReducer { get; set; } = false;
         public bool BasicEventsChanged { get; set; } = false;
         public bool ColorBoostEventsChanged { get; set; } = false;
         public bool CustomEventsChanged { get; set; } = false;
@@ -1637,7 +1644,11 @@ namespace AutoBS
                 //if (Config.Instance.RemoveLeftWalls)
                 //    allItems.AddRange(eData.Obstacles.Where(o => o.line > 1).Select(o => (object)o.ToCustomObstacleData(eData.Version)));
                 //else
-                    allItems.AddRange(eData.Obstacles.Select(o => (object)o.ToCustomObstacleData(eData.Version)));
+                
+                allItems.AddRange(eData.Obstacles.Select(o => (object)o.ToCustomObstacleData(eData.Version)));
+
+                // TEMP!!!!
+                //allItems.AddRange(eData.Obstacles.Where(o => o.duration >= .001f).Select(o => (object)o.ToCustomObstacleData(eData.Version)));
             }
             // Arcs
             if (!eData.ArcsChanged)

@@ -48,6 +48,7 @@ namespace AutoBS
         private static int divisorCounter = 0; // need an incrementing counter for the percentage to work correctly
 
         private static int lastProcessedIndex = 0; // make the loop more efficient
+        private static System.Random repeatableRandom = new System.Random(0);
 
         public static int originalWallCount = -1; // used so can see how many walls before any removals
 
@@ -76,9 +77,9 @@ namespace AutoBS
         private static bool allWallsContainsParticleWalls = false;
         private static bool allWallsContainsFloorWalls = false;
 
-        private static bool failedWallRemovalForRotations1x = false;
-        private static bool failedWallRemovalForRotations2x = false;
-        private static bool failedWallRemovalForRotations3x = false;
+        //private static bool failedWallRemovalForRotations1x = false;
+        //private static bool failedWallRemovalForRotations2x = false;
+        //private static bool failedWallRemovalForRotations3x = false;
 
         private static float StandardWallsMultiplier = Config.Instance.StandardWallsMultiplier;
         private static float DistantExtensionWallsMultiplier = Config.Instance.DistantExtensionWallsMultiplier;
@@ -211,6 +212,8 @@ namespace AutoBS
 
         public static void ResetRunState()
         {
+            repeatableRandom = TransitionPatcher.CreateRepeatableRandom("WallGenerator");
+
             originalWallCount = -1;
 
             originalWalls.Clear();
@@ -227,9 +230,9 @@ namespace AutoBS
             allWallsContainsParticleWalls = false;
             allWallsContainsFloorWalls = false;
 
-            failedWallRemovalForRotations1x = false;
-            failedWallRemovalForRotations2x = false;
-            failedWallRemovalForRotations3x = false;
+            //failedWallRemovalForRotations1x = false;
+            //failedWallRemovalForRotations2x = false;
+            //failedWallRemovalForRotations3x = false; 
 
             divisorCounter = 0;
             lastProcessedIndex = 0;
@@ -237,9 +240,22 @@ namespace AutoBS
             _startTime = -1f;
             _endTime = -1f;
 
-            lastNonExtRowTime = float.NegativeInfinity;
-            lastTime = float.NegativeInfinity;
-            lastRightEdge = int.MinValue;
+            lastTunnelWallTime = 0f;
+            lastWindowPaneWallTime = 0f;
+            tunnelWallsHappening = false;
+            paneWallsHappening = false;
+            gridWallWide = true;
+
+            ToggleCityScape = 0;
+            ToggleSpires = 0;
+            ToggleSmall = 0;
+            windowPaneTallToggle = 0;
+            lastHeight = 0;
+            ExtensionMappingWallsGenerated = false;
+
+            //lastNonExtRowTime = float.NegativeInfinity;
+            //lastTime = float.NegativeInfinity;
+            //lastRightEdge = int.MinValue;
 
             occupiedColsForRow.Clear();
             _generatedSkyCells.Clear();
@@ -354,7 +370,7 @@ namespace AutoBS
             int offsetLeftWall = 0;
             if (standardWallsMinDistance == 0)
             {
-                offsetRightWall = TransitionPatcher.RepeatableRandom.Next(2) == 0 ? 2 : 0; // if false, will offset left wall instead. if i use 1 offset, then there is a tiny 1 lane tunnel between 2 walls. but if use 2 then one wall is lean and the other either -1 or 4.
+                offsetRightWall = repeatableRandom.Next(2) == 0 ? 2 : 0; // if false, will offset left wall instead. if i use 1 offset, then there is a tiny 1 lane tunnel between 2 walls. but if use 2 then one wall is lean and the other either -1 or 4.
                 offsetLeftWall = offsetRightWall == 2 ? 0 : 2;
             }
 
@@ -750,8 +766,8 @@ namespace AutoBS
 
             for (int j = 0; j <= numberOfColumns * 2; j++) // columns of tall walls
             {
-                int rndHeight = TransitionPatcher.RepeatableRandom.Next(8) + 13;
-                bool rndHeightOption2 = TransitionPatcher.RepeatableRandom.Next(2) == 0;
+                int rndHeight = repeatableRandom.Next(8) + 13;
+                bool rndHeightOption2 = repeatableRandom.Next(2) == 0;
                 if (IsMappingExtensionsInstalled && rndHeightOption2)
                     rndHeight = 20;
 
@@ -791,7 +807,7 @@ namespace AutoBS
             bool isV1 = false;
             if (IsMappingExtensionsInstalled)
             {
-                int rnd = TransitionPatcher.RepeatableRandom.Next(3);
+                int rnd = repeatableRandom.Next(3);
                 if (rnd == 0 || rnd == 1) isV1 = true;
             }
 
@@ -848,8 +864,8 @@ namespace AutoBS
                 else // v2 ME or Non-ME fat version with misc widths
                 {
 
-                    int rndWidth = TransitionPatcher.RepeatableRandom.Next(20) + 1; // avoid 0
-                    bool wider = TransitionPatcher.RepeatableRandom.Next(2) == 0;
+                    int rndWidth = repeatableRandom.Next(20) + 1; // avoid 0
+                    bool wider = repeatableRandom.Next(2) == 0;
 
                     if (wider)
                         rndWidth = (int)(rndWidth * 1.5f);  // make non-ME walls wider sometimes
@@ -1313,8 +1329,8 @@ namespace AutoBS
             }
             else
             {
-                variableIndex1 = TransitionPatcher.RepeatableRandom.Next(-11, 12) + j;
-                variableWHD = TransitionPatcher.RepeatableRandom.Next(-11, 12) + i;
+                variableIndex1 = repeatableRandom.Next(-11, 12) + j;
+                variableWHD = repeatableRandom.Next(-11, 12) + i;
                 widthAndHeight = widthAndHeightNonME;
             }
 
@@ -1356,7 +1372,7 @@ namespace AutoBS
             if (widthHeight > 1300 || widthHeight == 1 || widthHeight == 2) // fatter particle walls
             {
                 //duration = .03f; 
-                duration = TransitionPatcher.RepeatableRandom.Next(1, 3) * .01f; // should be short since long ones look uncool IMO
+                duration = repeatableRandom.Next(1, 3) * .01f; // should be short since long ones look uncool IMO
                 if (line < 0)
                     line -= 1; // fatter particle wall on the left are getting closer to the player so move them further out
             }
@@ -1437,7 +1453,7 @@ namespace AutoBS
 
                         int repeatCount = 1 + ((int)time % repeatLimit); // Results in a value between 1 and 40
 
-                        int lineIndexList = TransitionPatcher.RepeatableRandom.Next(1, 3); // between 1 and 2 since -- >= minValue, < maxValue
+                        int lineIndexList = repeatableRandom.Next(1, 3); // between 1 and 2 since -- >= minValue, < maxValue
 
                         for (int repeat = 0; repeat < repeatCount; repeat++) // groups of particles at different times
                         {
@@ -1454,12 +1470,12 @@ namespace AutoBS
 
                                 if (lineIndexList == 1)
                                 {
-                                    randomListIndex = TransitionPatcher.RepeatableRandom.Next(0, lineIndexes1.Length);
+                                    randomListIndex = repeatableRandom.Next(0, lineIndexes1.Length);
                                     lineIndex = lineIndexes1[randomListIndex];
                                 }
                                 else
                                 {
-                                    randomListIndex = TransitionPatcher.RepeatableRandom.Next(0, lineIndexes2.Length);
+                                    randomListIndex = repeatableRandom.Next(0, lineIndexes2.Length);
                                     lineIndex = lineIndexes2[randomListIndex];
                                 }
 
@@ -1536,7 +1552,7 @@ namespace AutoBS
                     widths = new int[] { 1, 2, 1 }; // not using since 2 is too wide sometimes
                 }
 
-                height = heights[TransitionPatcher.RepeatableRandom.Next(heights.Length)];
+                height = heights[repeatableRandom.Next(heights.Length)];
             }
 
             int minDis = (int)Config.Instance.FloorWallsMinDistance;
@@ -1639,7 +1655,7 @@ namespace AutoBS
             {
                 bool skyTileV1 = (int)time % 3 == 0;
                 bool skyTileV2Type1 = (int)time % 2 == 0;
-                int durMult = TransitionPatcher.RepeatableRandom.Next(2) + 1;
+                int durMult = repeatableRandom.Next(2) + 1;
 
                 if (!skyTileV1) // Random style placement
                 {
@@ -1707,10 +1723,10 @@ namespace AutoBS
         }
 
 
-        private static float lastNonExtRowTime = float.NegativeInfinity;
+        //private static float lastNonExtRowTime = float.NegativeInfinity;
         private static HashSet<int> occupiedColsForRow = new HashSet<int>();
-        private static float lastTime = float.NegativeInfinity;
-        private static int lastRightEdge = int.MinValue;
+        //private static float lastTime = float.NegativeInfinity;
+        //private static int lastRightEdge = int.MinValue;
         // How "square" looks on screen for width = 1.
         // Tweak this by eye (0.03–0.05 is a good range).
         private const float SKY_BASE_TILE_DURATION = 0.04f;
@@ -1762,11 +1778,11 @@ namespace AutoBS
             int[] minLineX = { -14, -7, -21, -31 };
             int[] maxLineX = { 18, 11, 25, 35 };
 
-            int rnd = TransitionPatcher.RepeatableRandom.Next(minLineX.Length);
+            int rnd = repeatableRandom.Next(minLineX.Length);
             int minLine = minLineX[rnd];
             int maxLine = maxLineX[rnd];
 
-            int rnd1 = TransitionPatcher.RepeatableRandom.Next(floorHeightX.Length);
+            int rnd1 = repeatableRandom.Next(floorHeightX.Length);
             int floorHeight = floorHeightX[rnd1];
 
             // Checkerboard-ish offset by row parity (optional, but looks nice)

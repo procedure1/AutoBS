@@ -14,7 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Zenject;
 using static AutoBS.Patches.SetContent;
-using static IPA.Logging.Logger;
+using static IPA.Logging.Logger;    
 
 namespace AutoBS.Patches
 {
@@ -33,6 +33,7 @@ namespace AutoBS.Patches
         public static BeatmapKey SelectedPlayKey;
         public static BeatmapKey BasedOnKey;
         public static System.Random RepeatableRandom = new System.Random();
+        public static int RepeatableSeed { get; private set; }
         public static Version SelectedBeatmapVersion = new Version(2, 6, 0);
         public static bool IsGen360 = false; // Only inject once, for the map the player actually "Starts" instead of all difficulties in the set
         public static bool IsCustomLevel = true;
@@ -72,7 +73,44 @@ namespace AutoBS.Patches
 
         public static string ScoreSubmissionDisableText = "";
 
-        private static FieldInfo _colorSchemesSettingsField;
+        //private static FieldInfo _colorSchemesSettingsField;
+
+        private static void ResetRuntimeState()
+        {
+            SelectedPlayKey = default;
+            BasedOnKey = default;
+            SelectedBeatmapVersion = new Version(0, 0, 0);
+            IsGen360 = false;
+            IsCustomLevel = true;
+            SelectedSerializedName = "";
+            SelectedCharacteristicSO = null;
+            SelectedBeatmapLevel = null;
+            SelectedDifficulty = default;
+            NotesPerSecond = 0f;
+
+            OriginalNoteJumpMovementSpeed = 0f;
+            OriginalNoteJumpOffset = 0f;
+            OrginalJumpDistance = 0f;
+            FinalNoteJumpMovementSpeed = 0f;
+            FinalJumpDistance = 0f;
+
+            AutoNjsRuntimeState.AutoNjsFixerEnabled = false;
+            AutoNjsRuntimeState.ResetLive();
+            LiveGameplayRuntimeState.Reset();
+
+            DifficultyReducerRemovedNotes = false;
+            IsBeatSageMap = false;
+
+            RequiresMappingExtensions = false;
+            RequiresNoodle = false;
+            RequiresChroma = false;
+            RequiresVivify = false;
+
+            NoodleProblemNotes = false;
+            NoodleProblemObstacles = false;
+            ScoreSubmissionDisableText = "";
+            EnvironmentName = "";
+        }
 
         //v1.42 parameter change
         static void Prefix(
@@ -87,48 +125,26 @@ namespace AutoBS.Patches
             PlayerSpecificSettings playerSpecificSettings,
             PracticeSettings? practiceSettings,
             EnvironmentsListModel environmentsListModel,
-            GameplayAdditionalInformation gameplayAdditionalInformation,
             Action? beforeSceneSwitchToGameplayCallback,
             Action<Zenject.DiContainer>? afterSceneSwitchToGameplayCallback,
-            Action<StandardLevelScenesTransitionSetupDataSO, LevelCompletionResults>? levelFinishedCallback,
-            Action<StandardLevelScenesTransitionSetupDataSO, LevelCompletionResults>? levelRestartedCallback,
+            ref Action<StandardLevelScenesTransitionSetupDataSO, LevelCompletionResults>? levelFinishedCallback,
+            ref Action<StandardLevelScenesTransitionSetupDataSO, LevelCompletionResults>? levelRestartedCallback,
             IBeatmapLevelData? beatmapLevelData = null,
             RecordingToolManager.SetupData? recordingToolData = null)
         {
+            ScoreSubmission.ScoreGate.Clear();
+            ResetRuntimeState();
+
             if (!Config.Instance.EnablePlugin) return;
 
-            ScoreSubmission.ScoreGate.Clear();
-
-            BasedOnKey = default;
-            SelectedBeatmapVersion = new Version(0, 0, 0);
-            NotesPerSecond = 0f;
-
-            OriginalNoteJumpMovementSpeed = 0f;
-            OriginalNoteJumpOffset = 0f;
-            OrginalJumpDistance = 0f;
-            FinalNoteJumpMovementSpeed = 0f;
-            FinalJumpDistance = 0f;
-
-            DifficultyReducerRemovedNotes = false;
-            IsBeatSageMap = false;
-
-            RequiresMappingExtensions = false;
-            RequiresNoodle = false;
-            RequiresChroma = false;
-            RequiresVivify = false;
-
-            NoodleProblemNotes = false;
-            NoodleProblemObstacles = false;
-            ScoreSubmissionDisableText = "";
-            EnvironmentName = "";
+            levelFinishedCallback = LiveAudioHelper.WrapLevelEndCallback(levelFinishedCallback);
+            levelRestartedCallback = LiveAudioHelper.WrapLevelEndCallback(levelRestartedCallback);
 
             SelectedSerializedName = beatmapKey.beatmapCharacteristic.serializedName;
 
             if (!Utils.IsEnabledForGeneralFeatures()) return; // have to have the serialized name from TransitionPatcher for this to work
 
             AutoNjsRuntimeState.AutoNjsFixerEnabled = Utils.IsEnabledAutoNjsFixer();
-
-            ScoreSubmission.ScoreGate.Clear();
 
             IsCustomLevel = beatmapLevel.levelID.StartsWith("custom_level_");
             SelectedCharacteristicSO = beatmapKey.beatmapCharacteristic;
@@ -160,8 +176,8 @@ namespace AutoBS.Patches
 
             //string seedStr = BasedOnKey == null ? SelectedPlayKey.ToString() : BasedOnKey.ToString(); // prefer basedOn so that standard and Gen are the same.
             //Plugin.LogDebug($"[TransitionPatcher] beatmapLevel.levelID: {beatmapLevel.levelID}" );
-            int seed = StableHash32(beatmapLevel.levelID); // example: custom_level_D812C45C625570F09AD71AB2AE5529D9B28C9B3E so will keep same seed for all levels of same song
-            RepeatableRandom = new System.Random(seed); // use for psuedo random 
+            RepeatableSeed = StableHash32(beatmapLevel.levelID); // same seed for all levels of the same song
+            ResetRepeatableRandom();
 
 
             Plugin.LogDebug(".");
@@ -331,6 +347,21 @@ namespace AutoBS.Patches
                 for (int i = 0; i < s.Length; i++)
                     hash = (hash ^ s[i]) * 16777619;
                 return (int)hash;
+            }
+        }
+
+        public static void ResetRepeatableRandom()
+        {
+            RepeatableRandom = new System.Random(RepeatableSeed);
+        }
+
+        public static System.Random CreateRepeatableRandom(string streamName)
+        {
+            unchecked
+            {
+                int streamSeed = RepeatableSeed;
+                streamSeed = (streamSeed * 397) ^ StableHash32(streamName ?? string.Empty);
+                return new System.Random(streamSeed);
             }
         }
 

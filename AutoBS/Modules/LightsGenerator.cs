@@ -180,7 +180,7 @@ namespace AutoBS
         {
             List<ENoteData> notes = eData.ColorNotes.ToList();
 
-            System.Random repeatableRandom = TransitionPatcher.RepeatableRandom;
+            System.Random repeatableRandom = TransitionPatcher.CreateRepeatableRandom("LightsGenerator");
 
             if (notes == null || notes.Count == 0)
             {
@@ -701,7 +701,7 @@ namespace AutoBS
                 }
                 */
             }
-
+            /*
             float ChooseStrobeIntervalSLOW(int index, List<ENoteData> notes, float beatDuration, System.Random rng)
             {
                 // Average of last up to 4 note deltas (seconds)
@@ -758,7 +758,7 @@ namespace AutoBS
                 //if (r < 0.90) return s8;
                 return s12;
             }
-
+            */
             float strobeBrightnessMult = Config.Instance.StrobeBrightnessMultiplier * Config.Instance.BrightnessMultiplier;
             if (!TransitionPatcher.IsGen360) strobeBrightnessMult *= 1.5f;// needs to be brighter for standard environments at least for theFirst
 
@@ -876,7 +876,7 @@ namespace AutoBS
 
                             int strobeStep = 0;
 
-                            EventValue tickColor = TransitionPatcher.RepeatableRandom.Next(2) == 0? EventValue.BLUE_FLASH: EventValue.RED_FLASH;
+                            EventValue tickColor = repeatableRandom.Next(2) == 0 ? EventValue.BLUE_FLASH : EventValue.RED_FLASH;
 
                             for (float strobeTime = burstStart; strobeTime < burstEndTime; strobeTime += strobeInterval, strobeStep++)
                             {

@@ -16,9 +16,9 @@ namespace AutoBS
     {
         #region Prefix & Postfix - BS-Utils Patch score submission bug
         // Patch BS_Utils score submission disabled banner to show only one line instead of multiple lines and to fix problem of 1st run not showing disabled mod reason
-        [HarmonyPatch(typeof(ResultsViewController), "SetDataToUI")]
+        [HarmonyPatch(typeof(ResultsViewController), "DidActivate")]
         [HarmonyAfter("com.kyle1413.BeatSaber.BS-Utils")] // run after BS_Utils
-        static class ResultsViewController_SetDataToUI_Fix
+        static class ResultsViewController_DidActivate_Fix
         {
             const string LabelName = "AutoBS_NoSubmitLabel";
 
@@ -78,29 +78,46 @@ namespace AutoBS
                     bg.gameObject.SetActive(true);
             }
 
-            static void Postfix(ref GameObject ____clearedBannerGo, ref GameObject ____failedBannerGo, ref TextMeshProUGUI ____rankText)
+            static void Postfix(
+                bool addedToHierarchy,
+                ref GameObject ____clearedBannerGo,
+                ref GameObject ____failedBannerGo)
             {
-                bool enabled =
-                    Config.Instance.EnablePlugin &&
-                    Utils.IsEnabledForGeneralFeatures();
+                if (!addedToHierarchy)
+                    return;
+
+                RefreshResultsUI(
+                    ____clearedBannerGo,
+                    ____failedBannerGo);
+            }
+
+            internal static void RefreshResultsUI(
+                GameObject clearedBannerGo,
+                GameObject failedBannerGo)
+            {
+                bool enabled = Config.Instance.EnablePlugin;
 
                 if (!enabled)
                 {
-                    DestroyAutoBSLabels(____clearedBannerGo, ____failedBannerGo);
-                    RemoveBSUtilsScoreSubmissionText(____clearedBannerGo, ____failedBannerGo);
+                    DestroyAutoBSLabels(clearedBannerGo, failedBannerGo);
+                    RemoveBSUtilsScoreSubmissionText(clearedBannerGo, failedBannerGo);
                     return;
                 }
 
-                RemoveBSUtilsScoreSubmissionText(____clearedBannerGo, ____failedBannerGo);
+                RemoveBSUtilsScoreSubmissionText(clearedBannerGo, failedBannerGo);
 
-                // Debug: confirm gate state at render time
-                Plugin.Log.Info($"[ScoreGate] Map Results: IsDisabled={ScoreGate.IsDisabledThisRun} Reason='{ScoreGate.ReasonThisRun}'");
+                bool wasDisabledByBSUtils = BS_Utils.Gameplay.ScoreSubmission.WasDisabled;
+                string reason = ScoreGate.ReasonThisRun;
+                if (string.IsNullOrWhiteSpace(reason) && wasDisabledByBSUtils)
+                    reason = BS_Utils.Gameplay.ScoreSubmission.LastDisabledModString;
 
-                var host = ____clearedBannerGo.activeInHierarchy ? ____clearedBannerGo : ____failedBannerGo;
+                bool scoreWasDisabled = ScoreGate.IsDisabledThisRun || wasDisabledByBSUtils;
+
+                var host = clearedBannerGo.activeInHierarchy ? clearedBannerGo : failedBannerGo;
                 var label = host.transform.Find(LabelName)?.GetComponent<TextMeshProUGUI>();
-                if (!ScoreGate.IsDisabledThisRun)
+                if (!scoreWasDisabled)
                 {
-                    DestroyAutoBSLabels(____clearedBannerGo, ____failedBannerGo);
+                    DestroyAutoBSLabels(clearedBannerGo, failedBannerGo);
                     return;
                 }
 
@@ -112,55 +129,36 @@ namespace AutoBS
 
                     label = go.AddComponent<TextMeshProUGUI>();
                     label.raycastTarget = false;
-                    label.textWrappingMode = TextWrappingModes.NoWrap; //label.enableWordWrapping = false;
+                    label.enableWordWrapping = false;
                     label.alignment = TextAlignmentOptions.Center;
                     label.fontSize = 3.5f;
 
-                    // Place it just under the banner text (or under the rank text as a fallback).
+                    // Place it just under the banner text.
                     var rt = (RectTransform)label.transform;
                     rt.anchorMin = new Vector2(0.5f, 0f);
                     rt.anchorMax = new Vector2(0.5f, 0f);
                     rt.pivot = new Vector2(0.5f, 0f);
                     rt.anchoredPosition = new Vector2(0f, 25f); //35 TEST
 
-                    // If the banner hierarchy is odd on first run, fall back to rankText’s parent
-                    if (!label.isActiveAndEnabled && ____rankText && ____rankText.transform is RectTransform rankRT)
-                    {
-                        rt.SetParent(rankRT.parent, false);
-                        rt.anchoredPosition = new Vector2(0f, -30f);
-                    }
-
                     Plugin.LogDebug("[ScoreGate] Created results label");
                 }
 
                 // Write a single, clean line every time (no stacking).
-                var reason = ScoreGate.ReasonThisRun;
                 label.text = string.IsNullOrEmpty(reason)
                     ? "\n<size=200%><color=#ff0000ff>Score submission disabled</color></size>"
                     : $"\n<size=200%><color=#ff0000ff>Score submission disabled:  {reason}</color></size>";
                 label.gameObject.SetActive(true);
             }
         }
+
         #endregion
 
         #region ScoreGate - Enable/Disable Scoring
-        //Clear your flag when you return to menu so it doesn’t carry over
-        [HarmonyPatch(typeof(MainFlowCoordinator), "DidActivate")]
-        static class ScoreGate_ClearOnMenu
-        {
-            static void Postfix()
-            {
-                if (!Config.Instance.EnablePlugin) return;
-                if (!Utils.IsEnabledForGeneralFeatures()) return;
-
-                Plugin.LogDebug("[ScoreGate] Clearing on MainFlowCoordinator.DidActivate");
-                ScoreGate.Clear();
-            }
-
-        }
-
         public static class ScoreGate
         {
+            // Set true to disable scoring with the Live NJS reason on every run.
+            //public static readonly bool ForceLiveNjsReasonForTesting = false;
+
             public static bool IsDisabledThisRun { get; private set; }
             public static string ReasonThisRun { get; private set; } = "";
 
@@ -176,26 +174,23 @@ namespace AutoBS
 
                 Plugin.Log.Info($"[ScoreGate] Score submission disabled using BS_Utils. Reason: '{reason}'");
             }
-            // Adds reason for live njs jd events during gameplay after the pipeline has run and already used ScoreGate. this adds a reason at the end of any other reasons and will say "AutoBS-Live NJS" if its the only reason.
-            public static void AddReason(string reason)
+            // Adds a reason during gameplay after the pipeline has already used ScoreGate.
+            // Prefix it only when it is the first reason; existing reasons already identify AutoBS.
+            public static void AddReason(string additionalReason)
             {
-                if (string.IsNullOrWhiteSpace(reason))
+                if (string.IsNullOrWhiteSpace(additionalReason))
                     return;
-
-                string normalizedReason = reason.StartsWith("AutoBS—")
-                    ? reason
-                    : "AutoBS—" + reason;
 
                 if (string.IsNullOrWhiteSpace(ReasonThisRun))
                 {
-                    Disable(normalizedReason);
+                    Disable("AutoBS—" + additionalReason);
                     return;
                 }
 
-                if (ReasonThisRun.Contains(normalizedReason))
+                if (ReasonThisRun.Contains(additionalReason))
                     return;
 
-                Disable($"{ReasonThisRun}, {normalizedReason}");
+                Disable($"{ReasonThisRun} | {additionalReason}");
             }
             public static void Clear()
             {
@@ -207,30 +202,17 @@ namespace AutoBS
         public static string DetermineScoreSubmissionDisabledReason(EditableCBD eData)
         {
             string str = "";
-            /*
-            if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE)
-            {
-                if (Config.Instance.BasedOn != Config.Base.Standard)
-                {
-                    str = "Base Map Not Standard";
-                }
-                if (Config.Instance.RotationSpeedMultiplier < 0.3f)
-                {
-                    str += (str != "" ? " | " : "") + "Rotation Mult Low";
-                }
-                if (!Config.Instance.Wireless360 && Config.Instance.LimitRotations360 < 90)
-                {
-                    str += (str != "" ? " | " : "") + "Rotations Limited";
-                }
-            }
-            */
+
             if (TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE) // Since 360 settings can be altered, there is no standard for 360 generated maps and so can't score it.
             {
                 str = "AutoBS—360fyer";
                 return str;
             }
 
-            if (Config.Instance.EnableDiffReducer && TransitionPatcher.DifficultyReducerRemovedNotes)
+            if (Config.Instance.EnableDiffReducer &&
+                (TransitionPatcher.DifficultyReducerRemovedNotes ||
+                 eData.ArcsChangedByDifficultyReducer ||
+                 eData.ChainsChangedByDifficultyReducer))
             {
                 str += (str != "" ? " | " : "") + "Auto Diff Reducer";
             }
@@ -240,22 +222,24 @@ namespace AutoBS
                 str += (str != "" ? " | " : "") + "Auto NJS Fixer";
             }
 
-            if (eData.ArcsChanged)
+            if (eData.ArcsChangedByArcitect)
             {
                 str += (str != "" ? " | " : "") + "Arcitect Arcs";
             }
 
-            if (eData.ChainsChanged)
+            if (eData.ChainsChangedByArcitect)
             {
                 str += (str != "" ? " | " : "") + "Arcitect Chains";
             }
 
-            if (Utils.IsEnabledWalls() && eData.ObstaclesChanged) // since even if auto walls is off, arcitect can alter walls and so we don't want to show a reason for auto walls when its disabled. arcs or chains will disable and worse case my stringent test will find it.
+            if (eData.ObstaclesChangedByWallGenerator)
             {
                 str += (str != "" ? " | " : "") + "Auto Walls";
             }
 
-            if (Config.Instance.EnableCleanBeatSage && (TransitionPatcher.IsBeatSageMap) && BeatSageCleanUp.DisableScoreSubmission)
+            if (Config.Instance.EnableCleanBeatSage &&
+                TransitionPatcher.IsBeatSageMap &&
+                (BeatSageCleanUp.DisableScoreSubmission || eData.ObstaclesChangedByBeatSageCleanUp))
             {
                 str += (str != "" ? " | " : "") + "Beat Sage Cleaner";
             }

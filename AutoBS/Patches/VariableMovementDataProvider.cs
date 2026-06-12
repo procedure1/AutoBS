@@ -80,8 +80,18 @@ namespace AutoBS.Patches
             if (!Config.Instance.EnablePlugin)
                 return;
 
-            bool liveNjsEnabled = Config.Instance.LiveNjsControl != Config.LiveControlModeType.Off;
-            bool liveJdEnabled = Config.Instance.LiveJdControl != Config.LiveControlModeType.Off;
+            /*
+            if (ScoreSubmission.ScoreGate.ForceLiveNjsReasonForTesting)
+            {
+                ScoreSubmission.ScoreGate.AddReason("Live NJS");
+                Plugin.LogDebug("[ScoreGate][TEST] Forced Live NJS score-disable reason during movement provider initialization.");
+            }
+            */
+
+            bool liveNjsEnabled = Config.Instance.EnableLiveNjsJdControl &&
+                                  Config.Instance.LiveNjsControl != Config.LiveControlModeType.Off;
+            bool liveJdEnabled = Config.Instance.EnableLiveNjsJdControl &&
+                                 Config.Instance.LiveJdControl != Config.LiveControlModeType.Off;
             bool wantsLiveControl = liveNjsEnabled || liveJdEnabled;
 
             bool autoNjsFixerEnabled = AutoNjsRuntimeState.AutoNjsFixerEnabled;
@@ -260,8 +270,10 @@ namespace AutoBS.Patches
             }
 
             bool autoNjsFixerEnabled = AutoNjsRuntimeState.AutoNjsFixerEnabled;
-            bool liveNJSEnabled = Config.Instance.LiveNjsControl != Config.LiveControlModeType.Off;
-            bool liveJDEnabled = Config.Instance.LiveJdControl != Config.LiveControlModeType.Off;
+            bool liveNJSEnabled = Config.Instance.EnableLiveNjsJdControl &&
+                                  Config.Instance.LiveNjsControl != Config.LiveControlModeType.Off;
+            bool liveJDEnabled = Config.Instance.EnableLiveNjsJdControl &&
+                                 Config.Instance.LiveJdControl != Config.LiveControlModeType.Off;
 
             if (!autoNjsFixerEnabled && !liveNJSEnabled && !liveJDEnabled)
             {
@@ -302,9 +314,9 @@ namespace AutoBS.Patches
 
                 state.BaselineFromProviderCaptured = true;
 
-                Plugin.Log.Info(
-                    $"[VariableMovementDataProvider][AutoNJS][ManualUpdate] " +
-                    $"Captured live baseline from provider. " +
+                Plugin.LogDebug(
+                    $"[VariableMovementDataProvider][ManualUpdate] " +
+                    $"Captured movement baseline from provider. " +
                     $"BaseNJS:{state.FinalBaseNjs:F2} BaseJD:{state.FinalBaseJd:F2} BaseJumpDuration:{state.BaseJumpDuration:F3}");
             }
 
@@ -322,7 +334,7 @@ namespace AutoBS.Patches
                         AutoNjsRuntimeState.LiveNjsOffset += pendingNjsSteps;
 
                         Plugin.Log.Info(
-                            $"[VariableMovementDataProvider][AutoNJS][ManualUpdate] " +
+                            $"[VariableMovementDataProvider][ManualUpdate] " +
                             $"Applied queued NJS step(s): {pendingNjsSteps:+#;-#;0} " +
                             $"LiveNjsOffset now: {AutoNjsRuntimeState.LiveNjsOffset:+0;-0;0}");
 
@@ -339,7 +351,7 @@ namespace AutoBS.Patches
                         AutoNjsRuntimeState.LiveJdOffset += pendingJdSteps * 2f;
 
                         Plugin.Log.Info(
-                            $"[VariableMovementDataProvider][AutoNJS][ManualUpdate] " +
+                            $"[VariableMovementDataProvider][ManualUpdate] " +
                             $"Applied queued JD step(s): {pendingJdSteps:+#;-#;0} " +
                             $"LiveJdOffset now: {AutoNjsRuntimeState.LiveJdOffset:+0.0;-0.0;0}");
 

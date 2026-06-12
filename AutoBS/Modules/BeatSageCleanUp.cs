@@ -22,6 +22,7 @@ namespace AutoBS
 
             int originalNoteCount = eData.ColorNotes.Count();
             int originalBombCount = eData.BombNotes.Count();
+            int originalObstacleCount = eData.Obstacles.Count();
 
             StrayNoteCleaner.RemoveStrays(eData, minPauseSeconds: Config.Instance.StrayNoteCleanerOffset, maxStrays: (int)Config.Instance.MaxStrayNotes);
 
@@ -33,6 +34,10 @@ namespace AutoBS
                 DisableScoreSubmission = true;
             }
             else if (eData.BombNotes.Count() < originalBombCount)
+            {
+                DisableScoreSubmission = true;
+            }
+            else if (eData.Obstacles.Count() != originalObstacleCount || eData.ObstaclesChangedByBeatSageCleanUp)
             {
                 DisableScoreSubmission = true;
             }
@@ -247,7 +252,8 @@ namespace AutoBS
                 if (notesRemoved > 0) eData.ColorNotesChanged = true;
                 if (bombsRemoved > 0) eData.BombNotesChanged = true;
 
-                Plugin.Log.Info($"[BeatSageCleanUp] Notes Removed: {notesRemoved}, Bombs Removed: {bombsRemoved} - Remaining notes and bombs: {eData.ColorNotes.Count + eData.BombNotes.Count}");
+                if (notesRemoved > 0 || bombsRemoved > 0 )
+                    Plugin.Log.Info($"[BeatSageCleanUp] Notes Removed: {notesRemoved}, Bombs Removed: {bombsRemoved} - Remaining notes and bombs: {eData.ColorNotes.Count + eData.BombNotes.Count}");
             }
                 
             return eData;
@@ -556,9 +562,13 @@ namespace AutoBS
             int wallsDeletedCtn = originalObstacleCount - theCount;
 
             if (wallsDeletedCtn > 0 || wallAlteredCtnt > 0)
+            {
                 eData.ObstaclesChanged = true;
+                eData.ObstaclesChangedByBeatSageCleanUp = true;
+            }
 
-            Plugin.LogDebug($"[BeatSageCleanUp] Adjusting Walls in Beat Sage Map. Final Wall Count: {theCount} -- Walls deleted: {wallsDeletedCtn}, Walls modified (start time or duration or lineIndex): {wallAlteredCtnt}");
+            if (wallsDeletedCtn > 0 || wallAlteredCtnt > 0)
+                Plugin.Log.Info($"[BeatSageCleanUp] Adjusting Walls in Beat Sage Map. Final Wall Count: {theCount} -- Walls deleted: {wallsDeletedCtn}, Walls modified (start time or duration or lineIndex): {wallAlteredCtnt}");
 
             return eData;
         }
@@ -596,8 +606,8 @@ namespace AutoBS
                 int totalBombRemoved = 0;
                 bool changed;
 
-                bool removedLeadingSegments = false;
-                bool removedTrailingSegments = false;
+                //bool removedLeadingSegments = false;
+                //bool removedTrailingSegments = false;
 
                 do
                 {
@@ -617,7 +627,7 @@ namespace AutoBS
                         if (removed > 0)
                         {
                             totalColorRemoved += removed;
-                            removedLeadingSegments = true;
+                            //removedLeadingSegments = true;
                             changed = true;
                             continue; // rebuild segments next iteration
                         }
@@ -631,7 +641,7 @@ namespace AutoBS
                         if (removed > 0)
                         {
                             totalColorRemoved += removed;
-                            removedTrailingSegments = true;
+                            //removedTrailingSegments = true;
                             changed = true;
                             continue; // rebuild segments next iteration
                         }

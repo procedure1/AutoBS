@@ -27,10 +27,10 @@ namespace AutoBS
         private readonly List<GameObject> _markers = new List<GameObject>();
 
         // Green Screen
-        private Transform _headTransform;
+        //private Transform _headTransform;
         private GameObject _gameplayShell;
-        private bool _lockShellToHead;
-        private bool _tryingToFindHead;
+        //private bool _lockShellToHead;
+        //private bool _tryingToFindHead;
         private bool _loggedMainMenuWrapper;
 
         //private bool? _lastMenuCircular;
@@ -66,6 +66,14 @@ namespace AutoBS
             return Config.Instance.EnablePlugin &&
                    Utils.IsEnabledGameplayMixedReality() &&
                    _isGameplayLoaded;
+        }
+
+        private bool ShouldShowDirectionalMarkers()
+        {
+            return Config.Instance.EnablePlugin &&
+                   (AutoBS.Patches.TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE ||
+                    AutoBS.Patches.TransitionPatcher.SelectedSerializedName == "360Degree" ||
+                    AutoBS.Patches.TransitionPatcher.SelectedSerializedName == "90Degree");
         }
 
         //private Transform _menuCameraTransform;
@@ -152,22 +160,23 @@ namespace AutoBS
             if (scene.name.Contains("GameCore") || scene.name.Contains("StandardGameplay"))
                 _isGameplayLoaded = true;
 
-            if (!Utils.IsMixedRealitySystemEnabled())
-            {
-                ClearAllGreenScreens();
-                RemoveDirectionalMarkers();
-                RefreshCameraAlignmentForCurrentScene();
-                return;
-            }
-
             if (scene.name.Contains("GlassDesertEnvironment"))
             {
-                if (Config.Instance.EnablePlugin)
+                if (ShouldShowDirectionalMarkers())
                     AddDirectionalMarkersIfNeeded();
+                else
+                    RemoveDirectionalMarkers();
             }
             else if (scene.name.Contains("Environment"))
             {
                 RemoveDirectionalMarkers();
+            }
+
+            if (!Utils.IsMixedRealitySystemEnabled())
+            {
+                ClearAllGreenScreens();
+                RefreshCameraAlignmentForCurrentScene();
+                return;
             }
 
             if (scene.name.Contains("GameCore"))
@@ -264,9 +273,9 @@ namespace AutoBS
             }
 
             _loggedMainMenuWrapper = false;
-            _headTransform = null;
-            _tryingToFindHead = false;
-            _lockShellToHead = false;
+            //_headTransform = null;
+            //_tryingToFindHead = false;
+            //_lockShellToHead = false;
 
             if (_gameplayShell != null)
             {

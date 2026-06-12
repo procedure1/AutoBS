@@ -63,15 +63,15 @@ namespace AutoBS
             /// <summary>
             /// Enable the spin effect when no notes are coming.
             /// </summary>
-            bool EnableSpin = false;
+            //bool EnableSpin = false;
             /// <summary>
             /// The total time 1 spin takes in seconds.
             /// </summary>
-            float TotalSpinTime = 0.6f;
+            //float TotalSpinTime = 0.6f;
             /// <summary>
             /// Minimum amount of seconds between each spin effect.
             /// </summary>
-            float SpinCooldown = 10f;
+            //float SpinCooldown = 10f;
 
 
             List<ENoteData> notesAndBombs = new List<ENoteData>(eData.ColorNotes);

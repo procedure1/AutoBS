@@ -62,7 +62,7 @@ namespace AutoBS
         {
             internal static void Create()
             {
-                if (UnityEngine.Object.FindObjectOfType<EnvironmentMarkersAndGreenScreen>() != null)
+                if (UnityEngine.Object.FindAnyObjectByType<EnvironmentMarkersAndGreenScreen>() != null)
                     return;
 
                 GameObject go = new GameObject("EnvironmentVisualsManager");
@@ -74,7 +74,7 @@ namespace AutoBS
         }
 
         // Only for adding text labels to walls/notes for debugging
-        private GameObject _runner;
+        //private GameObject _runner;
 
         /*
         // Overlay numbers on notes and walls

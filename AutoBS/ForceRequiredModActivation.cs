@@ -79,6 +79,8 @@ namespace AutoBS
         // Postfixes only need __result; we don't need exact parameter types.
         static void ChromaConditionPostfix(ref bool __result)
         {
+            if (!Config.Instance.EnablePlugin) return;
+
             // Only OR-true when you actually injected Chroma content
             if (!__result && TransitionPatcher.RequiresChroma)
             {
@@ -89,6 +91,8 @@ namespace AutoBS
 
         static void NoodleConditionPostfix(ref bool __result)
         {
+            if (!Config.Instance.EnablePlugin) return;
+
             if (!__result && TransitionPatcher.RequiresNoodle)
             {
                 __result = true;
@@ -99,6 +103,8 @@ namespace AutoBS
         // Mapping Extension has its own built-in method to force activate it for a song
         public static void MappingExtensionsForceActivate()
         {
+            if (!Config.Instance.EnablePlugin) return;
+
             bool alreadyUsing = TransitionPatcher.RequiresMappingExtensions;
 
             //Plugin.Log.Warn($"Mapping Extensions test - IsEnabledExtensionWalls: {Utils.IsEnabledExtensionWalls()}, mapAlreadyUsesMappingExtensions: {mapAlreadyUsesMappingExtensions}");

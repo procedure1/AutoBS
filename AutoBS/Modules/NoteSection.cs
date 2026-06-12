@@ -42,8 +42,8 @@ namespace AutoBS.Modules
             return _baseNotes;
         }
 
-        private float beatsPerSecond = 0;
-        private float secondaryMaxTimeDiff = 0;
+        //private float beatsPerSecond = 0;
+        //private float secondaryMaxTimeDiff = 0;
 
         public List<NoteSwing> LowScoreSwings = new List<NoteSwing>(); // list of swings with a low score angle between current and next swing (not previous swing)
 
@@ -176,7 +176,7 @@ namespace AutoBS.Modules
                 if ((lastKept.Time > 110 && lastKept.Time < 116) || (lastKept.Time > 122 && lastKept.Time < 127))
                 {
                     Plugin.LogDebug(
-                        $"[DiffReducer][{lastKept.ColorType}] LastKept t:{lastKept.Time:F3} dir:{lastKept.SwingDirection} len:{lastKept.SwingLength}");
+                        $"[AutoDifficultyReducer][{lastKept.ColorType}] LastKept t:{lastKept.Time:F3} dir:{lastKept.SwingDirection} len:{lastKept.SwingLength}");
                 }
                 */
             }
@@ -212,7 +212,7 @@ namespace AutoBS.Modules
                 if ((lastKept.Time > 110 && lastKept.Time < 116) || (lastKept.Time > 122 && lastKept.Time < 127))
                 {
                     Plugin.LogDebug(
-                        $"[DiffReducer][{lastKept.ColorType}] LastKept t:{lastKept.Time:F3} dir:{lastKept.SwingDirection} len:{lastKept.SwingLength}");
+                        $"[AutoDifficultyReducer][{lastKept.ColorType}] LastKept t:{lastKept.Time:F3} dir:{lastKept.SwingDirection} len:{lastKept.SwingLength}");
                 }
             }
             */
@@ -353,7 +353,7 @@ namespace AutoBS.Modules
                 if ((s.Time > 110 && s.Time < 116) || (s.Time > 122 && s.Time < 127))
                 {
                     Plugin.LogDebug(
-                        $"[DiffReducer][Eval][{s.ColorType}] t:{s.Time:F3} gap:{gap:F3} pref:{preferredInterval:F3} ratio:{gapRatio:F2} angle:{lastSameColor.GetAngleBetweenSwings(s)} dot:{candidateIsDot} score:{score:F2}");
+                        $"[AutoDifficultyReducer][Eval][{s.ColorType}] t:{s.Time:F3} gap:{gap:F3} pref:{preferredInterval:F3} ratio:{gapRatio:F2} angle:{lastSameColor.GetAngleBetweenSwings(s)} dot:{candidateIsDot} score:{score:F2}");
                 }
                 */
                 if (score > bestScore)
@@ -418,7 +418,7 @@ namespace AutoBS.Modules
                     if ((firstFuture.Time > 110 && firstFuture.Time < 116) || (firstFuture.Time > 122 && firstFuture.Time < 127))
                     {
                         Plugin.LogDebug(
-                            $"[DiffReducer][BurstAllowed][{firstFuture.ColorType}] t:{firstFuture.Time:F3} gap:{firstGap:F3} candNps:{firstCandidateHandNps:F2} targetHandNps:{targetHandNps:F2} recentAvg:{recentAverageHandNps:F2}");
+                            $"[AutoDifficultyReducer][BurstAllowed][{firstFuture.ColorType}] t:{firstFuture.Time:F3} gap:{firstGap:F3} candNps:{firstCandidateHandNps:F2} targetHandNps:{targetHandNps:F2} recentAvg:{recentAverageHandNps:F2}");
                     }
 
                     return firstFuture;
@@ -455,7 +455,7 @@ namespace AutoBS.Modules
             if ((lastSameColor.Time > 110 && lastSameColor.Time < 116) || (lastSameColor.Time > 122 && lastSameColor.Time < 127))
             {
                 Plugin.LogDebug(
-                    $"[DiffReducer][CandidateScan][{lastSameColor.ColorType}] last:{lastSameColor.Time:F3} firstFuture:{firstFuture?.Time:F3} preferredInt:{preferredInterval:F3} recentAvgNps:{recentAverageHandNps:F2}");
+                    $"[AutoDifficultyReducer][CandidateScan][{lastSameColor.ColorType}] last:{lastSameColor.Time:F3} firstFuture:{firstFuture?.Time:F3} preferredInt:{preferredInterval:F3} recentAvgNps:{recentAverageHandNps:F2}");
             }
 
             return best ?? firstFuture;
@@ -527,7 +527,7 @@ namespace AutoBS.Modules
             return score;
         }
 
-        public void     RepairLowScoreSwings() // only removed 1 bad swing and added 2 90deg swings
+        public void RepairLowScoreSwings() // only removed 1 bad swing and added 2 90deg swings
         {
             // added this!!!!!!!!!!!!!!!!! so change how i created lowscoreswings previously!!!!!!!!!
             LowScoreSwings.Clear();
@@ -563,7 +563,7 @@ namespace AutoBS.Modules
             {
                 foreach (var swing in LowScoreSwings)
                 {
-                    //Plugin.LogDebug($"[DiffReducer]  ##### +++ will repair this swing:{i} {swing.Time:F} prevAngle: {swing.PrevDirection} - currAngle: {swing.SwingDirection} - nextAngle: {swing.NextDirection}"); // verified
+                    //Plugin.LogDebug($"[AutoDifficultyReducer]  ##### +++ will repair this swing:{i} {swing.Time:F} prevAngle: {swing.PrevDirection} - currAngle: {swing.SwingDirection} - nextAngle: {swing.NextDirection}"); // verified
 
                     // must update the actual Swings list not the lowScoreSwings list
                     int ind = Swings.IndexOf(swing);
@@ -633,7 +633,7 @@ namespace AutoBS.Modules
             }
             else
             {
-                Plugin.LogDebug($"[DiffReducer]  ---------- Repairing Low Score Swings NOT NEEDED!!!!!!");
+                Plugin.LogDebug($"[AutoDifficultyReducer]  ---------- Repairing Low Score Swings NOT NEEDED!!!!!!");
             }
         }
 
@@ -689,27 +689,27 @@ namespace AutoBS.Modules
 
             var sortedDirections = directions.OrderBy(d => Math.Abs(d.Key - targetAngle));
 
-            Plugin.LogDebug($"[DiffReducer] --- GetBestDirection Start: Target Angle = {targetAngle} for Swing at Time: {swing.Time:F} ---");
+            Plugin.LogDebug($"[AutoDifficultyReducer] --- GetBestDirection Start: Target Angle = {targetAngle} for Swing at Time: {swing.Time:F} ---");
 
             foreach (var dir in sortedDirections)
             {
                 int angle = dir.Key;
                 NoteCutDirection potentialDirection = dir.Value;
 
-                Plugin.LogDebug($"[DiffReducer] ---- Checking direction {potentialDirection} with angle {angle} (Target Angle: {targetAngle})");
+                Plugin.LogDebug($"[AutoDifficultyReducer] ---- Checking direction {potentialDirection} with angle {angle} (Target Angle: {targetAngle})");
 
                 if (AdditionalSwingExtensions.GoodSwingDirection(swing, potentialDirection))
                 {
-                    Plugin.LogDebug($"[DiffReducer] ----- Good direction found: {potentialDirection} (Angle: {angle}) for Swing at Time: {swing.Time:F}");
+                    Plugin.LogDebug($"[AutoDifficultyReducer] ----- Good direction found: {potentialDirection} (Angle: {angle}) for Swing at Time: {swing.Time:F}");
                     return potentialDirection;
                 }
                 else
                 {
-                    Plugin.LogDebug($"[DiffReducer] ----- Direction {potentialDirection} is not valid for Swing at Time: {swing.Time:F}");
+                    Plugin.LogDebug($"[AutoDifficultyReducer] ----- Direction {potentialDirection} is not valid for Swing at Time: {swing.Time:F}");
                 }
             }
 
-            Plugin.LogDebug($"[DiffReducer] ---- No better direction found. Keeping original direction: {swing.SwingDirection}");
+            Plugin.LogDebug($"[AutoDifficultyReducer] ---- No better direction found. Keeping original direction: {swing.SwingDirection}");
 
             // If none of the alternatives are valid, return the original direction
             return swing.SwingDirection;

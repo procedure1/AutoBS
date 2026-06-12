@@ -27,7 +27,7 @@ namespace AutoBS.Patches
     {
         static bool Prefix(int layer, ref NoteLineLayer __result)
         {
-            //if (!Config.Instance.EnablePlugin) return true;
+            if (!Config.Instance.EnablePlugin) return true;
             if (!Config.Instance.PatchV4ObstacleExtensionLayers) return true;
 
             if (layer >= 0 && layer <= 4)
@@ -228,7 +228,8 @@ namespace AutoBS.Patches
         {
             // Get all ParametricBoxController objects in the scene
             //Environment>TopLaser>BoxLight, Environment>DownLaser>BoxLight, Environment/RotatingLaser/Pair/BaseR or BaseL/Laser/BoxLight
-            ParametricBoxController[] boxControllers = GameObject.FindObjectsOfType<ParametricBoxController>(); // GameObject.FindObjectsByType<ParametricBoxController>(FindObjectsSortMode....)
+            ParametricBoxController[] boxControllers =
+                GameObject.FindObjectsByType<ParametricBoxController>(FindObjectsSortMode.None);
 
             int i = 1;
             foreach (ParametricBoxController boxController in boxControllers)

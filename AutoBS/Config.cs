@@ -165,6 +165,9 @@ namespace AutoBS
         public virtual float MinWallDuration { get; set; } = 0.001f;
         public virtual float MinDistanceBetweenNotesAndWalls { get; set; } = .2f;
 
+        public virtual bool PatchV4ObstacleExtensionLayers { get; set; } = false; // v4 maps clamp obstacle layers from 0 to 4 which breaks v4 mapping extensions. disable if Mapping Extensions takes care of this.
+
+
         // LIGHTS
 
         public virtual bool BigLasers { get; set; } = true;
@@ -250,6 +253,7 @@ namespace AutoBS
 
         public virtual bool EnableLiveVolumeControl { get; set; } = true;
         public virtual bool EnableLiveNjsJdControl { get; set; } = true;
+        
 
         public enum LiveControlModeType
         {
@@ -267,6 +271,7 @@ namespace AutoBS
         public virtual LiveControlModeType LiveNjsControl { get; set; } = LiveControlModeType.ThumbstickRUpDown;
         public virtual LiveControlModeType LiveJdControl { get; set; } = LiveControlModeType.ThumbstickRLeftRight;
 
+        public virtual bool LiveVolumeAffectsSoundEffects { get; set; } = true;
 
         // Green Screen Passthrough portal
 
@@ -323,18 +328,6 @@ namespace AutoBS
         public virtual bool EnableDiffReducer { get; set; } = false;
         public virtual bool EnableForAllMaps { get; set; } = false; //EnableOnlyIfSongAboveAveNps
         public virtual float PreferredFinalNps { get; set; } = 4f;
-
-
-        //public virtual bool RepairSwingDirections { get; set; } = false;
-        //public virtual bool ScoredSwingRemovalsUsingMinorSections { get; set; } = true;
-        //public virtual bool SimplifySwingOneByOne { get; set; } = true;
-
-
-        public virtual bool PatchV4ObstacleExtensionLayers { get; set; } = false; // v4 maps clamp obstacle layers from 0 to 4 which breaks v4 mapping extensions. disable if Mapping Extensions takes care of this.
-
-
-
-
 
 
         // Virtual Camera and Real Camera Alignment Grid for Mixed Reality Setup 

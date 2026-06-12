@@ -5,6 +5,6 @@
     <BSMTProjectType>BSIPA</BSMTProjectType>
   </PropertyGroup>
   <PropertyGroup>
-    <BeatSaberDir>D:\BSManager\BSInstances\1.40.8</BeatSaberDir>
+    <BeatSaberDir>D:\BSManager\BSInstances\1.44.0</BeatSaberDir>
   </PropertyGroup>
 </Project>

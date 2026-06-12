@@ -67,9 +67,7 @@ namespace AutoBS.Modules
 
         public static List<ENoteData> SimplifyBeatmap(EditableCBD eData)
         {
-            Plugin.LogDebug($"[DiffReducer] SimplifyBeatmap() Started: Initial NPS: {InitialNps:F}, Preferred NPS: {PreferredNps:F}, Original Note Count: {OriginalNoteCount}");
-
-            Plugin.LogDebug($"[DiffReducer] --- Simplify One by One ---");
+            //Plugin.LogDebug($"[AutoDifficultyReducer] --- Simplify One by One ---");
 
             NoteSection allSwingsSection = new NoteSection();
 
@@ -78,7 +76,9 @@ namespace AutoBS.Modules
                 allSwingsSection.AddSwing(swing);
             }
 
-            Plugin.LogDebug($"[DiffReducer] --- Entire Song Swing Count {allSwingsSection.SwingCount} ---");
+            int originalSwingCount = allSwingsSection.SwingCount;
+
+            Plugin.Log.Info($"[AutoDifficultyReducer] Started: Initial NPS: {InitialNps:F}, Preferred NPS: {PreferredNps:F}, Original Note Count: {OriginalNoteCount}, Original Swing Count: {originalSwingCount}");
 
             allSwingsSection.SimplifySwingsOneByOne();
 
@@ -91,30 +91,39 @@ namespace AutoBS.Modules
                     .SelectMany(swing => swing.GetNotes() ?? Enumerable.Empty<ENoteData>())
             );
 
+            if (OriginalNoteCount != newNotes.Count)
+            {
+                Plugin.Log.Info($"[AutoDifficultyReducer] Finished: Notes Removed: {OriginalNoteCount - newNotes.Count}, Final Note Count: {newNotes.Count}, Swings Removed: {originalSwingCount - allSwingsSection.SwingCount}, Final Swing Count: {allSwingsSection.SwingCount}");
+            }
+            else
+            {
+                Plugin.Log.Info($"[AutoDifficultyReducer] Finished. No notes removed.");
+            }
             //loat finalNps = CalculateSongNps(newNotes.Count);
             return newNotes;// (InitialNps, finalNps, newNotes1);
         }
 
+        /*
         public static float CalculateSongNps(int noteCount)//List<BeatmapObjectData> map)
         {
             if (OriginalNoteCount != noteCount)
             {
-                Plugin.LogDebug($"[DiffReducer] CalculateSongNps(): original noteCount: {OriginalNoteCount} current noteCount: {noteCount} songLength: {SongLength:F} originalNps: {InitialNps:F} currentNps: {noteCount / SongLength:F}");
+                Plugin.LogDebug($"[AutoDifficultyReducer] CalculateSongNps(): original noteCount: {OriginalNoteCount} current noteCount: {noteCount} songLength: {SongLength:F} originalNps: {InitialNps:F} currentNps: {noteCount / SongLength:F}");
             }
             else
             {
-                Plugin.LogDebug($"[DiffReducer] -- CalculateSongNps(): noteCount: {noteCount} songLength: {SongLength:F} currentNps: {noteCount / SongLength}");
+                Plugin.LogDebug($"[AutoDifficultyReducer] -- CalculateSongNps(): noteCount: {noteCount} songLength: {SongLength:F} currentNps: {noteCount / SongLength}");
             }
 
             return noteCount / SongLength;
         }
-
+        */
         private static List<NoteSwing> CreateSwings(List<ENoteData> notes, ColorType colorType, float bpm)
         {
-            //Plugin.LogDebug($"[DiffReducer] CalculateSwings() for {colorType} -----------");
+            //Plugin.LogDebug($"[AutoDifficultyReducer] CalculateSwings() for {colorType} -----------");
             if (notes.Count == 0)
             {
-                Plugin.LogDebug($"[DiffReducer] -------- Total Swings: {colorType} 0 -----------");
+                Plugin.LogDebug($"[AutoDifficultyReducer] -------- Total Swings: {colorType} 0 -----------");
                 return new List<NoteSwing>();
             }
 
@@ -125,7 +134,7 @@ namespace AutoBS.Modules
             if (notes.Count > 0)
             {
                 swing.AddNote(notes.First());
-                //Plugin.LogDebug($"[DiffReducer]  -- Evaluate Note: time={notes.First().time:F}, cutDirection={notes.First().cutDirection}, lineLayer={(int)notes.First().noteLineLayer}, lineIndex={notes.First().lineIndex}");
+                //Plugin.LogDebug($"[AutoDifficultyReducer]  -- Evaluate Note: time={notes.First().time:F}, cutDirection={notes.First().cutDirection}, lineLayer={(int)notes.First().noteLineLayer}, lineIndex={notes.First().lineIndex}");
 
                 if (notes.Count > 1)
                 {
@@ -133,7 +142,7 @@ namespace AutoBS.Modules
                     {
                         var note = notes[i];
                         float timeDiff = note.time - swing.FirstNote.time;
-                        //Plugin.LogDebug($"[DiffReducer]  -- Evaluate Note: time={nextNote.time:F}, cutDirection={nextNote.cutDirection}, lineLayer={(int)nextNote.noteLineLayer}, lineIndex={nextNote.lineIndex}");
+                        //Plugin.LogDebug($"[AutoDifficultyReducer]  -- Evaluate Note: time={nextNote.time:F}, cutDirection={nextNote.cutDirection}, lineLayer={(int)nextNote.noteLineLayer}, lineIndex={nextNote.lineIndex}");
 
                         if (timeDiff <= maxSwingTimeDiff && !note.IsContraryDirectionWithinSwing(swing.FirstNote))
                         {
@@ -143,7 +152,7 @@ namespace AutoBS.Modules
                         {
                             swings.Add(swing);
                             /*
-                            Plugin.LogDebug($"[DiffReducer]  ---- Swing {colorType} {swings.Count} {swing.SwingDirection}");
+                            Plugin.LogDebug($"[AutoDifficultyReducer]  ---- Swing {colorType} {swings.Count} {swing.SwingDirection}");
                             foreach (var swingNote in swing.GetNotes())
                             {
                                 Plugin.LogDebug(
@@ -161,7 +170,7 @@ namespace AutoBS.Modules
             {
                 swings.Add(swing);
                 /*
-                Plugin.LogDebug($"[DiffReducer]  ---- Swing {colorType} {swings.Count} {swing.SwingDirection}");
+                Plugin.LogDebug($"[AutoDifficultyReducer]  ---- Swing {colorType} {swings.Count} {swing.SwingDirection}");
                 foreach (var swingNote in swing.GetNotes())
                 {
                     Plugin.LogDebug(
@@ -199,7 +208,7 @@ namespace AutoBS.Modules
                 if (currentSwing.AngleBetweenSwings < 90) countBad++;
                 if (currentSwing.AngleBetweenSwings == 90) count90++;
 
-                //Plugin.LogDebug($"[DiffReducer] ---- Calc Swing: {colorType} {currentSwing.Time} {currentSwing.SwingDirection} prev: {prevSwingDir} next: {nextSwingDir} AngleBetween: {currentSwing.AngleBetweenSwings} BadCount: {countBad},  NinetyCount: {count90}");
+                //Plugin.LogDebug($"[AutoDifficultyReducer] ---- Calc Swing: {colorType} {currentSwing.Time} {currentSwing.SwingDirection} prev: {prevSwingDir} next: {nextSwingDir} AngleBetween: {currentSwing.AngleBetweenSwings} BadCount: {countBad},  NinetyCount: {count90}");
             }
 
             swings[0].Protected = true; // protect first swing of song in each color so (so changes to song don't appear jarring to player)
@@ -207,7 +216,7 @@ namespace AutoBS.Modules
 
 
 
-            Plugin.LogDebug($"[DiffReducer] -------- Total Swings: {colorType} {swings.Count} Original Bad Swings: {countBad}, Original 90Deg: {count90} -----------");
+            Plugin.LogDebug($"[AutoDifficultyReducer] -------- Total Swings: {colorType} {swings.Count} Original Bad Swings: {countBad}, Original 90Deg: {count90} -----------");
 
 
             return swings;
@@ -313,15 +322,18 @@ namespace AutoBS.Modules
             if ((eData.Arcs?.Count ?? 0) != originalArcCount || endpointModifiedCount > 0)
             {
                 eData.ArcsChanged = true;
+                eData.ArcsChangedByDifficultyReducer = true;
             }
 
             if ((eData.Chains?.Count ?? 0) != originalChainCount)
             {
                 eData.ChainsChanged = true;
+                eData.ChainsChangedByDifficultyReducer = true;
             }
 
             Plugin.LogDebug(
-                $"[DiffReducer] Arc/Chain cleanup: removedArcs {originalArcCount - (eData.Arcs?.Count ?? 0)}, modifiedArcs {endpointModifiedCount}, removedChains {originalChainCount - (eData.Chains?.Count ?? 0)}");
+                $"[AutoDifficultyReducer] Arc/Chain cleanup: removedArcs {originalArcCount - (eData.Arcs?.Count ?? 0)}, modifiedArcs {endpointModifiedCount}, removedChains {originalChainCount - (eData.Chains?.Count ?? 0)}");
+
         }
     }
 }

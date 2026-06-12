@@ -106,7 +106,7 @@ namespace AutoBS.Modules
                 nextSwing.PrevSwing = this;
                 AngleBetweenSwings = angleBetween;
 
-                //if (Time > 113 && Time < 114.2) Plugin.log.Info($"[DiffReducer]  TEST!! {Time:F} Angle: {Angle} {SwingDirection} -- {nextSwing.Time:F} NextAngle: {nextSwing.Angle} {nextSwing.SwingDirection} -- AngleDifference: {angleDifference} AngleBetweenSwings: {angleBetween}");
+                //if (Time > 113 && Time < 114.2) Plugin.log.Info($"[AutoDifficultyReducer]  TEST!! {Time:F} Angle: {Angle} {SwingDirection} -- {nextSwing.Time:F} NextAngle: {nextSwing.Angle} {nextSwing.SwingDirection} -- AngleDifference: {angleDifference} AngleBetweenSwings: {angleBetween}");
 
                 // Ensure the angle difference is the smallest possible value - this makes the difference in upLeft(-135) and upRight(135) equal to 90 which is correct
                 return angleBetween;
