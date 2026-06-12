@@ -69,7 +69,8 @@ namespace AutoBS.Patches
                         $"basic rotation events: {nativeBasicRotationV2EventsCount}, " +
                         $"events: {cbd.allBeatmapDataItems.OfType<CustomEventData>().Count()}, " +
                         $"color boosts: {cbd.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()}, " + //v2 basic events end up here somehow automatically
-                        $"bpm events: {cbd.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}");
+                        $"bpm events: {cbd.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}, " +
+                        $"numberOfLines (lanes): {cbd.numberOfLines}");
 
                 /*
                 #if DEBUG
@@ -117,7 +118,8 @@ namespace AutoBS.Patches
                          $"events: {bm.allBeatmapDataItems.OfType<EventData>().Count()}, " +
                          $"color boosts: {bm.allBeatmapDataItems.OfType<ColorBoostBeatmapEventData>().Count()}, " +
                          $"bpm events: {bm.allBeatmapDataItems.OfType<BpmChangeEventData>().Count()}, " +
-                         $"njs events: {bm.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()}");
+                         $"njs events: {bm.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()}, " +
+                         $"numberOfLines (lanes): {bm.numberOfLines}");
 
                 Version version = BeatmapVersionRegistry.versionByKey.TryGetValue(TransitionPatcher.SelectedPlayKey, out Version foundVersion) ? foundVersion : new Version(4, 0, 0); // 1.40.8 firestarter song was 4.0.0
                 var bmCopy = bm.GetCopy(); // need this so that original data is immutable. otherwise changes to eData will affect original data.
@@ -139,7 +141,7 @@ namespace AutoBS.Patches
                     Plugin.LogDebug($"Original Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
             }
             */
-            Plugin.LogDebug($"[CreateTransformedBeatmapData] Converted (Custom)BeatmapData to EditableCBD map version: {eData.Version.Major} - notes: {eData.ColorNotes.Count}, bombs: {eData.BombNotes.Count}, obstacles: {eData.Obstacles.Count}, arcs: {eData.Arcs.Count}, chains: {eData.Chains.Count}, rotations: {eData.RotationEvents.Count}, basic events: {eData.BasicEvents.Count}, customEvents: {eData.CustomEvents.Count}, color boosts: {eData.ColorBoostEvents.Count}.");
+            Plugin.LogDebug($"[CreateTransformedBeatmapData] Converted (Custom)BeatmapData to EditableCBD map version: {eData.Version.Major} - notes: {eData.ColorNotes.Count}, bombs: {eData.BombNotes.Count}, obstacles: {eData.Obstacles.Count}, arcs: {eData.Arcs.Count}, chains: {eData.Chains.Count}, rotations: {eData.RotationEvents.Count}, basic events: {eData.BasicEvents.Count}, customEvents: {eData.CustomEvents.Count}, color boosts: {eData.ColorBoostEvents.Count}, numberOfLines (lanes): {ConvertEditableCBD.GetNumberOfLines(eData)}.");
 
             Plugin.LogDebug($"[CreateTransformedBeatmapData] Song Name: {SetContent.SongName} - v{TransitionPatcher.SelectedBeatmapVersion} - {TransitionPatcher.SelectedSerializedName} {TransitionPatcher.SelectedDifficulty}  ----------------------------------------------------------------------------");
 
@@ -167,7 +169,8 @@ namespace AutoBS.Patches
                             $"events: {__result.allBeatmapDataItems.OfType<CustomEventData>().Count()}, " +
                             $"color boosts: {__result.allBeatmapDataItems.OfType<CustomColorBoostBeatmapEventData>().Count()}, " +
                             $"bpm events: {__result.allBeatmapDataItems.OfType<CustomBPMChangeBeatmapEventData>().Count()}, " +
-                            $"rotation events (in-line per object) {eData.RotationEvents.Count}");
+                            $"rotation events (in-line per object) {eData.RotationEvents.Count}, " +
+                            $"numberOfLines (lanes): {__result.numberOfLines}");
 
                     // v4 unsupported by customJsonData - $"{__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()} NJS Events");
 
@@ -228,7 +231,8 @@ namespace AutoBS.Patches
                         $"color boosts: {__result.allBeatmapDataItems.OfType<ColorBoostBeatmapEventData>().Count()}, " +
                         $"bpm events: {__result.allBeatmapDataItems.OfType<BpmChangeEventData>().Count()}, " +
                         $"njs events: {__result.allBeatmapDataItems.OfType<NoteJumpSpeedEventData>().Count()}, " +
-                        $"rotation events (in -line per object): {eData.RotationEvents.Count}");
+                        $"rotation events (in -line per object): {eData.RotationEvents.Count}, " +
+                        $"numberOfLines (lanes): {__result.numberOfLines}");
 
                     if (TransitionPatcher.IsCustomLevel) // can be v4 custom level. i'm trying to avoid outputing json for vanilla maps for copywrite reasons i suppose
                         JsonOutputConverter.ToJsonFile(__result as CustomBeatmapData, eData);

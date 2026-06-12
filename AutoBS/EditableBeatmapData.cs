@@ -7,7 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static AutoBS.RotationV3Registry;
-using static BeatmapDataStats;
 using static BloomPrePassRenderDataSO;
 using static NoteData;
 using static UnityEngine.UI.Image;
@@ -1607,7 +1606,7 @@ namespace AutoBS
         public static CustomBeatmapData Convert(EditableCBD eData)
         {
             var newData = new CustomBeatmapData(
-                numberOfLines: 4, // Standard; parameterize if you support others
+                numberOfLines: GetNumberOfLines(eData),
                 beatmapCustomData: eData.BeatmapCustomData ?? new CustomData(),
                 levelCustomData: eData.LevelCustomData ?? new CustomData(),
                 customData: eData.OriginalCBData?.customData ?? new CustomData(), // container-level custom data
@@ -1779,8 +1778,7 @@ namespace AutoBS
                 throw new InvalidOperationException("ConvertVanilla requires OriginalBData.");
 
             ESliderData.FixArcChainNoteScoring(eData);
-            // numberOfLines: 4 for Standard; adjust if you support others
-            var newData = new BeatmapData(4);
+            var newData = new BeatmapData(GetNumberOfLines(eData));
 
             var allItems = new List<object>(capacity: 4096);
 
@@ -1882,6 +1880,21 @@ namespace AutoBS
 
             newData.ProcessAndSortBeatmapData();
             return newData;
+        }
+        /// <summary>
+        /// Get number of lanes (lines) from the original data if available otherwide default to 4.
+        /// </summary>
+        /// <param name="eData"></param>
+        /// <returns></returns>
+        public static int GetNumberOfLines(EditableCBD eData)
+        {
+            if (eData.OriginalCBData != null)
+                return eData.OriginalCBData.numberOfLines;
+
+            if (eData.OriginalBData != null)
+                return eData.OriginalBData.numberOfLines;
+
+            return BeatmapData.kDefaultNumberOfLines;
         }
 
         // used to load original data when no changes made to that type
