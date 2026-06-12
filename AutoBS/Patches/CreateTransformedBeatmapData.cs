@@ -48,7 +48,7 @@ namespace AutoBS.Patches
 
             EditableCBD eData = null;
 
-            if (beatmapData is CustomBeatmapData cbd) // custom map data
+            if (__result is CustomBeatmapData cbd) // transformed custom map data
             {
                 RotationV3Registry.RotationEventsByKey.TryGetValue(TransitionPatcher.CurrentPlayKey, out var v3RotList);
 
@@ -67,7 +67,7 @@ namespace AutoBS.Patches
 
                 eData = new EditableCBD(cbd);
             }
-            else if (beatmapData is BeatmapData bm) // built-in map data
+            else if (__result is BeatmapData bm) // transformed built-in map data
             {
                 Plugin.Log.Info($"[CreateTransformedBeatmapData] Retrieved Vanilla BeatmapData from JSON v{TransitionPatcher.CurrentBeatmapVersion}: " +
                          $"{bm.cuttableNotesCount} notes, " +
@@ -86,6 +86,11 @@ namespace AutoBS.Patches
 
                 Version version = BeatmapDataRegistry.versionByKey.TryGetValue(TransitionPatcher.CurrentPlayKey, out Version foundVersion) ? foundVersion : new Version(4, 0, 0); // 1.40.8 firestarter song was 4.0.0
                 eData = new EditableCBD(bm, version);
+            }
+            else
+            {
+                Plugin.Log.Warn($"[CreateTransformedBeatmapData] Unsupported transformed beatmap data type: {__result?.GetType().FullName ?? "null"}.");
+                return;
             }
             /*
 #if DEBUG
