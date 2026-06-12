@@ -1438,31 +1438,43 @@ namespace AutoBS
     /// </summary>
     public static class ConvertEditableCBD
     {
-        public static CustomBeatmapData Convert(EditableCBD eData)
+        public static CustomBeatmapData Convert(EditableCBD eData, bool preserveOriginalGameplayObjects = false)
         {
             var newData = new CustomBeatmapData(
-                numberOfLines: 4, // Standard; parameterize if you support others
+                numberOfLines: eData.OriginalCBData?.numberOfLines ?? BeatmapData.kDefaultNumberOfLines,
                 beatmapCustomData: eData.BeatmapCustomData ?? new CustomData(),
                 levelCustomData: eData.LevelCustomData ?? new CustomData(),
-                customData: new CustomData(), // container-level custom data
+                customData: eData.OriginalCBData?.customData ?? new CustomData(),
                 version: eData.Version
             );
 
             var allItems = new List<object>(capacity: 4096);
 
-            // --- Your edited objects ---
-            allItems.AddRange(eData.ColorNotes.Select(n => (object)n.ToCustomNoteData(eData.Version)));
-            allItems.AddRange(eData.BombNotes.Select(n => (object)n.ToCustomNoteData(eData.Version)));
-            allItems.AddRange(eData.Obstacles.Select(o => (object)o.ToCustomObstacleData(eData.Version)));
-            allItems.AddRange(eData.Arcs.Select(a => (object)a.ToCustomSliderData(eData.Version)));
-            allItems.AddRange(eData.Chains.Select(c => (object)c.ToCustomSliderData(eData.Version)));
+            if (preserveOriginalGameplayObjects && eData.OriginalCBData != null)
+            {
+                // Noodle and other mods can associate parsed data with the original object instances.
+                allItems.AddRange(eData.OriginalCBData.beatmapObjectDatas.Cast<object>());
+                Plugin.LogDebug("[ConvertEditableCBD] Preserving original gameplay object instances.");
+            }
+            else
+            {
+                allItems.AddRange(eData.ColorNotes.Select(n => (object)n.ToCustomNoteData(eData.Version)));
+                allItems.AddRange(eData.BombNotes.Select(n => (object)n.ToCustomNoteData(eData.Version)));
+                allItems.AddRange(eData.Obstacles.Select(o => (object)o.ToCustomObstacleData(eData.Version)));
+                allItems.AddRange(eData.Arcs.Select(a => (object)a.ToCustomSliderData(eData.Version)));
+                allItems.AddRange(eData.Chains.Select(c => (object)c.ToCustomSliderData(eData.Version)));
+            }
 
             // --- Your rebuilt vanilla-style events (custom-capable) ---
             allItems.AddRange(eData.BasicEvents.Select(ev => (object)ev.ToCustomBasicBeatmapEventData(eData.Version)));
             allItems.AddRange(eData.ColorBoostEvents.Select(ev => (object)ev.ToCustomColorBoostBeatmapEventData(eData.Version)));
 
             // --- Custom events: choose ONE source ---
-            if ((eData.CustomEvents?.Count ?? 0) > 0)
+            if (preserveOriginalGameplayObjects && eData.OriginalCBData != null)
+            {
+                allItems.AddRange(eData.OriginalCBData.customEventDatas.Cast<object>());
+            }
+            else if ((eData.CustomEvents?.Count ?? 0) > 0)
             {
                 allItems.AddRange(eData.CustomEvents.Select(cev => (object)cev.ToCustomEventData(eData.Version)));
             }
@@ -1477,6 +1489,9 @@ namespace AutoBS
             {
                 foreach (var item in eData.OriginalCBData.allBeatmapDataItems)
                 {
+                    if (preserveOriginalGameplayObjects && item is BeatmapObjectData)
+                        continue;
+
                     // Skip objects you rebuilt
                     if (item is CustomNoteData
                      || item is CustomObstacleData
@@ -1548,18 +1563,28 @@ namespace AutoBS
         /// </summary>
         /// <param name="eData"></param>
         /// <returns></returns>
-        public static BeatmapData ConvertVanilla (EditableCBD eData) 
+        public static BeatmapData ConvertVanilla(EditableCBD eData, bool preserveOriginalGameplayObjects = false)
         {
-            ESliderData.FixArcChainNoteScoring(eData);
-            // numberOfLines: 4 for Standard; adjust if you support others
-            var newData = new BeatmapData(4);
+            var newData = new BeatmapData(
+                eData.OriginalBData?.numberOfLines ?? BeatmapData.kDefaultNumberOfLines);
 
-            // 1) Objects (vanilla types)
-            foreach (var n in eData.ColorNotes) newData.AddBeatmapObjectDataInOrder(n.ToNoteData());
-            foreach (var n in eData.BombNotes) newData.AddBeatmapObjectDataInOrder(n.ToNoteData());
-            foreach (var o in eData.Obstacles) newData.AddBeatmapObjectDataInOrder(o.ToObstacleData());
-            foreach (var a in eData.Arcs) newData.AddBeatmapObjectDataInOrder(a.ToSliderData());
-            foreach (var c in eData.Chains) newData.AddBeatmapObjectDataInOrder(c.ToSliderData());
+            if (preserveOriginalGameplayObjects && eData.OriginalBData != null)
+            {
+                foreach (var item in eData.OriginalBData.allBeatmapDataItems.OfType<BeatmapObjectData>())
+                    newData.AddBeatmapObjectDataInOrder(item);
+
+                Plugin.LogDebug("[ConvertEditableCBD] Preserving original vanilla gameplay object instances.");
+            }
+            else
+            {
+                ESliderData.FixArcChainNoteScoring(eData);
+
+                foreach (var n in eData.ColorNotes) newData.AddBeatmapObjectDataInOrder(n.ToNoteData());
+                foreach (var n in eData.BombNotes) newData.AddBeatmapObjectDataInOrder(n.ToNoteData());
+                foreach (var o in eData.Obstacles) newData.AddBeatmapObjectDataInOrder(o.ToObstacleData());
+                foreach (var a in eData.Arcs) newData.AddBeatmapObjectDataInOrder(a.ToSliderData());
+                foreach (var c in eData.Chains) newData.AddBeatmapObjectDataInOrder(c.ToSliderData());
+            }
 
             foreach (var e in eData.BasicEvents) newData.InsertBeatmapEventDataInOrder(e.ToBasicBeatmapEventData());
             foreach (var b in eData.ColorBoostEvents) newData.InsertBeatmapEventDataInOrder(b.ToColorBoostBeatmapEventData());
@@ -1569,8 +1594,8 @@ namespace AutoBS
             {
                 foreach (var item in eData.OriginalBData.allBeatmapDataItems)
                 {
-                    // Skip objects – you already recreated those
-                    if (item is NoteData || item is ObstacleData || item is SliderData || item is BurstSliderData)
+                    // Objects were either preserved or recreated above.
+                    if (item is BeatmapObjectData)
                         continue;
 
                     // Skip the event types you explicitly rebuilt above to avoid duplicates

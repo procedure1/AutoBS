@@ -1140,6 +1140,14 @@ namespace AutoBS
             bool wallsNotAltered = !WallGenerator.WallsAltered;
             Plugin.LogDebug($"[Generator] 8 wallsNotAltered: {wallsNotAltered}.");
 
+            bool gameplayObjectsUnchanged =
+                beatSageMapNotAltered &&
+                arcsNotAdded &&
+                chainsNotAdded &&
+                rotationsNotchanged &&
+                wallsNotAdded &&
+                wallsNotAltered;
+
             if (beatSageMapNotAltered && arcsNotAdded && chainsNotAdded && rotationsNotchanged && lightsNotAdded && boostNotAdded && wallsNotAdded && wallsNotAltered)
             {
                 OriginalMapAltered = false;
@@ -1175,7 +1183,7 @@ namespace AutoBS
             if (eData.OriginalCBData != null)
             {
                 // This is a real CustomJSON map → build CustomBeatmapData
-                var cbd = ConvertEditableCBD.Convert(eData);
+                var cbd = ConvertEditableCBD.Convert(eData, gameplayObjectsUnchanged);
 
                 // (Optional but wise) sanitize numbers if you ever mix doubles/longs
                 // NormalizeCustomJson(cbd.customData); etc.
@@ -1195,7 +1203,7 @@ namespace AutoBS
             }
 
             // Built-in / OST path → emit vanilla BeatmapData
-            var bd = ConvertEditableCBD.ConvertVanilla(eData);
+            var bd = ConvertEditableCBD.ConvertVanilla(eData, gameplayObjectsUnchanged);
 
             Plugin.LogDebug($"[Generator] Final Result BeatmapData after Generator - notes: {bd.allBeatmapDataItems.OfType<NoteData>().Count()} obstacles: {bd.allBeatmapDataItems.OfType<ObstacleData>().Count()} events: {bd.allBeatmapDataItems.OfType<BasicBeatmapEventData>().Count()} customEvents: {bd.allBeatmapDataItems.OfType<CustomEventData>().Count()}.");
 
