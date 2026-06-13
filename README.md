@@ -21,11 +21,11 @@ The original 360fyer mod was created by the genius CodeStix. https://github.com/
 I have updated the mod since it has been dormant for a long time. Now compatible with Arcs + Chains. Ultra customizable from angle size to rotation frequency for easy 360 or for a super challenging workout. Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
 
-<p align="center"><a href="https://www.youtube.com/watch?v=pN6KcF6O6dc">Watch the Video!</a></p>
+
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=pN6KcF6O6dc">
-    <img src="https://img.youtube.com/vi/pN6KcF6O6dc/maxresdefault.jpg" width="600" alt="Watch the video">
+    <img src="images/AutoBS-Beat-Saber-Automation-Mod-Youtube-play-button.jpg" width="480" alt="Watch the video">
   </a>
 </p>
 <p></p>
