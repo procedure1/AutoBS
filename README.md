@@ -24,7 +24,7 @@ I have updated the mod since it has been dormant for a long time. Now compatible
 
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=pN6KcF6O6dc">
+  <a href="https://www.youtube.com/watch?v=pN6KcF6O6dc" target="_blank">
     <img src="images/AutoBS-Beat-Saber-Automation-Mod-Youtube-play-button.jpg" width="480" alt="Watch the video">
   </a>
 </p>
