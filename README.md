@@ -20,9 +20,20 @@ NOTE: This mod can be used to output and convert to v2, v3, and v4 JSON beatmap 
 The original 360fyer mod was created by the genius CodeStix. https://github.com/CodeStix/
 I have updated the mod since it has been dormant for a long time. Now compatible with Arcs + Chains. Ultra customizable from angle size to rotation frequency for easy 360 or for a super challenging workout. Note: Vivify maps and many complex Noodle maps are currently incompatible and disabled for 360fyer.
 
-<p align="center"><a href="https://www.youtube.com/watch?v=xUDdStGQwq0"><img src="Beat-Saber-AutoBS-Mod-360fyer-Returns.gif" alt="AutoBS 360fyer"></a></p>
+
+<p align="center"><a href="https://www.youtube.com/watch?v=pN6KcF6O6dc">Watch the Video!</a></p>
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=pN6KcF6O6dc">
+    <img src="https://img.youtube.com/vi/pN6KcF6O6dc/maxresdefault.jpg" width="600" alt="Watch the video">
+  </a>
+</p>
+<p></p>
+
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/procedure1)
+
+
 
 ## Installation
 
