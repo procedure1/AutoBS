@@ -128,7 +128,7 @@ Can remove some impossible note combinations common with `Beat Sage`-generated m
 
 ## Camera Alignment Tool for Mixed Reality Recording
 
-- NOTE: If you use LIV, then this tool is NOT really relevant.
+- NOTE: If you use the LIV app, then this tool is NOT really relevant.
 
 Mixed Reality Portals and the CameraPlus mod together allow a new way IMHO to help record mixed reality videos using green screen to place your physical body into the virtual Beat Saber environment. For your virtual sabers to line up with your hands and controllers in the real world, your virtual camera must line up perfectly with your real camera and this tool can help in that process. [See the WIKI.](https://github.com/procedure1/AutoBS/wiki/Camera-Alignment-Tool-for-Mixed-Reality-Recording)
 
