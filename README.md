@@ -44,7 +44,7 @@ I have updated the mod since it has been dormant for a long time. Now compatible
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
 
 ## Mixed Reality Portals
-Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. There is a ring-style portal for 360 maps. <a href="https://www.youtube.com/watch?v=pN6KcF6O6dc" target="_blank">Video Tutorial</a>
+Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. There is a ring-style portal for 360 maps. <a href="https://youtu.be/hWK7pK1p87s" target="_blank">Video Tutorial</a>
 
 <p align="center"><img src="images/Beat-Saber-AutoBS-Mod-Mixed-Reality-Portals.gif" alt="AutoBS Auto Mixed Reality Portals"></p>
 
