@@ -52,7 +52,7 @@ Create circular or rectangular portals to see Beat Saber through a floating mixe
 
 Configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with them.
 Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
-Video tutorial link coming soon. 
+<a href="https://www.youtube.com/watch?v=pN6KcF6O6dc" target="_blank">Video Tutorial</a>
 
 | | |
 |--|--|
