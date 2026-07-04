@@ -44,7 +44,7 @@ I have updated the mod since it has been dormant for a long time. Now compatible
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
 
 ## Mixed Reality Portals
-Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. There is a ring-style portal for 360 maps.
+Create circular or rectangular portals to see Beat Saber through a floating mixed reality window. There is a ring-style portal for 360 maps. <a href="https://www.youtube.com/watch?v=pN6KcF6O6dc" target="_blank">Video Tutorial</a>
 
 <p align="center"><img src="images/Beat-Saber-AutoBS-Mod-Mixed-Reality-Portals.gif" alt="AutoBS Auto Mixed Reality Portals"></p>
 
@@ -52,7 +52,6 @@ Create circular or rectangular portals to see Beat Saber through a floating mixe
 
 Configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with them.
 Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
-<a href="https://www.youtube.com/watch?v=pN6KcF6O6dc" target="_blank">Video Tutorial</a>
 
 | | |
 |--|--|
