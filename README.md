@@ -38,8 +38,7 @@ I have updated the mod since it has been dormant for a long time. Now compatible
 ## Installation
 
 - Install this mod by downloading `AutoBS.dll` from the Releases tab: https://github.com/procedure1/autobs/releases and placing it in the `Plugins/` directory of your modded Beat Saber installation.
-- Requires `CustomJSONData` mod (via BSManager or ModAssistant)
-- COMING SOON: Install this mod using BSManager or ModAssistant.
+- ** Requires `CustomJSONData` mod (via BSManager) **
 - Recommended: install Kylemc's `Mapping Extensions` mod if you want full wall customization.
 - Aeroluna's `Technicolor` mod is awesome with 360fyer
 
