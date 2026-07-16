@@ -11,7 +11,7 @@
 
 ## [Download Latest Release](https://github.com/procedure1/AutoBS/releases)
 
-A Beat Saber mod that adds floating Mixed Reality Portals (requires the `Virtual Desktop` app) and can automatically convert standard maps into 360° maps. It also enhances maps by generating arcs, chains, lighting events, and a show of `mapping extensions` walls. Most of these features work on existing, non‑generated maps as well—so you can add arcs, walls, and more to standard maps. Tune the Volume, Note Speed and Note spawn distance live during gameplay with your controllers. Auto Difficulty Reducer, along with automatic note speed and spawn distance adjustments, can turn even Expert++ maps into maps a toddler can play :) It can also clean up small problems with `Beat Sage` maps.
+A Beat Saber mod that adds floating Mixed Reality Portals (requires the `ALVR` or `Virtual Desktop` app) and can automatically convert standard maps into 360° maps. It also enhances maps by generating arcs, chains, lighting events, and a show of `mapping extensions` walls. Most of these features work on existing, non‑generated maps as well—so you can add arcs, walls, and more to standard maps. Tune the Volume, Note Speed and Note spawn distance live during gameplay with your controllers. Auto Difficulty Reducer, along with automatic note speed and spawn distance adjustments, can turn even Expert++ maps into maps a toddler can play :) It can also clean up small problems with `Beat Sage` maps.
 
 <p align="center"><img src="images/Beat-Saber-AutoBS-Mixed-Reality-Portals-Yeah-024413.gif" alt="AutoBS Mixed Reality Portals"></p>
 
@@ -47,14 +47,20 @@ Create circular or rectangular portals to see Beat Saber through a floating mixe
 
 <p align="center"><img src="images/Beat-Saber-AutoBS-Mod-Mixed-Reality-Portals.gif" alt="AutoBS Auto Mixed Reality Portals"></p>
 
-- NOTE: Requires `Virtual Desktop App`. Turn on Streaming > VR Passthrough > Environment checkbox. 
+### NOTE: Requires `ALVR` or `Virtual Desktop App`.
+- `Virtual Desktop App` -- Turn on Streaming > VR Passthrough > Environment checkbox. 
 
-Configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with them.
-Its best to use custom color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
+Configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, green:255, blue:0), Similarity: 10%, Smoothness: 25%, Opacity: 50%. These settings work well for me but feel free to play with them. It's best to use Beat Saber custom color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
 
 | | |
 |--|--|
 | ![AutoBS Beat Saber Automation Mod Mixed Reality Portal Setup](images/Virtual-Desktop-Configuration-1.jpg) |  ![AutoBS Beat Saber Automation Mod Mixed Reality Portal Setup](images/Virtual-Desktop-Configuration-2.jpg) |
+
+- `ALVR App` -- Go to Settings > Video > Turn on Passthrough > Use RGB Chroma Key
+
+Configure Red => 0, Green => 255, Blue => 0. Distance Threshold => 40 or greator. Feathering => 50 or greator. These settings work well for me but feel free to play with them. It's best to use custom Beat Saber color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
+
+
 
 
 ## Arcitect Arc + Chain Maker
