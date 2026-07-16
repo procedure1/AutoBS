@@ -56,10 +56,11 @@ Configure Virtual Desktop's VR Passthrough setting: Pure Green Color (red:0, gre
 |--|--|
 | ![AutoBS Beat Saber Automation Mod Mixed Reality Portal Setup](images/Virtual-Desktop-Configuration-1.jpg) |  ![AutoBS Beat Saber Automation Mod Mixed Reality Portal Setup](images/Virtual-Desktop-Configuration-2.jpg) |
 
-- `ALVR App` -- Go to Settings > Video > Turn on Passthrough > Use RGB Chroma Key
+- `ALVR Streamer App` (ALVR Dashboard.exe) -- Go to Settings > Video > Turn on Passthrough > Use RGB Chroma Key
 
 Configure Red => 0, Green => 255, Blue => 0. Distance Threshold => 40 or greator. Feathering => 50 or greator. These settings work well for me but feel free to play with them. It's best to use custom Beat Saber color schemes to avoid pure green in your maps. (The AutoBS config file has 'MixedRealityGreenScreenColor' which lets you change the passthrough color if you prefer another color besides green.)
 
+<p align="center"><img style="width: 600px;" src="images/ALVR - Settings-Video-Passthrough.jpg" alt="ALVR Settings>Video>Passthrough"></p>
 
 
 
