@@ -1,5 +1,5 @@
 # AutoBS — Beat Saber Automation Mod 
-### — For Beat Saber PC Version v1.42-1.44
+### — For Beat Saber PC Version v1.42-1.44.1
 ------------------------
 ## Mixed Reality Portals 
 ## Arcitect Arc + Chain Maker, Auto Lights, Auto Walls
