@@ -518,58 +518,6 @@ namespace AutoBS
             };
         }
 
-        public void LinkNotesAndSliders(List<ENoteData> notes, List<ESliderData> sliders)
-        {
-            foreach (var s in sliders)
-            {
-                // HEAD
-                if (s.hasHeadNote && s.headNote == null)
-                {
-                    var head = FindNote(notes, s.time, s.line, s.layer, s.colorType);
-                    if (head != null)
-                    {
-                        s.headNote = head;
-                        if (s.sliderType == ESliderType.Chain)
-                        {
-                            head.headNoteChain = s;
-                            // Only override scoringType if it isn't already something more specific
-                            //if (head.scoringType == NoteData.ScoringType.Normal)
-                            //    head.scoringType = NoteData.ScoringType.ChainHead;
-                        }
-                        else if (s.sliderType == ESliderType.Arc)
-                        {
-                            head.headNoteArc = s;
-                            // same idea for arc scoring type, if you want
-                        }
-                    }
-                }
-
-                // TAIL – if you care
-                if (s.hasTailNote && s.tailNote == null)
-                {
-                    var tail = FindNote(notes, s.tailTime, s.tailLine, s.tailLayer, s.colorType);
-                    if (tail != null)
-                    {
-                        s.tailNote = tail;
-                        if (s.sliderType == ESliderType.Arc)
-                        {
-                            tail.tailNoteArc = s;
-                        }
-                    }
-                }
-            }
-        }
-        ENoteData FindNote(List<ENoteData> notes, float time, int line, int layer, ColorType color)
-        {
-            const float TOL = 0.0005f;
-            return notes.FirstOrDefault(n =>
-                n.colorType == color &&
-                n.line == line &&
-                n.layer == layer &&
-                Math.Abs(n.time - time) < TOL);
-        }
-
-
         public CustomSliderData ToCustomSliderData(Version version)
         {
             float beatValue = time * (TransitionPatcher.bpm / 60f);
@@ -2202,15 +2150,6 @@ namespace AutoBS
                     {
                         switch (item)
                         {
-                            /*
-                            case ObstacleData o:
-                                frames.Add((o.time, o.rotation, 0)); // highest priority
-                                break;
-
-                            case NoteData n:
-                                frames.Add((n.time, n.rotation, 1)); // includes bombs
-                                break;
-                            */
                             case NoteData n: // or NoteData / ColorNoteData in your type system -- includes bombs
                                 frames.Add((n.time, n.rotation, 0)); // highest priority
                                 break;

@@ -31,7 +31,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <Optimize>true</Optimize>
-    <OutputPath>D:\BSManager\BSInstances\1.44.0\Plugins\</OutputPath>
+    <OutputPath>D:\BSManager\BSInstances\1.44.1\Plugins\</OutputPath>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>5</WarningLevel>
   </PropertyGroup>
@@ -48,7 +48,6 @@
     <Compile Include="Modules\NoteSection.cs" />
     <Compile Include="Modules\NoteSwing.cs" />
     <Compile Include="ScoreSubmission.cs" />
-    <Compile Include="UNUSED_AddDirectionalMarkersToMenu.cs" />
     <Compile Include="Modules\EnvironmentMarkersAndGreenScreen.cs" />
     <Compile Include="Modules\LiveAdjustHud.cs" />
     <Compile Include="Modules\LiveGameplayInputListener.cs" />

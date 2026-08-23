@@ -130,14 +130,14 @@ namespace AutoBS
             } 
         }
     }
-    //Zenject installer. Need this to access and control ParametricBoxController since I couldn't find another way to access that method. If could figure out how to patch a level of beatsaber i might be able to find it another way
-    //I access this in LevelUpdatePatcher.cs so that the level has already started and gameObject that uses this has spawned. I cannot access it here since the gameObject hasn't spawned.
+    // Zenject installer. Need this to access and control ParametricBoxController since I couldn't find another way to access that method. If could figure out how to patch a level of beatsaber i might be able to find it another way
+    // I access this in BigLasers() to scale laser size. so that the level has already started and gameObject that uses this has spawned. I cannot access it here since the gameObject hasn't spawned.
     // Runs globally, for game mode setup and controller binding
     public class AppInstaller : Installer
     {
         public override void InstallBindings()
         {
-            Container.Bind<ParametricBoxController>().FromComponentInHierarchy().AsTransient();
+            Container.Bind<ParametricBoxController>().FromComponentInHierarchy().AsTransient(); //It will search the active Unity hierarchy and find an existing component called ParametricBoxController so i can use it later
 
             //Container.BindInterfacesAndSelfTo<BeatmapDataLoaderInjector>().AsSingle();
 
@@ -147,7 +147,7 @@ namespace AutoBS
         private void RegisterGameModes()
         {
             var GameMode360 = GetCustomGameMode("GEN360", "Generated 360 mode", "Generated360Degree", "Generated360Degree");
-            var GameMode90 = GetCustomGameMode("GEN90", "Generated 90 mode", "Generated90Degree", "Generated90Degree");
+            //var GameMode90 = GetCustomGameMode("GEN90", "Generated 90 mode", "Generated90Degree", "Generated90Degree");
         }
 
         private BeatmapCharacteristicSO GetCustomGameMode(string characteristicName, string hintText, string serializedName, string compoundIdPartName, bool requires360Movement = true, bool containsRotationEvents = true, int sortingOrder = 99)
@@ -189,8 +189,7 @@ namespace AutoBS
 
         public void Dispose()
         {
-            //v1.39
-            //GameplaySetup.Instance.RemoveTab(TabName);
+
         }
     }
 

@@ -82,13 +82,6 @@ namespace AutoBS.Patches
 
             CreateGen360DifficultySet(level);
 
-
-            // === Add Directional Markers to Menu Environment
-            //if (GlassEnvironmentFinder.Instance == null)
-            //{
-            //    new UnityEngine.GameObject("GlassEnvironmentFinder").AddComponent<GlassEnvironmentFinder>();
-            //}
-
         }
 
         public static class SongCoreBridge
