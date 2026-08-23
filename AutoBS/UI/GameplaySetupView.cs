@@ -1056,6 +1056,12 @@ namespace AutoBS.UI
             get => Config.Instance.BrightnessMultiplier;
             set => Config.Instance.BrightnessMultiplier = value;
         }
+        [UIValue("WhiteBrightnessMultiplier")]
+        public float WhiteBrightnessMultiplier
+        {
+            get => Config.Instance.WhiteBrightnessMultiplier;
+            set => Config.Instance.WhiteBrightnessMultiplier = value;
+        }
 
         // Dictionary for custom labels
         private readonly Dictionary<Config.Style, string> _styleLabels = new Dictionary<Config.Style, string>

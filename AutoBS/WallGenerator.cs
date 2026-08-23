@@ -101,6 +101,14 @@ namespace AutoBS
         public static bool WallsAltered { get; private set; } = false;
         private static readonly HashSet<string> _wallAlterReasons = new HashSet<string>();
 
+        // AutoBS change: lets Generator distinguish native sliders from sliders that need cleanup
+        // because AutoBS added wall objects during this transform.
+        public static bool HasGeneratedWalls =>
+            _generatedStandardWalls.Count > 0 ||
+            _generatedExtensionWalls.Count > 0 ||
+            _particleWalls.Count > 0 ||
+            _floorWalls.Count > 0;
+
         private static void MarkWallsAltered(string reason)
         {
             WallsAltered = true;

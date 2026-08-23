@@ -19,6 +19,10 @@ namespace AutoBS
     // V2 light events (not GLS v3 lights)
     public static class LightAutoMapper
     {
+        private static readonly object RngLock = new object();
+        private static readonly System.Random Rng = new System.Random();
+        private const float VeryDenseMapNotesPerSecond = 9f;
+
         public static bool LightEventsAdded = false;
         public static void Start(EditableCBD eData)
         {
@@ -218,6 +222,8 @@ namespace AutoBS
             LightEventType lightStyle = (LightEventType)Config.Instance.LightStyle;
 
             float brightnessMultiplier = Config.Instance.BrightnessMultiplier;
+            float mapDuration = notes.Last().time - notes.First().time;
+            bool isVeryDenseMap = mapDuration > 0f && (notes.Count / mapDuration) > VeryDenseMapNotesPerSecond;
 
             float frequencyMultiplier = Config.Instance.LightFrequencyMultiplier;
 
@@ -448,19 +454,19 @@ namespace AutoBS
                     {
                         if (needsBACK)
                         {
-                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, true);
+                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, true, isVeryDenseMap);
                             //Plugin.Log.Info($"[AutoLightMapper] Generated BACK event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
                             lightEvents.Add(EBasicEventData.Create(now, EventType.BACK, color, floatValue * brightnessMultiplier));
                         }
                         if (needsRING)
                         {
-                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, true);
+                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, true, isVeryDenseMap);
                             //Plugin.Log.Info($"[AutoLightMapper] Generated RING event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
                             lightEvents.Add(EBasicEventData.Create(now, EventType.RING, color, floatValue * brightnessMultiplier));
                         }
                         if (needsLEFT || needsRIGHT)
                         {
-                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle);
+                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, isVeryDenseMap: isVeryDenseMap);
                             if (needsLEFT)
                             {
                                 //Plugin.Log.Info($"[AutoLightMapper] Generated LEFT event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
@@ -474,7 +480,7 @@ namespace AutoBS
                         }
                         if (needsCENTER)
                         {
-                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, true);
+                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, true, isVeryDenseMap);
                             //Plugin.Log.Info($"[AutoLightMapper] Generated CENTER event at time {now:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
                             lightEvents.Add(EBasicEventData.Create(now, EventType.CENTER, color, floatValue * brightnessMultiplier));
                         }
@@ -485,7 +491,7 @@ namespace AutoBS
                         }
                         if (needsRINGZOOM)
                         {
-                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, true);
+                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, true, isVeryDenseMap);
                             //Plugin.Log.Info($"[AutoLightMapper] Generated RING_ZOOM event at time {now:F3}");
                             lightEvents.Add(EBasicEventData.Create(now, EventType.RING_ZOOM, EventValue.OFF));
                         }
@@ -623,19 +629,19 @@ namespace AutoBS
                         while (strobeTime < note.time + burstDuration)
                         {
                             EventValue strobeColor = (strobeStep % 2 == 0)
-                                ? (UnityEngine.Random.value < 0.5f ? EventValue.FLASH : EventValue.ON)
+                                ? DenseStrobeColor(strobeStep, isVeryDenseMap)
                                 : EventValue.OFF;
 
                             if (useBackStrobe)
                             {
                                 //Plugin.Log.Info($"[AutoLightMapper] Generated strobe event (BACK) at time {strobeTime:F3} with color {strobeColor}");
-                                lightEvents.Add(EBasicEventData.Create(strobeTime, EventType.BACK, strobeColor));
+                                lightEvents.Add(EBasicEventData.Create(strobeTime, EventType.BACK, strobeColor, BrightnessForColor(strobeColor)));
                             }
                             else
                             {
                                 //Plugin.Log.Info($"[AutoLightMapper] Generated strobe event (LEFT and RIGHT) at time {strobeTime:F3} with color {strobeColor}");
-                                lightEvents.Add(EBasicEventData.Create(strobeTime, EventType.LEFT, strobeColor));
-                                lightEvents.Add(EBasicEventData.Create(strobeTime, EventType.RIGHT, strobeColor));
+                                lightEvents.Add(EBasicEventData.Create(strobeTime, EventType.LEFT, strobeColor, BrightnessForColor(strobeColor)));
+                                lightEvents.Add(EBasicEventData.Create(strobeTime, EventType.RIGHT, strobeColor, BrightnessForColor(strobeColor)));
                             }
 
                             strobeStep++;
@@ -679,7 +685,7 @@ namespace AutoBS
 
                 if (missingSpecialEvents.Count > 0 && (closeNotes || isSlider) && (note.time - lastSpecialTriggerTime >= 0.15f))
                 {
-                    (EventValue specColor, float specBrightness) = FindColor(notes.First().time, note.time, lightStyle, true);
+                    (EventValue specColor, float specBrightness) = FindColor(notes.First().time, note.time, lightStyle, true, isVeryDenseMap);
                     EventType specialEventType = missingSpecialEvents[specialEventIndex];  // Rotate through missing ones
 
                     //Plugin.Log.Info($"[AutoLightMapper] Generated SPECIAL event: Type={specialEventType}, Time={note.time:F3}, Value={specColor}, Brightness={specBrightness * brightnessMultiplier:F2}");
@@ -777,7 +783,7 @@ namespace AutoBS
                             et = EventType.RING_ZOOM;
 
                         // Place light
-                        (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle);
+                        (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, isVeryDenseMap: isVeryDenseMap);
 
                         //Plugin.Log.Info($"[AutoLightMapper] Generated SLIDER event ({et}) at time {time[0]:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}");
 
@@ -826,7 +832,7 @@ namespace AutoBS
                             (needsRINGSPIN && (EventType)pattern[patternIndex] == EventType.RING_SPIN) ||
                             (needsRINGZOOM && (EventType)pattern[patternIndex] == EventType.RING_ZOOM))
                         {
-                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle);
+                            (EventValue color, float floatValue) = FindColor(notes.First().time, time[0], lightStyle, isVeryDenseMap: isVeryDenseMap);
                             //Plugin.Log.Info($"[AutoLightMapper] Generated PATTERN event ({(EventType)pattern[patternIndex]}) at time {time[0]:F3} with color {color} and brightness {floatValue * brightnessMultiplier:F2}.");
 
                             if (!IsSuppressedByStrobe((EventType)pattern[patternIndex]))
@@ -1081,7 +1087,7 @@ namespace AutoBS
             return events;
         }
 
-        private static (EventValue color, float floatValue) FindColor(float first, float current, LightEventType type, bool random = false)
+        private static (EventValue color, float floatValue) FindColor(float first, float current, LightEventType type, bool random = false, bool isVeryDenseMap = false)
         {
             EventValue baseColor = EventValue.RED_FADE;
             for (int i = 0; i < ((current - first + Light.ColorOffset) / Light.ColorSwap); i++)
@@ -1092,14 +1098,16 @@ namespace AutoBS
             {
                 baseColor = EventValue.BLUE_FADE;
             }
-            System.Random rnd = new System.Random();
             if (random)
             {
-                int randomNumber = rnd.Next(2);
+                int randomNumber = NextRandom(2);
                 baseColor = randomNumber == 0 ? EventValue.BLUE_FADE : EventValue.RED_FADE;
             }
-            double chance = rnd.NextDouble();
-            if (chance < 0.10)
+
+            double chance = NextRandomDouble();
+            double whiteChance = isVeryDenseMap ? 0.01 : 0.10;
+
+            if (chance < whiteChance)
             {
                 baseColor = EventValue.TRANSITION;
             }
@@ -1123,7 +1131,52 @@ namespace AutoBS
                     break;
             }
             float floatValue = (float)Math.Round((chance * 0.5 + 0.5), 1);
+            if (IsWhiteEvent(finalColor))
+                floatValue *= Config.Instance.WhiteBrightnessMultiplier;
+
             return (finalColor, floatValue);
+        }
+
+        private static EventValue DenseStrobeColor(int strobeStep, bool isVeryDenseMap)
+        {
+            if (!isVeryDenseMap)
+                return UnityEngine.Random.value < 0.5f ? EventValue.FLASH : EventValue.ON;
+
+            if (NextRandomDouble() < 0.10)
+                return UnityEngine.Random.value < 0.5f ? EventValue.FLASH : EventValue.ON;
+
+            return ((strobeStep / 2) % 2 == 0)
+                ? EventValue.BLUE_FLASH
+                : EventValue.RED_FLASH;
+        }
+
+        private static float BrightnessForColor(EventValue color)
+        {
+            return IsWhiteEvent(color) ? Config.Instance.WhiteBrightnessMultiplier : 1f;
+        }
+
+        private static bool IsWhiteEvent(EventValue color)
+        {
+            return color == EventValue.ON ||
+                   color == EventValue.FLASH ||
+                   color == EventValue.FADE ||
+                   color == EventValue.TRANSITION;
+        }
+
+        private static double NextRandomDouble()
+        {
+            lock (RngLock)
+            {
+                return Rng.NextDouble();
+            }
+        }
+
+        private static int NextRandom(int maxValue)
+        {
+            lock (RngLock)
+            {
+                return Rng.Next(maxValue);
+            }
         }
 
         private static EventValue GetColorForType(EventValue baseColor, LightEventType type)

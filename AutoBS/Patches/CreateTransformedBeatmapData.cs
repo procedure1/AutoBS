@@ -4,6 +4,7 @@ using BeatmapSaveDataVersion4;
 using BS_Utils.Gameplay;
 using CustomJSONData.CustomBeatmap;
 using HarmonyLib;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -145,9 +146,43 @@ namespace AutoBS.Patches
 
             #region LightAutoMapper
 
+            bool generatorWillRun =
+                // AutoBS change: native arcs/chains alone should not force Generator to rebuild gameplay objects.
+                arcsAdded ||
+                chainsAdded ||
+                Utils.IsEnabledWalls() ||
+                (Utils.IsEnabledLighting() &&
+                Config.Instance.BoostLighting) ||
+                (TransitionPatcher.IsBeatSageMap && Config.Instance.EnableCleanBeatSage) ||
+                TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
+
             if (Utils.IsEnabledLighting() && Config.Instance.EnableLightAutoMapper)
             {
                 LightAutoMapper.Start(eData);
+            }
+
+            // AutoBS change: LightAutoMapper can add plain light events without calling Generator.
+            // Preserve original gameplay objects so lighting-only maps do not rebuild Noodle notes/walls.
+            if (!generatorWillRun && LightAutoMapper.LightEventsAdded)
+            {
+                Plugin.LogDebug("[CreateTransformedBeatmapData] LightAutoMapper added lights without Generator; preserving gameplay objects.");
+
+                if (eData.OriginalCBData != null)
+                    __result = ConvertEditableCBD.Convert(eData, preserveOriginalGameplayObjects: true);
+                else if (eData.OriginalBData != null)
+                    __result = ConvertEditableCBD.ConvertVanilla(eData, preserveOriginalGameplayObjects: true);
+
+                // AutoBS change: light events alone are OK, but any gameplay/customData change must still block scoring.
+                if (ScoreSensitiveBeatmapComparer.TryGetScoreDisableReason(
+                    scoreBaseline,
+                    __result,
+                    out var lightOnlyScoreDisableReason))
+                {
+                    Plugin.Log.Info($"[CreateTransformedBeatmapData] Light-only score disable reason: {lightOnlyScoreDisableReason}");
+                    ScoreGate.Disable("AutoBS");
+                }
+
+                return;
             }
 
             #endregion
@@ -155,13 +190,7 @@ namespace AutoBS.Patches
             string scoreDisableReason = "";
             string myDisabledReason = "";
 
-            if ((Utils.IsEnabledArcs() ||
-                Utils.IsEnabledChains() ||
-                Utils.IsEnabledWalls() ||
-                (Utils.IsEnabledLighting() &&
-                Config.Instance.BoostLighting) ||
-                (TransitionPatcher.IsBeatSageMap && Config.Instance.EnableCleanBeatSage) ||
-                TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE))
+            if (generatorWillRun)
             {
                 Plugin.LogDebug($"[CreateTransformedBeatmapData] Generator Called. Generating map changes for {TransitionPatcher.SelectedSerializedName}...");
 
@@ -190,7 +219,8 @@ namespace AutoBS.Patches
                 }
 
                 // Noodle events still exist in eData up to this point.
-                var outp = gen.Generate(eData, beatmapLevel.beatsPerMinute);
+                // AutoBS change: pass actual Arcitect output so Generator only runs slider wall cleanup when needed.
+                var outp = gen.Generate(eData, beatmapLevel.beatsPerMinute, arcsAdded, chainsAdded);
 
                 if (!gen.OriginalMapAltered)
                 {
@@ -341,7 +371,11 @@ namespace AutoBS.Patches
                 return true;
             }
 
-
+            if (!SameCustomEvents(original, final))
+            {
+                reason = "Custom events changed";
+                return true;
+            }
 
             reason = "";
             return false;
@@ -379,6 +413,7 @@ namespace AutoBS.Patches
                 if (x[i].noteLineLayer != y[i].noteLineLayer) return false;
                 if (x[i].cutDirection != y[i].cutDirection) return false;
                 if (x[i].rotation != y[i].rotation) return false;
+                if (!SameCustomData(x[i], y[i])) return false;
             }
 
             return true;
@@ -455,6 +490,12 @@ namespace AutoBS.Patches
                     LogObstacleMismatch(i, x[i], y[i], "rotation");
                     return false;
                 }
+
+                if (!SameCustomData(x[i], y[i]))
+                {
+                    LogObstacleMismatch(i, x[i], y[i], "customData");
+                    return false;
+                }
             }
 
             return true;
@@ -508,6 +549,7 @@ namespace AutoBS.Patches
                 if (x[i].midAnchorMode != y[i].midAnchorMode) return false;
                 if (x[i].sliceCount != y[i].sliceCount) return false;
                 if (!Same(x[i].squishAmount, y[i].squishAmount)) return false;
+                if (!SameCustomData(x[i], y[i])) return false;
             }
 
             return true;
@@ -537,6 +579,7 @@ namespace AutoBS.Patches
                 if (x[i].lineIndex != y[i].lineIndex) return false;
                 if (x[i].lineLayer != y[i].lineLayer) return false;
                 if (x[i].offsetDirection != y[i].offsetDirection) return false;
+                if (!SameCustomData(x[i], y[i])) return false;
             }
 
             return true;
@@ -567,6 +610,7 @@ namespace AutoBS.Patches
                 if (!Same(x[i].time, y[i].time)) return false;
                 if (x[i].basicBeatmapEventType != y[i].basicBeatmapEventType) return false;
                 if (x[i].value != y[i].value) return false;
+                if (!SameCustomData(x[i], y[i])) return false;
             }
 
             return true;
@@ -590,6 +634,7 @@ namespace AutoBS.Patches
             {
                 if (!Same(x[i].beat, y[i].beat)) return false;
                 if (!Same(x[i].bpm, y[i].bpm)) return false;
+                if (!SameCustomData(x[i], y[i])) return false;
             }
 
             return true;
@@ -613,6 +658,7 @@ namespace AutoBS.Patches
             {
                 if (!Same(x[i].time, y[i].time)) return false;
                 if (!Same(x[i].relativeNoteJumpSpeed, y[i].relativeNoteJumpSpeed)) return false;
+                if (!SameCustomData(x[i], y[i])) return false;
             }
 
             return true;
@@ -641,9 +687,87 @@ namespace AutoBS.Patches
             {
                 if (x[i].GetType() != y[i].GetType()) return false;
                 if (!Same(x[i].time, y[i].time)) return false;
+                if (!SameCustomData(x[i], y[i])) return false;
             }
 
             return true;
+        }
+
+        private static bool SameCustomEvents(IReadonlyBeatmapData a, IReadonlyBeatmapData b)
+        {
+            var x = a.allBeatmapDataItems.OfType<CustomEventData>()
+                .OrderBy(e => e.time)
+                .ThenBy(e => e.type)
+                .ToList();
+
+            var y = b.allBeatmapDataItems.OfType<CustomEventData>()
+                .OrderBy(e => e.time)
+                .ThenBy(e => e.type)
+                .ToList();
+
+            if (x.Count != y.Count) return false;
+
+            for (int i = 0; i < x.Count; i++)
+            {
+                if (!Same(x[i].time, y[i].time)) return false;
+                if (x[i].type != y[i].type) return false;
+                if (!SameCustomData(x[i], y[i])) return false;
+            }
+
+            return true;
+        }
+
+        private static bool SameCustomData(object a, object b)
+        {
+            // AutoBS change: preserved gameplay objects keep the same instance, so skip expensive Noodle customData walks.
+            if (ReferenceEquals(a, b))
+                return true;
+
+            return JToken.DeepEquals(CustomDataToken(a), CustomDataToken(b));
+        }
+
+        private static JToken CustomDataToken(object item)
+        {
+            object customData = GetCustomDataValue(item);
+
+            if (customData == null)
+                return new JObject();
+
+            return NormalizeToken(JToken.FromObject(customData));
+        }
+
+        private static object GetCustomDataValue(object item)
+        {
+            if (item == null)
+                return null;
+
+            var type = item.GetType();
+            var property = type.GetProperty("customData");
+            if (property != null)
+                return property.GetValue(item);
+
+            var field = type.GetField("customData");
+            return field?.GetValue(item);
+        }
+
+        private static JToken NormalizeToken(JToken token)
+        {
+            if (token == null)
+                return JValue.CreateNull();
+
+            if (token is JObject obj)
+            {
+                var normalized = new JObject();
+                foreach (var property in obj.Properties().OrderBy(p => p.Name, StringComparer.Ordinal))
+                    normalized.Add(property.Name, NormalizeToken(property.Value));
+
+                return normalized;
+            }
+
+            if (token is JArray array)
+                return new JArray(array.Select(NormalizeToken));
+
+            return token.DeepClone();
         }
 
         private static bool Same(float a, float b)

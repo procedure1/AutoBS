@@ -120,7 +120,7 @@ namespace AutoBS
             return f - i >= 0.999f ? i + 1 : i;
         }
 
-        public GeneratorOutput Generate(EditableCBD eData, float bpm)
+        public GeneratorOutput Generate(EditableCBD eData, float bpm, bool arcsAddedByAutoBS = false, bool chainsAddedByAutoBS = false)
         {
             //version = BeatmapDataTransformHelperPatcher.version;
             OriginalMapAltered = false;
@@ -145,10 +145,12 @@ namespace AutoBS
 
             bool isGenerated360 = TransitionPatcher.SelectedSerializedName == GameModeHelper.GENERATED_360DEGREE_MODE;
 
+            // AutoBS change: only prepare the wall pipeline for sliders when AutoBS actually added them.
+            // Native mapper-authored arcs/chains should not cause original walls to be reset or rebuilt.
             bool needsWallReset =
                 isEnabledWalls ||
-                Utils.IsEnabledArcs() ||
-                Utils.IsEnabledChains() ||
+                arcsAddedByAutoBS ||
+                chainsAddedByAutoBS ||
                 isGenerated360;
 
             if (needsWallReset)
@@ -988,7 +990,22 @@ namespace AutoBS
 
                 //stopwatch.Restart();
 
-                if (Utils.IsEnabledChains())// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))
+                bool wallObjectsAddedOrChanged =
+                    WallGenerator.HasGeneratedWalls ||
+                    WallGenerator.WallsAltered ||
+                    isGenerated360;
+
+                bool shouldMoveWallsForChains =
+                    chainsAddedByAutoBS ||
+                    (Utils.IsEnabledChains() && wallObjectsAddedOrChanged);
+
+                bool shouldMoveWallsForArcs =
+                    arcsAddedByAutoBS ||
+                    (Utils.IsEnabledArcs() && wallObjectsAddedOrChanged);
+
+                // AutoBS change: move walls for AutoBS-generated sliders, or for native sliders only when
+                // AutoBS has generated/altered walls that now need collision cleanup.
+                if (shouldMoveWallsForChains)// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))
                     WallGenerator.MoveWallsBlockingChainTail(eData);
                 else
                 {
@@ -996,7 +1013,7 @@ namespace AutoBS
                         $"MoveWallsBlockingChainTail() NOT CALLED!!");
                 }
 
-                if (Utils.IsEnabledArcs())// && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles)// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))
+                if (shouldMoveWallsForArcs)// && !BeatmapDataTransformHelperPatcher.NoodleProblemObstacles)// && Config.Instance.EnableWallGenerator && (Config.Instance.EnableStandardWalls || Config.Instance.EnableBigWalls))
                     WallGenerator.MoveWallsBlockingArc(eData);
                 else
                 {
@@ -1113,12 +1130,13 @@ namespace AutoBS
             bool beatSageMapNotAltered = !beatSageIsAltered;            
             Plugin.LogDebug($"[Generator] 1 beatSageMapNotAltered: {beatSageMapNotAltered}.");
             
-            bool arcsEnabled = Utils.IsEnabledArcs();
-            bool arcsNotAdded = (arcsEnabled && TransitionPatcher.MapAlreadyUsesArcs) || !arcsEnabled;
+            // AutoBS change: preserve original gameplay objects based on actual Arcitect output,
+            // not just the feature toggle or MapAlreadyUsesArcs detection.
+            bool arcsNotAdded = !arcsAddedByAutoBS;
             Plugin.LogDebug($"[Generator] 2 arcsNotAdded: {arcsNotAdded}.");
 
-            bool chainsEnabled = Utils.IsEnabledChains();
-            bool chainsNotAdded = (chainsEnabled && TransitionPatcher.MapAlreadyUsesChains) || !chainsEnabled;
+            // AutoBS change: Arcitect can be enabled and still add zero chains; that should count as unchanged.
+            bool chainsNotAdded = !chainsAddedByAutoBS;
             Plugin.LogDebug($"[Generator] 3 chainsNotAdded: {chainsNotAdded}.");
 
             var rotAfter = eData.RotationEvents
@@ -1175,7 +1193,16 @@ namespace AutoBS
                     Plugin.Log.Info($"4 Rotation - Time: {rot.time} - Rotation: {rot.rotation} - Total Rotation: {rot.accumRotation}");
             }
             */
-            ConvertEditableCBD.ApplyPerObjectRotations(eData);
+            // AutoBS change: boost/autolight-only edits should not rewrite gameplay objects.
+            // When notes/walls/arcs/chains/rotations are unchanged, preserve original Noodle object instances.
+            if (!gameplayObjectsUnchanged)
+            {
+                ConvertEditableCBD.ApplyPerObjectRotations(eData);
+            }
+            else
+            {
+                Plugin.LogDebug("[Generator] Gameplay objects unchanged; skipping per-object rotations and preserving original object instances.");
+            }
 
             Plugin.LogDebug($"[Generator] EditableCBD map version: {eData.Version} - notes: {eData.ColorNotes.Count()} bombs: {eData.BombNotes.Count()} arcs: {eData.Arcs.Count()} chains: {eData.Chains.Count()} obstacles: {eData.Obstacles.Count()} events: {eData.BasicEvents.Count()} customEvents: {eData.CustomEvents.Count()}.");
 

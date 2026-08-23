@@ -157,6 +157,7 @@ namespace AutoBS
 
         public virtual float LightFrequencyMultiplier { get; set; } = 1.0f;// Default is 1, adjust as needed use from 0 - 1 to reduce frequency
         public virtual float BrightnessMultiplier { get; set; } = 1.0f;//affect the floatValue property can increase or decrease
+        public virtual float WhiteBrightnessMultiplier { get; set; } = 1.0f;//affects only generated white automapper lights
 
         public enum Style
         {
